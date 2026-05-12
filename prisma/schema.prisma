@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+enum BranchAccessType {
+  ALL
+  SELECTED
+}
+
+model Company {
+  id        String @id @default(uuid())
+
+  name     String
+  phone    String?
+  email    String?
+
+  gstin    String?
+  pan      String?
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  stateCode    String?
+  pinCode      String?
+
+  isActive  Boolean @default(true)
+
+  branches Branch[]
+  users    User[]
+  // roles    Role[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id        String @id @default(uuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name      String
+  email     String @unique
+  phone     String?
+  password  String
+
+  status    UserStatus @default(ACTIVE)
+  isActive  Boolean @default(true)
+
+  branchAccessType BranchAccessType @default(SELECTED)
+
+  // userRoles UserRole[]
+  branches  UserBranch[]
+
+  createdById String?
+  createdBy   User? @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers User[] @relation("UserCreatedBy")
+
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([email])
+}
+
+model UserBranch {
+  id       String @id @default(uuid())
+
+  userId   String
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  isPrimary Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, branchId])
+  @@index([userId])
+  @@index([branchId])
+}
+
+model Branch {
+  id        String @id @default(uuid())
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name      String
+  code      String
+
+  gstin    String?
+  stateCode String?
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  pinCode      String?
+
+  isActive  Boolean @default(true)
+
+  userBranches UserBranch[]
+  // tanks        Tank[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([gstin])
+}
