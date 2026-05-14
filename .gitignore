@@ -4,7 +4,6 @@ node_modules/
 # Keep environment variables out of version control
 .env
 
-
 # Build output
 dist/
 build/
@@ -15,3 +14,6 @@ build/
 *.swp
 .DS_Store       # macOS system files
 Thumbs.db       # Windows system files
+
+# Local seed files
+src/modules/role/role.seeder.ts
