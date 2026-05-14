@@ -35,21 +35,11 @@ export const authMiddleware = async (
         id: true,
         name: true,
         email: true,
-
-        masterId: true,
         branchId: true,
         branchAccessType: true,
 
         status: true,
         isActive: true,
-
-        master: {
-          select: {
-            id: true,
-            name: true,
-            isActive: true,
-          },
-        },
 
         branch: {
           select: {
