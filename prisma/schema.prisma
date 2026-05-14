@@ -62,7 +62,7 @@ model Branch {
   name String
   code String @unique
 
-  gstin     String?
+  gstin     String? @unique
   stateCode String?
 
   addressLine1 String?
