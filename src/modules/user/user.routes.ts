@@ -38,11 +38,9 @@ router.use(authMiddleware);
  *                 type: string
  *                 enum: [ALL, SELECTED]
  *                 example: SELECTED
- *               branchIds:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: ["branch_id_1"]
+ *               branchId:
+ *                 type: string
+ *                 example: "branch_id_1"
  *     responses:
  *       201:
  *         description: User created successfully
@@ -133,11 +131,9 @@ router.get(
  *                 type: string
  *                 enum: [ALL, SELECTED]
  *                 example: SELECTED
- *               branchIds:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: ["branch_id_1", "branch_id_2"]
+ *               branchId:
+ *                 type: string
+ *                 example: "branch_id_1"
  *     responses:
  *       200:
  *         description: User updated successfully

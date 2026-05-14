@@ -14,7 +14,6 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
             message: 'Signup successful',
             data: {
                 user: result.user,
-                company: result.company,
             }
         });
     } catch (error) {

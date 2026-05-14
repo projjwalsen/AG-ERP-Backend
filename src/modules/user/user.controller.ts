@@ -5,7 +5,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     try {
         const actor = (req as any).user;
         const {
-            name, email, phone, password, branchAccessType, branchIds
+            name, email, phone, password, branchAccessType, branchId
         } = req.body;
 
         const user = await UserService.createUser(actor, {
@@ -14,7 +14,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
             phone,
             password,
             branchAccessType,
-            branchIds
+            branchId
         });
 
         return res.status(201).json({
@@ -69,7 +69,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         const { userId } = (req as any).params;
 
         const {
-            name, email, phone, branchAccessType, branchIds
+            name, email, phone, branchAccessType, branchId
         } = req.body;
 
         const user = await UserService.updateUser(actor, userId, {
@@ -77,7 +77,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             email,
             phone,
             branchAccessType,
-            branchIds
+            branchId
         });
 
         return res.status(200).json({

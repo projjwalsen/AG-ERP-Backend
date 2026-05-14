@@ -16,38 +16,8 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [companyName, name, email, password]
+ *             required: [masterName, name, email, password]
  *             properties:
- *               companyName:
- *                 type: string
- *                 example: ABC Petrochemicals
- *               companyPhone:
- *                 type: string
- *                 example: "9876543210"
- *               companyEmail:
- *                 type: string
- *                 example: company@example.com
- *               gstin:
- *                 type: string
- *                 example: 19ABCDE1234F1Z5
- *               pan:
- *                 type: string
- *                 example: ABCDE1234F
- *               addressLine1:
- *                 type: string
- *                 example: Main Road
- *               city:
- *                 type: string
- *                 example: Kolkata
- *               state:
- *                 type: string
- *                 example: West Bengal
- *               stateCode:
- *                 type: string
- *                 example: "19"
- *               pinCode:
- *                 type: string
- *                 example: "700001"
  *               name:
  *                 type: string
  *                 example: Company Manager

@@ -18,33 +18,6 @@ enum BranchAccessType {
   SELECTED
 }
 
-model Company {
-  id        String @id @default(uuid())
-
-  name     String
-  phone    String?
-  email    String?
-
-  gstin    String?
-  pan      String?
-
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  stateCode    String?
-  pinCode      String?
-
-  isActive  Boolean @default(true)
-
-  branches Branch[]
-  users    User[]
-  // roles    Role[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -54,67 +27,42 @@ enum UserStatus {
 model User {
   id        String @id @default(uuid())
 
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
-  name      String
-  email     String @unique
-  phone     String?
-  password  String
+  name     String
+  email    String @unique
+  phone    String?
+  password String
 
-  status    UserStatus @default(ACTIVE)
-  isActive  Boolean @default(true)
+  status   UserStatus @default(ACTIVE)
+  isActive Boolean    @default(true)
 
   branchAccessType BranchAccessType @default(SELECTED)
 
-  // userRoles UserRole[]
-  branches  UserBranch[]
+  userRoles UserRole[]
 
-  createdById String?
-  createdBy   User? @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById  String?
+  createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdUsers User[] @relation("UserCreatedBy")
 
   lastLoginAt DateTime?
 
-  resetOtp       String?
-  resetOtpExpiry DateTime?
-  isOtpVerified   Boolean @default(false)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([companyId])
+  @@index([branchId])
   @@index([email])
 }
 
-model UserBranch {
-  id       String @id @default(uuid())
-
-  userId   String
-  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  branchId String
-  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  isPrimary Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  
-  @@unique([userId, branchId])
-  @@index([userId])
-  @@index([branchId])
-}
 
 model Branch {
-  id        String @id @default(uuid())
+  id   String @id @default(uuid())
 
-  companyId String
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name String
+  code String @unique
 
-  name      String
-  code      String
-
-  gstin    String?
+  gstin     String?
   stateCode String?
 
   addressLine1 String?
@@ -123,15 +71,79 @@ model Branch {
   state        String?
   pinCode      String?
 
-  isActive  Boolean @default(true)
+  isActive Boolean @default(true)
 
-  userBranches UserBranch[]
-  // tanks        Tank[]
+  users User[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([companyId, code])
-  @@index([companyId])
   @@index([gstin])
+}
+
+model Role {
+  id String @id @default(uuid())
+
+  name String
+  code String @unique
+
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Permission {
+  id        String @id @default(uuid())
+
+  module    String
+  action    String
+  key       String @unique
+
+  description String?
+  isActive    Boolean @default(true)
+
+  rolePermissions RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([module, action])
+  @@unique([module])
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+
+  roleId       String
+  role         Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model UserRole {
+  id       String @id @default(uuid())
+
+  userId   String
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roleId   String
+  role     Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+  
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
 }
