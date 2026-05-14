@@ -20,6 +20,15 @@ export class AuthService {
   static async signup(payload: SignupPayload) {
     const normalizedEmail = payload.email.trim().toLowerCase();
 
+    const existingUsersCount = await prisma.user.count();
+
+    if (existingUsersCount > 0) {
+        throw new ApiError(
+            "Signup is already completed. Please login or ask admin to create user.",
+            403
+        );
+    }
+
     if (!payload.name || !payload.email || !payload.password) {
       throw new ApiError("Name, email and password are required", 400);
     }
