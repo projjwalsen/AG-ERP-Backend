@@ -76,6 +76,10 @@ model User {
 
   lastLoginAt DateTime?
 
+  resetOtp       String?
+  resetOtpExpiry DateTime?
+  isOtpVerified   Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
