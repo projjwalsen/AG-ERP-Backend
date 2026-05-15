@@ -16,4 +16,4 @@ build/
 Thumbs.db       # Windows system files
 
 # Local seed files
-src/modules/role/role.seeder.ts
+src/modules/rbac/role.seeder.ts

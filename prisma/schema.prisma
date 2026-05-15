@@ -113,7 +113,7 @@ model Permission {
   updatedAt DateTime @updatedAt
 
   @@unique([module, action])
-  @@unique([module])
+  @@index([module])
 }
 
 model RolePermission {

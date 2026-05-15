@@ -98,3 +98,46 @@ export const authMiddleware = async (
     return next(new ApiError("Authentication failed or invalid", 401));
   }
 };
+
+export const checkPermission = (permKey: string) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const actor = (req as any).user;
+
+            if(!actor.id){
+                throw new ApiError("Authentication required", 401);
+            }
+
+            const hasPermissions = await prisma.userRole.findFirst({
+                where: {
+                    userId: actor.id,
+                    role: {
+                        isActive: true,
+                        rolePermissions: {
+                            some: {
+                                permission: {
+                                    key: permKey,
+                                    isActive: true,
+                                }
+                            }
+                        }
+                    }
+                },
+                select: {
+                    id: true,
+                }
+            });
+
+            if (!hasPermissions) {
+                throw new ApiError(
+                    "Forbidden: You don't have permission to perform this action",
+                    403
+                );
+            }
+
+            next();
+        } catch (error) {
+            next(error);
+        }
+    }
+}
