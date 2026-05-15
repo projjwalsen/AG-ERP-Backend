@@ -60,14 +60,32 @@ router.post(
  * /api/users/all:
  *   get:
  *     summary: Get all users
+ *     description: Fetch users with optional search and branch filters.
  *     tags: [Users]
  *     security:
  *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Search by user name or email.
+ *         example: rahul
+ *       - in: query
+ *         name: branch
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter/search by branch name, branch code, or GSTIN.
+ *         example: KOL_DEPOT
  *     responses:
  *       200:
  *         description: Users fetched successfully
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Permission denied
  */
 router.get(
     "/all",

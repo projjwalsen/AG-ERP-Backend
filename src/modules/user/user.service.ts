@@ -15,7 +15,9 @@ export class UserService {
       branchId?: string;
     }
   ) {
-    const normalizedEmail = payload.email.trim().toLowerCase();
+    if (!actor?.id) {
+      throw new ApiError("Unauthorized", 401);
+    }
 
     if (!payload.name || !payload.email || !payload.password) {
       throw new ApiError("Name, email and password are required", 400);
@@ -24,6 +26,8 @@ export class UserService {
     if (payload.password.length < 6) {
       throw new ApiError("Password must be at least 6 characters long", 400);
     }
+
+    const normalizedEmail = payload.email.trim().toLowerCase();
 
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -36,7 +40,12 @@ export class UserService {
     const branchAccessType =
       payload.branchAccessType || BranchAccessType.SELECTED;
 
-    if (branchAccessType === BranchAccessType.SELECTED && !payload.branchId) {
+    const finalBranchId =
+      branchAccessType === BranchAccessType.SELECTED
+        ? payload.branchId
+        : null;
+
+    if (branchAccessType === BranchAccessType.SELECTED && !finalBranchId) {
       throw new ApiError(
         "Branch ID is required for SELECTED branch access type",
         400
@@ -47,10 +56,10 @@ export class UserService {
       throw new ApiError("ALL branch access user should not have branchId", 400);
     }
 
-    if (payload.branchId) {
+    if (finalBranchId) {
       const branch = await prisma.branch.findFirst({
         where: {
-          id: payload.branchId,
+          id: finalBranchId,
           isActive: true,
         },
         select: { id: true },
@@ -65,10 +74,7 @@ export class UserService {
 
     const user = await prisma.user.create({
       data: {
-        branchId:
-          branchAccessType === BranchAccessType.SELECTED
-            ? payload.branchId
-            : null,
+        branchId:finalBranchId,
 
         name: payload.name,
         email: normalizedEmail,
@@ -130,15 +136,31 @@ export class UserService {
     const branchAccessType =
       payload.branchAccessType || existingUser.branchAccessType;
 
-    if (branchAccessType === BranchAccessType.SELECTED && !payload.branchId) {
-      throw new ApiError(
-        "Branch ID is required for SELECTED branch access type",
-        400
-      );
+    const finalBranchId =
+      branchAccessType === BranchAccessType.SELECTED
+        ? payload.branchId ?? existingUser.branchId
+        : null;
+
+    if(branchAccessType === BranchAccessType.SELECTED && !finalBranchId) {
+        throw new ApiError("Branch ID is required for SELECTED branch access type", 400);
     }
 
-    if (branchAccessType === BranchAccessType.ALL && payload.branchId) {
-      throw new ApiError("ALL branch access user should not have branchId", 400);
+    if(branchAccessType === BranchAccessType.ALL && payload.branchId) {
+        throw new ApiError("ALL branch access user should not have branchId", 400);
+    }
+
+    if(finalBranchId){
+      const branch = await prisma.branch.findFirst({
+        where: {
+          id: finalBranchId,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+
+      if (!branch) {
+        throw new ApiError("Invalid branch ID provided", 400);
+      }
     }
 
     if (payload.email) {
@@ -156,20 +178,6 @@ export class UserService {
       }
     }
 
-    if (payload.branchId) {
-      const branch = await prisma.branch.findFirst({
-        where: {
-          id: payload.branchId,
-          isActive: true,
-        },
-        select: { id: true },
-      });
-
-      if (!branch) {
-        throw new ApiError("Invalid branch ID provided", 400);
-      }
-    }
-
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -177,10 +185,7 @@ export class UserService {
         phone: payload.phone,
         email: payload.email ? payload.email.trim().toLowerCase() : undefined,
         branchAccessType,
-        branchId:
-          branchAccessType === BranchAccessType.SELECTED
-            ? payload.branchId
-            : null,
+        branchId:finalBranchId
       },
       select: {
         id: true,
@@ -260,8 +265,68 @@ export class UserService {
     return updatedUser;
   }
 
-  static async getAllUsers(_actor: any) {
+  static async getAllUsers(
+    actor: any,
+    query?: {
+      search?: string;
+      branch?: string;
+    }
+  ) {
+
+    const search = query?.search?.trim();
+    const branch = query?.branch?.trim();
+
     const users = await prisma.user.findMany({
+      where: {
+        AND: [
+          search
+            ? {
+                OR: [
+                  {
+                    name: {
+                      contains: search,
+                      mode: "insensitive",
+                    }
+                  },
+                  {
+                    email: {
+                      contains: search,
+                      mode: "insensitive",
+                    }
+                  }
+                ]
+              } 
+            : {},
+
+
+          branch 
+            ? {
+              branch: {
+                OR: [
+                  {
+                    name: {
+                      contains: branch,
+                      mode: "insensitive",
+                    }
+                  },
+                  {
+                    code: {
+                      contains: branch,
+                      mode: "insensitive",
+                    }
+                  },
+                  {
+                    gstin: {
+                      contains: branch,
+                      mode: "insensitive",
+                    }
+                  }
+                ]
+              }
+            }
+          : {}
+        ]
+      },
       select: {
         id: true,
         name: true,
@@ -278,14 +343,49 @@ export class UserService {
             id: true,
             name: true,
             code: true,
+            gstin: true,
+            stateCode: true,
             isActive: true,
-          },
+          }
         },
+        userRoles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                isActive: true,
+              }
+            }
+          }
+        }
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: {
+        createdAt: "desc"
+      }
     });
 
-    return users;
+    return users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      branchId: user.branchId,
+      branchAccessType: user.branchAccessType,
+      status: user.status,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      branch: user.branch,
+      roles: user.userRoles
+        .filter((ur) => ur.role.isActive)
+        .map((ur) => ({
+          id: ur.role.id,
+          name: ur.role.name,
+          code: ur.role.code,
+        })),
+    }));
   }
 
   static async getUserById(_actor: any, userId: string) {

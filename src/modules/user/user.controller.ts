@@ -28,23 +28,28 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     }
 }
 
-export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const actor = (req as any).user;
+export const getAllUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const actor = (req as any).user;
 
-        const users = await UserService.getAllUsers(actor);
+    const users = await UserService.getAllUsers(actor, {
+      search: req.query.search as string | undefined,
+      branch: req.query.branch as string | undefined,
+    });
 
-        return res.status(200).json({
-            success: true,
-            message: "Users fetched successfully",
-            data: { users },
-        });
-
-    } catch (error) {
-        next(error);
-    }
-}
-
+    return res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      data: { users },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 export const getUserById = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;

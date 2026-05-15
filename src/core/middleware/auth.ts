@@ -141,3 +141,29 @@ export const checkPermission = (permKey: string) => {
         }
     }
 }
+
+
+export const checkBranchAccess = (fieldName = "branchId") => {
+    return async (req: Request, res: Response, next: NextFunction) => {
+      const actor = (req as any).user;
+      const branchId = (req as any).body[fieldName] || (req as any).params?.[fieldName];
+
+      if (!actor.id) {
+        return next(new ApiError("Authentication required", 401));
+      }
+
+      if(!branchId) {
+        return next(new ApiError("Branch ID is required", 400));
+      }
+
+      if(actor.branchAccessType === "ALL") {
+        return next();
+      }
+
+      if(actor.branchId !== branchId) {
+        return next(new ApiError("Forbidden: You don't have access to this branch", 403));
+      }
+
+      next();
+    }
+}

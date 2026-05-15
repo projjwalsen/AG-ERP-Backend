@@ -147,3 +147,4 @@ model UserRole {
   @@index([userId])
   @@index([roleId])
 }
+
