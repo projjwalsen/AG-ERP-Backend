@@ -206,6 +206,60 @@ export class UserService {
     return updatedUser;
   }
 
+  static async resetPassword(
+    actor: any,
+    userId: string,
+    payload: {
+        newPassword: string;
+    }
+  ){
+    if(!actor?.id){
+        throw new ApiError("Authentication required", 401);
+    }
+
+    if(!payload.newPassword || payload.newPassword.length < 6){
+        throw new ApiError("New password must be at least 6 characters long", 400);
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+
+    if(!user){
+        throw new ApiError("User not found", 404);
+    }
+
+    const isSamePassword = await bcrypt.compare(
+        payload.newPassword,
+        user.password
+    );
+
+    if(isSamePassword){
+        throw new ApiError("New password cannot be same as the old password", 400);
+    }
+
+    const newHashedPassword = await bcrypt.hash(payload.newPassword, 10);
+
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+            password: newHashedPassword
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            status: true,
+            isActive: true,
+            lastLoginAt: true,
+            updatedAt: true,
+        }
+    });
+
+    return updatedUser;
+  }
+
   static async getAllUsers(_actor: any) {
     const users = await prisma.user.findMany({
       select: {
@@ -217,6 +271,7 @@ export class UserService {
         branchAccessType: true,
         status: true,
         isActive: true,
+        lastLoginAt: true,
         createdAt: true,
         branch: {
           select: {
@@ -245,6 +300,7 @@ export class UserService {
         branchAccessType: true,
         status: true,
         isActive: true,
+        lastLoginAt: true,
         createdAt: true,
         branch: {
           select: {
@@ -314,6 +370,7 @@ export class UserService {
         status: true,
         isActive: true,
         updatedAt: true,
+        lastLoginAt: true
       },
     });
 

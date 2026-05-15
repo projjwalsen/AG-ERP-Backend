@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as userController from "./user.controller";
-import { authMiddleware } from "../../core/middleware/auth";
+import { authMiddleware, checkPermission } from "../../core/middleware/auth";
 
 const router = Router();
 
@@ -51,6 +51,7 @@ router.use(authMiddleware);
  */
 router.post(
     "/create",
+    checkPermission("USER:CREATE"),
     userController.createUser
 );
 
@@ -70,6 +71,7 @@ router.post(
  */
 router.get(
     "/all",
+    checkPermission("USER:VIEW"),
     userController.getAllUsers
 );
 
@@ -96,6 +98,7 @@ router.get(
  */
 router.get(
     "/:userId",
+    checkPermission("USER:VIEW"),
     userController.getUserById
 );
 
@@ -144,6 +147,7 @@ router.get(
  */
 router.patch(
     "/update/:userId",
+    checkPermission("USER:UPDATE"),
     userController.updateUser
 );
 
@@ -185,7 +189,51 @@ router.patch(
  */
 router.patch(
     "/update-status/:userId",
+    checkPermission("USER:STATUS_UPDATE"),
     userController.updateUserStatus
 );
+
+/**
+ * @openapi
+ * /api/users/reset-password/{userId}:
+ *   patch:
+ *     summary: Reset user password
+ *     description: Admin/Owner resets a user's password by replacing the old password.
+ *     tags: [Users]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: user_id_1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: newPassword
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *                 example: NewPassword@123
+ *     responses:
+ *       200:
+ *         description: User password reset successfully
+ *       400:
+ *         description: Invalid password or password mismatch
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
+router.patch(
+    "/reset-password/:userId",
+    checkPermission("USER:UPDATE"),
+    userController.resetPassword
+)
 
 export default router;

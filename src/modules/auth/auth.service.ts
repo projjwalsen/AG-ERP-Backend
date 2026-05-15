@@ -151,7 +151,7 @@ export class AuthService {
 
         status: user.status,
         isActive: user.isActive,
-
+        lastLoginAt: user.lastLoginAt,
         branch: user.branch,
       },
     };

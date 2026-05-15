@@ -109,3 +109,21 @@ export const updateUserStatus = async (req: Request, res: Response, next: NextFu
         next(error);
     }
 }
+
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const { userId } = (req as any).params;
+        const { newPassword } = req.body;
+
+        const user = await UserService.resetPassword(actor, userId, { newPassword });
+
+        return res.status(200).json({
+            success: true,
+            message: "User password reset successfully",
+            data: { user },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
