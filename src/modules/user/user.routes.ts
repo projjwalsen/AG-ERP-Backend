@@ -51,7 +51,7 @@ router.use(authMiddleware);
  */
 router.post(
     "/create",
-    checkPermission("USER:CREATE"),
+    checkPermission("USER:WRITE"),
     userController.createUser
 );
 
@@ -147,7 +147,7 @@ router.get(
  */
 router.patch(
     "/update/:userId",
-    checkPermission("USER:UPDATE"),
+    checkPermission("USER:WRITE"),
     userController.updateUser
 );
 
@@ -189,7 +189,7 @@ router.patch(
  */
 router.patch(
     "/update-status/:userId",
-    checkPermission("USER:STATUS_UPDATE"),
+    checkPermission("USER:WRITE"),
     userController.updateUserStatus
 );
 
@@ -232,7 +232,7 @@ router.patch(
  */
 router.patch(
     "/reset-password/:userId",
-    checkPermission("USER:UPDATE"),
+    checkPermission("USER:WRITE"),
     userController.resetPassword
 )
 

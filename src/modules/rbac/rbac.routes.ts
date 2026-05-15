@@ -48,7 +48,7 @@ router.use(authMiddleware)
  */
 router.post(
     "/roles/upsert",
-    checkPermission("ROLE:CREATE"),
+    checkPermission("ROLE:WRITE"),
     rbacController.upsertRole
 )
 
@@ -107,7 +107,7 @@ router.get(
  */
 router.post(
     "/permissions/upsert",
-    checkPermission("PERMISSION:CREATE"),
+    checkPermission("PERMISSION:WRITE"),
     rbacController.upsertPermissions
 )
 
@@ -172,7 +172,7 @@ router.get(
  */
 router.post(
     "/roles/:roleId/permissions",
-    checkPermission("ROLE:ASSIGN_PERMISSION"),
+    checkPermission("ROLE:WRITE"),
     rbacController.assignPermissionsToRole
 )
 
@@ -217,7 +217,7 @@ router.post(
  */
 router.post(
     '/users/:userId/roles/assign',
-    checkPermission("ROLE:ASSIGN_USER"),
+    checkPermission("ROLE:WRITE"),
     rbacController.assignRolesToUser
 )
 
@@ -259,7 +259,7 @@ router.post(
  */
 router.delete(
     '/users/:userId/roles/unassign',
-    checkPermission("ROLE:UNASSIGN_ROLE"),
+    checkPermission("ROLE:WRITE"),
     rbacController.unassignRoleFromUser
 )
 
