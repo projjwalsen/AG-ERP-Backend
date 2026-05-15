@@ -23,7 +23,7 @@ type AssignRolesPayload = {
   roleIds: string[];
 };
 
-const normalizeCode = (value: string) => {
+export const normalizeCode = (value: string) => {
   return value.trim().toUpperCase().replace(/\s+/g, "_");
 };
 

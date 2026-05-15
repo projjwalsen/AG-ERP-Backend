@@ -107,7 +107,7 @@ router.get(
  */
 router.post(
     "/permissions/upsert",
-    checkPermission("PERMISSION:WRITE"),
+    checkPermission("ROLE:WRITE"),
     rbacController.upsertPermissions
 )
 
@@ -127,7 +127,7 @@ router.post(
  */
 router.get(
     "/permissions/all",
-    checkPermission("PERMISSION:VIEW"),
+    checkPermission("ROLE:VIEW"),
     rbacController.getAllPermissions
 )
 
