@@ -98,7 +98,7 @@ export const toggleAgencyStatus = async (req: Request, res: Response, next: Next
         const { agencyId } = (req as any).params;
         const { isActive } = req.body;
 
-        const agency = await AgencyService.toggleAgencyStatus(actor, agencyId, isActive);
+        const agency = await AgencyService.toggleAgencyStatus(actor, agencyId, { isActive });
 
         return res.status(200).json({
             success: true,
