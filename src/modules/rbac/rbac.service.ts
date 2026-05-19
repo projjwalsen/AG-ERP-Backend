@@ -103,9 +103,9 @@ export class RBACService {
                 createdAt: "asc",
             }
         });
-        return roles.map((role) => ({
+        return roles.map((role: any) => ({
             ...role,
-            permissions: role.rolePermissions.map((rp) => rp.permission),
+            permissions: role.rolePermissions.map((rp: any) => rp.permission),
             rolePermissions: undefined,
         }))
     }
@@ -264,14 +264,14 @@ export class RBACService {
             throw new ApiError("Some roles not found or inactive", 404);
         }
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             await tx.userRole.deleteMany({
                 where: {
                     userId,
                 },
             });
             await tx.userRole.createMany({
-                data: payload.roleIds.map((roleId) => ({
+                data: payload.roleIds.map((roleId: string) => ({
                     userId,
                     roleId
                 })),
@@ -365,16 +365,16 @@ export class RBACService {
         }
 
         const activeRoles = user.userRoles
-            .filter((ur) => ur.role.isActive)
-            .map((ur) => ur.role);
+            .filter((ur: any) => ur.role.isActive)
+            .map((ur: any) => ur.role);
 
         const permissions = Array.from(
             new Map(
                 activeRoles
-                .flatMap((role) => role.rolePermissions)
-                .map((rp) => rp.permission)
-                .filter((perm) => perm.isActive)
-                .map((perm) => [perm.key, perm])
+                .flatMap((role: any) => role.rolePermissions)
+                .map((rp: any) => rp.permission)
+                .filter((perm: any) => perm.isActive)
+                .map((perm: any) => [perm.key, perm])
             ).values()
         )
 
@@ -383,7 +383,7 @@ export class RBACService {
             name: user.name,
             email: user.email,
             lastLoginAt: user.lastLoginAt,
-            roles: activeRoles.map((role) => ({
+            roles: activeRoles.map((role: any) => ({
                 id: role.id,
                 name: role.name,
                 code: role.code,
