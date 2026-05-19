@@ -214,25 +214,62 @@ export class BranchService {
         }
 
         const code = payload.code ? normalizeCode(payload.code) : undefined;
-        const gstin = payload.gstin?.trim().toUpperCase();
+        const normalizedGSTIN = payload.gstin
+            ?.trim()
+            .toUpperCase();
 
-        if(code && code !== branch.code) {
-            const existingBranch = await prisma.branch.findUnique({
-                where: { code }
+        if (code && code !== branch.code) {
+
+            const existingBranchCode = await prisma.branch.findUnique({
+                where: { code },
             });
 
-            if(existingBranch) {
-                throw new ApiError("Branch code already exists", 400);
+            if (existingBranchCode) {
+                throw new ApiError(
+                    "Branch code already exists",
+                    409
+                );
             }
         }
 
-        if(gstin && gstin !== branch.gstin) {
-            const existingBranch = await prisma.branch.findUnique({
-                where: { gstin }
+        if (
+            normalizedGSTIN &&
+            normalizedGSTIN !== branch.gstin
+        ) {
+
+            const GSTIN_REGEX =
+                /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+            if (!GSTIN_REGEX.test(normalizedGSTIN)) {
+                throw new ApiError("Invalid GSTIN format", 400);
+            }
+
+            const gstStateCode = normalizedGSTIN.substring(0, 2);
+
+            if (
+                payload.stateCode &&
+                gstStateCode !== payload.stateCode
+            ) {
+                throw new ApiError(
+                    "GSTIN state code mismatch",
+                    400
+                );
+            }
+
+            const existingBranchGSTIN = await prisma.branch.findFirst({
+                where: {
+                    gstin: normalizedGSTIN,
+                    NOT: {
+                        id: branchId,
+                    },
+                },
             });
 
-            if(existingBranch) {
-                throw new ApiError("Branch with this GSTIN already exists", 409);
+            if (existingBranchGSTIN) {
+                throw new ApiError(
+                    "Another branch with this GSTIN already exists",
+                    409
+                );
             }
         }
 
@@ -241,7 +278,7 @@ export class BranchService {
             data: {
                 name: payload.name?.trim(),
                 code,
-                gstin,
+                gstin: normalizedGSTIN,
                 stateCode: payload.stateCode,
                 addressLine1: payload.addressLine1,
                 addressLine2: payload.addressLine2,
