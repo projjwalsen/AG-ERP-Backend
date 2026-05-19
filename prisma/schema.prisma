@@ -74,6 +74,7 @@ model Branch {
   isActive Boolean @default(true)
 
   users User[]
+  agencies AgencyBranch[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -148,3 +149,60 @@ model UserRole {
   @@index([roleId])
 }
 
+enum AgencyType {
+  VENDOR
+  CLIENT
+  BOTH
+}
+
+model Agency {
+  id   String @id @default(uuid())
+
+  name String
+  type AgencyType
+
+  gstin     String? @unique
+
+  contactPerson String?
+  mobileNumber   String?
+  email         String?
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  stateCode    String?
+  pinCode      String?
+
+  isActive Boolean @default(true)
+
+  branches  AgencyBranch[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([gstin])
+  @@index([type])
+}
+
+model AgencyBranch {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  openingBalance Decimal @default(0.00) @db.Decimal(18, 3)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([agencyId, branchId])
+  @@index([agencyId])
+  @@index([branchId])
+}
