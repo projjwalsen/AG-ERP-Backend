@@ -366,7 +366,7 @@ export class UserService {
       }
     });
 
-    return users.map((user) => ({
+    return users.map((user: any) => ({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -379,8 +379,8 @@ export class UserService {
       createdAt: user.createdAt,
       branch: user.branch,
       roles: user.userRoles
-        .filter((ur) => ur.role.isActive)
-        .map((ur) => ({
+        .filter((ur: any) => ur.role.isActive)
+        .map((ur: any) => ({
           id: ur.role.id,
           name: ur.role.name,
           code: ur.role.code,
