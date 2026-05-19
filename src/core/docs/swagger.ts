@@ -6,60 +6,40 @@ export const swaggerSpec = swaggerJsdoc({
     info: {
       title: "ERP Backend API",
       version: "1.0.0",
-      description: "API documentation for ERP backend"
+      description: "API documentation for ERP backend",
     },
     servers: [
       {
         url: "http://localhost:5100",
-        description: "Local development server"
-      }
+        description: "Local development server",
+      },
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT"
-        }
+        cookieAuth: {
+          type: "apiKey",
+          in: "cookie",
+          name: "erp_token",
+        },
       },
       schemas: {
         SuccessResponse: {
           type: "object",
           properties: {
-            status: {
-              type: "boolean",
-              example: true
-            },
-            message: {
-              type: "string",
-              example: "Operation successful"
-            },
-            data: {
-              type: "object"
-            }
-          }
+            success: { type: "boolean", example: true },
+            message: { type: "string", example: "Operation successful" },
+            data: { type: "object" },
+          },
         },
         ErrorResponse: {
           type: "object",
           properties: {
-            status: {
-              type: "boolean",
-              example: false
-            },
-            message: {
-              type: "string",
-              example: "Something went wrong"
-            },
-            errors: {
-              type: "array",
-              items: {
-                type: "object"
-              }
-            }
-          }
-        }
-      }
-    }
+            success: { type: "boolean", example: false },
+            message: { type: "string", example: "Something went wrong" },
+          },
+        },
+      },
+    },
   },
-  apis: ["./src/**/*.ts"]
+  apis: ["./src/modules/**/*routes.ts"],
 });
