@@ -30,6 +30,9 @@ type UpdateAgencyInput = Omit<Partial<CreateAgencyInput>, "branches"> & {
     branches?: AgencyBranchInput[];
 };
 
+const GSTIN_REGEX =
+  /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
 export class AgencyService {
 
     static async createAgency(actor: any, payload: CreateAgencyInput) {
@@ -50,13 +53,24 @@ export class AgencyService {
 
         const normalizeGstin = payload.gstin?.trim().toUpperCase();
 
-        if(normalizeGstin){
-            const existingGstin = await prisma.agency.findUnique({
-                where: { gstin: normalizeGstin }
+        if (normalizeGstin) {
+
+            const GSTIN_REGEX =
+                /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+            if (!GSTIN_REGEX.test(normalizeGstin)) {
+                throw new ApiError("Invalid GSTIN format", 400);
+            }
+
+            const existingGSTIN = await prisma.agency.findUnique({
+                where: { gstin: normalizeGstin },
             });
 
-            if(existingGstin) {
-                throw new ApiError("Agency with this GSTIN already exists", 409);
+            if (existingGSTIN) {
+                throw new ApiError(
+                    "Agency with this GSTIN already exists",
+                    409
+                );
             }
         }
 
@@ -354,18 +368,44 @@ export class AgencyService {
 
         const normalizeGstin = payload.gstin?.trim().toUpperCase();
 
-        if(normalizeGstin && normalizeGstin !== existingAgency.gstin) {
-            const existingGstin = await prisma.agency.findFirst({
+        if (
+            normalizeGstin &&
+            normalizeGstin !== existingAgency.gstin
+        ) {
+
+            const GSTIN_REGEX =
+                /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+            if (!GSTIN_REGEX.test(normalizeGstin)) {
+                throw new ApiError("Invalid GSTIN format", 400);
+            }
+
+            const gstStateCode = normalizeGstin.substring(0, 2);
+
+            if (
+                payload.stateCode &&
+                gstStateCode !== payload.stateCode
+            ) {
+                throw new ApiError(
+                    "GSTIN state code mismatch",
+                    400
+                );
+            }
+
+            const existingGSTIN = await prisma.agency.findFirst({
                 where: {
                     gstin: normalizeGstin,
                     NOT: {
-                        id: agencyId
-                    }
-                }
+                        id: agencyId,
+                    },
+                },
             });
 
-            if(existingGstin) {
-                throw new ApiError("Another agency with this GSTIN already exists", 409);
+            if (existingGSTIN) {
+                throw new ApiError(
+                    "Another agency with this GSTIN already exists",
+                    409
+                );
             }
         }
 
