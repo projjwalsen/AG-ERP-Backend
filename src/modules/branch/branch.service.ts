@@ -43,6 +43,24 @@ export class BranchService {
         }
 
         if(gstin){
+            const GSTIN_REGEX =
+                /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+            if (!GSTIN_REGEX.test(gstin)) {
+                throw new ApiError("Invalid GSTIN format", 400);
+            }
+
+            const gstStateCode = gstin.substring(0, 2);
+
+            if (
+                payload.stateCode &&
+                gstStateCode !== payload.stateCode
+            ) {
+                throw new ApiError(
+                    "GSTIN state code mismatch",
+                    400
+                );
+            }
             const existingGstin = await prisma.branch.findUnique({
                 where: { gstin }
             });
