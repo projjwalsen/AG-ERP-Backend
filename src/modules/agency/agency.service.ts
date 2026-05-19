@@ -232,6 +232,7 @@ export class AgencyService {
                 state: true,
                 stateCode: true,
                 pinCode: true,
+                isActive: true,
                 branches: {
                     select: {
                         id: true,
