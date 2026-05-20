@@ -39,9 +39,6 @@ router.use(authMiddleware)
  *               gstin:
  *                 type: string
  *                 example: 19ABCDE1234F1Z5
- *               stateCode:
- *                 type: string
- *                 example: "19"
  *               addressLine1:
  *                 type: string
  *                 example: Main Road
@@ -181,9 +178,6 @@ router.get(
  *               gstin:
  *                 type: string
  *                 example: 19ABCDE1234F1Z5
- *               stateCode:
- *                 type: string
- *                 example: "19"
  *               addressLine1:
  *                 type: string
  *                 example: Updated Main Road

@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
+import { getGSTStateCode, isValidIndianPincode } from "../../core/utils/loc.utils";
 import { normalizeCode } from "../rbac/rbac.service";
 
 type CreateBranchPayload = {
@@ -27,12 +28,17 @@ export class BranchService {
             throw new ApiError("Branch Name and Branch Code are required", 400);
         }
 
-        if(payload.gstin && !payload.stateCode) {
-            throw new ApiError("State Code is required when GSTIN is provided", 400);
+        const derivedStateCode = getGSTStateCode(payload.state);
+        if(payload.gstin && !derivedStateCode){
+            throw new ApiError(
+                "Valid State required when GSTIN is provided", 
+                400
+            );
         }
 
         const code = normalizeCode(payload.code);
         const gstin = payload.gstin?.trim().toUpperCase();
+        const stateCode = getGSTStateCode(payload.state);
 
         const existingCode = await prisma.branch.findUnique({
             where: { code }
@@ -52,12 +58,9 @@ export class BranchService {
 
             const gstStateCode = gstin.substring(0, 2);
 
-            if (
-                payload.stateCode &&
-                gstStateCode !== payload.stateCode
-            ) {
+            if (gstStateCode !== stateCode) {
                 throw new ApiError(
-                    "GSTIN state code mismatch",
+                    "GSTIN state code mismatch with selected state",
                     400
                 );
             }
@@ -70,12 +73,22 @@ export class BranchService {
             }
         }
 
+        if (
+            payload.pinCode &&
+            !isValidIndianPincode(payload.pinCode)
+        ) {
+            throw new ApiError(
+                "Invalid PIN code format",
+                400
+            );
+        }
+
         const branch = await prisma.branch.create({
             data: {
                 name: payload.name.trim(),
                 code,
                 gstin,
-                stateCode: payload.stateCode,
+                stateCode: derivedStateCode,
                 addressLine1: payload.addressLine1,
                 addressLine2: payload.addressLine2,
                 city: payload.city,
@@ -218,6 +231,20 @@ export class BranchService {
             ?.trim()
             .toUpperCase();
 
+        /**
+         * AUTO STATE CODE FROM STATE
+         */
+        const derivedStateCode = payload.state
+            ? getGSTStateCode(payload.state)
+            : undefined;
+
+        if (payload.state && !derivedStateCode) {
+            throw new ApiError(
+                "Invalid or unsupported state",
+                400
+            );
+        }
+
         if (code && code !== branch.code) {
 
             const existingBranchCode = await prisma.branch.findUnique({
@@ -247,11 +274,11 @@ export class BranchService {
             const gstStateCode = normalizedGSTIN.substring(0, 2);
 
             if (
-                payload.stateCode &&
-                gstStateCode !== payload.stateCode
+                derivedStateCode &&
+                gstStateCode !== derivedStateCode
             ) {
                 throw new ApiError(
-                    "GSTIN state code mismatch",
+                    "GSTIN state code mismatch with selected state",
                     400
                 );
             }
@@ -273,13 +300,23 @@ export class BranchService {
             }
         }
 
+        if (
+            payload.pinCode &&
+            !isValidIndianPincode(payload.pinCode)
+        ) {
+            throw new ApiError(
+                "Invalid PIN code format",
+                400
+            );
+        }
+
         const updatedBranch = await prisma.branch.update({
             where: { id: branchId },
             data: {
                 name: payload.name?.trim(),
                 code,
                 gstin: normalizedGSTIN,
-                stateCode: payload.stateCode,
+                stateCode: derivedStateCode,
                 addressLine1: payload.addressLine1,
                 addressLine2: payload.addressLine2,
                 city: payload.city?.trim(),

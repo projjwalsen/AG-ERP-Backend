@@ -288,7 +288,6 @@ router.delete(
  */
 router.get(
     '/users/:userId/access',
-    checkPermission("ROLE:VIEW"),
     rbacController.getUserRolesAndPermissions
 )
 
