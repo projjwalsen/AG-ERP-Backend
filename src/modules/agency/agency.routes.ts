@@ -53,9 +53,6 @@ router.use(authMiddleware);
  *               state:
  *                 type: string
  *                 example: West Bengal
- *               stateCode:
- *                 type: string
- *                 example: "19"
  *               pinCode:
  *                 type: string
  *                 example: "700001"
@@ -198,8 +195,6 @@ router.get(
  *               city:
  *                 type: string
  *               state:
- *                 type: string
- *               stateCode:
  *                 type: string
  *               pinCode:
  *                 type: string

@@ -1,6 +1,7 @@
 import { AgencyType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
+import { getGSTStateCode } from "../../core/utils/loc.utils";
 
 export type AgencyBranchInput = {
     branchId: string;
@@ -30,8 +31,6 @@ type UpdateAgencyInput = Omit<Partial<CreateAgencyInput>, "branches"> & {
     branches?: AgencyBranchInput[];
 };
 
-const GSTIN_REGEX =
-  /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 export class AgencyService {
 
@@ -47,11 +46,16 @@ export class AgencyService {
             throw new ApiError("Invalid Agency Type", 400);
         }
 
-        if(payload.gstin && !payload.stateCode) {
-            throw new ApiError("State Code is required when GSTIN is provided", 400);
-        }
-
         const normalizeGstin = payload.gstin?.trim().toUpperCase();
+        const normalizeState = payload.state.trim();
+        const derivedCode = normalizeState ? getGSTStateCode(normalizeState) : null;
+
+        if(normalizeState && !derivedCode){
+            throw new ApiError(
+                "Invalid or Unsupported State",
+                400
+            )
+        }
 
         if (normalizeGstin) {
 
@@ -60,6 +64,19 @@ export class AgencyService {
 
             if (!GSTIN_REGEX.test(normalizeGstin)) {
                 throw new ApiError("Invalid GSTIN format", 400);
+            }
+
+            const gstStateCode =
+                normalizeGstin.substring(0, 2);
+
+            if (
+                derivedCode &&
+                gstStateCode !== derivedCode
+            ) {
+                throw new ApiError(
+                    "GSTIN state code mismatch",
+                    400
+                );
             }
 
             const existingGSTIN = await prisma.agency.findUnique({
@@ -110,8 +127,8 @@ export class AgencyService {
                     addressLine1: payload.addressLine1?.trim(),
                     addressLine2: payload.addressLine2?.trim(),
                     city: payload.city?.trim(),
-                    state: payload.state?.trim(),
-                    stateCode: payload.stateCode?.trim(),
+                    state: normalizeState,
+                    stateCode: derivedCode,
                     pinCode: payload.pinCode?.trim(),
 
                     isActive: true,
@@ -367,6 +384,19 @@ export class AgencyService {
         }
 
         const normalizeGstin = payload.gstin?.trim().toUpperCase();
+        const normalizedState = payload.state
+            ?.trim();
+
+        const derivedStateCode = normalizedState
+            ? getGSTStateCode(normalizedState)
+            : existingAgency.stateCode;
+
+        if (normalizedState && !derivedStateCode) {
+            throw new ApiError(
+                "Invalid or unsupported state",
+                400
+            );
+        }
 
         if (
             normalizeGstin &&
@@ -382,14 +412,8 @@ export class AgencyService {
 
             const gstStateCode = normalizeGstin.substring(0, 2);
 
-            if (
-                payload.stateCode &&
-                gstStateCode !== payload.stateCode
-            ) {
-                throw new ApiError(
-                    "GSTIN state code mismatch",
-                    400
-                );
+            if(derivedStateCode && gstStateCode !== derivedStateCode) {
+                throw new ApiError("GSTIN state code mismatch", 400);
             }
 
             const existingGSTIN = await prisma.agency.findFirst({
@@ -453,8 +477,8 @@ export class AgencyService {
                     addressLine1: payload.addressLine1,
                     addressLine2: payload.addressLine2,
                     city: payload.city,
-                    state: payload.state,
-                    stateCode: payload.stateCode,
+                    state: normalizedState,
+                    stateCode: derivedStateCode,
                     pinCode: payload.pinCode,
                 },
                 select: {
