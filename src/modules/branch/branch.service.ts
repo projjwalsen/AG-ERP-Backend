@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
-import { getGSTStateCode } from "../../core/utils/loc.utils";
+import { getGSTStateCode, isValidIndianPincode } from "../../core/utils/loc.utils";
 import { normalizeCode } from "../rbac/rbac.service";
 
 type CreateBranchPayload = {
@@ -71,6 +71,16 @@ export class BranchService {
             if(existingGstin) {
                 throw new ApiError("Branch with this GSTIN already exists", 409);
             }
+        }
+
+        if (
+            payload.pinCode &&
+            !isValidIndianPincode(payload.pinCode)
+        ) {
+            throw new ApiError(
+                "Invalid PIN code format",
+                400
+            );
         }
 
         const branch = await prisma.branch.create({
@@ -288,6 +298,16 @@ export class BranchService {
                     409
                 );
             }
+        }
+
+        if (
+            payload.pinCode &&
+            !isValidIndianPincode(payload.pinCode)
+        ) {
+            throw new ApiError(
+                "Invalid PIN code format",
+                400
+            );
         }
 
         const updatedBranch = await prisma.branch.update({

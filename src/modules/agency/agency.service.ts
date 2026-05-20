@@ -1,7 +1,7 @@
 import { AgencyType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
-import { getGSTStateCode } from "../../core/utils/loc.utils";
+import { getGSTStateCode, isValidIndianPincode } from "../../core/utils/loc.utils";
 
 export type AgencyBranchInput = {
     branchId: string;
@@ -113,6 +113,16 @@ export class AgencyService {
             if(validBranches.length !== uniqueBranchIds.length){
                 throw new ApiError("One or more branches are invalid or inactive", 400);
             }
+        }
+
+        if (
+            payload.pinCode &&
+            !isValidIndianPincode(payload.pinCode)
+        ) {
+            throw new ApiError(
+                "Invalid PIN code format",
+                400
+            );
         }
 
         const agency = await prisma.$transaction(async (tx) => {
@@ -461,6 +471,16 @@ export class AgencyService {
                 throw new ApiError("One or more branches are invalid or inactive", 400);
             }
         };
+
+        if (
+            payload.pinCode &&
+            !isValidIndianPincode(payload.pinCode)
+        ) {
+            throw new ApiError(
+                "Invalid PIN code format",
+                400
+            );
+        }
 
         const updatedAgency = await prisma.$transaction(async (tx) => {
              const agency = await tx.agency.update({
