@@ -476,4 +476,77 @@ export class UserService {
 
     return updatedUser;
   }
+
+  static async changeOwnerPassword(
+    actor: any,
+    payload: {
+      oldPassword: string;
+      newPassword: string;
+    }
+  ) {
+    if (!actor?.id) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    if(!payload.oldPassword || !payload.newPassword){
+      throw new ApiError("Old password and new password are required", 400);
+    }
+
+    if (payload.newPassword.length < 6) {
+      throw new ApiError("New password must be at least 6 characters long", 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: actor.id },
+      include: {
+        userRoles: {
+          include: {
+            role: true,
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new ApiError("User not found", 404);
+    }
+
+    const isOwner = user.userRoles.some(ur => ur.role.code === "OWNER");
+
+    if (!isOwner) {
+      throw new ApiError("Only OWNER can change their password using this endpoint", 403);
+    }
+
+    const isOldPasswordCorrect = await bcrypt.compare(
+      payload.oldPassword,
+      user.password
+    );
+
+    if (!isOldPasswordCorrect) {
+      throw new ApiError("Old password is incorrect", 400);
+    }
+
+    const isSamePassword = await bcrypt.compare(
+      payload.newPassword,
+      user.password
+    );
+
+    if (isSamePassword) {
+      throw new ApiError("New password cannot be same as the old password", 400);
+    }
+
+    const newHashedPassword = await bcrypt.hash(payload.newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: actor.id },
+      data: {
+        password: newHashedPassword
+      },
+    });
+
+    return {
+      success: true,
+      message: "Password changed successfully",
+    }
+  }
 }

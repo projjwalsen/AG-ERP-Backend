@@ -254,4 +254,59 @@ router.patch(
     userController.resetPassword
 )
 
+
+/**
+ * @openapi
+ * /api/users/change-password:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Change OWNER password
+ *     description: Internal password change route for OWNER role users. Requires old password verification. No OTP required.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - oldPassword
+ *               - newPassword
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *                 example: owner123
+ *               newPassword:
+ *                 type: string
+ *                 example: owner12345
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password changed successfully
+ *
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Only OWNER can access this route
+ *       404:
+ *         description: User not found
+ */
+router.patch(
+    "/change-password",
+    userController.changeOwnerPassword
+)
 export default router;
