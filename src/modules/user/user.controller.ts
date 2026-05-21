@@ -132,3 +132,26 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
         next(error);
     }
 }
+
+export const changeOwnerPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const actor = (req as any).user;
+
+    const result =
+      await UserService.changeOwnerPassword(
+        actor,
+        req.body
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
