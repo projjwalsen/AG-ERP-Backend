@@ -5,6 +5,7 @@ import rbacRoute from "../modules/rbac/rbac.routes";
 import branchRoute from "../modules/branch/branch.routes";
 import agencyRoute from "../modules/agency/agency.routes";
 import metaRoute from "../modules/meta/meta.routes";
+import productRoute from "../modules/product_master/product.routes";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.use("/meta", metaRoute);
 router.use("/rbac", rbacRoute);
 router.use("/branches", branchRoute);
 router.use("/agencies", agencyRoute);
+router.use("/products", productRoute);
 
 
 
