@@ -75,6 +75,7 @@ model Branch {
 
   users User[]
   agencies AgencyBranch[]
+  inventories Inventory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -205,4 +206,62 @@ model AgencyBranch {
   @@unique([agencyId, branchId])
   @@index([agencyId])
   @@index([branchId])
+}
+
+enum ProductUnit {
+  KG
+  LTR
+}
+
+model Product {
+  id    String @id @default(uuid())
+
+  sku   String @unique
+
+  name  String
+  category String?
+  description String?
+
+  hsnNo String?
+  applicableGST Decimal? @db.Decimal(5, 2)
+
+  baseUnit ProductUnit @default(KG)
+  density  Decimal? @db.Decimal(10, 4)
+
+  sellPricePerUnit Decimal @db.Decimal(18, 2)
+
+  operationalUnit ProductUnit @default(LTR)
+  minimumStockKG Decimal? @db.Decimal(18, 3)
+
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inventories Inventory[]
+
+  @@index([sku])
+  @@index([name])
+  @@index([category])
+  @@index([hsnNo])
+}
+
+model Inventory {
+  id     String @id @default(uuid())
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  currentStockKG Decimal @default(0.000) @db.Decimal(18, 3)
+  currentStockLTR Decimal @default(0.000) @db.Decimal(18, 3)
+
+  createdAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  @@unique([branchId, productId])
+
+  @@index([branchId])
+  @@index([productId])
 }
