@@ -23,7 +23,7 @@ export const errorHandler = (
   const statusCode = err instanceof ApiError ? err.statusCode : 500;
 
   const message =
-    process.env.NODE_ENV === "PROD" && statusCode >= 500
+    process.env.NODE_ENV === "production" && statusCode >= 500
       ? "Internal Server Error"
       : err.message || "Internal Server Error";
 
