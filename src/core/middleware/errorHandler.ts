@@ -52,6 +52,6 @@ export const errorHandler = (
   res.status(statusCode).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV !== "PROD" && { stack: err.stack })
+    ...(process.env.NODE_ENV !== "production" && { stack: err.stack })
   });
 };
