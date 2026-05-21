@@ -1,20 +1,27 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import { httpLogger, logger } from './config/logger';
 import { errorHandler } from './core/middleware/errorHandler';
 import { prisma } from './config/db';
-import dotenv from 'dotenv';
 import { apiReference } from '@scalar/express-api-reference';
 import { swaggerSpec } from './core/docs/swagger';
+import routes from "./routes/index"
 import cookieParser from 'cookie-parser';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    process.env.FRONTEND_URL! ,
+    "http://localhost:3000",
+  ],
+  credentials: true,
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -51,9 +58,9 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Routes (placeholder - add your routes here)
-// app.use('/api/v1/users', userRoutes);
-// app.use('/api/v1/products', productRoutes);
+
+app.use('/api', routes);
+
 
 // Global error handler
 app.use(errorHandler);

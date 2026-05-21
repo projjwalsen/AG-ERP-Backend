@@ -1,4 +1,4 @@
-import jwt, { SignOptions } from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken';
 
 const getJwtSecret = (): string => {
   const secret = process.env.JWT_SECRET;
