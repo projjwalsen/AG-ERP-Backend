@@ -20,8 +20,6 @@ app.use(cors({
     process.env.FRONTEND_URL || 'https://ag-erp-frontend.vercel.app',
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
