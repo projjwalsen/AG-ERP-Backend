@@ -185,6 +185,8 @@ export class AgencyService {
             search?: string;
             type?: AgencyType;
             branch?: string;
+            page?: number;
+            limit?: number;
         }
     ) {
         if(!actor?.id) {
@@ -194,119 +196,102 @@ export class AgencyService {
         const search = query?.search?.trim();
         const branch = query?.branch?.trim();
         const type = query?.type;
+        const page = query?.page || 1;
+        const limit = query?.limit || 10;
+        const skip = (page - 1) * limit;
 
-        const agencies = await prisma.agency.findMany({
-            where: {
-                isActive: true,
+        const where = {
+            isActive: true,
 
-                ...(type && { type }),
+            ...(type && { type }),
 
-                ...(search && {
-                    OR: [
-                        {
-                            name: {
-                                contains: search,
-                                mode: "insensitive",
-                            }
-                        },
-                        {
-                            gstin: {
-                                contains: search,
-                                mode: "insensitive",
-                            }
-                        },
-                        {
-                            contactPerson: {
-                                contains: search,
-                                mode: "insensitive",
-                            }
-                        },
-                        {
-                            mobileNumber: {
-                                contains: search,
-                                mode: "insensitive",
-                            }
-                        }
-                    ]
-                }),
+            ...(search && {
+                OR: [
+                    { name: { contains: search, mode: "insensitive" as const } },
+                    { gstin: { contains: search, mode: "insensitive" as const } },
+                    { contactPerson: { contains: search, mode: "insensitive" as const } },
+                    { mobileNumber: { contains: search, mode: "insensitive" as const } }
+                ]
+            }),
 
-                ...(branch && {
-                    branches: {
-                        some: {
-                            branch: {
-                                OR: [
-                                    {
-                                        name: {
-                                            contains: branch,
-                                            mode: "insensitive",
-                                        }
-                                    },
-                                    {
-                                        code: {
-                                            contains: branch,
-                                            mode: "insensitive",
-                                        }
-                                    },
-                                    {
-                                        gstin: {
-                                            contains: branch,
-                                            mode: "insensitive",
-                                        }
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                })
-            },
-            select: {
-                id: true,
-                name: true,
-                type: true,
-                gstin: true,
-                contactPerson: true,
-                mobileNumber: true,
-                email: true,
-                addressLine1: true,
-                addressLine2: true,
-                city: true,
-                state: true,
-                stateCode: true,
-                pinCode: true,
-                isActive: true,
+            ...(branch && {
                 branches: {
-                    select: {
-                        id: true,
-                        openingBalance: true,
-                        isActive: true,
+                    some: {
                         branch: {
-                            select: {
-                                id: true,
-                                name: true,
-                                code: true,
-                                gstin: true,
-                                state: true,
-                                stateCode: true,
-                                pinCode: true,
-                            }
+                            OR: [
+                                { name: { contains: branch, mode: "insensitive" as const } },
+                                { code: { contains: branch, mode: "insensitive" as const } },
+                                { gstin: { contains: branch, mode: "insensitive" as const } }
+                            ]
                         }
                     }
                 }
-            },
-            orderBy: {
-                createdAt: "desc"
-            }
-        });
+            })
+        };
 
-        return agencies.map((agency) => ({
-            ...agency,
-            branches: agency.branches.map((ab) => ({
-                agencyBranchId: ab.id,
-                openingBalance: ab.openingBalance,
-                isActive: ab.isActive,
-                branch: ab.branch,
-            }))
-        }));
+        const [agencies, total] = await Promise.all([
+            prisma.agency.findMany({
+                where,
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    gstin: true,
+                    contactPerson: true,
+                    mobileNumber: true,
+                    email: true,
+                    addressLine1: true,
+                    addressLine2: true,
+                    city: true,
+                    state: true,
+                    stateCode: true,
+                    pinCode: true,
+                    isActive: true,
+                    branches: {
+                        select: {
+                            id: true,
+                            openingBalance: true,
+                            isActive: true,
+                            branch: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    code: true,
+                                    gstin: true,
+                                    state: true,
+                                    stateCode: true,
+                                    pinCode: true,
+                                }
+                            }
+                        }
+                    }
+                },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.agency.count({ where })
+        ]);
+
+        return {
+            data: agencies.map((agency) => ({
+                ...agency,
+                branches: agency.branches.map((ab) => ({
+                    agencyBranchId: ab.id,
+                    openingBalance: ab.openingBalance,
+                    isActive: ab.isActive,
+                    branch: ab.branch,
+                })),
+            })),
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page < Math.ceil(total / limit),
+                hasPreviousPage: page > 1,
+            }
+        }
     }
 
     static async getAgencyById(actor: any, agencyId: string) {

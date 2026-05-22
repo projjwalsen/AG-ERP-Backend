@@ -31,16 +31,24 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
     try {
         const actor = (req as any).user;
 
-        const agencies = await AgencyService.getAllAgencies(actor, {
+        const page  = parseInt(req.query.page as string)  || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+
+        const result = await AgencyService.getAllAgencies(actor, {
             search: req.query.search as string | undefined,
             type: req.query.type as any,
             branch: req.query.branch as string | undefined,
+            page,
+            limit
         });
 
         return res.status(200).json({
             success: true,
             message: "Agencies retrieved successfully",
-            data: { agencies }
+            data: {
+                agencies: result.data,
+                meta: result.meta
+            }
         });
     } catch (error) {
         next(error);

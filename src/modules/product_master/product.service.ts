@@ -136,7 +136,9 @@ export class ProductService {
         actor: any,
         query?: {
             search?: string;
-            category?: string
+            category?: string;
+            page?: number;
+            limit?: number;
         }
     ) {
         if(!actor?.id){
@@ -148,53 +150,59 @@ export class ProductService {
 
         const search = query?.search?.trim();
         const category = query?.category?.trim();
+        const page     = query?.page  || 1;
+        const limit    = query?.limit || 10;
+        const skip     = (page - 1) * limit;
 
-        const products = await prisma.product.findMany({
-            where: {
-                ...(category && {
-                    category: {
-                        contains: category,
-                        mode: "insensitive"
-                    }
-                }),
-                ...(search && {
-                    OR: [
-                        {
-                            name: {
-                                contains: search,
-                                mode: "insensitive"
-                            }
-                        },
-                        {
-                            sku: {
-                                contains: search,
-                                mode: "insensitive"
-                            }
-                        },
-                    ]
-                })
-            },
-            select: {
-                id: true,
-                sku: true,
-                name: true,
-                category: true,
-                description: true,
-                baseUnit: true,
-                density: true,
-                hsnNo: true,
-                applicableGST: true,
-                operationalUnit: true,
-                minimumStockKG: true,
-                sellPricePerUnit: true,
-                isActive: true,
-                createdAt: true,
-            },
-            orderBy: {
-                createdAt: "desc"
+        const where = {
+            ...(category && {
+                category: { contains: category, mode: "insensitive" as const }
+            }),
+            ...(search && {
+                OR: [
+                    { name: { contains: search, mode: "insensitive" as const } },
+                    { sku:  { contains: search, mode: "insensitive" as const } },
+                ]
+            })
+        };
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                select: {
+                    id: true,
+                    sku: true,
+                    name: true,
+                    category: true,
+                    description: true,
+                    baseUnit: true,
+                    density: true,
+                    hsnNo: true,
+                    applicableGST: true,
+                    operationalUnit: true,
+                    minimumStockKG: true,
+                    sellPricePerUnit: true,
+                    isActive: true,
+                    createdAt: true,
+                },
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma.product.count({ where })
+        ]);
+        
+        return {
+            data: products,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page < Math.ceil(total / limit),
+                hasPrevPage: page > 1,
             }
-        });
-        return products;
+        };
     }
 
     static async getProductById(
