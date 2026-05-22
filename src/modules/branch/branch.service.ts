@@ -41,7 +41,12 @@ export class BranchService {
         const code = normalizeCode(payload.code);
         const gstin = payload.gstin?.trim().toUpperCase();
         const stateCode = getGSTStateCode(payload.state);
-        const normalizedPhnNumber = String(payload.phnNumber?.trim());
+        const normalizedPhnNumber =
+            payload.phnNumber &&
+            payload.phnNumber !== "undefined" &&
+            payload.phnNumber !== "null"
+                ? payload.phnNumber.trim()
+        : null;
         const email = payload.email?.trim().toLowerCase();
 
         const existingCode = await prisma.branch.findUnique({
@@ -260,7 +265,12 @@ export class BranchService {
         }
 
         const code = payload.code ? normalizeCode(payload.code) : undefined;
-        const normalizedPhnNumber = payload.phnNumber ? String(payload.phnNumber.trim()) : undefined;
+        const normalizedPhnNumber =
+            payload.phnNumber &&
+            payload.phnNumber !== "undefined" &&
+            payload.phnNumber !== "null"
+                ? payload.phnNumber.trim()
+            : null;
         const email = payload.email ? payload.email.trim().toLowerCase() : undefined;
         const normalizedGSTIN = payload.gstin
             ?.trim()
@@ -368,6 +378,8 @@ export class BranchService {
                 stateCode: true,
                 addressLine1: true,
                 addressLine2: true,
+                phnNumber: true,
+                email: true,
                 city: true,
                 state: true,
                 pinCode: true,
