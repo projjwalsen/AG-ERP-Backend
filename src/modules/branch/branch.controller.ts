@@ -34,13 +34,18 @@ export const createBranch = async (req: Request, res: Response, next: NextFuncti
 export const getAllBranches = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
+        const page  = parseInt(req.query.page as string)  || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
 
-        const branches = await BranchService.getAllBranches(actor);
+        const branches = await BranchService.getAllBranches(actor, page, limit);
 
         return res.status(200).json({
             success: true,
             message: "Branches retrieved successfully",
-            data: branches
+            data: {
+                branches: branches.data,
+                meta: branches.meta,
+            }
         });
     } catch (error) {
         next(error);

@@ -54,6 +54,12 @@ router.use(authMiddleware)
  *               pinCode:
  *                 type: string
  *                 example: "700001"
+ *               phnNumber:
+ *                 type: string
+ *                 example: "9876543210"
+ *               email:
+ *                 type: string
+ *                 example: branch@example.com
  *     responses:
  *       201:
  *         description: Branch created successfully
@@ -80,9 +86,36 @@ router.post(
  *     tags: [Branches]
  *     security:
  *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of records per page
  *     responses:
  *       200:
  *         description: Branches fetched successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: Branches retrieved successfully
+ *               data:
+ *                 branches: []
+ *                 meta:
+ *                   total: 50
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 5
+ *                   hasNextPage: true
+ *                   hasPrevPage: false
  *       401:
  *         description: Unauthorized
  *       403:
@@ -193,6 +226,12 @@ router.get(
  *               pinCode:
  *                 type: string
  *                 example: "700001"
+ *               phone:
+ *                 type: string
+ *                 example: "9876543210"
+ *               email:
+ *                 type: string
+ *                 example: branch@example.com
  *     responses:
  *       200:
  *         description: Branch updated successfully

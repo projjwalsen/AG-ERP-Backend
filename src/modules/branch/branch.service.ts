@@ -13,6 +13,8 @@ type CreateBranchPayload = {
     city?: string;
     state?: string;
     pinCode?: string;
+    phnNumber?: string;
+    email?: string;
 }
 
 type updateBranchPayload = Partial<CreateBranchPayload>;
@@ -39,6 +41,8 @@ export class BranchService {
         const code = normalizeCode(payload.code);
         const gstin = payload.gstin?.trim().toUpperCase();
         const stateCode = getGSTStateCode(payload.state);
+        const normalizedPhnNumber = String(payload.phnNumber?.trim());
+        const email = payload.email?.trim().toLowerCase();
 
         const existingCode = await prisma.branch.findUnique({
             where: { code }
@@ -94,6 +98,8 @@ export class BranchService {
                 city: payload.city,
                 state: payload.state,
                 pinCode: payload.pinCode,
+                phnNumber: normalizedPhnNumber,
+                email,
                 isActive: true,
             },
             select: {
@@ -107,6 +113,8 @@ export class BranchService {
                 city: true,
                 state: true,
                 pinCode: true,
+                phnNumber: true,
+                email: true,
                 isActive: true,                
                 createdAt: true,    
             }
@@ -115,33 +123,56 @@ export class BranchService {
         return branch;
     }
 
-    static async getAllBranches(actor: any) {
+    static async getAllBranches(actor: any, page: number = 1, limit: number = 10) {
         if(!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
 
-        return await prisma.branch.findMany({
-            select: {
-                id: true,
-                name: true,
-                code: true,
-                gstin: true,
-                stateCode: true,
-                city: true,
-                state: true,
-                pinCode: true,
-                isActive: true,                
-                createdAt: true,
-                _count: {
-                    select: {
-                        users: true,
+        const skip = (page - 1) * limit;
+
+        const [branches, total] = await Promise.all([
+            prisma.branch.findMany({
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    gstin: true,
+                    stateCode: true,
+                    addressLine1: true,
+                    addressLine2: true,
+                    city: true,
+                    state: true,
+                    pinCode: true,
+                    phnNumber: true,
+                    email: true,
+                    isActive: true,                
+                    createdAt: true,
+                    _count: {
+                        select: {
+                            users: true,
+                        }
                     }
-                }
-            },
-            orderBy: {
-                createdAt: "desc"
+                },
+                orderBy: {
+                    createdAt: "desc"
+                },
+                skip,
+                take: limit
+            }),
+            prisma.branch.count()
+        ]);
+
+        return {
+            data: branches,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page < Math.ceil(total / limit),
+                hasPrevPage: page > 1,
             }
-        });
+        };
     }
 
     static async getActiveBranchesForSelection(actor: any) {
@@ -190,6 +221,8 @@ export class BranchService {
                 city: true,
                 state: true,
                 pinCode: true,
+                phnNumber: true,
+                email: true,
                 isActive: true,
                 createdAt: true,
                 users: {
@@ -227,6 +260,8 @@ export class BranchService {
         }
 
         const code = payload.code ? normalizeCode(payload.code) : undefined;
+        const normalizedPhnNumber = payload.phnNumber ? String(payload.phnNumber.trim()) : undefined;
+        const email = payload.email ? payload.email.trim().toLowerCase() : undefined;
         const normalizedGSTIN = payload.gstin
             ?.trim()
             .toUpperCase();
@@ -321,7 +356,9 @@ export class BranchService {
                 addressLine2: payload.addressLine2,
                 city: payload.city?.trim(),
                 state: payload.state?.trim(),
-                pinCode: payload.pinCode
+                pinCode: payload.pinCode,
+                phnNumber: normalizedPhnNumber,
+                email: email
             },
             select: {
                 id: true,
@@ -377,6 +414,8 @@ export class BranchService {
                 city: true,
                 state: true,
                 pinCode: true,
+                phnNumber: true,
+                email: true,
                 isActive: true,
                 updatedAt: true,
             }

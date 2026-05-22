@@ -30,16 +30,23 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
     try {
         const actor = (req as any).user;
         const { category, search } = (req as any).query;
+        const page     = parseInt(req.query.page as string)     || 1;
+        const limit    = parseInt(req.query.limit as string)    || 10;
 
-        const products = await ProductService.getAllProducts(actor, { 
+        const result = await ProductService.getAllProducts(actor, { 
             search: search as string ,
-            category: category as string
+            category: category as string,
+            page,
+            limit
         });
 
         return res.status(200).json({
             success: true,
             message: "Products retrieved successfully",
-            data: { products }
+            data: {
+                products: result.data,
+                meta: result.meta
+            }
         });
     } catch (error) {
         next(error);

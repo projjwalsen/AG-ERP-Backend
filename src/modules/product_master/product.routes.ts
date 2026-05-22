@@ -88,14 +88,44 @@ router.post(
  *         name: search
  *         schema:
  *           type: string
+ *         description: Search by product name or SKU
  *       - in: query
  *         name: category
  *         schema:
  *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of records per page
  *     responses:
  *       200:
  *         description: Product list fetched successfully
-*/
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: Products retrieved successfully
+ *               data:
+ *                 products: []
+ *                 meta:
+ *                   total: 100
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 10
+ *                   hasNextPage: true
+ *                   hasPrevPage: false
+ *       401:
+ *         description: Unauthorized
+ */
 
 router.get(
     "/all-list",

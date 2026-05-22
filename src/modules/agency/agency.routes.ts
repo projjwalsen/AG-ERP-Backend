@@ -110,9 +110,35 @@ router.post(
  *         schema:
  *           type: string
  *         description: Filter by branch name or branch code
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of records per page
  *     responses:
  *       200:
  *         description: Agencies fetched successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: Agencies retrieved successfully
+ *               data:
+ *                 agencies: []
+ *                 meta:
+ *                   total: 100
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 10
+ *                   hasNextPage: true
+ *                   hasPrevPage: false
  *       401:
  *         description: Unauthorized
  */

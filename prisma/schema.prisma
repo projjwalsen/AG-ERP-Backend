@@ -70,6 +70,8 @@ model Branch {
   city         String?
   state        String?
   pinCode      String?
+  phnNumber     String?
+  email         String?
 
   isActive Boolean @default(true)
 
