@@ -6,7 +6,7 @@ export const createBranch = async (req: Request, res: Response, next: NextFuncti
         const actor = (req as any).user;
 
         const {
-            name, code, gstin, stateCode, addressLine1, addressLine2, city, state, pinCode
+            name, code, gstin, stateCode, addressLine1, addressLine2, city, state, pinCode, phnNumber, email
         } = req.body;
 
         const branch = await BranchService.createBranch(actor, {
@@ -18,7 +18,9 @@ export const createBranch = async (req: Request, res: Response, next: NextFuncti
             addressLine2,
             city,
             state,
-            pinCode
+            pinCode,
+            phnNumber,
+            email
         });
 
         return res.status(201).json({
@@ -101,6 +103,8 @@ export const updateBranch = async (req: Request, res: Response, next: NextFuncti
             city,
             state,
             pinCode,
+            phnNumber,
+            email
         } = req.body;
 
         const branch = await BranchService.updateBranch(actor, branchId, {
@@ -113,6 +117,8 @@ export const updateBranch = async (req: Request, res: Response, next: NextFuncti
             city,
             state,
             pinCode,
+            phnNumber,
+            email
         });
 
         return res.status(200).json({
