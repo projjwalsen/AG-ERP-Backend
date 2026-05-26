@@ -1,0 +1,706 @@
+import { ProductUnit } from "@prisma/client";
+import { ApiError } from "../../core/middleware/errorHandler";
+import { prisma } from "../../config/db";
+import { RBACService } from "../rbac/rbac.service";
+import { InventoryService } from "../inventory/inventory.service";
+
+type SalesItemPayload = {
+    productId: string;
+    batchId: string;
+
+    quantity: number;
+    unit: ProductUnit;
+}
+
+type CreateSalesPayload = {
+    agencyId: string;
+    branchId: string;
+    remarks?: string;
+
+    items: SalesItemPayload[];
+}
+
+export class SalesService {
+
+    /**
+     * ===========================
+     * Auto generate sales invoice number
+     * 
+     * Example:
+     * SAL-PET-SA8X2
+     * SAL-DIE-QW91L
+     *
+     * Format:
+     * [PRODUCT2]-[BATCH2][UNIQUE]
+    */
+    static async generateInvoiceNo(
+        productName: string,
+        batchNo: string
+    ) {
+        const productPrefix = productName
+            .replace(/[^A-Z0-9]/gi, "")
+            .substring(0, 3)
+            .toUpperCase()
+            .padEnd(3, "X");
+
+        const batchPrefix = batchNo
+            .replace(/[^A-Z0-9]/gi, "")
+            .substring(0, 2)
+            .toUpperCase()
+            .padEnd(2, "X");
+
+        /** Using Date.now to handle uniqueness */
+        const unique = (
+            Date.now().toString(36) +
+            Math.random().toString(36)
+        )
+            .replace(/[^A-Z0-9]/gi, "")
+            .substring(0, 3)
+            .toUpperCase()
+
+        return `SAL-${productPrefix}-${batchPrefix}${unique}`;
+    }
+
+    /**
+     * ===========================
+     * Create sales invoice
+     * 
+     * Steps:
+     * 1. Validate payload
+     * 2. Generate invoice number
+     * 3. Create sales record
+     */
+    static async createSale(
+        actor: any,
+        payload: CreateSalesPayload
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(
+            !payload.agencyId ||
+            !payload.branchId
+        ) {
+            throw new ApiError("Agency & Branch Id are required", 400);
+        }
+
+        if(
+            !payload.items ||
+            payload.items.length === 0
+        ) {
+            throw new ApiError("At least one sales item is required", 400);
+        }
+
+        /**
+         * Prevent duplicate batch entries
+         */
+        const salesKeys = new Set();
+
+        for (const item of payload.items) {
+
+            const key = `${item.productId}-${item.batchId}`;
+
+            if (salesKeys.has(key)) {
+                throw new ApiError(
+                    "Duplicate batch for same product",
+                    400
+                );
+            }
+
+            salesKeys.add(key);
+        }
+
+        /** Agency Validation */
+        const agency = await prisma.agency.findUnique({
+            where: {
+                id: payload.agencyId
+            }
+        });
+        if(!agency) {
+            throw new ApiError("Invalid Agency Id", 400);
+        }
+
+        if(
+            agency.type !== "CLIENT" &&
+            agency.type !== "BOTH"
+        ) {
+            throw new ApiError("Agency must be of type CLIENT or BOTH", 400);
+        }
+
+        /** Branch Validation */
+        const branch = await prisma.branch.findUnique({
+            where: {
+                id: payload.branchId
+            }
+        });
+        if(!branch) {
+            throw new ApiError("Invalid Branch Id", 400);
+        }
+        if(!branch.isActive){
+            throw new ApiError("Branch is not active", 400);
+        }
+
+        /** Validate items */
+        const validatedItems = [];
+
+        for (const item of payload.items) {
+
+            if (
+                !item.productId ||
+                !item.batchId
+            ) {
+                throw new ApiError(
+                    "Product & Batch Id required",
+                    400
+                );
+            }
+
+            if (
+                !item.quantity ||
+                item.quantity <= 0
+            ) {
+                throw new ApiError(
+                    "Invalid quantity",
+                    400
+                );
+            }
+
+            const batch = await prisma.inventoryBatch.findUnique({
+                where: {
+                    id: item.batchId
+                },
+                include: {
+                    product: true
+                }
+            });
+
+            if (!batch) {
+                throw new ApiError(
+                    `Invalid Batch Id ${item.batchId}`,
+                    400
+                );
+            }
+
+            if (!batch.isActive) {
+                throw new ApiError(
+                    `Batch ${batch.batchNo} inactive`,
+                    400
+                );
+            }
+
+            if (batch.productId !== item.productId) {
+                throw new ApiError(
+                    "Batch product mismatch",
+                    400
+                );
+            }
+
+            if (batch.branchId !== payload.branchId) {
+                throw new ApiError(
+                    "Batch branch mismatch",
+                    400
+                );
+            }
+
+            /**
+             * Stock Check
+             */
+            if (
+                item.unit === ProductUnit.KG &&
+                Number(batch.availableQtyKG) < item.quantity
+            ) {
+                throw new ApiError(
+                    `Insufficient KG stock in batch ${batch.batchNo}`,
+                    400
+                );
+            }
+
+            if (
+                item.unit === ProductUnit.LTR &&
+                Number(batch.availableQtyLTR) < item.quantity
+            ) {
+                throw new ApiError(
+                    `Insufficient LTR stock in batch ${batch.batchNo}`,
+                    400
+                );
+            }
+
+            validatedItems.push({
+                item,
+                batch,
+                product: batch.product
+            });
+        }
+
+        const firstItem = validatedItems[0];
+        const invoiceNo = await this.generateInvoiceNo(
+            firstItem.product.name,
+            firstItem.batch.batchNo
+        );
+
+        /**
+         * Create sales record
+        */
+        const sale = await prisma.sale.create({
+            data: {
+                agencyId: payload.agencyId,
+                branchId: payload.branchId,
+                invoiceNo,
+                remarks: payload.remarks?.trim(),
+
+                createdById: actor.id,
+
+                items: {
+                    create: validatedItems.map((data) => ({
+                        productId: data.item.productId,
+                        batchId: data.item.batchId,
+                        quantity: data.item.quantity,
+                        unit: data.item.unit,
+
+                        /**
+                         * AUTO FETCH SELL PRICE
+                         */
+                        sellingPrice:
+                            data.product.sellPricePerUnit
+                    }))
+                }
+            },
+
+            include: {
+                agency: true,
+                branch: true,
+
+                items: {
+                    include: {
+                        product: true,
+                        batch: true
+                    }
+                }
+            }
+        });
+
+        return sale; 
+    }
+
+    /**
+     * =========================================
+     * GET ALL SALES
+     * =========================================
+     */
+    static async getAllSales(
+        actor: any,
+        query?: {
+            page?: number;
+            limit?: number;
+            status?: "PENDING"| "APPROVED" | "REJECTED";
+            branchId?: string;
+        }
+    ){
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const page = query?.page || 1;
+        const limit = query?.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where: any = {
+            ...(
+                query?.status && { status: query.status }
+            ),
+            ...(
+                query?.branchId && { branchId: query.branchId }
+            )
+        };
+
+        const [sales, total] = await Promise.all([
+            prisma.sale.findMany({
+                where,
+                include: {
+                    agency: true,
+                    branch: true,
+                    createdBy: true,
+                    approvedBy: true,
+
+                    items: {
+                        include: {
+                            product: true,
+                            batch: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: "desc"
+                },
+                skip,
+                take: limit
+            }),
+            prisma.sale.count({
+                where
+            })
+        ]);
+
+        return {
+            data: sales,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page * limit < total,
+                hasPreviousPage: page > 1
+            }
+        }
+    }
+
+    /**
+     * =========================================
+     * GET SALE BY ID
+     * =========================================
+     */
+    static async getSaleById(
+        actor: any,
+        saleId: string
+    ){
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const sale = await prisma.sale.findUnique({
+            where: {
+                id: saleId
+            },
+            include: {
+                agency: true,
+                branch: true,
+                createdBy: true,
+                approvedBy: true,
+                items: {
+                    include: {
+                        product: true,
+                        batch: true
+                    }
+                }
+            }
+        });
+
+        if(!sale) {
+            throw new ApiError("Sale not found", 404);
+        }
+
+        return sale;
+    }
+
+    /**
+     * =========================================
+     * APPROVE SALE
+     * =========================================
+    */
+   static async approveSale(
+    actor: any,
+    saleId: string
+   ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const canApprove = await RBACService.hasPermission(
+            actor.id,
+            "SALE:APPROVE"
+        );
+        if(!canApprove) {
+            throw new ApiError("Forbidden", 403);
+        }
+
+        const sale = await prisma.sale.findUnique({
+            where: {
+                id: saleId
+            },
+            include: {
+                items: true
+            }
+        });
+
+        if(!sale) {
+            throw new ApiError("Sale not found", 404);
+        }
+
+        if(sale.status !== "PENDING") {
+            throw new ApiError("Only pending sales can be approved", 400);
+        }
+
+        /** 
+         * Inventory Deduction
+         */
+
+        return prisma.$transaction(async (tx) => {
+
+            /**
+             * STEP 1:
+             * Try locking/claiming approval
+             */
+            const approvalResult = await tx.sale.updateMany({
+                where: {
+                    id: saleId,
+                    status: "PENDING"
+                },
+                data: {
+                    status: "APPROVED",
+                    approvedById: actor.id,
+                    approvedAt: new Date()
+                }
+            });
+
+            /**
+             * If count = 0
+             * somebody already approved/rejected
+             */
+            if (approvalResult.count === 0) {
+                throw new ApiError(
+                    "Sale already processed",
+                    409
+                );
+            }
+
+             const lockedSale = await tx.sale.findUnique({
+                where: {
+                    id: saleId
+                },
+                include: {
+                    items: true
+                }
+            });
+
+            if (!lockedSale) {
+                throw new ApiError(
+                    "Sale not found after locking",
+                    404
+                );
+            }
+
+            /**
+             * STEP 2:
+             * Deduct inventory
+             */
+            for (const item of lockedSale.items) {
+
+                await InventoryService.removeStock(tx, {
+                    branchId: lockedSale.branchId,
+                    productId: item.productId,
+                    batchId: item.batchId,
+                    quantity: Number(item.quantity),
+                    unit: item.unit
+                });
+            }
+
+            /**
+             * STEP 3:
+             * Return updated sale
+             */
+            return lockedSale;
+
+        })
+    }
+
+    /**
+     * =========================================
+     * REJECT SALE
+     * =========================================
+    */
+    static async rejectSale(
+        actor: any,
+        saleId: string,
+        remarks?: string
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const canReject = await RBACService.hasPermission(
+            actor.id,
+            "SALE:APPROVE"
+        );
+
+        if(!canReject) {
+            throw new ApiError("Forbidden", 403);
+        }
+
+        const sale = await prisma.sale.findUnique({
+            where: {
+                id: saleId
+            }
+        });
+        
+        if(!sale) {
+            throw new ApiError("Sale not found", 404);
+        }
+
+        if(sale.status !== "PENDING") {
+            throw new ApiError("Only pending sales can be rejected", 400);
+        }
+
+        return prisma.sale.update({
+            where: {
+                id: saleId
+            },
+            data: {
+                status: "REJECTED",
+                approvedById: actor.id,
+                approvedAt: new Date(),
+                remarks: remarks?.trim()
+            }
+        });
+    }
+
+    static async updateSale(
+        actor: any,
+        saleId: string,
+        payload: Partial<CreateSalesPayload>
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const existingSale = await prisma.sale.findUnique({
+            where: {
+                id: saleId
+            },
+            include: {
+                items: true
+            }
+        });
+
+        if(!existingSale) {
+            throw new ApiError("Sale not found", 404);
+        }
+
+        if(existingSale.status !== "PENDING") {
+            throw new ApiError("Only pending sales can be updated", 400);
+        }
+
+        /**
+         * Validate items
+         */
+        if (
+            payload.items &&
+            payload.items.length > 0
+        ) {
+
+            for (const item of payload.items) {
+
+                if (
+                    !item.productId ||
+                    !item.batchId
+                ) {
+                    throw new ApiError(
+                        "Missing required item fields",
+                        400
+                    );
+                }
+
+                if (item.quantity <= 0) {
+                    throw new ApiError(
+                        "Invalid item quantity",
+                        400
+                    );
+                }
+
+                if (!item.unit) {
+                    throw new ApiError(
+                        "Item unit is required",
+                        400
+                    );
+                }
+            }
+        }
+
+        const salesKeys = new Set();
+
+        for (const item of payload.items || []) {
+
+            const key = `${item.productId}-${item.batchId}`;
+
+            if (salesKeys.has(key)) {
+                throw new ApiError(
+                    "Duplicate batch for same product",
+                    400
+                );
+            }
+
+            salesKeys.add(key);
+        }
+
+        const updatedSale = await prisma.$transaction(async (tx) => {
+            await tx.sale.update({
+                where: {
+                    id: saleId
+                },
+                data: {
+                    agencyId: payload.agencyId,
+                    branchId: payload.branchId,
+                    
+                    remarks: payload.remarks !== undefined ? payload.remarks?.trim() : undefined,
+                }
+            });
+
+            if(payload.items) {
+                await tx.salesItem.deleteMany({
+                    where: {
+                        saleId
+                    }
+                });
+
+                const itemsData = await Promise.all(
+                    payload.items.map(async (item) => {
+                        const product = await tx.product.findUnique({
+                            where: {
+                                id: item.productId
+                            }
+                        });
+
+                        if(!product) {
+                            throw new ApiError(
+                                `Product not found: ${item.productId}`,
+                                400
+                            );
+                        }
+
+                        return {
+                            saleId,
+                            productId: item.productId,
+                            batchId: item.batchId,
+                            quantity: item.quantity,
+                            unit: item.unit,
+                            sellingPrice: product.sellPricePerUnit
+                        }
+                    })
+                );
+
+                await tx.salesItem.createMany({
+                    data: itemsData
+                });
+            }
+
+            return tx.sale.findUnique({
+                where: {
+                    id: saleId
+                },
+                include: {
+                    agency: true,
+                    branch: true,
+                    createdBy: true,
+                    approvedBy: true,
+                    items: {
+                        include: {
+                            product: true,
+                            batch: true
+                        }
+                    }
+                }
+            })
+        });
+
+        return updatedSale;
+    }
+}

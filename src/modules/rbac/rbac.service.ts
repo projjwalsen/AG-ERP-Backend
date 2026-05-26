@@ -391,4 +391,27 @@ export class RBACService {
             permissions
         }
     }
+
+    static async hasPermission(
+        userId: string,
+        permissionKey: string
+    ) {
+        const permission = await prisma.userRole.findFirst({
+            where: {
+                userId,
+                role: {
+                    rolePermissions: {
+                        some: {
+                            permission: {
+                                key: permissionKey,
+                                isActive: true,
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        return !!permission;
+    }
 }
