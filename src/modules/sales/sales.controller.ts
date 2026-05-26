@@ -36,7 +36,12 @@ export const getAllSales = async (req: Request, res: Response, next: NextFunctio
 
         const { page, limit, branchId, status } = (req as any).query;
 
-        const sales = await SalesService.getAllSales(actor, { page, limit, branchId, status });
+        const sales = await SalesService.getAllSales(actor, { 
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            branchId,
+            status
+        });
 
         return res.status(200).json({
             success: true,

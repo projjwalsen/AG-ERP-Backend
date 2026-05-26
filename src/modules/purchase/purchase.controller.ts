@@ -37,7 +37,10 @@ export const getAllPurchases = async (req: Request, res: Response, next: NextFun
         const { page, limit, branchId, status } = (req as any).query;
 
         const purchases = await PurchaseService.getAllPurchases(actor, { 
-            page, limit, branchId, status 
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            branchId,
+            status
         });
 
         return res.status(200).json({
