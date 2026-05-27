@@ -226,11 +226,58 @@ export class SalesService {
                 );
             }
 
+            /** GST calculation */
+            const taxableAmount = item.quantity * Number(batch.product.sellPricePerUnit)
+            const gstPercent = Number(batch.product.applicableGST) || 0;
+
+            /** GST Type Check */
+            const isSameState = 
+                branch.stateCode &&
+                agency.stateCode &&
+                branch.stateCode === agency.stateCode;
+
+            let cgstPercent = 0;
+            let sgstPercent = 0;
+            let igstPercent = 0;
+
+            let cgstAmount = 0;
+            let sgstAmount = 0;
+            let igstAmount = 0;
+
+            if(isSameState) {
+                cgstPercent = gstPercent / 2;
+                sgstPercent = gstPercent / 2;
+
+                cgstAmount = (taxableAmount * cgstPercent) / 100;
+                sgstAmount = (taxableAmount * sgstPercent) / 100;
+            } else {
+                igstPercent = gstPercent;
+                igstAmount = (taxableAmount * igstPercent) / 100;
+            }
+
+            const gstAmount = cgstAmount + sgstAmount + igstAmount;
+            const totalAmount = taxableAmount + gstAmount;
+
             validatedItems.push({
                 item,
                 batch,
-                product: batch.product
-            });
+                product: batch.product,
+
+                taxableAmount,
+                gstPercent,
+
+                cgstPercent,
+                sgstPercent,
+                igstPercent,
+
+                cgstAmount,
+                sgstAmount,
+                igstAmount,
+
+                gstAmount,
+                totalAmount
+            })
+
         }
 
         const firstItem = validatedItems[0];
@@ -238,6 +285,27 @@ export class SalesService {
             firstItem.product.name,
             firstItem.batch.batchNo
         );
+
+        let subtotalAmount = 0;
+        let totalGSTAmount = 0;
+
+        let totalCGSTAmount = 0;
+        let totalSGSTAmount = 0;
+        let totalIGSTAmount = 0;
+
+        let grandTotal = 0;
+
+        for(const item of validatedItems) {
+            subtotalAmount += item.taxableAmount;
+
+            totalGSTAmount += item.gstAmount;
+
+            totalCGSTAmount += item.cgstAmount;
+            totalSGSTAmount += item.sgstAmount;
+            totalIGSTAmount += item.igstAmount;
+
+            grandTotal += item.totalAmount;
+        }
 
         /**
          * Create sales record
@@ -251,6 +319,15 @@ export class SalesService {
 
                 createdById: actor.id,
 
+                subTotalAmount: subtotalAmount,
+                totalGSTAmount,
+
+                totalCGSTAmount,
+                totalSGSTAmount,
+                totalIGSTAmount,
+
+                grandTotal,
+
                 items: {
                     create: validatedItems.map((data) => ({
                         productId: data.item.productId,
@@ -262,7 +339,20 @@ export class SalesService {
                          * AUTO FETCH SELL PRICE
                          */
                         sellingPrice:
-                            data.product.sellPricePerUnit
+                            data.product.sellPricePerUnit,
+
+                        taxableAmount: data.taxableAmount,
+                        gstPercent: data.gstPercent,
+                        cgstPercent: data.cgstPercent,
+                        sgstPercent: data.sgstPercent,
+                        igstPercent: data.igstPercent,
+
+                        cgstAmount: data.cgstAmount,
+                        sgstAmount: data.sgstAmount,
+                        igstAmount: data.igstAmount,
+
+                        gstAmount: data.gstAmount,
+                        totalAmount: data.totalAmount
                     }))
                 }
             },
@@ -558,7 +648,7 @@ export class SalesService {
         saleId: string,
         payload: Partial<CreateSalesPayload>
     ) {
-        if(!actor?.id){
+        if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
 
@@ -567,32 +657,31 @@ export class SalesService {
                 id: saleId
             },
             include: {
-                items: true
+                items: true,
+                branch: true,
+                agency: true
             }
         });
 
-        if(!existingSale) {
+        if (!existingSale) {
             throw new ApiError("Sale not found", 404);
         }
 
-        if(existingSale.status !== "PENDING") {
-            throw new ApiError("Only pending sales can be updated", 400);
+        if (existingSale.status !== "PENDING") {
+            throw new ApiError(
+                "Only pending sales can be updated",
+                400
+            );
         }
 
         /**
          * Validate items
          */
-        if (
-            payload.items &&
-            payload.items.length > 0
-        ) {
+        if (payload.items && payload.items.length > 0) {
 
             for (const item of payload.items) {
 
-                if (
-                    !item.productId ||
-                    !item.batchId
-                ) {
+                if (!item.productId || !item.batchId) {
                     throw new ApiError(
                         "Missing required item fields",
                         400
@@ -615,6 +704,9 @@ export class SalesService {
             }
         }
 
+        /**
+         * Prevent duplicate batches
+         */
         const salesKeys = new Set();
 
         for (const item of payload.items || []) {
@@ -632,56 +724,254 @@ export class SalesService {
         }
 
         const updatedSale = await prisma.$transaction(async (tx) => {
+
+            /**
+             * Determine branch & agency
+             * (new payload value or old existing value)
+             */
+            const branchId =
+                payload.branchId || existingSale.branchId;
+
+            const agencyId =
+                payload.agencyId || existingSale.agencyId;
+
+            const branch = await tx.branch.findUnique({
+                where: {
+                    id: branchId
+                }
+            });
+
+            if (!branch) {
+                throw new ApiError("Branch not found", 404);
+            }
+
+            const agency = await tx.agency.findUnique({
+                where: {
+                    id: agencyId
+                }
+            });
+
+            if (!agency) {
+                throw new ApiError("Agency not found", 404);
+            }
+
+            /**
+             * GST totals
+             */
+            let subtotalAmount = 0;
+            let totalGSTAmount = 0;
+
+            let totalCGSTAmount = 0;
+            let totalSGSTAmount = 0;
+            let totalIGSTAmount = 0;
+
+            let grandTotal = 0;
+
+            /**
+             * Build updated items
+             */
+            const itemsData: any[] = [];
+
+            if (payload.items && payload.items.length > 0) {
+
+                for (const item of payload.items) {
+
+                    const batch = await tx.inventoryBatch.findUnique({
+                        where: {
+                            id: item.batchId
+                        },
+                        include: {
+                            product: true
+                        }
+                    });
+
+                    if (!batch) {
+                        throw new ApiError(
+                            `Invalid batch ${item.batchId}`,
+                            400
+                        );
+                    }
+
+                    if (!batch.isActive) {
+                        throw new ApiError(
+                            `Batch ${batch.batchNo} inactive`,
+                            400
+                        );
+                    }
+
+                    if (batch.productId !== item.productId) {
+                        throw new ApiError(
+                            "Batch product mismatch",
+                            400
+                        );
+                    }
+
+                    /**
+                     * Stock validation
+                     */
+                    if (
+                        item.unit === ProductUnit.KG &&
+                        Number(batch.availableQtyKG) < item.quantity
+                    ) {
+                        throw new ApiError(
+                            `Insufficient KG stock in batch ${batch.batchNo}`,
+                            400
+                        );
+                    }
+
+                    if (
+                        item.unit === ProductUnit.LTR &&
+                        Number(batch.availableQtyLTR) < item.quantity
+                    ) {
+                        throw new ApiError(
+                            `Insufficient LTR stock in batch ${batch.batchNo}`,
+                            400
+                        );
+                    }
+
+                    /**
+                     * GST calculations
+                     */
+                    const sellingPrice = Number(
+                        batch.product.sellPricePerUnit
+                    );
+
+                    const taxableAmount =
+                        item.quantity * sellingPrice;
+
+                    const gstPercent =
+                        Number(batch.product.applicableGST) || 0;
+
+                    const isSameState =
+                        branch.stateCode &&
+                        agency.stateCode &&
+                        branch.stateCode === agency.stateCode;
+
+                    let cgstPercent = 0;
+                    let sgstPercent = 0;
+                    let igstPercent = 0;
+
+                    let cgstAmount = 0;
+                    let sgstAmount = 0;
+                    let igstAmount = 0;
+
+                    if (isSameState) {
+
+                        cgstPercent = gstPercent / 2;
+                        sgstPercent = gstPercent / 2;
+
+                        cgstAmount =
+                            (taxableAmount * cgstPercent) / 100;
+
+                        sgstAmount =
+                            (taxableAmount * sgstPercent) / 100;
+
+                    } else {
+
+                        igstPercent = gstPercent;
+
+                        igstAmount =
+                            (taxableAmount * igstPercent) / 100;
+                    }
+
+                    const gstAmount =
+                        cgstAmount +
+                        sgstAmount +
+                        igstAmount;
+
+                    const totalAmount =
+                        taxableAmount + gstAmount;
+
+                    /**
+                     * Grand totals
+                     */
+                    subtotalAmount += taxableAmount;
+
+                    totalGSTAmount += gstAmount;
+
+                    totalCGSTAmount += cgstAmount;
+                    totalSGSTAmount += sgstAmount;
+                    totalIGSTAmount += igstAmount;
+
+                    grandTotal += totalAmount;
+
+                    itemsData.push({
+                        saleId,
+
+                        productId: item.productId,
+                        batchId: item.batchId,
+
+                        quantity: item.quantity,
+                        unit: item.unit,
+
+                        sellingPrice,
+
+                        taxableAmount,
+
+                        gstPercent,
+
+                        cgstPercent,
+                        sgstPercent,
+                        igstPercent,
+
+                        cgstAmount,
+                        sgstAmount,
+                        igstAmount,
+
+                        gstAmount,
+                        totalAmount
+                    });
+                }
+            }
+
+            /**
+             * Update master sale
+             */
             await tx.sale.update({
                 where: {
                     id: saleId
                 },
                 data: {
-                    agencyId: payload.agencyId,
-                    branchId: payload.branchId,
-                    
-                    remarks: payload.remarks !== undefined ? payload.remarks?.trim() : undefined,
+                    agencyId,
+                    branchId,
+
+                    remarks:
+                        payload.remarks !== undefined
+                            ? payload.remarks?.trim()
+                            : undefined,
+
+                    ...(payload.items && {
+                        subtotalAmount,
+                        totalGSTAmount,
+
+                        totalCGSTAmount,
+                        totalSGSTAmount,
+                        totalIGSTAmount,
+
+                        grandTotal
+                    })
                 }
             });
 
-            if(payload.items) {
+            /**
+             * Replace items
+             */
+            if (payload.items) {
+
                 await tx.salesItem.deleteMany({
                     where: {
                         saleId
                     }
                 });
 
-                const itemsData = await Promise.all(
-                    payload.items.map(async (item) => {
-                        const product = await tx.product.findUnique({
-                            where: {
-                                id: item.productId
-                            }
-                        });
-
-                        if(!product) {
-                            throw new ApiError(
-                                `Product not found: ${item.productId}`,
-                                400
-                            );
-                        }
-
-                        return {
-                            saleId,
-                            productId: item.productId,
-                            batchId: item.batchId,
-                            quantity: item.quantity,
-                            unit: item.unit,
-                            sellingPrice: product.sellPricePerUnit
-                        }
-                    })
-                );
-
                 await tx.salesItem.createMany({
                     data: itemsData
                 });
             }
 
+            /**
+             * Return updated sale
+             */
             return tx.sale.findUnique({
                 where: {
                     id: saleId
@@ -689,8 +979,23 @@ export class SalesService {
                 include: {
                     agency: true,
                     branch: true,
-                    createdBy: true,
-                    approvedBy: true,
+
+                    createdBy: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    },
+
+                    approvedBy: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    },
+
                     items: {
                         include: {
                             product: true,
@@ -698,7 +1003,7 @@ export class SalesService {
                         }
                     }
                 }
-            })
+            });
         });
 
         return updatedSale;

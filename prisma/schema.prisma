@@ -378,6 +378,15 @@ model Sale {
   status   SalesStatus @default(PENDING)
   remarks String?
 
+  subTotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalCGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalSGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalIGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  grandTotal Decimal @default(0.00) @db.Decimal(18,2)
+
   createdById  String?
   createdBy    User?  @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   
@@ -409,6 +418,20 @@ model SalesItem {
   unit ProductUnit
 
   sellingPrice Decimal @db.Decimal(18, 2)
+
+  taxableAmount Decimal @default(0.00) @db.Decimal(18,2)
+  gstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  cgstPercent Decimal @default(0.00) @db.Decimal(5,2)
+  sgstPercent Decimal @default(0.00) @db.Decimal(5,2)
+  igstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  cgstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  sgstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  igstAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  gstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalAmount Decimal @default(0.00) @db.Decimal(18,2)
 
   createdAt DateTime @default(now())
 }
