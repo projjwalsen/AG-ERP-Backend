@@ -311,6 +311,11 @@ model Purchase {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   invoiceNo String @unique
+
+  subtotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  grandTotal Decimal @default(0.00) @db.Decimal(18,2)
+
   status   PurchaseStatus @default(PENDING)
   remarks String?
 
@@ -345,6 +350,14 @@ model PurchaseItem {
   unit ProductUnit
 
   purchasePrice Decimal @db.Decimal(18, 2)
+
+  taxableAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  gstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  gstAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalAmount Decimal @default(0.00) @db.Decimal(18,2)
 
   createdAt DateTime @default(now())
 }
