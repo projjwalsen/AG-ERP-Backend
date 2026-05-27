@@ -17,3 +17,4 @@ Thumbs.db       # Windows system files
 
 # Local seed files
 src/modules/rbac/role.seeder.ts
+src/modules/purchase/purch.seeder.ts
