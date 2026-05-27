@@ -501,4 +501,109 @@ export class InventoryService {
             }
         }
     }
+
+    static async getBranchInventorySummary(
+        actor: any,
+        query?: {
+            page?: number;
+            limit?: number;
+            branchId?: string;
+            productId?: string;
+            search?: string;
+        } 
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const page = query?.page || 1;
+        const limit = query?.limit || 20;
+        const skip = (page - 1) * limit;
+
+        const where = {
+            ...(
+                query?.branchId && { branchId: query.branchId }
+            ),
+            ...(
+                query?.productId && { productId: query.productId }
+            ),
+            ...(
+                query?.search && {
+                    OR: [
+                        {
+                            product: {
+                                name: {
+                                    contains: query.search,
+                                    mode: "insensitive" as const
+                                }
+                            }
+                        },
+                        {
+                            product: {
+                                sku: {
+                                    contains: query.search,
+                                    mode: "insensitive" as const
+                                }
+                            }
+                        },
+                        {
+                            branch: {
+                                name: {
+                                    contains: query.search,
+                                    mode: "insensitive" as const
+                                }
+                            }
+                        }
+                    ]
+                }
+            )
+        };
+
+        const [inventory, total] = await Promise.all([
+            prisma.inventory.findMany({
+                where,
+                include: {
+                    product: true,
+                    branch: true
+                },
+                orderBy: {
+                    lastUpdated: "desc"
+                },
+                skip,
+                take: limit
+            }),
+            prisma.inventory.count({ where })
+        ]);
+
+        const formattedInventory = inventory.map((item) => {
+            let status = "IN_STOCK";
+
+            if(
+                item.product.minimumStockKG &&
+                Number(item.currentStockKG) < Number(item.product.minimumStockKG)
+            ) {
+                status = "LOW_STOCK";
+            }
+
+            if(Number(item.currentStockKG) === 0){
+                status = "OUT_OF_STOCK";
+            }
+
+            return {
+                ...item,
+                status
+            }
+        });
+        return {
+            data: formattedInventory,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page * limit < total,
+                hasPreviousPage: page > 1
+            }
+        }
+    }
 }
