@@ -41,6 +41,10 @@ model User {
   branchAccessType BranchAccessType @default(SELECTED)
 
   userRoles UserRole[]
+  purchasesCreated Purchase[] @relation("PurchaseCreatedBy")
+  purchasesApproved Purchase[] @relation("PurchaseApprovedBy")
+  salesCreated Sale[] @relation("SaleCreatedBy")
+  salesApproved Sale[] @relation("SaleApprovedBy")
 
   createdById  String?
   createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -77,6 +81,9 @@ model Branch {
 
   users User[]
   agencies AgencyBranch[]
+  inventoryBatches InventoryBatch[]
+  purchases Purchase[]
+  sales Sale[]
   inventories Inventory[]
 
   createdAt DateTime @default(now())
@@ -180,6 +187,8 @@ model Agency {
   isActive Boolean @default(true)
 
   branches  AgencyBranch[]
+  purchases Purchase[]
+  sales Sale[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -240,12 +249,157 @@ model Product {
   updatedAt DateTime @updatedAt
 
   inventories Inventory[]
+  inventoryBatches InventoryBatch[]
+  purchaseItems PurchaseItem[]
+  salesItems SalesItem[]
 
   @@index([sku])
   @@index([name])
   @@index([category])
   @@index([hsnNo])
 }
+
+enum PurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SalesStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model InventoryBatch {
+  id String @id @default(uuid())
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  batchNo String
+  purchasePrice Decimal @db.Decimal(18, 2)
+
+  availableQtyKG Decimal @default(0.000) @db.Decimal(18, 3)
+  availableQtyLTR Decimal @default(0.000) @db.Decimal(18, 3)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  purchaseItems PurchaseItem[]
+  salesItems SalesItem[]
+
+  @@index([branchId])
+  @@index([productId])
+  @@index([batchNo])
+  @@unique([branchId, productId, batchNo])
+}
+
+/** Purchase Model Master **/
+model Purchase {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  invoiceNo String @unique
+  status   PurchaseStatus @default(PENDING)
+  remarks String?
+
+  createdById  String?
+  createdBy    User?  @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  
+  approvedById String?
+  approvedBy   User?  @relation("PurchaseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  approvedAt DateTime?
+
+  items PurchaseItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PurchaseItem {
+  id String @id @default(uuid())
+
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  batchId String?
+  batch   InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  batchNo String
+  quantity Decimal @db.Decimal(18, 3)
+  unit ProductUnit
+
+  purchasePrice Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+}
+
+
+/** Sale Model Master **/
+
+model Sale {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  invoiceNo String @unique
+  status   SalesStatus @default(PENDING)
+  remarks String?
+
+  createdById  String?
+  createdBy    User?  @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  
+  approvedById String?
+  approvedBy   User?  @relation("SaleApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  approvedAt DateTime?
+
+  items SalesItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model SalesItem {
+  id String @id @default(uuid())
+
+  saleId String
+  sale   Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  batchId String
+  batch   InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  quantity Decimal @db.Decimal(18, 3)
+  unit ProductUnit
+
+  sellingPrice Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+}
+
 
 model Inventory {
   id     String @id @default(uuid())
