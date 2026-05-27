@@ -478,7 +478,7 @@ export class InventoryService {
             }
             else if (
                 batch.product.minimumStockKG &&
-                Number(batch.availableQtyKG) <= Number(batch.product.minimumStockKG)
+                Number(batch.availableQtyKG) < Number(batch.product.minimumStockKG)
             ) {
                 status = "LOW_STOCK";
             }
