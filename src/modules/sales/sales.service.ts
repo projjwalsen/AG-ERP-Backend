@@ -1107,7 +1107,7 @@ export class SalesService {
 
         const data = SalesToInvMapper.map(sale);
 
-        return InvoiceRenderer.compileTemplate(
+        return InvoiceRenderer.generatePdf(
             data
         );
     }

@@ -6,7 +6,7 @@ export class SalesToInvMapper {
         const items = sale.items.map((item: any, index: number) => ({
             slNo: index + 1,
 
-            description: item.description,
+            description:` ${item.batch.batchNo} -  ${item.product.name} `,
 
             hsn: item.product.hsnNo,
 
