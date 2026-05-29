@@ -1,0 +1,52 @@
+import fs from "fs";
+import path from "path";
+import Handlebars from "handlebars";
+import puppeteer from "puppeteer";
+
+export class InvoiceRenderer {
+
+    /** Compile invoice template */
+    static async compileTemplate(data: any) {
+        const filePath = path.join(
+            process.cwd(),
+            "src/core/template/invoice.hbs"
+        );
+
+        const html = fs.readFileSync(filePath, "utf-8");
+
+        const template = Handlebars.compile(html);
+
+        return template(data);
+    }
+
+
+    /** Generate pdf buffer */
+    static async generatePdf(data: any) {
+        const compiledHtml = await this.compileTemplate(data);
+
+        const browser = await puppeteer.launch({
+            headless: true,
+        });
+
+        const page = await browser.newPage();
+
+        await page.setContent(compiledHtml, {
+            waitUntil: "networkidle0" as any
+        });
+
+        const pdf = await page.pdf({
+            format: "A4",
+            printBackground: true,
+            margin: {
+                top: "0",
+                right: "0",
+                bottom: "0",
+                left: "0"
+            }
+        });
+
+        await browser.close();
+
+        return pdf;
+    }
+}

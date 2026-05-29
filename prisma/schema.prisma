@@ -375,6 +375,23 @@ model Sale {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   invoiceNo String @unique
+
+  /** Invoice Meta Fields **/
+  invoiceDate DateTime @default(now())
+  deliveryNote String?
+
+  suppliersRef String?
+  otherReference String?
+
+  buyerOrderNo String?
+  buyerOrderDate DateTime?
+
+  despatchDocNo String?
+  despatchDocDate DateTime?
+
+  despatchThrough String?
+  destination String?
+
   status   SalesStatus @default(PENDING)
   remarks String?
 

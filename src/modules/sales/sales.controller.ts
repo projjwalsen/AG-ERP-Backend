@@ -137,3 +137,36 @@ export const updateSale = async (req: Request, res: Response, next: NextFunction
         next(error);
     }
 }
+
+
+export const downloadSalesInvoicePdf = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const { saleId } = (req as any).params;
+
+        const pdfBuffer = await SalesService.downloadInvoicePDF(actor, saleId);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename=sale_${saleId}_invoice.pdf`);
+        res.send(pdfBuffer);
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+
+export const previewSalesInvoice = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const { saleId } = (req as any).params;
+
+        const pdfBuffer = await SalesService.previewInvoice(actor, saleId);
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `inline; filename=sale_${saleId}_invoice.pdf`);
+        res.send(pdfBuffer);
+    } catch (error) {
+        next(error);
+    }
+}

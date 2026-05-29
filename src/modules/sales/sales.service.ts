@@ -3,6 +3,8 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { RBACService } from "../rbac/rbac.service";
 import { InventoryService } from "../inventory/inventory.service";
+import { SalesToInvMapper } from "../../core/utils/saleToInvMapper";
+import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
 
 type SalesItemPayload = {
     productId: string;
@@ -16,6 +18,21 @@ type CreateSalesPayload = {
     agencyId: string;
     branchId: string;
     remarks?: string;
+
+    /** Invoice Metqadata */
+    deliveryNote?: string;
+
+    suppliersRef?: string;
+    otherReference?: string;
+
+    buyerOrderNo?: string;
+    buyerOrderDate?: string;
+
+    despatchDocNo?: string;
+    despatchDocDate?: string;
+
+    despatchThrough?: string;
+    destination?: string;
 
     items: SalesItemPayload[];
 }
@@ -316,6 +333,21 @@ export class SalesService {
                 branchId: payload.branchId,
                 invoiceNo,
                 remarks: payload.remarks?.trim(),
+
+                /** Invoice Metadata */
+                deliveryNote: payload.deliveryNote?.trim(),
+
+                suppliersRef: payload.suppliersRef?.trim(),
+                otherReference: payload.otherReference?.trim(),
+
+                buyerOrderNo: payload.buyerOrderNo?.trim(),
+                buyerOrderDate: payload.buyerOrderDate ? new Date(payload.buyerOrderDate) : undefined,
+                
+                despatchDocNo: payload.despatchDocNo?.trim(),
+                despatchDocDate: payload.despatchDocDate ? new Date(payload.despatchDocDate) : undefined,
+
+                despatchThrough: payload.despatchThrough?.trim(),
+                destination: payload.destination?.trim(),
 
                 createdById: actor.id,
 
@@ -1007,5 +1039,76 @@ export class SalesService {
         });
 
         return updatedSale;
+    }
+
+
+    static async downloadInvoicePDF(
+        actor: any,
+        saleId: string
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const sale = await prisma.sale.findUnique({
+            where: {
+                id: saleId,
+                status: "APPROVED"
+            },
+            include: {
+                agency: true,
+                branch: true,
+                items: {
+                    include: {
+                        product: true,
+                        batch: true
+                    }
+                }
+            }
+        });
+
+        if(!sale){
+            throw new ApiError("Sale not found or is Not Approved", 404);
+        }
+
+        const invoiceData = SalesToInvMapper.map(sale);
+
+        const pdf = 
+            await InvoiceRenderer.generatePdf(
+                invoiceData
+            );
+
+        return pdf;
+    }
+
+    static async previewInvoice(
+        actor: any,
+        saleId: string
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const sale = await prisma.sale.findUnique({
+            where: {
+                id: saleId
+            },
+            include: {
+                agency: true,
+                branch: true,
+                items: {
+                    include: {
+                        product: true,
+                        batch: true
+                    }
+                }
+            }
+        });
+
+        const data = SalesToInvMapper.map(sale);
+
+        return InvoiceRenderer.compileTemplate(
+            data
+        );
     }
 }
