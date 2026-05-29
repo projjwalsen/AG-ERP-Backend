@@ -151,7 +151,7 @@ export class SalesToInvMapper {
             },
 
             // Amount in words
-            amountInWords: "Rupees Only",
+            amountInWords: converter.toWords(Number(sale.grandTotal).toFixed(2)) + " only",
             taxAmountInWords: converter.toWords(Number(sale.totalGSTAmount).toFixed(2)) + " only",
 
             // Signature
