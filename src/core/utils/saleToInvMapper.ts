@@ -6,19 +6,21 @@ export class SalesToInvMapper {
         const items = sale.items.map((item: any, index: number) => ({
             slNo: index + 1,
 
-            description:` ${item.batch.batchNo} -  ${item.product.name} `,
+            description:` ${item.product.name} -  ${item.product.description} `,
 
             hsn: item.product.hsnNo,
 
-            quantity: Number(item.quantity).toFixed(3),
+            quantity: `${Number(item.quantity).toFixed(2)} ${item.unit}`,
 
-            unit: item.unit,
+            unitPrice: item.sellingPrice.toFixed(2),
+
+            baseAmount: (Number(item.taxableAmount)).toFixed(2),
 
             gstRate: Number(item.product.applicableGST || 0).toFixed(2),
 
             rate: Number(item.sellingPrice).toFixed(2),
 
-            amount: (Number(item.totalAmount)).toFixed(2)
+            amountWithGst: Number(item.totalAmount).toFixed(2)
 
         }));
 
@@ -27,21 +29,21 @@ export class SalesToInvMapper {
         const cgstLines = sale.items
             .filter((item: any) => Number(item.cgstAmount) > 0)
             .map((item: any) => ({
-                rate: `${Number(item.cgstPercent).toFixed(2)}%`,
+                // rate: `${Number(item.cgstPercent).toFixed(2)}%`,
                 amount: Number(item.cgstAmount).toFixed(2)
             }));
 
         const sgstLines = sale.items
             .filter((item: any) => Number(item.sgstAmount) > 0)
             .map((item: any) => ({
-                rate: `${Number(item.sgstPercent).toFixed(2)}%`,
+                // rate: `${Number(item.sgstPercent).toFixed(2)}%`,
                 amount: Number(item.sgstAmount).toFixed(2)
             }));
 
         const igstLines = sale.items
             .filter((item: any) => Number(item.igstAmount) > 0)
             .map((item: any) => ({
-                rate: `${Number(item.igstPercent).toFixed(2)}%`,
+                // rate: `${Number(item.igstPercent).toFixed(2)}%`,
                 amount: Number(item.igstAmount).toFixed(2)
             }));
 
@@ -76,7 +78,7 @@ export class SalesToInvMapper {
                 .join(", "),
 
             sellerPhone: sale.branch.phnNumber || "",
-            sellerGSTIN: sale.branch.getin || "",
+            sellerGSTIN: sale.branch.gstin || "",
             sellerCompanyName: sale.branch.name,
 
             /**
