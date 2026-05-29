@@ -1,3 +1,4 @@
+import * as converter from 'number-to-words';
 
 
 export class SalesToInvMapper {
@@ -151,7 +152,7 @@ export class SalesToInvMapper {
 
             // Amount in words
             amountInWords: "Rupees Only",
-            taxAmountInWords: "Tax Amount Only",
+            taxAmountInWords: converter.toWords(Number(sale.totalGSTAmount).toFixed(2)) + " only",
 
             // Signature
             signatureImage: ""
