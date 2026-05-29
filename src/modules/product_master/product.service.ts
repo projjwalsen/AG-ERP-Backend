@@ -458,16 +458,6 @@ export class ProductService {
             where: {
                 isActive: true
             },
-            select: {
-                id: true,
-                sku: true,
-                name: true,
-                category: true,
-                baseUnit: true,
-                sellPricePerUnit: true,
-                density: true,
-                operationalUnit: true,
-            },
             orderBy: {
                 name: "asc"
             }
