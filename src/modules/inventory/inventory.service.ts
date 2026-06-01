@@ -165,33 +165,35 @@ export class InventoryService {
 
         if(payload.unit === ProductUnit.KG) {
             quantityKG = payload.quantity;
-            quantityLTR = product.density ? payload.quantity / Number(product.density) : 0;
+            quantityLTR = product.density ? Number((payload.quantity / Number(product.density)).toFixed(3)) : 0;
+
+            if(Number(inventoryBatch.availableQtyKG) < quantityKG) {
+                throw new ApiError("Insufficient stock in KG", 400);
+            }
         } else {
             quantityLTR = payload.quantity;
-            quantityKG = product.density ? payload.quantity * Number(product.density) : 0;
-        }
+            quantityKG = product.density ? Number((payload.quantity * Number(product.density)).toFixed(3)) : 0;
 
-        /** Check if sufficient stock is available   */
-        if (
-            payload.unit === ProductUnit.KG &&
-            Number(inventoryBatch.availableQtyKG) < quantityKG
-        ) {
-            throw new ApiError("Insufficient stock in KG", 400);
-        }
-
-        if (
-            payload.unit === ProductUnit.LTR &&
-            Number(inventoryBatch.availableQtyLTR) < quantityLTR
-        ) {
-            throw new ApiError("Insufficient stock in LTR", 400);
+            if(Number(inventoryBatch.availableQtyLTR) < quantityLTR) {
+                throw new ApiError("Insufficient stock in LTR", 400);
+            }
         }
 
         /** Update Batch */
         const updatedResult = await tx.inventoryBatch.updateMany({
             where: {
                 id: inventoryBatch.id,
-                availableQtyKG: payload.unit === ProductUnit.KG ? inventoryBatch.availableQtyKG : undefined,
-                availableQtyLTR: payload.unit === ProductUnit.LTR ? inventoryBatch.availableQtyLTR : undefined
+                ...(payload.unit === ProductUnit.KG
+                    ? {
+                        availableQtyKG: {
+                            gte: quantityKG
+                        }
+                    }
+                    : {
+                        availableQtyLTR: {
+                            gte: quantityLTR
+                        }
+                    })
             },
             data: {
                 availableQtyKG: {
@@ -274,25 +276,43 @@ export class InventoryService {
             })
         }
         if (payload.operation === "REMOVE") {
-            if (
-                Number(existingInventory.currentStockKG)
-                < payload.quantityKG
-            ) {
-                throw new ApiError(
-                    "Insufficient inventory stock in KG",
-                    400
-                );
+            console.log("Inventory Summary Before Remove", {
+                inventoryId: existingInventory.id,
+                currentStockKG: Number(existingInventory.currentStockKG),
+                currentStockLTR: Number(existingInventory.currentStockLTR),
+                removeKG: payload.quantityKG,
+                removeLTR: payload.quantityLTR,
+            });
+            const updated = await tx.inventory.updateMany({
+                where: {
+                    id: existingInventory.id,
+                    ...(payload.quantityKG > 0
+                        ? {
+                            currentStockKG: {
+                                gte: payload.quantityKG
+                            }
+                        }
+                        : {
+                            currentStockLTR: {
+                                gte: payload.quantityLTR
+                            }
+                        })
+                },
+                data: {
+                    currentStockKG: {
+                        decrement: payload.quantityKG
+                    },
+                    currentStockLTR: {
+                        decrement: payload.quantityLTR
+                    }
+                }
+            });
+
+            if(updated.count === 0) {
+                throw new ApiError("Stock may have been modified by another transaction. Please try again.", 409);
             }
 
-            if (
-                Number(existingInventory.currentStockLTR)
-                < payload.quantityLTR
-            ) {
-                throw new ApiError(
-                    "Insufficient inventory stock in LTR",
-                    400
-                );
-            }
+            return;
         }
 
         /** Update Inventory */

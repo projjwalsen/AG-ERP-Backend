@@ -5,6 +5,7 @@ import { RBACService } from "../rbac/rbac.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { SalesToInvMapper } from "../../core/utils/saleToInvMapper";
 import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
+import { randomUUID } from "crypto";
 
 type SalesItemPayload = {
     productId: string;
@@ -67,13 +68,10 @@ export class SalesService {
             .padEnd(2, "X");
 
         /** Using Date.now to handle uniqueness */
-        const unique = (
-            Date.now().toString(36) +
-            Math.random().toString(36)
-        )
-            .replace(/[^A-Z0-9]/gi, "")
-            .substring(0, 3)
-            .toUpperCase()
+        const unique = randomUUID()
+            .replace(/-/g, "")
+            .substring(0, 8)
+            .toUpperCase();
 
         return `SAL-${productPrefix}-${batchPrefix}${unique}`;
     }
@@ -216,29 +214,6 @@ export class SalesService {
             if (batch.branchId !== payload.branchId) {
                 throw new ApiError(
                     "Batch branch mismatch",
-                    400
-                );
-            }
-
-            /**
-             * Stock Check
-             */
-            if (
-                item.unit === ProductUnit.KG &&
-                Number(batch.availableQtyKG) < item.quantity
-            ) {
-                throw new ApiError(
-                    `Insufficient KG stock in batch ${batch.batchNo}`,
-                    400
-                );
-            }
-
-            if (
-                item.unit === ProductUnit.LTR &&
-                Number(batch.availableQtyLTR) < item.quantity
-            ) {
-                throw new ApiError(
-                    `Insufficient LTR stock in batch ${batch.batchNo}`,
                     400
                 );
             }
@@ -839,29 +814,6 @@ export class SalesService {
                     }
 
                     /**
-                     * Stock validation
-                     */
-                    if (
-                        item.unit === ProductUnit.KG &&
-                        Number(batch.availableQtyKG) < item.quantity
-                    ) {
-                        throw new ApiError(
-                            `Insufficient KG stock in batch ${batch.batchNo}`,
-                            400
-                        );
-                    }
-
-                    if (
-                        item.unit === ProductUnit.LTR &&
-                        Number(batch.availableQtyLTR) < item.quantity
-                    ) {
-                        throw new ApiError(
-                            `Insufficient LTR stock in batch ${batch.batchNo}`,
-                            400
-                        );
-                    }
-
-                    /**
                      * GST calculations
                      */
                     const sellingPrice = Number(
@@ -964,16 +916,69 @@ export class SalesService {
                     id: saleId
                 },
                 data: {
-                    agencyId,
-                    branchId,
+                    agency: {
+                        connect: {
+                            id: agencyId
+                        }
+                    },
+                    branch: {
+                        connect: {
+                            id: branchId
+                        }
+                    },
 
                     remarks:
                         payload.remarks !== undefined
                             ? payload.remarks?.trim()
                             : undefined,
 
+                    deliveryNote:
+                        payload.deliveryNote !== undefined
+                            ? payload.deliveryNote?.trim()
+                            : undefined,
+
+                    suppliersRef:
+                        payload.suppliersRef !== undefined
+                            ? payload.suppliersRef?.trim()
+                            : undefined,
+
+                    otherReference:
+                        payload.otherReference !== undefined
+                            ? payload.otherReference?.trim()
+                            : undefined,
+
+                    buyerOrderNo:
+                        payload.buyerOrderNo !== undefined
+                            ? payload.buyerOrderNo?.trim()
+                            : undefined,
+
+                    buyerOrderDate:
+                        payload.buyerOrderDate !== undefined
+                            ? new Date(payload.buyerOrderDate)
+                            : undefined,
+
+                    despatchDocNo:
+                        payload.despatchDocNo !== undefined
+                            ? payload.despatchDocNo?.trim()
+                            : undefined,
+
+                    despatchDocDate:
+                        payload.despatchDocDate !== undefined
+                            ? new Date(payload.despatchDocDate)
+                            : undefined,
+
+                    despatchThrough:
+                        payload.despatchThrough !== undefined
+                            ? payload.despatchThrough?.trim()
+                            : undefined,
+
+                    destination:
+                        payload.destination !== undefined
+                            ? payload.destination?.trim()
+                            : undefined,
+
                     ...(payload.items && {
-                        subtotalAmount,
+                        subTotalAmount: subtotalAmount,
                         totalGSTAmount,
 
                         totalCGSTAmount,

@@ -8,6 +8,15 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
             agencyId,
             branchId,
             remarks,
+            deliveryNote,
+            suppliersRef,
+            otherReference,
+            buyerOrderNo,
+            buyerOrderDate,
+            despatchDocNo,
+            despatchDocDate,
+            despatchThrough,
+            destination,
             items
         } = req.body;
 
@@ -15,6 +24,15 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
             agencyId,
             branchId,
             remarks,
+            deliveryNote,
+            suppliersRef,
+            otherReference,
+            buyerOrderNo,
+            buyerOrderDate,
+            despatchDocNo,
+            despatchDocDate,
+            despatchThrough,
+            destination,
             items
         });
 
@@ -118,6 +136,15 @@ export const updateSale = async (req: Request, res: Response, next: NextFunction
             agencyId,
             branchId,
             remarks,
+            deliveryNote,
+            suppliersRef,
+            otherReference,
+            buyerOrderNo,
+            buyerOrderDate,
+            despatchDocNo,
+            despatchDocDate,
+            despatchThrough,
+            destination,
             items
         } = req.body;
 
@@ -125,6 +152,15 @@ export const updateSale = async (req: Request, res: Response, next: NextFunction
             agencyId,
             branchId,
             remarks,
+            deliveryNote,
+            suppliersRef,
+            otherReference,
+            buyerOrderNo,
+            buyerOrderDate,
+            despatchDocNo,
+            despatchDocDate,
+            despatchThrough,
+            destination,
             items
         });
 
