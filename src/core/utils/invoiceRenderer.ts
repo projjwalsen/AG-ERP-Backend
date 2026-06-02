@@ -27,14 +27,10 @@ export class InvoiceRenderer {
         console.log("Puppeteer executable path:", chromeexecutablePath);
         console.log("Chromium exists:", fs.existsSync("/usr/bin/chromium"));
         const browser = await puppeteer.launch({
-            executablePath: "/usr/bin/chromium",
             headless: true,
-            timeout: 0,
             args: [
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
             ]
         });
 
