@@ -23,8 +23,10 @@ export class InvoiceRenderer {
     /** Generate pdf buffer */
     static async generatePdf(data: any) {
         const compiledHtml = await this.compileTemplate(data);
+        console.log(puppeteer.executablePath());
 
         const browser = await puppeteer.launch({
+            executablePath: puppeteer.executablePath() as any,
             headless: true,
             timeout: 0,
             args: [
