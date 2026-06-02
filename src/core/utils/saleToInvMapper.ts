@@ -7,7 +7,7 @@ export class SalesToInvMapper {
         const items = sale.items.map((item: any, index: number) => ({
             slNo: index + 1,
 
-            description:` ${item.product.name} -  ${item.product.description} `,
+            description:` ${item.product.name} -  ${item.product.description ? item.product.description : ''} `,
 
             hsn: item.product.hsnNo,
 
@@ -27,36 +27,85 @@ export class SalesToInvMapper {
 
 
         /**============= GST Rows =================================*/
-        const cgstLines = sale.items
-            .filter((item: any) => Number(item.cgstAmount) > 0)
-            .map((item: any) => ({
-                // rate: `${Number(item.cgstPercent).toFixed(2)}%`,
-                amount: Number(item.cgstAmount).toFixed(2)
-            }));
+        const cgstLines =
+            Number(sale.totalCGSTAmount || 0) > 0
+                ? [{
+                    amount: Number(sale.totalCGSTAmount).toFixed(2)
+                }]
+                : [];
 
-        const sgstLines = sale.items
-            .filter((item: any) => Number(item.sgstAmount) > 0)
-            .map((item: any) => ({
-                // rate: `${Number(item.sgstPercent).toFixed(2)}%`,
-                amount: Number(item.sgstAmount).toFixed(2)
-            }));
+        const sgstLines =
+            Number(sale.totalSGSTAmount || 0) > 0
+                ? [{
+                    amount: Number(sale.totalSGSTAmount).toFixed(2)
+                }]
+                : [];
 
-        const igstLines = sale.items
-            .filter((item: any) => Number(item.igstAmount) > 0)
-            .map((item: any) => ({
-                // rate: `${Number(item.igstPercent).toFixed(2)}%`,
-                amount: Number(item.igstAmount).toFixed(2)
-            }));
+        const igstLines =
+            Number(sale.totalIGSTAmount || 0) > 0
+                ? [{
+                    amount: Number(sale.totalIGSTAmount).toFixed(2)
+                }]
+                : [];
+
+
+        /** ================== HSN TAX SUMMARY =========================== */
+
+        const hsnMap = new Map();
+
+        for (const item of sale.items) {
+
+            const hsn = item.product.hsnNo || "-";
+
+            if (!hsnMap.has(hsn)) {
+                hsnMap.set(hsn, {
+                    hsn,
+
+                    taxableValue: 0,
+
+                    cgstRate: Number(item.cgstPercent || 0),
+                    cgstAmount: 0,
+
+                    sgstRate: Number(item.sgstPercent || 0),
+                    sgstAmount: 0,
+
+                    igstRate: Number(item.igstPercent || 0),
+                    igstAmount: 0,
+
+                    totalTax: 0
+                });
+            }
+
+            const row = hsnMap.get(hsn);
+
+            row.taxableValue += Number(item.taxableAmount || 0);
+
+            row.cgstAmount += Number(item.cgstAmount || 0);
+            row.sgstAmount += Number(item.sgstAmount || 0);
+            row.igstAmount += Number(item.igstAmount || 0);
+
+            row.totalTax += Number(item.gstAmount || 0);
+        }
+
+
+
 
         /** ================== TAX Summary ===========================*/
-        const taxSummary = sale.items.map((item: any) => ({
-            hsn: item.product.hsnNo || "-",
-            taxableValue: Number(item.taxableAmount).toFixed(2),
-            cgstRate: Number(item.cgstPercent).toFixed(2),
-            cgstAmount: Number(item.cgstAmount).toFixed(2),
-            sgstRate: Number(item.sgstPercent).toFixed(2),
-            sgstAmount: Number(item.sgstAmount).toFixed(2),
-            totalTax: Number(item.gstAmount).toFixed(2)
+        const taxSummaryRows = Array.from(hsnMap.values()).map((row: any) => ({
+            hsn: row.hsn,
+
+            taxableValue: row.taxableValue.toFixed(2),
+
+            cgstRate: row.cgstRate.toFixed(2),
+            cgstAmount: row.cgstAmount.toFixed(2),
+
+            sgstRate: row.sgstRate.toFixed(2),
+            sgstAmount: row.sgstAmount.toFixed(2),
+
+            igstRate: row.igstRate.toFixed(2),
+            igstAmount: row.igstAmount.toFixed(2),
+
+            totalTax: row.totalTax.toFixed(2)
         }));
 
 
@@ -141,13 +190,18 @@ export class SalesToInvMapper {
            /**
             * Tax Summary
            */
-            taxSummary,
+            taxSummaryRows,
 
             taxSummaryTotal: {
-                taxableValue: Number(sale.subTotalAmount).toFixed(2),
-                cgstAmount: Number(sale.totalCGSTAmount).toFixed(2),
-                sgstAmount: Number(sale.totalSGSTAmount).toFixed(2),
-                totalTax: Number(sale.totalGSTAmount).toFixed(2)
+                taxableValue: Number(sale.subTotalAmount || 0).toFixed(2),
+
+                cgstAmount: Number(sale.totalCGSTAmount || 0).toFixed(2),
+
+                sgstAmount: Number(sale.totalSGSTAmount || 0).toFixed(2),
+
+                igstAmount: Number(sale.totalIGSTAmount || 0).toFixed(2),
+
+                totalTax: Number(sale.totalGSTAmount || 0).toFixed(2)
             },
 
             // Amount in words

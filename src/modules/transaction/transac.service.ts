@@ -1,0 +1,833 @@
+import { TransactionDirection, TransactionPaymentType, PaymentMode, TransactionStatus } from "@prisma/client";
+import { ApiError } from "../../core/middleware/errorHandler";
+import { prisma } from "../../config/db";
+import { randomUUID } from "crypto"
+import { RBACService } from "../rbac/rbac.service";
+
+
+type TransactionPayload = {
+    branchId: string;
+    direction: TransactionDirection;
+    suspense: boolean;
+    agencyId?: string;
+    paymentType: TransactionPaymentType;
+    thirdPartyAgencyId?: string;
+    amount: number;
+    paymentMode: PaymentMode;
+    transactionRefNo?: string;
+    remarks?: string;
+}
+
+export class TransactionService {
+
+    private static async generateTransactionNo(
+        branchId: string,
+    ) {
+        const branch = await prisma.branch.findUnique({
+            where: { id: branchId },
+            select: { code: true }
+        });
+
+        if(!branch) {
+            throw new ApiError("Invalid BranchId in generateTransactionNo", 404);
+        }
+
+        const unique = randomUUID()
+            .replace(/-/g, "")
+            .substring(0, 8)
+            .toUpperCase();
+
+        return `TRX-${branch.code}-${unique}`;
+    }
+
+    static async createTransaction(
+        actor: any,
+        payload: TransactionPayload
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!payload.direction || (payload.direction !== TransactionDirection.INWARD && payload.direction !== TransactionDirection.OUTWARD)){
+            throw new ApiError("Transaction direction is required", 400);
+        }
+
+        if(!payload.branchId){
+            throw new ApiError("Branch ID is required", 400);
+        }
+
+        if (
+            actor.branchAccessType !== "ALL" &&
+            payload.branchId !== actor.branchId
+        ) {
+            throw new ApiError(
+                "Cannot create transaction for another branch",
+                403
+            );
+        }
+
+        if(!payload.suspense && !payload.agencyId){
+            throw new ApiError("Agency ID is required for non-suspense transactions", 400);
+        }
+
+        if(
+            payload.paymentType === "THIRD_PARTY" &&
+            !payload.thirdPartyAgencyId
+        ) {
+            throw new ApiError("Third party agency ID is required for third party transactions", 400);
+        }
+
+        if(payload.amount <= 0){
+            throw new ApiError("Amount must be greater than zero", 400);
+        }
+
+        const transactionNo = await this.generateTransactionNo(payload.branchId);
+
+        const outstanding = await this.getAgencyOutstanding(
+            actor,
+            payload.agencyId,
+            payload.branchId,
+            payload.direction
+        );
+
+        if(payload.direction === TransactionDirection.INWARD &&
+            payload.amount > outstanding.salesOutstanding
+        ) {
+            throw new ApiError(`Payment exceeds sales outstanding:  ${outstanding.salesOutstanding}`, 400);
+        }
+
+        if(payload.direction === TransactionDirection.OUTWARD &&
+            payload.amount > outstanding.purchaseOutstanding
+        ) {
+            throw new ApiError(`Payment exceeds purchase outstanding:  ${outstanding.purchaseOutstanding}`, 400);
+        }
+
+        const transaction = await prisma.transaction.create({
+            data: {
+                transactionNo,
+                status: "PENDING",
+                branchId: payload.branchId,
+                direction: payload.direction,
+                suspenseAccount: payload.suspense,
+                agencyId: payload.agencyId || null,
+                paymentType: payload.paymentType,
+                thirdPartyAgencyId: payload.thirdPartyAgencyId,
+                amount: payload.amount,
+                paymentMode: payload.paymentMode,
+                transactionRefNo: payload.transactionRefNo,
+                remarks: payload.remarks,
+                createdById: actor.id,
+            }
+        });
+
+        return transaction;
+    }
+
+    static async getAgencyOutstanding(
+        actor: any,
+        agencyId?: string,
+        branchId?: string,
+        direction?: TransactionDirection
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!agencyId && !branchId){
+            throw new ApiError("Either agency ID or branch ID must be provided", 400);
+        }
+
+        let salesOutstanding = 0;
+        let purchaseOutstanding = 0;
+
+         // =========================
+        // 🔵 SALES OUTSTANDING (INWARD) --> money we r getting from customer
+        // =========================
+        if (!direction || direction === TransactionDirection.INWARD) {
+            const sales = await prisma.sale.findMany({
+                where: {
+                    branchId,
+                    agencyId,
+                    status: "APPROVED",
+                },
+                select: {
+                    id: true,
+                    grandTotal: true,
+                    allocations: {
+                        select: {
+                            allocatedAmount: true,
+                        },
+                    },
+                },
+            });
+
+            for (const sale of sales) {
+                const allocated = sale.allocations.reduce(
+                    (sum, a) => sum + Number(a.allocatedAmount),
+                    0
+                );
+
+                salesOutstanding +=
+                    Number(sale.grandTotal) - allocated;
+            }
+        }
+
+        // =========================
+        // 🔴 PURCHASE OUTSTANDING (OUTWARD) --> money we r paying to vendor
+        // =========================
+        if(!direction || direction === TransactionDirection.OUTWARD){
+            const purchases = await prisma.purchase.findMany({
+                where: {
+                    branchId,
+                    agencyId,
+                    status: "APPROVED",
+                },
+                select: {
+                    id: true,
+                    grandTotal: true,
+                    allocations: {
+                        select: {
+                            allocatedAmount: true,
+                        },
+                    },
+                },
+            });
+    
+            for (const purchase of purchases) {
+                const allocated = purchase.allocations.reduce(
+                    (sum, a) => sum + Number(a.allocatedAmount),
+                    0
+                );
+    
+                purchaseOutstanding +=
+                    Number(purchase.grandTotal) - allocated;
+            }
+        }
+
+        return {
+            direction,
+            salesOutstanding,
+            purchaseOutstanding,
+            netOutstanding: salesOutstanding - purchaseOutstanding
+        };
+    }
+
+    static async getAllTransactions(
+        actor: any,
+        query?: {
+            page?: number;
+            limit?: number;
+            branchId?: string;
+            agencyId?: string;
+            status?: TransactionStatus;
+            direction?: TransactionDirection;
+            paymentType?: TransactionPaymentType;
+            search?: string;
+            suspenseAccount?: boolean;
+        }
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+        
+        const page = query?.page || 1;
+        const limit = query?.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+
+        // Branch-level security
+        if (actor.branchAccessType !== "ALL") {
+            where.branchId = actor.branchId;
+        } else if (query?.branchId) {
+            where.branchId = query.branchId;
+        }
+
+        if(query?.agencyId){
+            where.agencyId = query.agencyId;
+        }
+
+        if(query?.direction){
+            if(
+                query.direction !== TransactionDirection.INWARD && 
+                query.direction !== TransactionDirection.OUTWARD
+            ){
+                throw new ApiError("Invalid Transaction direction ", 400);
+            }
+            where.direction = query.direction;
+        }
+
+        if(query?.paymentType){
+            if(
+                query.paymentType !== TransactionPaymentType.NORMAL &&
+                query.paymentType !== TransactionPaymentType.THIRD_PARTY
+            ){
+                throw new ApiError("Invalid Transaction payment type ", 400);
+            }
+            where.paymentType = query.paymentType;
+        }
+
+        if (query?.status) {
+            if (
+                query.status !== TransactionStatus.PENDING &&
+                query.status !== TransactionStatus.APPROVED &&
+                query.status !== TransactionStatus.REJECTED
+            ) {
+                throw new ApiError("Invalid transaction status", 400);
+            }
+
+            where.status = query.status;
+        }
+
+        if(query?.suspenseAccount !== undefined){
+            if(typeof query.suspenseAccount !== "boolean"){
+                throw new ApiError("Suspense account filter must be a boolean", 400);
+            }
+            where.suspenseAccount = query.suspenseAccount;
+        }
+
+        if (query?.search) {
+            where.OR = [
+                { 
+                    transactionNo: { 
+                        contains: query.search, 
+                        mode: "insensitive" 
+                    } 
+                },
+                { 
+                    transactionRefNo: { 
+                        contains: query.search, 
+                        mode: "insensitive" 
+                    } 
+                },
+            ];
+        }
+
+
+        const [transactions, total] = await Promise.all([
+            prisma.transaction.findMany({
+                where,
+                include: {
+                    branch: true,
+                    agency: true,
+                    thirdParty: true,
+                    createdBy: true
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+                skip,
+                take: limit,
+            }),
+            prisma.transaction.count({ where })
+        ])
+
+        return {
+            data: transactions,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page * limit < total,
+                hasPreviousPage: page > 1,
+            }
+        }
+
+    }
+
+    static async getTransactionById(
+        actor: any,
+        transactionId: string
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!transactionId){
+            throw new ApiError("Transaction ID is required", 400);
+        }
+
+        
+        const transaction = await prisma.transaction.findUnique({
+            where: { 
+                id: transactionId 
+            },
+            include: {
+                branch: true,
+                agency: true,
+                thirdPartyAgency: true,
+                createdBy: true
+            }
+        });
+        
+        if(!transaction){
+            throw new ApiError("Transaction not found", 404);
+        }
+        
+        if (
+            actor.branchAccessType !== "ALL" &&
+            transaction.branchId !== actor.branchId
+        ) {
+            throw new ApiError(
+                "You don't have access to this transaction",
+                403
+            );
+        }
+
+        return transaction;
+    }
+
+    static async approveTransaction(
+        actor: any,
+        transactionId: string
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!transactionId){
+            throw new ApiError("Transaction ID is required", 400);
+        }
+
+        const canApprove = await RBACService.hasPermission(
+            actor.id,
+            "TRANSACTION:APPROVE"
+        );
+
+        if(!canApprove){
+            throw new ApiError("Forbidden: insufficient permissions to approve transaction", 403);
+        }
+
+        return prisma.$transaction(async (tx) => {
+            const transaction = await tx.transaction.findUnique({
+                where: { id: transactionId },
+            });
+
+            if (!transaction) {
+                throw new ApiError("Transaction not found", 404);
+            }
+
+            if(
+                transaction.status !== "PENDING"
+            ) {
+                throw new ApiError("Only pending transactions can be approved", 400);
+            }
+
+            /** Optimistic locking */
+            const lock = await tx.transaction.updateMany({
+                where: {
+                    id: transactionId,
+                    status: TransactionStatus.PENDING
+                },
+                data: {
+                    status: TransactionStatus.APPROVED,
+                    approvedById: actor.id,
+                    approvedAt: new Date()
+                }
+            });
+
+            if(lock.count === 0){
+                throw new ApiError("Transaction was already processed by another user, please refresh and try again", 409);
+            }
+
+            /** Suspensse transaction --> no allocation */
+            if(
+                transaction.suspenseAccount ||
+                !transaction.agencyId
+            ) {
+                return tx.transaction.findUnique({
+                    where: { id: transactionId },
+                });
+            }
+
+            const outstanding = await this.getAgencyOutstanding(
+                actor,
+                transaction.agencyId,
+                transaction.branchId,
+                transaction.direction
+            );
+
+            if (
+                transaction.direction === TransactionDirection.INWARD &&
+                Number(transaction.amount) > outstanding.salesOutstanding
+            ) {
+                throw new ApiError(
+                    `Outstanding changed. Available sales outstanding: ${outstanding.salesOutstanding}`,
+                    409
+                );
+            }
+
+            if (
+                transaction.direction === TransactionDirection.OUTWARD &&
+                Number(transaction.amount) > outstanding.purchaseOutstanding
+            ) {
+                throw new ApiError(
+                    `Outstanding changed. Available purchase outstanding: ${outstanding.purchaseOutstanding}`,
+                    409
+                );
+            }
+
+            let remainingAmount = Number(transaction.amount);
+
+            /** Customer payment received */
+            if(transaction.direction === TransactionDirection.INWARD){
+                const sales = await tx.sale.findMany({
+                    where: {
+                        agencyId: transaction.agencyId,
+                        branchId: transaction.branchId,
+                        status: "APPROVED",
+                    },
+                    include: {
+                        allocations: true
+                    },
+                    orderBy: {
+                        createdAt: "asc"
+                    }
+                });
+
+                for(const sale of sales){
+
+                    if(remainingAmount <= 0){
+                        break;
+                    }
+
+                    const allocated = sale.allocations.reduce(
+                        (sum, a) => sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                    const outstanding = Number(sale.grandTotal) - allocated;
+
+                    if(outstanding <= 0){
+                        continue;
+                    }
+
+                    const allocationAmount = Math.min(outstanding, remainingAmount);
+
+                    await tx.transactionAllocation.create({
+                        data: {
+                            transactionId : transaction.id,
+                            saleId: sale.id,
+                            allocatedAmount: allocationAmount,
+                            sourceType: "SALE"
+                        }
+                    });
+
+                    remainingAmount -= allocationAmount;
+                }
+            }
+
+            /** Vendor Payment to be Made */
+            if(transaction.direction === TransactionDirection.OUTWARD){
+                const purchases = await tx.purchase.findMany({
+                    where: {
+                        agencyId: transaction.agencyId,
+                        branchId: transaction.branchId,
+                        status: "APPROVED",
+                    },
+                    include: {
+                        allocations: true
+                    },
+                    orderBy: {
+                        createdAt: "asc"
+                    }
+                });
+
+                for(const purchase of purchases){
+                    if(remainingAmount <= 0){
+                        break;
+                    }
+
+                    const allocated = purchase.allocations.reduce(
+                        (sum, a) => sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                    const outstanding = Number(purchase.grandTotal) - allocated;
+
+                    if(outstanding <= 0){
+                        continue;
+                    }
+
+                    const allocationAmount = Math.min(outstanding, remainingAmount);
+
+                    await tx.transactionAllocation.create({
+                        data: {
+                            transactionId : transaction.id,
+                            purchaseId: purchase.id,
+                            allocatedAmount: allocationAmount,
+                            sourceType: "PURCHASE"
+                        }
+                    });
+
+                    remainingAmount -= allocationAmount;
+                }
+            }
+
+            return tx.transaction.findUnique({
+                where: { id: transactionId },
+                include: {
+                    allocations: true,
+                    branch: true,
+                    agency: true,
+                    thirdPartyAgency: true,
+                    createdBy: true,
+                    approvedBy: true
+                }
+            });
+        });
+    }
+
+
+    static async rejectTransaction(
+        actor: any,
+        transactionId: string,
+        remarks?: string
+    ) {
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!transactionId){
+            throw new ApiError("Transaction ID is required", 400);
+        }
+
+        const canReject = await RBACService.hasPermission(
+            actor.id,
+            "TRANSACTION:APPROVE"
+        );
+
+        if(!canReject){
+            throw new ApiError("Forbidden: insufficient permissions to reject transaction", 403);
+        }
+
+        return prisma.$transaction(async (tx) => {
+
+            const transaction = await tx.transaction.findUnique({
+                where: { id: transactionId },
+            });
+
+            if (!transaction) {
+                throw new ApiError("Transaction not found", 404);
+            }
+
+            if(
+                transaction.status !== TransactionStatus.PENDING
+            ) {
+                throw new ApiError("Only pending transactions can be rejected", 400);
+            }
+
+            /** Optimistic locking */
+            const lock = await tx.transaction.updateMany({
+                where: {
+                    id: transactionId,
+                    status: TransactionStatus.PENDING
+                },
+                data: {
+                    status: TransactionStatus.REJECTED,
+                    approvedById: actor.id,
+                    approvedAt: new Date(),
+                    remarks: remarks?.trim() ? remarks.trim() : transaction.remarks
+                }
+            });
+
+            if (lock.count === 0) {
+                throw new ApiError("Transaction already processed by another user. Please refresh", 409);
+            }
+
+            return tx.transaction.findUnique({
+                where: { id: transactionId },
+                include: {
+                    allocations: true,
+                    branch: true,
+                    agency: true,
+                    thirdPartyAgency: true,
+                    createdBy: true,
+                    approvedBy: true
+                }
+            });
+        });
+    }
+
+
+    static async updateTransaction(
+        actor: any,
+        transactionId: string,
+        payload: Partial<TransactionPayload>
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if (!transactionId) {
+            throw new ApiError("Transaction ID is required", 400);
+        }
+
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: transactionId },
+        });
+
+        if (!transaction) {
+            throw new ApiError("Transaction not found", 404);
+        }
+
+        // Branch access check first
+        if (
+            actor.branchAccessType !== "ALL" &&
+            transaction.branchId !== actor.branchId
+        ) {
+            throw new ApiError(
+                "You don't have access to this transaction",
+                403
+            );
+        }
+
+        if (transaction.status !== TransactionStatus.PENDING) {
+            throw new ApiError(
+                "Only pending transactions can be updated",
+                400
+            );
+        }
+
+        // Final values after update
+        const finalBranchId =
+            payload.branchId ?? transaction.branchId;
+
+        const finalDirection =
+            payload.direction ?? transaction.direction;
+
+        const finalSuspense =
+            payload.suspense ?? transaction.suspenseAccount;
+
+        const finalAgencyId =
+            payload.agencyId ?? transaction.agencyId;
+
+        const finalPaymentType =
+            payload.paymentType ?? transaction.paymentType;
+
+        const finalThirdPartyAgencyId =
+            payload.thirdPartyAgencyId ??
+            transaction.thirdPartyAgencyId;
+
+        const finalAmount =
+            payload.amount ?? Number(transaction.amount);
+
+        // Branch restricted users cannot move transactions to another branch
+        if (
+            actor.branchAccessType !== "ALL" &&
+            finalBranchId !== actor.branchId
+        ) {
+            throw new ApiError(
+                "Cannot move transaction to another branch",
+                403
+            );
+        }
+
+        if (finalAmount <= 0) {
+            throw new ApiError(
+                "Amount must be greater than zero",
+                400
+            );
+        }
+
+        if (!finalSuspense && !finalAgencyId) {
+            throw new ApiError(
+                "Agency ID is required for non-suspense transactions",
+                400
+            );
+        }
+
+        if (
+            finalPaymentType ===
+                TransactionPaymentType.THIRD_PARTY &&
+            !finalThirdPartyAgencyId
+        ) {
+            throw new ApiError(
+                "Third party agency ID is required",
+                400
+            );
+        }
+
+        // Outstanding validation
+        if (!finalSuspense && finalAgencyId) {
+            const outstanding =
+                await this.getAgencyOutstanding(
+                    actor,
+                    finalAgencyId,
+                    finalBranchId,
+                    finalDirection
+                );
+
+            if (
+                finalDirection ===
+                    TransactionDirection.INWARD &&
+                finalAmount >
+                    outstanding.salesOutstanding
+            ) {
+                throw new ApiError(
+                    `Payment exceeds sales outstanding: ${outstanding.salesOutstanding}`,
+                    400
+                );
+            }
+
+            if (
+                finalDirection ===
+                    TransactionDirection.OUTWARD &&
+                finalAmount >
+                    outstanding.purchaseOutstanding
+            ) {
+                throw new ApiError(
+                    `Payment exceeds purchase outstanding: ${outstanding.purchaseOutstanding}`,
+                    400
+                );
+            }
+        }
+
+        // Optimistic locking
+        const updated = await prisma.transaction.updateMany({
+            where: {
+                id: transactionId,
+                status: TransactionStatus.PENDING,
+            },
+            data: {
+                branchId: finalBranchId,
+                direction: finalDirection,
+                suspenseAccount: finalSuspense,
+                agencyId: finalAgencyId,
+                paymentType: finalPaymentType,
+                thirdPartyAgencyId:
+                    finalThirdPartyAgencyId,
+                amount: finalAmount,
+                paymentMode:
+                    payload.paymentMode ??
+                    transaction.paymentMode,
+                transactionRefNo:
+                    payload.transactionRefNo ??
+                    transaction.transactionRefNo,
+                remarks:
+                    payload.remarks ??
+                    transaction.remarks,
+            },
+        });
+
+        if (updated.count === 0) {
+            throw new ApiError(
+                "Transaction was modified by another user",
+                409
+            );
+        }
+
+        return prisma.transaction.findUnique({
+            where: { id: transactionId },
+            include: {
+                branch: true,
+                agency: true,
+                thirdPartyAgency: true,
+                createdBy: true,
+                approvedBy: true,
+            },
+        });
+    }
+
+}

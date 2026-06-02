@@ -70,7 +70,7 @@ export class SalesService {
         /** Using Date.now to handle uniqueness */
         const unique = randomUUID()
             .replace(/-/g, "")
-            .substring(0, 8)
+            .substring(0, 10)
             .toUpperCase();
 
         return `SAL-${productPrefix}-${batchPrefix}${unique}`;

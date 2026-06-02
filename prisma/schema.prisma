@@ -45,6 +45,7 @@ model User {
   purchasesApproved Purchase[] @relation("PurchaseApprovedBy")
   salesCreated Sale[] @relation("SaleCreatedBy")
   salesApproved Sale[] @relation("SaleApprovedBy")
+  transactionsCreated Transaction[] @relation("TransactionCreatedBy")
 
   createdById  String?
   createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -85,6 +86,7 @@ model Branch {
   purchases Purchase[]
   sales Sale[]
   inventories Inventory[]
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -189,6 +191,8 @@ model Agency {
   branches  AgencyBranch[]
   purchases Purchase[]
   sales Sale[]
+  transactions Transaction[]
+  thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -331,6 +335,8 @@ model Purchase {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
 }
 
 model PurchaseItem {
@@ -416,6 +422,8 @@ model Sale {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
 }
 
 
@@ -473,4 +481,88 @@ model Inventory {
 
   @@index([branchId])
   @@index([productId])
+}
+
+enum TransactionDirection {
+  INWARD
+  OUTWARD
+}
+
+enum TransactionPaymentType {
+  NORMAL
+  THIRD_PARTY
+}
+
+enum PaymentMode {
+  ONLINE
+  OFFLINE
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Transaction {
+  id   String @id @default(uuid())
+
+  transactionNo String @unique
+
+  status  TransactionStatus @default(PENDING)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  direction TransactionDirection
+
+  suspenseAccount Boolean @default(false)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+  paymentType TransactionPaymentType
+
+  thirdPartyAgencyId String?
+  thirdPartyAgency   Agency? @relation("ThirdPartyAgencyTransactions", fields: [thirdPartyAgencyId], references: [id], onDelete: SetNull)
+
+  transactionRefNo String?
+
+  amount Decimal @db.Decimal(18, 2)
+
+  paymentMode PaymentMode
+
+  remarks String?
+
+  createdById  String?
+  createdBy    User?  @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
+}
+
+enum AllocationSource {
+  SALE
+  PURCHASE
+}
+
+model TransactionAllocation {
+  id     String @id @default(uuid())
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  sourceType AllocationSource
+
+  saleId String?
+  sale   Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  purchaseId String?
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  allocatedAmount Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
 }
