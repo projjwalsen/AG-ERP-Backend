@@ -128,6 +128,71 @@ export class PurchaseService {
                 400
             );
         }
+
+        /** Calculate the GST + Totals amounts */
+        let subTotalAmount = 0;
+        let totalGSTAmount = 0;
+        let grandTotal = 0;
+
+        const processedItems = [];
+
+        for(const item of payload.items){
+            if(!item.productId || !item.batchNo){
+                throw new ApiError("Missing required item fields", 400);
+            }
+
+            if(item.quantity <= 0){
+                throw new ApiError("Invalid item quantity", 400);
+            }
+
+            if(item.purchasePrice < 0){
+                throw new ApiError("Invalid item purchase price", 400);
+            }
+
+
+            const product = await prisma.product.findUnique({
+                where: {
+                    id: item.productId
+                }
+            });
+
+            if(!product){
+                throw new ApiError(`Product not found for ID ${item.productId}`, 404);
+            }
+
+            // product gst percent
+            const gstPercent = Number(product.applicableGST) || 0;
+
+            // taxable amount = quantity * purchase price
+            const taxableAmount = Number(item.quantity) * Number(item.purchasePrice);
+
+            // gst amount = taxable amount * gst percent / 100
+            const gstAmount = (taxableAmount * gstPercent) / 100;
+
+            // total amount = taxable amount + gst amount
+            const totalAmount = taxableAmount + gstAmount;
+
+            subTotalAmount += taxableAmount;
+            totalGSTAmount += gstAmount;
+            grandTotal += totalAmount;
+
+            processedItems.push({
+                productId: item.productId,
+                batchNo: item.batchNo,
+                quantity: item.quantity,
+                unit: item.unit,
+                purchasePrice: item.purchasePrice,
+                taxableAmount,
+                gstPercent,
+                gstAmount,
+                totalAmount
+            })
+        }
+
+
+
+
+
         /** Create Purchase */
         const purchase = await prisma.purchase.create({
             data: {
@@ -138,18 +203,22 @@ export class PurchaseService {
 
                 createdById: actor.id,
 
+                subtotalAmount: subTotalAmount,
+                totalGSTAmount: totalGSTAmount,
+                grandTotal: grandTotal,
+
                 items: {
-                    create: payload.items.map(item => ({
-                        productId: item.productId,
-                        batchNo: item.batchNo,
-                        quantity: item.quantity,
-                        unit: item.unit,
-                        purchasePrice: item.purchasePrice
-                    }))
+                    create: processedItems
                 }
             },
             include: {
-                items: true
+                agency: true,
+                branch: true,
+                items: {
+                    include: {
+                        product: true
+                    }
+                }
             }
         });
 
@@ -223,9 +292,11 @@ export class PurchaseService {
                                 select: {
                                     id: true,
                                     name: true,
-                                    sku: true
+                                    sku: true,
+                                    hsnNo: true,
+                                    applicableGST: true
                                 }
-                            }
+                            },
                         }
                     }
                 },
@@ -242,7 +313,44 @@ export class PurchaseService {
         ]);
 
         return {
-            data: purchases,
+            data: purchases.map((purchase) => ({
+                ...purchase,
+
+                subtotalAmount: Number(
+                    purchase.subtotalAmount
+                ),
+
+                totalGSTAmount: Number(
+                    purchase.totalGSTAmount
+                ),
+
+                grandTotal: Number(
+                    purchase.grandTotal
+                ),
+
+                items: purchase.items.map((item) => ({
+                    ...item,
+
+                    quantity: Number(item.quantity),
+                    purchasePrice: Number(item.purchasePrice),
+
+                    taxableAmount: Number(
+                        item.taxableAmount
+                    ),
+
+                    gstPercent: Number(
+                        item.gstPercent
+                    ),
+
+                    gstAmount: Number(
+                        item.gstAmount
+                    ),
+
+                    totalAmount: Number(
+                        item.totalAmount
+                    )
+                }))
+            })),
             meta: {
                 total,
                 page,
@@ -298,7 +406,44 @@ export class PurchaseService {
             throw new ApiError("Purchase not found", 404);
         }
 
-        return purchase;
+        return {
+            ...purchase,
+
+            subtotalAmount: Number(
+                purchase.subtotalAmount
+            ),
+
+            totalGSTAmount: Number(
+                purchase.totalGSTAmount
+            ),
+
+            grandTotal: Number(
+                purchase.grandTotal
+            ),
+
+            items: purchase.items.map((item) => ({
+                ...item,
+
+                quantity: Number(item.quantity),
+                purchasePrice: Number(item.purchasePrice),
+
+                taxableAmount: Number(
+                    item.taxableAmount
+                ),
+
+                gstPercent: Number(
+                    item.gstPercent
+                ),
+
+                gstAmount: Number(
+                    item.gstAmount
+                ),
+
+                totalAmount: Number(
+                    item.totalAmount
+                )
+            }))
+        };
     }
 
     static async approvePurchase(
@@ -486,6 +631,93 @@ export class PurchaseService {
         const normalizedInvoiceNo = payload.invoiceNo?.trim().toUpperCase();
         /** Update purchase */
         const updatedPurchase = await prisma.$transaction(async (tx) => {
+
+            let subtotalAmount = 0;
+            let totalGSTAmount = 0;
+            let grandTotal = 0;
+
+            const itemsData = [];
+
+            if (payload.items && payload.items.length > 0) {
+
+                for (const item of payload.items) {
+
+                    /**
+                     * Fetch product for GST
+                     */
+                    const product = await tx.product.findUnique({
+                        where: {
+                            id: item.productId
+                        }
+                    });
+
+                    if (!product) {
+                        throw new ApiError(
+                            `Product not found: ${item.productId}`,
+                            404
+                        );
+                    }
+
+                    const quantity = Number(item.quantity);
+                    const purchasePrice = Number(item.purchasePrice);
+
+                    /**
+                     * Taxable Amount
+                     */
+                    const taxableAmount =
+                        quantity * purchasePrice;
+
+                    /**
+                     * GST %
+                     */
+                    const gstPercent = Number(
+                        product.applicableGST || 0
+                    );
+
+                    /**
+                     * GST Amount
+                     */
+                    const gstAmount =
+                        (taxableAmount * gstPercent) / 100;
+
+                    /**
+                     * Final Total
+                     */
+                    const totalAmount =
+                        taxableAmount + gstAmount;
+
+                    /**
+                     * Invoice totals
+                     */
+                    subtotalAmount += taxableAmount;
+                    totalGSTAmount += gstAmount;
+                    grandTotal += totalAmount;
+
+                    itemsData.push({
+                        purchaseId,
+
+                        productId: item.productId,
+
+                        batchNo: item.batchNo,
+
+                        quantity: item.quantity,
+
+                        unit: item.unit,
+
+                        purchasePrice: item.purchasePrice,
+
+                        taxableAmount,
+
+                        gstPercent,
+
+                        gstAmount,
+
+                        totalAmount
+                    });
+                }
+            }
+
+
             // update master
             await tx.purchase.update({
                 where: {
@@ -495,7 +727,10 @@ export class PurchaseService {
                     agencyId: payload.agencyId,
                     branchId: payload.branchId,
                     invoiceNo: normalizedInvoiceNo,
-                    remarks: payload.remarks !== undefined ? payload.remarks?.trim() : undefined
+                    remarks: payload.remarks !== undefined ? payload.remarks?.trim() : undefined,
+                    subtotalAmount,
+                    totalGSTAmount,
+                    grandTotal
                 }
             });
 
@@ -509,14 +744,7 @@ export class PurchaseService {
 
                 // create new items
                 await tx.purchaseItem.createMany({
-                    data: payload.items.map(item => ({
-                        purchaseId,
-                        productId: item.productId,
-                        batchNo: item.batchNo,
-                        quantity: item.quantity,
-                        unit: item.unit,
-                        purchasePrice: item.purchasePrice
-                    }))
+                    data: itemsData
                 });
             }
 
@@ -552,9 +780,12 @@ export class PurchaseService {
                                 select: {
                                     id: true,
                                     name: true,
-                                    sku: true
+                                    sku: true,
+                                    hsnNo: true,
+                                    applicableGST: true
                                 }
-                            }
+                            },
+                            batch: true
                         }
                     }
                 }

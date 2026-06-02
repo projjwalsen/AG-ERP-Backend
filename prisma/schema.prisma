@@ -45,6 +45,7 @@ model User {
   purchasesApproved Purchase[] @relation("PurchaseApprovedBy")
   salesCreated Sale[] @relation("SaleCreatedBy")
   salesApproved Sale[] @relation("SaleApprovedBy")
+  transactionsCreated Transaction[] @relation("TransactionCreatedBy")
 
   createdById  String?
   createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -85,6 +86,7 @@ model Branch {
   purchases Purchase[]
   sales Sale[]
   inventories Inventory[]
+  transactions Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -189,6 +191,8 @@ model Agency {
   branches  AgencyBranch[]
   purchases Purchase[]
   sales Sale[]
+  transactions Transaction[]
+  thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -311,6 +315,11 @@ model Purchase {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   invoiceNo String @unique
+
+  subtotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  grandTotal Decimal @default(0.00) @db.Decimal(18,2)
+
   status   PurchaseStatus @default(PENDING)
   remarks String?
 
@@ -326,6 +335,8 @@ model Purchase {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
 }
 
 model PurchaseItem {
@@ -346,6 +357,14 @@ model PurchaseItem {
 
   purchasePrice Decimal @db.Decimal(18, 2)
 
+  taxableAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  gstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  gstAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalAmount Decimal @default(0.00) @db.Decimal(18,2)
+
   createdAt DateTime @default(now())
 }
 
@@ -362,8 +381,34 @@ model Sale {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   invoiceNo String @unique
+
+  /** Invoice Meta Fields **/
+  invoiceDate DateTime @default(now())
+  deliveryNote String?
+
+  suppliersRef String?
+  otherReference String?
+
+  buyerOrderNo String?
+  buyerOrderDate DateTime?
+
+  despatchDocNo String?
+  despatchDocDate DateTime?
+
+  despatchThrough String?
+  destination String?
+
   status   SalesStatus @default(PENDING)
   remarks String?
+
+  subTotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalCGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalSGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalIGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  grandTotal Decimal @default(0.00) @db.Decimal(18,2)
 
   createdById  String?
   createdBy    User?  @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -377,6 +422,8 @@ model Sale {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
 }
 
 
@@ -396,6 +443,20 @@ model SalesItem {
   unit ProductUnit
 
   sellingPrice Decimal @db.Decimal(18, 2)
+
+  taxableAmount Decimal @default(0.00) @db.Decimal(18,2)
+  gstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  cgstPercent Decimal @default(0.00) @db.Decimal(5,2)
+  sgstPercent Decimal @default(0.00) @db.Decimal(5,2)
+  igstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  cgstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  sgstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  igstAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  gstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalAmount Decimal @default(0.00) @db.Decimal(18,2)
 
   createdAt DateTime @default(now())
 }
@@ -420,4 +481,88 @@ model Inventory {
 
   @@index([branchId])
   @@index([productId])
+}
+
+enum TransactionDirection {
+  INWARD
+  OUTWARD
+}
+
+enum TransactionPaymentType {
+  NORMAL
+  THIRD_PARTY
+}
+
+enum PaymentMode {
+  ONLINE
+  OFFLINE
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Transaction {
+  id   String @id @default(uuid())
+
+  transactionNo String @unique
+
+  status  TransactionStatus @default(PENDING)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  direction TransactionDirection
+
+  suspenseAccount Boolean @default(false)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+  paymentType TransactionPaymentType
+
+  thirdPartyAgencyId String?
+  thirdPartyAgency   Agency? @relation("ThirdPartyAgencyTransactions", fields: [thirdPartyAgencyId], references: [id], onDelete: SetNull)
+
+  transactionRefNo String?
+
+  amount Decimal @db.Decimal(18, 2)
+
+  paymentMode PaymentMode
+
+  remarks String?
+
+  createdById  String?
+  createdBy    User?  @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
+}
+
+enum AllocationSource {
+  SALE
+  PURCHASE
+}
+
+model TransactionAllocation {
+  id     String @id @default(uuid())
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  sourceType AllocationSource
+
+  saleId String?
+  sale   Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  purchaseId String?
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  allocatedAmount Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
 }
