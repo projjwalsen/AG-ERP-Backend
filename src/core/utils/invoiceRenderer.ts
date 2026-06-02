@@ -23,10 +23,10 @@ export class InvoiceRenderer {
     /** Generate pdf buffer */
     static async generatePdf(data: any) {
         const compiledHtml = await this.compileTemplate(data);
-        const executablePath = await puppeteer.executablePath() as any || '/opt/render/.cache/puppeteer/chrome/linux-149.0.7827.22/chrome-linux64/chrome';
-        console.log("Puppeteer executable path:", executablePath);
+        const chromeexecutablePath = await puppeteer.executablePath();
+        console.log("Puppeteer executable path:", chromeexecutablePath);
         const browser = await puppeteer.launch({
-            executablePath,
+            executablePath: "/usr/bin/chromium",
             headless: true,
             timeout: 0,
             args: [
