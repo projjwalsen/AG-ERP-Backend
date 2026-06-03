@@ -13,6 +13,8 @@ type SalesItemPayload = {
 
     quantity: number;
     unit: ProductUnit;
+
+    unitPrice?: number; // Optional, will auto fetch from product if not provided
 }
 
 type CreateSalesPayload = {
@@ -240,7 +242,7 @@ export class SalesService {
             }
 
             /** GST calculation */
-            const taxableAmount = item.quantity * Number(batch.product.sellPricePerUnit)
+            const taxableAmount = item.quantity * item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit);
             const gstPercent = Number(batch.product.applicableGST) || 0;
 
             /** GST Type Check */

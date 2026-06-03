@@ -120,6 +120,10 @@ router.use(authMiddleware);
  *                         - KG
  *                         - LTR
  *                       example: KG
+ * 
+ *                     unitPrice:
+ *                       type: number
+ *                       example: 100
  *
  *     responses:
  *
