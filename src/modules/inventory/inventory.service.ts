@@ -527,7 +527,6 @@ export class InventoryService {
         query?: {
             page?: number;
             limit?: number;
-            branchId?: string;
             productId?: string;
             search?: string;
         } 
@@ -540,82 +539,99 @@ export class InventoryService {
         const limit = query?.limit || 20;
         const skip = (page - 1) * limit;
 
-        const where = {
-            ...(
-                query?.branchId && { branchId: query.branchId }
-            ),
-            ...(
-                query?.productId && { productId: query.productId }
-            ),
-            ...(
-                query?.search && {
-                    OR: [
-                        {
-                            product: {
-                                name: {
-                                    contains: query.search,
-                                    mode: "insensitive" as const
-                                }
-                            }
-                        },
-                        {
-                            product: {
-                                sku: {
-                                    contains: query.search,
-                                    mode: "insensitive" as const
-                                }
-                            }
-                        },
-                        {
-                            branch: {
-                                name: {
-                                    contains: query.search,
-                                    mode: "insensitive" as const
-                                }
-                            }
+        const productWhere: any = {
+            ...(query?.productId && {
+                id: query.productId
+            }),
+
+            ...(query?.search && {
+                OR: [
+                    {
+                        name: {
+                            contains: query.search,
+                            mode: "insensitive"
                         }
-                    ]
-                }
-            )
+                    },
+                    {
+                        sku: {
+                            contains: query.search,
+                            mode: "insensitive"
+                        }
+                    }
+                ]
+            })
         };
 
-        const [inventory, total] = await Promise.all([
-            prisma.inventory.findMany({
-                where,
-                include: {
-                    product: true,
-                    branch: true
-                },
-                orderBy: {
-                    lastUpdated: "desc"
-                },
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where: productWhere,
                 skip,
-                take: limit
+                take: limit,
+                orderBy: {
+                    createdAt: "desc"
+                }
             }),
-            prisma.inventory.count({ where })
+            prisma.product.count({
+                where: productWhere
+            })
         ]);
 
-        const formattedInventory = inventory.map((item) => {
-            let status = "IN_STOCK";
+        const data = await Promise.all(
+            products.map(async (product) => {
 
-            if(
-                item.product.minimumStockKG &&
-                Number(item.currentStockKG) < Number(item.product.minimumStockKG)
-            ) {
-                status = "LOW_STOCK";
-            }
+                const inventories =
+                    await prisma.inventory.findMany({
+                        where: {
+                            productId: product.id
+                        }
+                    });
 
-            if(Number(item.currentStockKG) === 0){
-                status = "OUT_OF_STOCK";
-            }
+                const totalStockKG = inventories.reduce(
+                    (sum, inv) =>
+                        sum + Number(inv.currentStockKG || 0),
+                    0
+                );
 
-            return {
-                ...item,
-                status
-            }
-        });
+                const totalStockLTR = inventories.reduce(
+                    (sum, inv) =>
+                        sum + Number(inv.currentStockLTR || 0),
+                    0
+                );
+
+                let status = "IN_STOCK";
+
+                if (totalStockKG === 0) {
+                    status = "OUT_OF_STOCK";
+                } else if (
+                    product.minimumStockKG &&
+                    totalStockKG < Number(product.minimumStockKG)
+                ) {
+                    status = "LOW_STOCK";
+                }
+
+                return {
+                    productId: product.id,
+                    name: product.name,
+                    sku: product.sku,
+                    baseUnit: product.baseUnit,
+                    density: product.density,
+
+                    totalStockKG,
+                    totalStockLTR,
+
+                    minimumStockKG:
+                        product.minimumStockKG,
+
+                    branchCount:
+                        inventories.length,
+
+                    status
+                };
+            })
+        );
         return {
-            data: formattedInventory,
+            data,
             meta: {
                 total,
                 page,
@@ -624,6 +640,85 @@ export class InventoryService {
                 hasNextPage: page * limit < total,
                 hasPreviousPage: page > 1
             }
+        }
+    }
+
+    static async getProductBatchHistory(
+        actor: any,
+        productId: string
+    ){
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!productId){
+            throw new ApiError("Product ID is required", 400);
+        }
+
+        const product = await prisma.product.findUnique({
+            where: {
+                id: productId
+            }
+        });
+
+        if(!product) {
+            throw new ApiError("Product not found", 404);
+        }
+
+        const batches = await prisma.inventoryBatch.findMany({
+            where: {
+                productId
+            },
+            include: {
+                branch: true,
+            },
+            orderBy:{
+                createdAt: "desc"
+            }
+        });
+
+        const branchMap = new Map();
+
+        for(const batch of batches){
+
+            if(!branchMap.has(batch.branchId)){
+                branchMap.set(batch.branchId, {
+                    branchId: batch.branchId,
+                    branchName: batch.branch.name,
+                    branchCode: batch.branch.code,
+                    stateCode: batch.branch.stateCode,
+                    city: batch.branch.city,
+                    state: batch.branch.state,
+                    addressLine1: batch.branch.addressLine1,
+                    addressLine2: batch.branch.addressLine2,
+                    batches: []
+                })
+            }
+
+            branchMap.get(batch.branchId).batches.push({
+                id: batch.id,
+                batchNo: batch.batchNo,
+                purchasePrice: batch.purchasePrice,
+                availableQtyKG: batch.availableQtyKG,
+                availableQtyLTR: batch.availableQtyLTR,
+                isActive: batch.isActive,
+                createdAt: batch.createdAt,
+                lastUpdated: batch.lastUpdated
+            });
+        }
+
+        return {
+            product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                baseUnit: product.baseUnit,
+                density: product.density,
+                hsnNo: product.hsnNo,
+                sellPricePerUnit: product.sellPricePerUnit,
+                minimumStockKG: product.minimumStockKG
+            },
+            branches: Array.from(branchMap.values())
         }
     }
 }

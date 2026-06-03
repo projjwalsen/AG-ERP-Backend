@@ -83,6 +83,10 @@ router.use(authMiddleware);
  *               destination:
  *                 type: string
  *                 example: Kolkata Warehouse
+ * 
+ *               invoiceDate:
+ *                 type: string
+ *                 format: date
  *
  *               items:
  *                 type: array
@@ -116,6 +120,10 @@ router.use(authMiddleware);
  *                         - KG
  *                         - LTR
  *                       example: KG
+ * 
+ *                     unitPrice:
+ *                       type: number
+ *                       example: 100
  *
  *     responses:
  *

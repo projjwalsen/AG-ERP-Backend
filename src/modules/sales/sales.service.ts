@@ -13,6 +13,8 @@ type SalesItemPayload = {
 
     quantity: number;
     unit: ProductUnit;
+
+    unitPrice?: number; // Optional, will auto fetch from product if not provided
 }
 
 type CreateSalesPayload = {
@@ -21,6 +23,7 @@ type CreateSalesPayload = {
     remarks?: string;
 
     /** Invoice Metqadata */
+    invoiceDate?: string;
     deliveryNote?: string;
 
     suppliersRef?: string;
@@ -190,6 +193,26 @@ export class SalesService {
                 }
             });
 
+            if(item.unit === ProductUnit.KG){
+                if(
+                    Number(batch.availableQtyKG) < Number(item.quantity)
+                ) {
+                    throw new ApiError(
+                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG`,
+                        400
+                    )
+                }
+            } else {
+                if(
+                    Number(batch.availableQtyLTR) < Number(item.quantity)
+                ) {
+                    throw new ApiError(
+                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyLTR} LTR`,
+                        400
+                    )
+                }
+            }
+
             if (!batch) {
                 throw new ApiError(
                     `Invalid Batch Id ${item.batchId}`,
@@ -219,7 +242,7 @@ export class SalesService {
             }
 
             /** GST calculation */
-            const taxableAmount = item.quantity * Number(batch.product.sellPricePerUnit)
+            const taxableAmount = item.quantity * item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit);
             const gstPercent = Number(batch.product.applicableGST) || 0;
 
             /** GST Type Check */
@@ -310,6 +333,7 @@ export class SalesService {
                 remarks: payload.remarks?.trim(),
 
                 /** Invoice Metadata */
+                invoiceDate: payload.invoiceDate ? new Date(payload.invoiceDate) : new Date(),
                 deliveryNote: payload.deliveryNote?.trim(),
 
                 suppliersRef: payload.suppliersRef?.trim(),
@@ -931,6 +955,8 @@ export class SalesService {
                         payload.remarks !== undefined
                             ? payload.remarks?.trim()
                             : undefined,
+
+                    invoiceDate: payload.invoiceDate ? new Date(payload.invoiceDate) : new Date(),
 
                     deliveryNote:
                         payload.deliveryNote !== undefined

@@ -53,12 +53,11 @@ export const getAllInventoryBatches = async (req: Request, res: Response, next: 
 export const getBranchInventorySummary = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { page, limit, branchId, productId, search } = (req as any).query;
+        const { page, limit, productId, search } = (req as any).query;
 
         const result = await InventoryService.getBranchInventorySummary(actor, {
             page: Number(page) || 1,
             limit: Number(limit) || 10,
-            branchId,
             productId,
             search
         });
@@ -66,6 +65,24 @@ export const getBranchInventorySummary = async (req: Request, res: Response, nex
         return res.status(200).json({
             success: true,
             message: "Branch inventory summary retrieved successfully",
+            data: result
+        })
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+export const getProductBatchWiseHistory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const { productId } = (req as any).params;
+
+        const result = await InventoryService.getProductBatchHistory(actor, productId);
+
+        return res.status(200).json({
+            success: true,
+            message: "Product batch-wise history retrieved successfully",
             data: result
         })
     } catch (error) {

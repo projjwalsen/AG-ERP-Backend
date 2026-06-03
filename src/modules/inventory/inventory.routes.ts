@@ -103,7 +103,7 @@ router.get(
 
 
 /**
- * @swagger
+ * @openapi
  * /api/inventory/summary:
  *   get:
  *     summary: Get aggregated branch inventory summary
@@ -141,12 +141,6 @@ router.get(
  *           example: 20
  *         description: Records per page
  *
- *       - in: query
- *         name: branchId
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Filter by branch ID
  *
  *       - in: query
  *         name: productId
@@ -256,6 +250,47 @@ router.get(
     "/summary",
     InventoryController.getBranchInventorySummary
 );
+
+
+
+/**
+ * @openapi
+ * /api/inventory/product/{productId}/batch-history:
+ *   get:
+ *     tags:
+ *       - Inventory
+ *     summary: Get product batch history
+ *     description: Returns all batches of a product grouped by branch with current stock availability.
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *
+ *     responses:
+ *       200:
+ *         description: Product batch history retrieved successfully
+ *
+ *       400:
+ *         description: Product ID is required
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       404:
+ *         description: Product not found
+ */
+
+
+router.get(
+    "/product/:productId/batch-history",
+    InventoryController.getProductBatchWiseHistory
+)
 
 
 export default router;

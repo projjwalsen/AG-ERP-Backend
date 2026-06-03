@@ -25,7 +25,6 @@ export class InvoiceRenderer {
         const compiledHtml = await this.compileTemplate(data);
         const chromeexecutablePath = await puppeteer.executablePath();
         console.log("Puppeteer executable path:", chromeexecutablePath);
-        console.log("Chromium exists:", fs.existsSync("/usr/bin/chromium"));
         const browser = await puppeteer.launch({
             headless: true,
             args: [
