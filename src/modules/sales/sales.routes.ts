@@ -83,6 +83,10 @@ router.use(authMiddleware);
  *               destination:
  *                 type: string
  *                 example: Kolkata Warehouse
+ * 
+ *               invoiceDate:
+ *                 type: string
+ *                 format: date
  *
  *               items:
  *                 type: array

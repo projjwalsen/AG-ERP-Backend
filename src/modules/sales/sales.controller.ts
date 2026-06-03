@@ -17,6 +17,7 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
             despatchDocDate,
             despatchThrough,
             destination,
+            invoiceDate,
             items
         } = req.body;
 
@@ -33,6 +34,7 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
             despatchDocDate,
             despatchThrough,
             destination,
+            invoiceDate,
             items
         });
 

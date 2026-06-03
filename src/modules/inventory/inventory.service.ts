@@ -626,4 +626,83 @@ export class InventoryService {
             }
         }
     }
+
+    static async getProductBatchHistory(
+        actor: any,
+        productId: string
+    ){
+        if(!actor?.id){
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if(!productId){
+            throw new ApiError("Product ID is required", 400);
+        }
+
+        const product = await prisma.product.findUnique({
+            where: {
+                id: productId
+            }
+        });
+
+        if(!product) {
+            throw new ApiError("Product not found", 404);
+        }
+
+        const batches = await prisma.inventoryBatch.findMany({
+            where: {
+                productId
+            },
+            include: {
+                branch: true,
+            },
+            orderBy:{
+                createdAt: "desc"
+            }
+        });
+
+        const branchMap = new Map();
+
+        for(const batch of batches){
+
+            if(!branchMap.has(batch.branchId)){
+                branchMap.set(batch.branchId, {
+                    branchId: batch.branchId,
+                    branchName: batch.branch.name,
+                    branchCode: batch.branch.code,
+                    stateCode: batch.branch.stateCode,
+                    city: batch.branch.city,
+                    state: batch.branch.state,
+                    addressLine1: batch.branch.addressLine1,
+                    addressLine2: batch.branch.addressLine2,
+                    batches: []
+                })
+            }
+
+            branchMap.get(batch.branchId).batches.push({
+                id: batch.id,
+                batchNo: batch.batchNo,
+                purchasePrice: batch.purchasePrice,
+                availableQtyKG: batch.availableQtyKG,
+                availableQtyLTR: batch.availableQtyLTR,
+                isActive: batch.isActive,
+                createdAt: batch.createdAt,
+                lastUpdated: batch.lastUpdated
+            });
+        }
+
+        return {
+            product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                baseUnit: product.baseUnit,
+                density: product.density,
+                hsnNo: product.hsnNo,
+                sellPricePerUnit: product.sellPricePerUnit,
+                minimumStockKG: product.minimumStockKG
+            },
+            branches: Array.from(branchMap.values())
+        }
+    }
 }

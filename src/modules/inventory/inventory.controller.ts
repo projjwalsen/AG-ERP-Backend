@@ -72,3 +72,21 @@ export const getBranchInventorySummary = async (req: Request, res: Response, nex
         next(error);
     }
 }
+
+
+export const getProductBatchWiseHistory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const { productId } = (req as any).params;
+
+        const result = await InventoryService.getProductBatchHistory(actor, productId);
+
+        return res.status(200).json({
+            success: true,
+            message: "Product batch-wise history retrieved successfully",
+            data: result
+        })
+    } catch (error) {
+        next(error);
+    }
+}
