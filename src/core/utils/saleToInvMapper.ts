@@ -6,8 +6,18 @@ export class SalesToInvMapper {
     static map(sale: any) {
         const items = sale.items.map((item: any, index: number) => ({
             slNo: index + 1,
+            
+            description: `
+            <div class="product-name">${item.product.name}</div>
 
-            description:`${item.product.name} ${item.batch.batchNo} -  ${item.product.description ? item.product.description : ''} `,
+            ${item.product.description
+            ? `<div class="product-description">${item.product.description}</div>`
+            : ""}
+
+            <div class="batch-no">
+            Batch No: ${item.batch?.batchNo?.replace(/^Batch/i, "") || ""}
+            </div>
+            `.trim(),
 
             hsn: item.product.hsnNo,
 
@@ -115,21 +125,20 @@ export class SalesToInvMapper {
         */
         return {
             // Seller Details
-            sellerName: sale.branch.name,
+            sellerName: 'A G Ashtavinayaka Petrochem Pvt Ltd',
 
-            sellerAddress: [
-                sale.branch.addressLine1,
-                sale.branch.addressLine2,
-                sale.branch.city,
-                sale.branch.state,
-                sale.branch.pinCode
-            ]
-                .filter(Boolean)
-                .join(", "),
+            sellerAddress: `
+            SURVEY NO - 222, VILLAGE - HEDAVALI,
+            TI - SUDHAGAD,
+            KHOPOLI - PALI ROAD,
+            KHOPOLI, DIST - RAIGAD
+            `,
 
             sellerPhone: sale.branch.phnNumber || "",
-            sellerGSTIN: sale.branch.gstin || "",
-            sellerCompanyName: sale.branch.name,
+            sellerGSTIN: "27AAKCA0034H1Z0",
+            sellerCompanyName: "A G Ashtavinayaka Petrochem Pvt Ltd",
+            sellerEmail: "info@ashtvinayakapetrochem.com",
+            sellerState: "Maharashtra",
 
             /**
              * Invoice
