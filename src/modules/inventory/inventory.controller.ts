@@ -53,12 +53,11 @@ export const getAllInventoryBatches = async (req: Request, res: Response, next: 
 export const getBranchInventorySummary = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { page, limit, branchId, productId, search } = (req as any).query;
+        const { page, limit, productId, search } = (req as any).query;
 
         const result = await InventoryService.getBranchInventorySummary(actor, {
             page: Number(page) || 1,
             limit: Number(limit) || 10,
-            branchId,
             productId,
             search
         });

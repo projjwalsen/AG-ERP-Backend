@@ -141,12 +141,6 @@ router.get(
  *           example: 20
  *         description: Records per page
  *
- *       - in: query
- *         name: branchId
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Filter by branch ID
  *
  *       - in: query
  *         name: productId
