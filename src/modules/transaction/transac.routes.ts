@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as TransactionController from "./transac.controller";
-import { authMiddleware } from "../../core/middleware/auth";
+import { authMiddleware, checkPermission } from "../../core/middleware/auth";
 
 const router = Router();
 
@@ -62,6 +62,7 @@ router.use(authMiddleware);
 
 router.post(
     "/create",
+    checkPermission("TRANSACTION:WRITE"),
     TransactionController.createTransaction
 );
 
@@ -137,6 +138,7 @@ router.post(
  */
 router.get(
     "/all",
+    checkPermission("TRANSACTION:VIEW"),
     TransactionController.getAllTransactions
 );
 
@@ -174,6 +176,7 @@ router.get(
  */
 router.get(
     "/outstanding",
+    checkPermission("TRANSACTION:VIEW"),
     TransactionController.getAgencyOutstanding
 );
 
@@ -199,6 +202,7 @@ router.get(
  */
 router.get(
     "/:transactionId",
+    checkPermission("TRANSACTION:VIEW"),
     TransactionController.getTransactionById
 );
 
@@ -259,6 +263,7 @@ router.get(
  */
 router.patch(
     "/update/:transactionId",
+    checkPermission("TRANSACTION:WRITE"),
     TransactionController.updateTransaction
 );
 
@@ -284,6 +289,7 @@ router.patch(
  */
 router.patch(
     "/:transactionId/approve",
+    checkPermission("TRANSACTION:APPROVE"),
     TransactionController.approveTransaction
 );
 
@@ -320,6 +326,7 @@ router.patch(
  */
 router.patch(
     "/:transactionId/reject",
+    checkPermission("TRANSACTION:APPROVE"),
     TransactionController.rejectTransaction
 );
 
