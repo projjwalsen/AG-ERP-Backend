@@ -310,7 +310,7 @@ export class TransactionService {
                 include: {
                     branch: true,
                     agency: true,
-                    thirdParty: true,
+                    thirdPartyAgency: true,
                     createdBy: true
                 },
                 orderBy: {
