@@ -422,8 +422,8 @@ export class TransactionService {
                 },
                 data: {
                     status: TransactionStatus.APPROVED,
-                    approvedById: actor.id,
-                    approvedAt: new Date()
+                    createdById: actor.id,
+                    updatedAt: new Date()
                 }
             });
 
@@ -626,8 +626,8 @@ export class TransactionService {
                 },
                 data: {
                     status: TransactionStatus.REJECTED,
-                    approvedById: actor.id,
-                    approvedAt: new Date(),
+                    createdById: actor.id,
+                    updatedAt: new Date(),
                     remarks: remarks?.trim() ? remarks.trim() : transaction.remarks
                 }
             });
