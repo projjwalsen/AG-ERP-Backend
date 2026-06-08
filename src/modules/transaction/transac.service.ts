@@ -573,7 +573,6 @@ export class TransactionService {
                     agency: true,
                     thirdPartyAgency: true,
                     createdBy: true,
-                    approvedBy: true
                 }
             });
         });
@@ -644,7 +643,6 @@ export class TransactionService {
                     agency: true,
                     thirdPartyAgency: true,
                     createdBy: true,
-                    approvedBy: true
                 }
             });
         });
@@ -825,7 +823,6 @@ export class TransactionService {
                 agency: true,
                 thirdPartyAgency: true,
                 createdBy: true,
-                approvedBy: true,
             },
         });
     }
