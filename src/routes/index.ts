@@ -10,6 +10,7 @@ import inventoryRoute from "../modules/inventory/inventory.routes";
 import salesRoute from "../modules/sales/sales.routes";
 import purchaseRoute from "../modules/purchase/purchase.routes";
 import transactionRoute from "../modules/transaction/transac.routes";
+import settingRoute from "../modules/settings/setting.routes";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use("/products", productRoute);
 router.use("/inventory", inventoryRoute);
 router.use("/sales", salesRoute);
 router.use("/purchases", purchaseRoute);
+router.use("/settings", settingRoute);
 router.use("/transactions", transactionRoute);
 
 

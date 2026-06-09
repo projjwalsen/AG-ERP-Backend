@@ -163,50 +163,70 @@ export class InventoryService {
         let quantityKG = 0;
         let quantityLTR = 0;
 
+        const settings = await tx.setting.findFirst();
+
+        const allowNegativeStock = settings?.allowNegativeInventory ?? false;
+
         if(payload.unit === ProductUnit.KG) {
             quantityKG = payload.quantity;
             quantityLTR = product.density ? Number((payload.quantity / Number(product.density)).toFixed(3)) : 0;
 
-            if(Number(inventoryBatch.availableQtyKG) < quantityKG) {
-                throw new ApiError("Insufficient stock in KG", 400);
+            if(!allowNegativeStock && Number(inventoryBatch.availableQtyKG) < quantityKG) {
+                throw new ApiError("Insufficient stock in KG. Allow negativeInventory in settings..", 400);
             }
         } else {
             quantityLTR = payload.quantity;
             quantityKG = product.density ? Number((payload.quantity * Number(product.density)).toFixed(3)) : 0;
 
-            if(Number(inventoryBatch.availableQtyLTR) < quantityLTR) {
-                throw new ApiError("Insufficient stock in LTR", 400);
+            if(!allowNegativeStock && Number(inventoryBatch.availableQtyLTR) < quantityLTR) {
+                throw new ApiError("Insufficient stock in LTR. Allow negativeInventory in settings..", 400);
             }
         }
 
         /** Update Batch */
-        const updatedResult = await tx.inventoryBatch.updateMany({
-            where: {
-                id: inventoryBatch.id,
-                ...(payload.unit === ProductUnit.KG
-                    ? {
-                        availableQtyKG: {
-                            gte: quantityKG
-                        }
-                    }
-                    : {
-                        availableQtyLTR: {
-                            gte: quantityLTR
-                        }
-                    })
-            },
-            data: {
-                availableQtyKG: {
-                    decrement: quantityKG
+        if(allowNegativeStock) {
+            await tx.inventoryBatch.update({
+                where: {
+                    id: inventoryBatch.id
                 },
-                availableQtyLTR: {
-                    decrement: quantityLTR
+                data: {
+                    availableQtyKG: {
+                        decrement: quantityKG
+                    },
+                    availableQtyLTR: {
+                        decrement: quantityLTR
+                    }
                 }
+            })
+        } else {
+            const updatedResult = await tx.inventoryBatch.updateMany({
+                where: {
+                    id: inventoryBatch.id,
+                    ...(payload.unit === ProductUnit.KG
+                        ? {
+                            availableQtyKG: {
+                                gte: quantityKG
+                            }
+                        }
+                        : {
+                            availableQtyLTR: {
+                                gte: quantityLTR
+                            }
+                        })
+                },
+                data: {
+                    availableQtyKG: {
+                        decrement: quantityKG
+                    },
+                    availableQtyLTR: {
+                        decrement: quantityLTR
+                    }
+                }
+            });
+    
+            if(updatedResult.count === 0) {
+                throw new ApiError("Stock may have been modified by another transaction. Please try again.", 409);
             }
-        });
-
-        if(updatedResult.count === 0) {
-            throw new ApiError("Stock may have been modified by another transaction. Please try again.", 409);
         }
 
         const updatedBatch = await tx.inventoryBatch.findUnique({
@@ -265,16 +285,41 @@ export class InventoryService {
             }
         });
 
-        if(!existingInventory) {
+        const settings = await tx.setting.findFirst();
+
+        const allowNegativeStock = settings?.allowNegativeInventory ?? false;
+        
+        if (!existingInventory) {
+
+            if (payload.operation === "REMOVE") {
+
+                if (!allowNegativeStock) {
+                    throw new ApiError(
+                        "Inventory record not found",
+                        400
+                    );
+                }
+
+                return await tx.inventory.create({
+                    data: {
+                        branchId: payload.branchId,
+                        productId: payload.productId,
+                        currentStockKG: -payload.quantityKG,
+                        currentStockLTR: -payload.quantityLTR
+                    }
+                });
+            }
+
             return await tx.inventory.create({
                 data: {
                     branchId: payload.branchId,
                     productId: payload.productId,
-                    currentStockKG: payload.operation === "ADD" ? payload.quantityKG : 0,
-                    currentStockLTR: payload.operation === "ADD" ? payload.quantityLTR : 0
+                    currentStockKG: payload.quantityKG,
+                    currentStockLTR: payload.quantityLTR
                 }
-            })
+            });
         }
+
         if (payload.operation === "REMOVE") {
             console.log("Inventory Summary Before Remove", {
                 inventoryId: existingInventory.id,
@@ -283,20 +328,38 @@ export class InventoryService {
                 removeKG: payload.quantityKG,
                 removeLTR: payload.quantityLTR,
             });
+            if(allowNegativeStock) {
+                await tx.inventory.update({
+                    where: {
+                        id: existingInventory.id
+                    },
+                    data: {
+                        currentStockKG: {
+                            decrement: payload.quantityKG
+                        },
+                        currentStockLTR: {
+                            decrement: payload.quantityLTR
+                        }
+                    }
+                });
+
+                return;
+            }
+            // Else Negative stock not allowed - perform check before update
             const updated = await tx.inventory.updateMany({
                 where: {
                     id: existingInventory.id,
-                    ...(payload.quantityKG > 0
-                        ? {
-                            currentStockKG: {
-                                gte: payload.quantityKG
-                            }
+                    ...(payload.quantityKG > 0 && {
+                        currentStockKG: {
+                            gte: payload.quantityKG
                         }
-                        : {
-                            currentStockLTR: {
-                                gte: payload.quantityLTR
-                            }
-                        })
+                    }),
+
+                    ...(payload.quantityLTR > 0 && {
+                        currentStockLTR: {
+                            gte: payload.quantityLTR
+                        }
+                    })
                 },
                 data: {
                     currentStockKG: {
@@ -309,7 +372,7 @@ export class InventoryService {
             });
 
             if(updated.count === 0) {
-                throw new ApiError("Stock may have been modified by another transaction. Please try again.", 409);
+                throw new ApiError("Stock may have been modified by another transaction | NegativeInventory not allowed in settings", 409);
             }
 
             return;
@@ -322,12 +385,10 @@ export class InventoryService {
             },
             data: {
                 currentStockKG: {
-                    increment: 
-                        payload.operation === "ADD" ? payload.quantityKG : -payload.quantityKG
+                    increment: payload.quantityKG
                 },
                 currentStockLTR: {
-                    increment: 
-                        payload.operation === "ADD" ? payload.quantityLTR : -payload.quantityLTR
+                    increment: payload.quantityLTR
                 }
             }
         });

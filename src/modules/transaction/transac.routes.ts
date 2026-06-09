@@ -45,14 +45,36 @@ router.use(authMiddleware);
  *                 enum:
  *                   - NORMAL
  *                   - THIRD_PARTY
+ *               paymentThrough:
+ *                 type: string
+ *                 enum:
+ *                   - CASH
+ *                   - CHEQUE
+ *                   - DD
+ *                   - NEFT
+ *                   - RTGS
+ *                   - UPI
+ *                   - BANK_DEPOSIT
+ *                 example: UPI
+ *      
+ *               referenceNo:
+ *                 type: string
+ *                 description: Reference number for CHEQUE / DD transactions
+ *                 example: CHQ123456
  *               thirdPartyAgencyId:
  *                 type: string
  *               amount:
  *                 type: number
  *               paymentMode:
  *                 type: string
+ *                 enum:
+ *                   - ONLINE
+ *                   - OFFLINE
+ *                 example: ONLINE
  *               transactionRefNo:
  *                 type: string
+ *                 description: NEFT/RTGS/UPI/BANK_DEPOSIT reference number
+ *                 example: UPI123456789
  *               remarks:
  *                 type: string
  *     responses:
@@ -162,13 +184,6 @@ router.get(
  *         schema:
  *           type: string
  *
- *       - in: query
- *         name: direction
- *         schema:
- *           type: string
- *           enum:
- *             - INWARD
- *             - OUTWARD
  *
  *     responses:
  *       200:
@@ -246,6 +261,17 @@ router.get(
  *                 enum:
  *                   - NORMAL
  *                   - THIRD_PARTY
+ *               paymentThrough:
+ *                 type: string
+ *                 enum:
+ *                  - CASH
+ *                  - CHEQUE
+ *                  - DD
+ *                  - NEFT
+ *                  - RTGS
+ *                  - UPI
+ *                  - BANK_DEPOSIT
+ *                 example: UPI
  *               thirdPartyAgencyId:
  *                 type: string
  *               amount:
@@ -254,6 +280,12 @@ router.get(
  *                 type: string
  *               transactionRefNo:
  *                 type: string
+ *                 description: NEFT/RTGS/UPI/BANK_DEPOSIT reference number
+ *                 example: UPI123456789
+ *               referenceNo:
+ *                 type: string
+ *                 description: Reference number for CHEQUE / DD transactions
+ *                 example: CHQ123456
  *               remarks:
  *                 type: string
  *
