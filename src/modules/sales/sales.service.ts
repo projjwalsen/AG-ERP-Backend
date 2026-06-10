@@ -629,6 +629,20 @@ export class SalesService {
 
             /**
              * STEP 3:
+             * Update agency amountReceivable
+             * Sale approval increases customer outstanding
+             */
+            await tx.agency.update({
+                where: { id: lockedSale.agencyId },
+                data: {
+                    amountReceivable: {
+                        increment: Number(lockedSale.grandTotal)
+                    }
+                }
+            });
+
+            /**
+             * STEP 4:
              * Return updated sale
              */
             return lockedSale;

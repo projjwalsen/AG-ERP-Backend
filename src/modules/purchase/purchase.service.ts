@@ -528,6 +528,19 @@ export class PurchaseService {
                 });
             }
 
+            /**
+             * Update agency amountDue
+             * Purchase approval increases vendor outstanding
+             */
+            await tx.agency.update({
+                where: { id: lockedPurchase.agencyId },
+                data: {
+                    amountDue: {
+                        increment: Number(lockedPurchase.grandTotal)
+                    }
+                }
+            });
+
             return lockedPurchase;
         });
     }

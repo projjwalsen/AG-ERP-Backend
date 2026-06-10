@@ -11,4 +11,5 @@ export default defineConfig({
   datasource: {
     url: env("DATABASE_URL"),
   },
+  seed: "ts-node prisma/seed.ts",
 });

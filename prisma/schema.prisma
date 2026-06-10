@@ -189,6 +189,10 @@ model Agency {
 
   isActive Boolean @default(true)
 
+  // Outstanding tracking - single source of truth
+  amountReceivable Decimal @default(0.00) @db.Decimal(18, 2)
+  amountDue Decimal @default(0.00) @db.Decimal(18, 2)
+
   ledger Ledger[]
   branches  AgencyBranch[]
   purchases Purchase[]

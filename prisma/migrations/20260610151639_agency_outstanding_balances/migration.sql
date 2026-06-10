@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Agency" ADD COLUMN     "amountDue" DECIMAL(18,2) NOT NULL DEFAULT 0.00,
+ADD COLUMN     "amountReceivable" DECIMAL(18,2) NOT NULL DEFAULT 0.00;

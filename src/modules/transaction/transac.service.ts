@@ -295,142 +295,30 @@ export class TransactionService {
             throw new ApiError("Either agency ID or branch ID must be provided", 400);
         }
 
-        const settings = await this.getSettings();
-
-        const [sales, purchases, thirdPartyTransactions] = await Promise.all([
-            prisma.sale.findMany({
-                where: {
-                    agencyId,
-                    ...(branchId && { branchId }),
-                    status: "APPROVED",
-                },
-                include: {
-                    allocations: {
-                        select: {
-                            allocatedAmount: true,
-                        }
-                    }
-                }
-            }),
-
-            prisma.purchase.findMany({
-                where: {
-                    agencyId,
-                    ...(branchId && { branchId }),
-                    status: "APPROVED",
-                },
-                include: {
-                    allocations: {
-                        select: {
-                            allocatedAmount: true,
-                        }
-                    }
-                }
-            }),
-
-            prisma.transaction.findMany({
-                where: {
-                    thirdPartyAgencyId: agencyId,
-                    status: TransactionStatus.APPROVED,
-                    paymentType: TransactionPaymentType.THIRD_PARTY,
-                    ...(branchId && { branchId }),
-                },
-                select: {
-                    amount: true,
-                    direction: true,
-                }
-            })
-        ]);
-
-        /**
-         * ==============
-         *  SALES Outstanding = Customer still owes us money
-         * ==============
-         */
-
-        const salesOutstanding = sales.reduce((sum, sale) => {
-            const allocated = sale.allocations.reduce(
-                (a, alloc) => a + Number(alloc.allocatedAmount),
-                0
-            );
-
-            return sum + (
-                Number(sale.grandTotal) - allocated
-            );
-        }, 0);
-
-        /**
-         * ==============
-         *  PURCHASE Outstanding = We still owe vendor money
-         * ==============
-         */
-
-        const purchaseOutstanding = purchases.reduce((sum, purchase) => {
-            const allocated = purchase.allocations.reduce(
-                (a, alloc) => a + Number(alloc.allocatedAmount),
-                0
-            );
-
-            return sum + (
-                Number(purchase.grandTotal) - allocated
-            )
-        }, 0);
-
-        /**
-         * THIRD PARTY BALANCE
-         *
-         * INWARD:
-         * Third-party agency paid on behalf of another agency
-         * Balance decreases
-         *
-         * OUTWARD:
-         * Third-party agency recovered/consumed balance
-         * Balance increases
-         */
-
-        let thirdPartyBalance = 0;
-
-        for( const trx of thirdPartyTransactions) {
-            if(trx.direction === TransactionDirection.INWARD){
-                thirdPartyBalance -= Number(trx.amount);
+        const agency = await prisma.agency.findUnique({
+            where: {
+                id: agencyId
+            },
+            select: {
+                id: true,
+                amountReceivable: true,
+                amountDue: true
             }
+        });
 
-            if(trx.direction === TransactionDirection.OUTWARD){
-                thirdPartyBalance += Number(trx.amount);
-            }
+        if(!agency){
+            throw new ApiError("Agency not found", 404);
         }
 
-        let amountReceivable = 0;
-        let amountPayable = 0;
-
-        if(settings.allowNegativeTransaction){
-            /**
-             * Example:
-             * 10000 credit -15000 used
-             *  = -5000 receivable from agency (we owe them money)
-             */
-            amountReceivable = thirdPartyBalance
-        } else {
-            /**
-             * Positive balance => receivable from agency
-             */
-            if(thirdPartyBalance >= 0) {
-                amountReceivable = thirdPartyBalance;
-            }
-
-            /**
-             * Negative balance => payable to agency
-             */
-            if(thirdPartyBalance < 0) {
-                amountPayable = Math.abs(thirdPartyBalance);
-            }
-        }
-
+        /**
+         * Agency balance is now the single source of truth
+         * Direct field values instead of runtime calculations
+         */
         return {
-            salesOutstanding,
-            purchaseOutstanding,
-            amountReceivable,
-            amountPayable
+            salesOutstanding: Number(agency.amountReceivable),
+            purchaseOutstanding: Number(agency.amountDue),
+            amountReceivable: Number(agency.amountReceivable),
+            amountPayable: Number(agency.amountDue)
         }
         
     }
@@ -664,37 +552,100 @@ export class TransactionService {
                 });
             }
 
-            const outstanding = await this.getAgencyOutstanding(
-                actor,
-                transaction.agencyId,
-                transaction.branchId,
-            );
+            /**
+             * Fetch agencies with current balances for validation
+             */
+            const primaryAgency = await tx.agency.findUnique({
+                where: { id: transaction.agencyId },
+                select: {
+                    id: true,
+                    amountReceivable: true,
+                    amountDue: true
+                }
+            });
+
+            if(!primaryAgency){
+                throw new ApiError("Primary agency not found", 404);
+            }
 
             const settings = await this.getSettings();
+            const transactionAmount = Number(transaction.amount);
 
+            /**
+             * VALIDATION: Check balance availability if negative transactions not allowed
+             */
             if(!settings.allowNegativeTransaction) {
-                if (
-                    transaction.direction === TransactionDirection.INWARD &&
-                    Number(transaction.amount) > outstanding.salesOutstanding
-                ) {
-                    throw new ApiError(
-                        `Outstanding changed. Available sales outstanding: ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`,
-                        409
-                    );
-                }
-    
-                if (
-                    transaction.direction === TransactionDirection.OUTWARD &&
-                    Number(transaction.amount) > outstanding.purchaseOutstanding
-                ) {
-                    throw new ApiError(
-                        `Outstanding changed. Available purchase outstanding: ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`,
-                        409
-                    );
+                if(transaction.paymentType === TransactionPaymentType.NORMAL) {
+                    // NORMAL INWARD: Agency must have amountReceivable
+                    if(transaction.direction === TransactionDirection.INWARD &&
+                        Number(primaryAgency.amountReceivable) < transactionAmount
+                    ) {
+                        throw new ApiError(
+                            `Insufficient sales outstanding. Available: ${primaryAgency.amountReceivable}. Allow negativeTransaction in settings`,
+                            409
+                        );
+                    }
+
+                    // NORMAL OUTWARD: Agency must have amountDue
+                    if(transaction.direction === TransactionDirection.OUTWARD &&
+                        Number(primaryAgency.amountDue) < transactionAmount
+                    ) {
+                        throw new ApiError(
+                            `Insufficient purchase outstanding. Available: ${primaryAgency.amountDue}. Allow negativeTransaction in settings`,
+                            409
+                        );
+                    }
+                } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
+                    // THIRD_PARTY: Validate both agencies
+                    const thirdPartyAgency = await tx.agency.findUnique({
+                        where: { id: transaction.thirdPartyAgencyId! },
+                        select: {
+                            id: true,
+                            amountReceivable: true,
+                            amountDue: true
+                        }
+                    });
+
+                    if(!thirdPartyAgency){
+                        throw new ApiError("Third party agency not found", 404);
+                    }
+
+                    if(transaction.direction === TransactionDirection.INWARD) {
+                        // Primary agency must have amountDue
+                        if(Number(primaryAgency.amountDue) < transactionAmount) {
+                            throw new ApiError(
+                                `Primary agency insufficient purchase outstanding. Available: ${primaryAgency.amountDue}`,
+                                409
+                            );
+                        }
+                        // Third party must have amountReceivable
+                        if(Number(thirdPartyAgency.amountReceivable) < transactionAmount) {
+                            throw new ApiError(
+                                `Third party agency insufficient sales outstanding. Available: ${thirdPartyAgency.amountReceivable}`,
+                                409
+                            );
+                        }
+                    } else {
+                        // OUTWARD
+                        // Primary agency must have amountReceivable
+                        if(Number(primaryAgency.amountReceivable) < transactionAmount) {
+                            throw new ApiError(
+                                `Primary agency insufficient sales outstanding. Available: ${primaryAgency.amountReceivable}`,
+                                409
+                            );
+                        }
+                        // Third party must have amountDue
+                        if(Number(thirdPartyAgency.amountDue) < transactionAmount) {
+                            throw new ApiError(
+                                `Third party agency insufficient purchase outstanding. Available: ${thirdPartyAgency.amountDue}`,
+                                409
+                            );
+                        }
+                    }
                 }
             }
 
-            let remainingAmount = Number(transaction.amount);
+            let remainingAmount = transactionAmount;
 
             /** Customer payment received */
             if(transaction.direction === TransactionDirection.INWARD){
@@ -788,6 +739,80 @@ export class TransactionService {
                     });
 
                     remainingAmount -= allocationAmount;
+                }
+            }
+
+            /**
+             * UPDATE AGENCY BALANCES
+             * Apply transaction amount to agency outstanding balances
+             */
+            if(transaction.paymentType === TransactionPaymentType.NORMAL) {
+                if(transaction.direction === TransactionDirection.INWARD) {
+                    // INWARD: Customer payment - decrease amountReceivable
+                    await tx.agency.update({
+                        where: { id: transaction.agencyId },
+                        data: {
+                            amountReceivable: {
+                                decrement: transactionAmount
+                            }
+                        }
+                    });
+                } else {
+                    // OUTWARD: Vendor payment - decrease amountDue
+                    await tx.agency.update({
+                        where: { id: transaction.agencyId },
+                        data: {
+                            amountDue: {
+                                decrement: transactionAmount
+                            }
+                        }
+                    });
+                }
+            } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
+                // THIRD_PARTY TRANSACTIONS
+                if(transaction.direction === TransactionDirection.INWARD) {
+                    // Primary: amountDue -= amount
+                    // Third party: amountReceivable -= amount
+                    await Promise.all([
+                        tx.agency.update({
+                            where: { id: transaction.agencyId },
+                            data: {
+                                amountDue: {
+                                    decrement: transactionAmount
+                                }
+                            }
+                        }),
+                        tx.agency.update({
+                            where: { id: transaction.thirdPartyAgencyId! },
+                            data: {
+                                amountReceivable: {
+                                    decrement: transactionAmount
+                                }
+                            }
+                        })
+                    ]);
+                } else {
+                    // OUTWARD
+                    // Primary: amountReceivable -= amount
+                    // Third party: amountDue -= amount
+                    await Promise.all([
+                        tx.agency.update({
+                            where: { id: transaction.agencyId },
+                            data: {
+                                amountReceivable: {
+                                    decrement: transactionAmount
+                                }
+                            }
+                        }),
+                        tx.agency.update({
+                            where: { id: transaction.thirdPartyAgencyId! },
+                            data: {
+                                amountDue: {
+                                    decrement: transactionAmount
+                                }
+                            }
+                        })
+                    ]);
                 }
             }
 
