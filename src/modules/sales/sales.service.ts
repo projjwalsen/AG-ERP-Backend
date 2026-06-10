@@ -254,7 +254,7 @@ export class SalesService {
             }
 
             /** GST calculation */
-            const taxableAmount = item.quantity * item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit);
+            const taxableAmount = item.quantity * (item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit));
             const gstPercent = Number(batch.product.applicableGST) || 0;
 
             /** GST Type Check */
