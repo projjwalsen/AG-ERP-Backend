@@ -193,21 +193,33 @@ export class SalesService {
                 }
             });
 
+            if (!batch) {
+                throw new ApiError(
+                    `Invalid Batch Id ${item.batchId}. Not found !`,
+                    400
+                );
+            }
+
+            const setting = await prisma.setting.findFirst();
+            const allowNegativeStock = setting?.allowNegativeInventory ?? false;
+
             if(item.unit === ProductUnit.KG){
-                if(
+                if( 
+                    !allowNegativeStock &&
                     Number(batch.availableQtyKG) < Number(item.quantity)
                 ) {
                     throw new ApiError(
-                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG`,
+                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG. Allow negative stock setting.`,
                         400
                     )
                 }
             } else {
                 if(
+                    !allowNegativeStock &&
                     Number(batch.availableQtyLTR) < Number(item.quantity)
                 ) {
                     throw new ApiError(
-                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyLTR} LTR`,
+                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyLTR} LTR. Allow negative stock setting.`,
                         400
                     )
                 }
@@ -215,7 +227,7 @@ export class SalesService {
 
             if (!batch) {
                 throw new ApiError(
-                    `Invalid Batch Id ${item.batchId}`,
+                    `Invalid Batch Id ${item.batchId}. Not found !`,
                     400
                 );
             }

@@ -1,4 +1,4 @@
-import { TransactionDirection, TransactionPaymentType, PaymentMode, TransactionStatus } from "@prisma/client";
+import { TransactionDirection, TransactionPaymentType, PaymentMode, TransactionStatus, PaymentType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { randomUUID } from "crypto"
@@ -14,7 +14,9 @@ type TransactionPayload = {
     thirdPartyAgencyId?: string;
     amount: number;
     paymentMode: PaymentMode;
-    transactionRefNo?: string;
+    paymentThrough?: PaymentType;
+    transactionRefNo?: string; // NEFT/RTGS/UPI/BANK_DEPOSIT
+    referenceNo?: string; // CHEQUE / DD
     remarks?: string;
 }
 
@@ -38,6 +40,111 @@ export class TransactionService {
             .toUpperCase();
 
         return `TRX-${branch.code}-${unique}`;
+    }
+
+    private static validatePaymentDetails(
+        paymentMode: PaymentMode,
+        paymentThrough: PaymentType,
+        transactionRefNo?: string,
+        referenceNo?: string
+    ) {
+        const onlineTypes: PaymentType[] = [
+            PaymentType.NEFT,
+            PaymentType.RTGS,
+            PaymentType.UPI,
+            PaymentType.BANK_DEPOSIT
+        ];
+
+        const offlineRefTypes: PaymentType[] = [
+            PaymentType.CHEQUE,
+            PaymentType.DD
+        ];
+
+        if (
+            paymentMode === PaymentMode.ONLINE &&
+            !onlineTypes.includes(paymentThrough)
+        ) {
+            throw new ApiError(
+                "Invalid payment type for ONLINE mode",
+                400
+            );
+        }
+
+        if (
+            paymentMode === PaymentMode.OFFLINE &&
+            ![
+                "CASH", "CHEQUE", "DD"
+            ].includes(paymentThrough)
+        ) {
+            throw new ApiError(
+                "Invalid payment type for OFFLINE mode",
+                400
+            );
+        }
+
+        // ONLINE -> requires transactionRefNo
+        if (
+            onlineTypes.includes(paymentThrough) &&
+            !transactionRefNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} mode requires Transaction Reference Number`,
+                400
+            );
+        }
+
+        // ONLINE -> should not contain referenceNo
+        if(
+            onlineTypes.includes(paymentThrough) &&
+            referenceNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} mode should not contain Reference Number`,
+                400
+            );
+        }
+
+        // OFFLINE -> requires referenceNo
+        if (
+            offlineRefTypes.includes(paymentThrough) &&
+            !referenceNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} requires Reference Number`,
+                400
+            );
+        }
+
+        // OFFLINE -> should not contain transactionRefNo
+        if (
+            offlineRefTypes.includes(paymentThrough) &&
+            transactionRefNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} should not contain Transaction Reference Number`,
+                400
+            );
+        }
+        // CASH -> should not contain transactionRefNo or referenceNo
+        if (
+            paymentThrough === PaymentType.CASH &&
+            referenceNo
+        ) {
+            throw new ApiError(
+                "Cash transaction should not contain reference number",
+                400
+            );
+        }
+
+        if(
+            paymentThrough === PaymentType.CASH &&
+            transactionRefNo
+        ) {
+            throw new ApiError(
+                "Cash transaction should not contain transaction reference number",
+                400
+            );
+        }
     }
 
     static async createTransaction(
@@ -81,27 +188,59 @@ export class TransactionService {
             throw new ApiError("Amount must be greater than zero", 400);
         }
 
+        if (!payload.paymentThrough) {
+            throw new ApiError("Payment type is required", 400);
+        }
+        
         const transactionNo = await this.generateTransactionNo(payload.branchId);
+        
+        if(!payload.suspense && payload.agencyId) {
+            const outstanding = await this.getAgencyOutstanding(
+                actor,
+                payload.agencyId,
+                payload.branchId,
+            );
 
-        const outstanding = await this.getAgencyOutstanding(
-            actor,
-            payload.agencyId,
-            payload.branchId,
-            payload.direction
+            if(payload.direction === TransactionDirection.INWARD &&
+                payload.amount > outstanding.salesOutstanding
+            ) {
+                throw new ApiError(`Payment exceeds sales outstanding:  ${outstanding.salesOutstanding}`, 400);
+            }
+    
+            if(payload.direction === TransactionDirection.OUTWARD &&
+                payload.amount > outstanding.purchaseOutstanding
+            ) {
+                throw new ApiError(`Payment exceeds purchase outstanding:  ${outstanding.purchaseOutstanding}`, 400);
+            }
+        }
+        
+        const paymentMode = 
+            payload.paymentType === TransactionPaymentType.THIRD_PARTY
+            ? PaymentMode.OFFLINE
+            : payload.paymentMode;
+        
+        const paymentThrough = 
+            payload.paymentType === TransactionPaymentType.THIRD_PARTY
+            ? PaymentType.CASH
+            : payload.paymentThrough;
+
+        this.validatePaymentDetails(
+            paymentMode,
+            paymentThrough,
+            payload.transactionRefNo,
+            payload.referenceNo
         );
 
-        if(payload.direction === TransactionDirection.INWARD &&
-            payload.amount > outstanding.salesOutstanding
-        ) {
-            throw new ApiError(`Payment exceeds sales outstanding:  ${outstanding.salesOutstanding}`, 400);
-        }
+        const isOnlinePayment =
+            paymentThrough === PaymentType.NEFT ||
+            paymentThrough === PaymentType.RTGS ||
+            paymentThrough === PaymentType.UPI ||
+            paymentThrough === PaymentType.BANK_DEPOSIT;
 
-        if(payload.direction === TransactionDirection.OUTWARD &&
-            payload.amount > outstanding.purchaseOutstanding
-        ) {
-            throw new ApiError(`Payment exceeds purchase outstanding:  ${outstanding.purchaseOutstanding}`, 400);
-        }
-
+        const isOfflineRefPayment =
+            paymentThrough === PaymentType.CHEQUE ||
+            paymentThrough === PaymentType.DD;
+        
         const transaction = await prisma.transaction.create({
             data: {
                 transactionNo,
@@ -113,8 +252,10 @@ export class TransactionService {
                 paymentType: payload.paymentType,
                 thirdPartyAgencyId: payload.thirdPartyAgencyId,
                 amount: payload.amount,
-                paymentMode: payload.paymentMode,
-                transactionRefNo: payload.transactionRefNo,
+                paymentMode,
+                paymentThrough,
+                transactionRefNo: isOnlinePayment ? payload.transactionRefNo : null,
+                referenceNo: isOfflineRefPayment ? payload.referenceNo : null,
                 remarks: payload.remarks,
                 createdById: actor.id,
             }
@@ -127,7 +268,6 @@ export class TransactionService {
         actor: any,
         agencyId?: string,
         branchId?: string,
-        direction?: TransactionDirection
     ) {
         if(!actor?.id){
             throw new ApiError("Unauthorized", 401);
@@ -137,79 +277,55 @@ export class TransactionService {
             throw new ApiError("Either agency ID or branch ID must be provided", 400);
         }
 
-        let salesOutstanding = 0;
-        let purchaseOutstanding = 0;
-
-         // =========================
-        // 🔵 SALES OUTSTANDING (INWARD) --> money we r getting from customer
-        // =========================
-        if (!direction || direction === TransactionDirection.INWARD) {
-            const sales = await prisma.sale.findMany({
-                where: {
-                    branchId,
-                    agencyId,
-                    status: "APPROVED",
-                },
-                select: {
-                    id: true,
-                    grandTotal: true,
-                    allocations: {
-                        select: {
-                            allocatedAmount: true,
-                        },
-                    },
-                },
-            });
-
-            for (const sale of sales) {
-                const allocated = sale.allocations.reduce(
-                    (sum, a) => sum + Number(a.allocatedAmount),
-                    0
-                );
-
-                salesOutstanding +=
-                    Number(sale.grandTotal) - allocated;
+        const sales = await prisma.sale.findMany({
+            where: {
+                agencyId,
+                ...(branchId && { branchId }),
+                status: "APPROVED",
+            },
+            select: {
+                grandTotal: true,
+                allocations: {
+                    select: {
+                        allocatedAmount: true,
+                    }
+                }
             }
-        }
+        });
 
-        // =========================
-        // 🔴 PURCHASE OUTSTANDING (OUTWARD) --> money we r paying to vendor
-        // =========================
-        if(!direction || direction === TransactionDirection.OUTWARD){
-            const purchases = await prisma.purchase.findMany({
-                where: {
-                    branchId,
-                    agencyId,
-                    status: "APPROVED",
-                },
-                select: {
-                    id: true,
-                    grandTotal: true,
-                    allocations: {
-                        select: {
-                            allocatedAmount: true,
-                        },
-                    },
-                },
-            });
-    
-            for (const purchase of purchases) {
-                const allocated = purchase.allocations.reduce(
-                    (sum, a) => sum + Number(a.allocatedAmount),
-                    0
-                );
-    
-                purchaseOutstanding +=
-                    Number(purchase.grandTotal) - allocated;
+        const purchases = await prisma.purchase.findMany({
+            where: {
+                agencyId,
+                ...(branchId && { branchId }),
+                status: "APPROVED",
+            },
+            select: {
+                grandTotal: true,
+                allocations: {
+                    select: {
+                        allocatedAmount: true,
+                    }
+                }
             }
-        }
+        });
 
+        const salesOutstanding = sales.reduce((sum, sale) => {
+            const allocated = sale.allocations.reduce((allocSum, alloc) => allocSum + Number(alloc.allocatedAmount), 0);
+
+            return sum + (Number(sale.grandTotal) - allocated);
+        }, 0);
+
+        const purchaseOutstanding = purchases.reduce((sum, purchase) => {
+            const allocated = purchase.allocations.reduce((allocSum, alloc) => allocSum + Number(alloc.allocatedAmount), 0);
+
+            return sum + (Number(purchase.grandTotal) - allocated);
+        }, 0);
+        
         return {
-            direction,
             salesOutstanding,
-            purchaseOutstanding,
-            netOutstanding: salesOutstanding - purchaseOutstanding
-        };
+            purchaseOutstanding
+        }
+        
     }
 
     static async getAllTransactions(
@@ -445,7 +561,6 @@ export class TransactionService {
                 actor,
                 transaction.agencyId,
                 transaction.branchId,
-                transaction.direction
             );
 
             if (
@@ -711,6 +826,20 @@ export class TransactionService {
         const finalAmount =
             payload.amount ?? Number(transaction.amount);
 
+        let finalPaymentMode =
+            payload.paymentMode ?? transaction.paymentMode;
+
+        let finalPaymentThrough =
+            payload.paymentThrough ?? transaction.paymentThrough;
+
+        const finalTransactionRefNo =
+            payload.transactionRefNo ??
+            transaction.transactionRefNo;
+
+        const finalReferenceNo =
+            payload.referenceNo ??
+            transaction.referenceNo;
+
         // Branch restricted users cannot move transactions to another branch
         if (
             actor.branchAccessType !== "ALL" &&
@@ -747,6 +876,20 @@ export class TransactionService {
             );
         }
 
+        if(
+            finalPaymentType === TransactionPaymentType.THIRD_PARTY
+        ) {
+            finalPaymentMode = PaymentMode.OFFLINE;
+            finalPaymentThrough = PaymentType.CASH;
+        }
+
+        this.validatePaymentDetails(
+            finalPaymentMode,
+            finalPaymentThrough,
+            finalTransactionRefNo,
+            finalReferenceNo
+        );
+
         // Outstanding validation
         if (!finalSuspense && finalAgencyId) {
             const outstanding =
@@ -754,29 +897,16 @@ export class TransactionService {
                     actor,
                     finalAgencyId,
                     finalBranchId,
-                    finalDirection
                 );
 
-            if (
-                finalDirection ===
-                    TransactionDirection.INWARD &&
-                finalAmount >
-                    outstanding.salesOutstanding
-            ) {
-                throw new ApiError(
-                    `Payment exceeds sales outstanding: ${outstanding.salesOutstanding}`,
-                    400
-                );
-            }
+            const effectiveOutstanding =
+                finalDirection === TransactionDirection.INWARD
+                    ? outstanding.salesOutstanding + Number(transaction.amount)
+                    : outstanding.purchaseOutstanding + Number(transaction.amount);
 
-            if (
-                finalDirection ===
-                    TransactionDirection.OUTWARD &&
-                finalAmount >
-                    outstanding.purchaseOutstanding
-            ) {
+            if (finalAmount > effectiveOutstanding) {
                 throw new ApiError(
-                    `Payment exceeds purchase outstanding: ${outstanding.purchaseOutstanding}`,
+                    `Amount exceeds available outstanding`,
                     400
                 );
             }
@@ -797,12 +927,20 @@ export class TransactionService {
                 thirdPartyAgencyId:
                     finalThirdPartyAgencyId,
                 amount: finalAmount,
-                paymentMode:
-                    payload.paymentMode ??
-                    transaction.paymentMode,
+                paymentMode: finalPaymentMode,
+                paymentThrough: finalPaymentThrough,
                 transactionRefNo:
-                    payload.transactionRefNo ??
-                    transaction.transactionRefNo,
+                    finalPaymentThrough === PaymentType.NEFT ||
+                    finalPaymentThrough === PaymentType.RTGS ||
+                    finalPaymentThrough === PaymentType.UPI ||
+                    finalPaymentThrough === PaymentType.BANK_DEPOSIT
+                    ? finalTransactionRefNo
+                    : null,
+                referenceNo: 
+                    finalPaymentThrough === PaymentType.CHEQUE ||
+                    finalPaymentThrough === PaymentType.DD
+                    ? finalReferenceNo
+                    : null,
                 remarks:
                     payload.remarks ??
                     transaction.remarks,
