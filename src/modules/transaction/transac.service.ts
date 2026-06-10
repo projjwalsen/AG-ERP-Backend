@@ -217,16 +217,32 @@ export class TransactionService {
 
             if(!settings.allowNegativeTransaction) {
                 
-                if(payload.direction === TransactionDirection.INWARD &&
-                    payload.amount > outstanding.salesOutstanding
-                ) {
-                    throw new ApiError(`Payment exceeds sales outstanding:  ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`, 400);
-                }
-        
-                if(payload.direction === TransactionDirection.OUTWARD &&
-                    payload.amount > outstanding.purchaseOutstanding
-                ) {
-                    throw new ApiError(`Payment exceeds purchase outstanding:  ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`, 400);
+                if(payload.paymentType === TransactionPaymentType.THIRD_PARTY) {
+                    // For THIRD_PARTY transactions, check against opposite outstanding
+                    if(payload.direction === TransactionDirection.INWARD &&
+                        payload.amount > outstanding.purchaseOutstanding
+                    ) {
+                        throw new ApiError(`Payment exceeds purchase outstanding: ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`, 400);
+                    }
+            
+                    if(payload.direction === TransactionDirection.OUTWARD &&
+                        payload.amount > outstanding.salesOutstanding
+                    ) {
+                        throw new ApiError(`Payment exceeds sales outstanding: ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`, 400);
+                    }
+                } else {
+                    // For NORMAL transactions, check against standard outstanding
+                    if(payload.direction === TransactionDirection.INWARD &&
+                        payload.amount > outstanding.salesOutstanding
+                    ) {
+                        throw new ApiError(`Payment exceeds sales outstanding: ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`, 400);
+                    }
+            
+                    if(payload.direction === TransactionDirection.OUTWARD &&
+                        payload.amount > outstanding.purchaseOutstanding
+                    ) {
+                        throw new ApiError(`Payment exceeds purchase outstanding: ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`, 400);
+                    }
                 }
             }
 
@@ -291,13 +307,11 @@ export class TransactionService {
             throw new ApiError("Unauthorized", 401);
         }
 
-        if(!agencyId && !branchId){
-            throw new ApiError("Either agency ID or branch ID must be provided", 400);
+        if(!agencyId){
+            throw new ApiError("Agency ID is required", 400);
         }
 
-        const settings = await this.getSettings();
-
-        const [sales, purchases, thirdPartyTransactions] = await Promise.all([
+        const [sales, purchases] = await Promise.all([
             prisma.sale.findMany({
                 where: {
                     agencyId,
@@ -326,111 +340,34 @@ export class TransactionService {
                         }
                     }
                 }
-            }),
-
-            prisma.transaction.findMany({
-                where: {
-                    thirdPartyAgencyId: agencyId,
-                    status: TransactionStatus.APPROVED,
-                    paymentType: TransactionPaymentType.THIRD_PARTY,
-                    ...(branchId && { branchId }),
-                },
-                select: {
-                    amount: true,
-                    direction: true,
-                }
             })
         ]);
 
         /**
-         * ==============
-         *  SALES Outstanding = Customer still owes us money
-         * ==============
+         * SALES Outstanding = Customer still owes us money
          */
-
         const salesOutstanding = sales.reduce((sum, sale) => {
             const allocated = sale.allocations.reduce(
                 (a, alloc) => a + Number(alloc.allocatedAmount),
                 0
             );
-
-            return sum + (
-                Number(sale.grandTotal) - allocated
-            );
+            return sum + (Number(sale.grandTotal) - allocated);
         }, 0);
 
         /**
-         * ==============
-         *  PURCHASE Outstanding = We still owe vendor money
-         * ==============
+         * PURCHASE Outstanding = We still owe vendor money
          */
-
         const purchaseOutstanding = purchases.reduce((sum, purchase) => {
             const allocated = purchase.allocations.reduce(
                 (a, alloc) => a + Number(alloc.allocatedAmount),
                 0
             );
-
-            return sum + (
-                Number(purchase.grandTotal) - allocated
-            )
+            return sum + (Number(purchase.grandTotal) - allocated);
         }, 0);
-
-        /**
-         * THIRD PARTY BALANCE
-         *
-         * INWARD:
-         * Third-party agency paid on behalf of another agency
-         * Balance decreases
-         *
-         * OUTWARD:
-         * Third-party agency recovered/consumed balance
-         * Balance increases
-         */
-
-        let thirdPartyBalance = 0;
-
-        for( const trx of thirdPartyTransactions) {
-            if(trx.direction === TransactionDirection.INWARD){
-                thirdPartyBalance -= Number(trx.amount);
-            }
-
-            if(trx.direction === TransactionDirection.OUTWARD){
-                thirdPartyBalance += Number(trx.amount);
-            }
-        }
-
-        let amountReceivable = 0;
-        let amountPayable = 0;
-
-        if(settings.allowNegativeTransaction){
-            /**
-             * Example:
-             * 10000 credit -15000 used
-             *  = -5000 receivable from agency (we owe them money)
-             */
-            amountReceivable = thirdPartyBalance
-        } else {
-            /**
-             * Positive balance => receivable from agency
-             */
-            if(thirdPartyBalance >= 0) {
-                amountReceivable = thirdPartyBalance;
-            }
-
-            /**
-             * Negative balance => payable to agency
-             */
-            if(thirdPartyBalance < 0) {
-                amountPayable = Math.abs(thirdPartyBalance);
-            }
-        }
 
         return {
             salesOutstanding,
-            purchaseOutstanding,
-            amountReceivable,
-            amountPayable
+            purchaseOutstanding
         }
         
     }
@@ -673,24 +610,48 @@ export class TransactionService {
             const settings = await this.getSettings();
 
             if(!settings.allowNegativeTransaction) {
-                if (
-                    transaction.direction === TransactionDirection.INWARD &&
-                    Number(transaction.amount) > outstanding.salesOutstanding
-                ) {
-                    throw new ApiError(
-                        `Outstanding changed. Available sales outstanding: ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`,
-                        409
-                    );
-                }
-    
-                if (
-                    transaction.direction === TransactionDirection.OUTWARD &&
-                    Number(transaction.amount) > outstanding.purchaseOutstanding
-                ) {
-                    throw new ApiError(
-                        `Outstanding changed. Available purchase outstanding: ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`,
-                        409
-                    );
+                if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
+                    // For THIRD_PARTY, check against opposite outstanding
+                    if (
+                        transaction.direction === TransactionDirection.INWARD &&
+                        Number(transaction.amount) > outstanding.purchaseOutstanding
+                    ) {
+                        throw new ApiError(
+                            `Outstanding changed. Available purchase outstanding: ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`,
+                            409
+                        );
+                    }
+        
+                    if (
+                        transaction.direction === TransactionDirection.OUTWARD &&
+                        Number(transaction.amount) > outstanding.salesOutstanding
+                    ) {
+                        throw new ApiError(
+                            `Outstanding changed. Available sales outstanding: ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`,
+                            409
+                        );
+                    }
+                } else {
+                    // For NORMAL transactions, check against standard outstanding
+                    if (
+                        transaction.direction === TransactionDirection.INWARD &&
+                        Number(transaction.amount) > outstanding.salesOutstanding
+                    ) {
+                        throw new ApiError(
+                            `Outstanding changed. Available sales outstanding: ${outstanding.salesOutstanding}. Allow negativeTransaction in settings`,
+                            409
+                        );
+                    }
+        
+                    if (
+                        transaction.direction === TransactionDirection.OUTWARD &&
+                        Number(transaction.amount) > outstanding.purchaseOutstanding
+                    ) {
+                        throw new ApiError(
+                            `Outstanding changed. Available purchase outstanding: ${outstanding.purchaseOutstanding}. Allow negativeTransaction in settings`,
+                            409
+                        );
+                    }
                 }
             }
 
@@ -1010,19 +971,35 @@ export class TransactionService {
                     finalBranchId,
                 );
 
-            const effectiveOutstanding =
-                finalDirection === TransactionDirection.INWARD
-                    ? outstanding.salesOutstanding + Number(transaction.amount)
-                    : outstanding.purchaseOutstanding + Number(transaction.amount);
-
             const settings = await this.getSettings();
 
             if(!settings.allowNegativeTransaction) {
-                if (finalAmount > effectiveOutstanding) {
-                    throw new ApiError(
-                        `Amount exceeds available outstanding. Allow negativeTransaction in settings`,
-                        400
-                    );
+                if(finalPaymentType === TransactionPaymentType.THIRD_PARTY) {
+                    // For THIRD_PARTY, check against opposite outstanding
+                    const effectiveOutstanding =
+                        finalDirection === TransactionDirection.INWARD
+                            ? outstanding.purchaseOutstanding + Number(transaction.amount)
+                            : outstanding.salesOutstanding + Number(transaction.amount);
+
+                    if (finalAmount > effectiveOutstanding) {
+                        throw new ApiError(
+                            `Amount exceeds available outstanding. Allow negativeTransaction in settings`,
+                            400
+                        );
+                    }
+                } else {
+                    // For NORMAL transactions, check against standard outstanding
+                    const effectiveOutstanding =
+                        finalDirection === TransactionDirection.INWARD
+                            ? outstanding.salesOutstanding + Number(transaction.amount)
+                            : outstanding.purchaseOutstanding + Number(transaction.amount);
+
+                    if (finalAmount > effectiveOutstanding) {
+                        throw new ApiError(
+                            `Amount exceeds available outstanding. Allow negativeTransaction in settings`,
+                            400
+                        );
+                    }
                 }
             }
 
