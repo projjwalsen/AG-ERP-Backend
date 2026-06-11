@@ -761,118 +761,262 @@ export class TransactionService {
 
             let remainingAmount = Number(transaction.amount);
 
-            const shouldAllocateToSales =
-                (
-                    transaction.paymentType === TransactionPaymentType.NORMAL &&
-                    transaction.direction === TransactionDirection.INWARD
-                ) ||
-                (
-                    transaction.paymentType === TransactionPaymentType.THIRD_PARTY &&
-                    transaction.direction === TransactionDirection.OUTWARD
-                );
-
-            const shouldAllocateToPurchases =
-                (
-                    transaction.paymentType === TransactionPaymentType.NORMAL &&
-                    transaction.direction === TransactionDirection.OUTWARD
-                ) ||
-                (
-                    transaction.paymentType === TransactionPaymentType.THIRD_PARTY &&
-                    transaction.direction === TransactionDirection.INWARD
-                );
-
-            /** Customer payment received */
-            if(shouldAllocateToSales){
-                const sales = await tx.sale.findMany({
-                    where: {
-                        agencyId: transaction.agencyId,
-                        branchId: transaction.branchId,
-                        status: "APPROVED",
-                    },
-                    include: {
-                        allocations: true
-                    },
-                    orderBy: {
-                        createdAt: "asc"
-                    }
-                });
-
-                for(const sale of sales){
-
-                    if(remainingAmount <= 0){
-                        break;
-                    }
-
-                    const allocated = sale.allocations.reduce(
-                        (sum, a) => sum + Number(a.allocatedAmount),
-                        0
-                    );
-
-                    const outstanding = Number(sale.grandTotal) - allocated;
-
-                    if(outstanding <= 0){
-                        continue;
-                    }
-
-                    const allocationAmount = Math.min(outstanding, remainingAmount);
-
-                    await tx.transactionAllocation.create({
-                        data: {
-                            transactionId : transaction.id,
-                            saleId: sale.id,
-                            allocatedAmount: allocationAmount,
-                            sourceType: "SALE"
+            /**
+             * Allocation logic depends on transaction type
+             */
+            if(transaction.paymentType === TransactionPaymentType.NORMAL) {
+                // NORMAL: allocate to primary agency's sales (INWARD) or purchases (OUTWARD)
+                if(transaction.direction === TransactionDirection.INWARD) {
+                    // INWARD: allocate to primary's SALES
+                    const sales = await tx.sale.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
                         }
                     });
 
-                    remainingAmount -= allocationAmount;
+                    for(const sale of sales){
+                        if(remainingAmount <= 0) break;
+
+                        const allocated = sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(sale.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, remainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                saleId: sale.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "SALE"
+                            }
+                        });
+
+                        remainingAmount -= allocationAmount;
+                    }
+                } else {
+                    // OUTWARD: allocate to primary's PURCHASES
+                    const purchases = await tx.purchase.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const purchase of purchases){
+                        if(remainingAmount <= 0) break;
+
+                        const allocated = purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(purchase.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, remainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                purchaseId: purchase.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "PURCHASE"
+                            }
+                        });
+
+                        remainingAmount -= allocationAmount;
+                    }
                 }
-            }
+            } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
+                // THIRD_PARTY: allocate to BOTH primary and third-party
+                if(transaction.direction === TransactionDirection.OUTWARD) {
+                    // OUTWARD: primary and third-party BOTH pay vendors (PURCHASES)
+                    let primaryRemainingAmount = remainingAmount;
+                    let thirdPartyRemainingAmount = remainingAmount;
 
-            /** Vendor Payment to be Made */
-            if(shouldAllocateToPurchases){
-                const purchases = await tx.purchase.findMany({
-                    where: {
-                        agencyId: transaction.agencyId,
-                        branchId: transaction.branchId,
-                        status: "APPROVED",
-                    },
-                    include: {
-                        allocations: true
-                    },
-                    orderBy: {
-                        createdAt: "asc"
-                    }
-                });
-
-                for(const purchase of purchases){
-                    if(remainingAmount <= 0){
-                        break;
-                    }
-
-                    const allocated = purchase.allocations.reduce(
-                        (sum, a) => sum + Number(a.allocatedAmount),
-                        0
-                    );
-
-                    const outstanding = Number(purchase.grandTotal) - allocated;
-
-                    if(outstanding <= 0){
-                        continue;
-                    }
-
-                    const allocationAmount = Math.min(outstanding, remainingAmount);
-
-                    await tx.transactionAllocation.create({
-                        data: {
-                            transactionId : transaction.id,
-                            purchaseId: purchase.id,
-                            allocatedAmount: allocationAmount,
-                            sourceType: "PURCHASE"
+                    // Allocate to PRIMARY agency's PURCHASES
+                    const primaryPurchases = await tx.purchase.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
                         }
                     });
 
-                    remainingAmount -= allocationAmount;
+                    for(const purchase of primaryPurchases){
+                        if(primaryRemainingAmount <= 0) break;
+
+                        const allocated = purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(purchase.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, primaryRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                purchaseId: purchase.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "PURCHASE"
+                            }
+                        });
+
+                        primaryRemainingAmount -= allocationAmount;
+                    }
+
+                    // Allocate to THIRD-PARTY agency's PURCHASES
+                    const thirdPartyPurchases = await tx.purchase.findMany({
+                        where: {
+                            agencyId: transaction.thirdPartyAgencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const purchase of thirdPartyPurchases){
+                        if(thirdPartyRemainingAmount <= 0) break;
+
+                        const allocated = purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(purchase.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, thirdPartyRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                purchaseId: purchase.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "PURCHASE"
+                            }
+                        });
+
+                        thirdPartyRemainingAmount -= allocationAmount;
+                    }
+                } else {
+                    // INWARD: primary and third-party BOTH receive customer payments (SALES)
+                    let primaryRemainingAmount = remainingAmount;
+                    let thirdPartyRemainingAmount = remainingAmount;
+
+                    // Allocate to PRIMARY agency's SALES
+                    const primarySales = await tx.sale.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const sale of primarySales){
+                        if(primaryRemainingAmount <= 0) break;
+
+                        const allocated = sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(sale.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, primaryRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                saleId: sale.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "SALE"
+                            }
+                        });
+
+                        primaryRemainingAmount -= allocationAmount;
+                    }
+
+                    // Allocate to THIRD-PARTY agency's SALES
+                    const thirdPartySales = await tx.sale.findMany({
+                        where: {
+                            agencyId: transaction.thirdPartyAgencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const sale of thirdPartySales){
+                        if(thirdPartyRemainingAmount <= 0) break;
+
+                        const allocated = sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(sale.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, thirdPartyRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                saleId: sale.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "SALE"
+                            }
+                        });
+
+                        thirdPartyRemainingAmount -= allocationAmount;
+                    }
                 }
             }
 
