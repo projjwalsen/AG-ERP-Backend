@@ -528,6 +528,9 @@ export class PurchaseService {
                 });
             }
 
+            /**
+             * Outstanding balance is calculated at runtime by getAgencyOutstanding()
+             */
             return lockedPurchase;
         });
     }

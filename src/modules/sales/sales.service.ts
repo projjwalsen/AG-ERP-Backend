@@ -254,7 +254,7 @@ export class SalesService {
             }
 
             /** GST calculation */
-            const taxableAmount = item.quantity * item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit);
+            const taxableAmount = item.quantity * (item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit));
             const gstPercent = Number(batch.product.applicableGST) || 0;
 
             /** GST Type Check */
@@ -630,6 +630,7 @@ export class SalesService {
             /**
              * STEP 3:
              * Return updated sale
+             * Outstanding balance is calculated at runtime by getAgencyOutstanding()
              */
             return lockedSale;
 
