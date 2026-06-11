@@ -715,6 +715,7 @@ export class TransactionService {
                 actor,
                 transaction.agencyId,
                 transaction.branchId,
+                transactionId,
             );
 
             const settings = await this.getSettings();
@@ -747,6 +748,7 @@ export class TransactionService {
                         actor,
                         transaction.thirdPartyAgencyId,
                         transaction.branchId,
+                        transactionId,
                     );
 
                     if(transaction.direction === TransactionDirection.INWARD) {
