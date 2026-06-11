@@ -351,8 +351,16 @@ export class TransactionService {
 
             prisma.transaction.findMany({
                 where: {
-                    agencyId,
-                    ...(branchId && { branchId }),
+                    OR: [
+                        {
+                            agencyId,
+                            ...(branchId && { branchId }),
+                        },
+                        {
+                            thirdPartyAgencyId: agencyId,
+                            ...(branchId && { branchId }),
+                        }
+                    ],
                     ...(excludeTransactionId && {
                         id: { not: excludeTransactionId }
                     }),
@@ -360,6 +368,8 @@ export class TransactionService {
                     suspenseAccount: false,
                 },
                 select: {
+                    agencyId: true,
+                    thirdPartyAgencyId: true,
                     direction: true,
                     paymentType: true,
                     amount: true,
@@ -391,15 +401,25 @@ export class TransactionService {
 
         const pendingSalesAdjustment = pendingTransactions.reduce(
             (sum, transaction) => {
-                const appliesToSales =
-                    (
-                        transaction.paymentType === TransactionPaymentType.NORMAL &&
-                        transaction.direction === TransactionDirection.INWARD
-                    ) ||
-                    (
-                        transaction.paymentType === TransactionPaymentType.THIRD_PARTY &&
-                        transaction.direction === TransactionDirection.OUTWARD
-                    );
+                let appliesToSales = false;
+
+                if (transaction.paymentType === TransactionPaymentType.NORMAL) {
+                    // NORMAL INWARD: reduces salesOutstanding
+                    appliesToSales = transaction.direction === TransactionDirection.INWARD;
+                } else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
+                    // THIRD_PARTY: depends on which role we're playing
+                    if (transaction.agencyId === agencyId) {
+                        // We're the primary
+                        // OUTWARD: reduces purchaseOutstanding (not sales)
+                        // INWARD: reduces salesOutstanding
+                        appliesToSales = transaction.direction === TransactionDirection.INWARD;
+                    } else if (transaction.thirdPartyAgencyId === agencyId) {
+                        // We're the third-party
+                        // OUTWARD: reduces salesOutstanding
+                        // INWARD: reduces purchaseOutstanding (not sales)
+                        appliesToSales = transaction.direction === TransactionDirection.OUTWARD;
+                    }
+                }
 
                 return appliesToSales
                     ? sum + Number(transaction.amount)
@@ -410,15 +430,25 @@ export class TransactionService {
 
         const pendingPurchaseAdjustment = pendingTransactions.reduce(
             (sum, transaction) => {
-                const appliesToPurchase =
-                    (
-                        transaction.paymentType === TransactionPaymentType.NORMAL &&
-                        transaction.direction === TransactionDirection.OUTWARD
-                    ) ||
-                    (
-                        transaction.paymentType === TransactionPaymentType.THIRD_PARTY &&
-                        transaction.direction === TransactionDirection.INWARD
-                    );
+                let appliesToPurchase = false;
+
+                if (transaction.paymentType === TransactionPaymentType.NORMAL) {
+                    // NORMAL OUTWARD: reduces purchaseOutstanding
+                    appliesToPurchase = transaction.direction === TransactionDirection.OUTWARD;
+                } else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
+                    // THIRD_PARTY: depends on which role we're playing
+                    if (transaction.agencyId === agencyId) {
+                        // We're the primary
+                        // OUTWARD: reduces purchaseOutstanding
+                        // INWARD: reduces salesOutstanding (not purchase)
+                        appliesToPurchase = transaction.direction === TransactionDirection.OUTWARD;
+                    } else if (transaction.thirdPartyAgencyId === agencyId) {
+                        // We're the third-party
+                        // OUTWARD: reduces salesOutstanding (not purchase)
+                        // INWARD: reduces purchaseOutstanding
+                        appliesToPurchase = transaction.direction === TransactionDirection.INWARD;
+                    }
+                }
 
                 return appliesToPurchase
                     ? sum + Number(transaction.amount)
