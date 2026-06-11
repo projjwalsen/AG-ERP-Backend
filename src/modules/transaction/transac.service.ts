@@ -846,67 +846,6 @@ export class TransactionService {
                 }
             }
 
-            // UPDATE AGENCY PURCHASE OUTSTANDING
-            if(transaction.direction === TransactionDirection.OUTWARD) {
-                const transactionAmount = Number(transaction.amount);
-                
-                if(transaction.paymentType === TransactionPaymentType.NORMAL) {
-                    // NORMAL OUTWARD: Only primary agency pays
-                    await tx.agency.update({
-                        where: { id: transaction.agencyId },
-                        data: {
-                            amountDue: { decrement: transactionAmount }
-                        }
-                    });
-                } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
-                    // THIRD_PARTY OUTWARD: Primary agency (R) pays, decrements their amountDue
-                    // Third-party agency (ABCD) receives payment, decrements their amountReceivable
-                    await Promise.all([
-                        tx.agency.update({
-                            where: { id: transaction.agencyId },
-                            data: {
-                                amountDue: { decrement: transactionAmount }
-                            }
-                        }),
-                        tx.agency.update({
-                            where: { id: transaction.thirdPartyAgencyId! },
-                            data: {
-                                amountReceivable: { decrement: transactionAmount }
-                            }
-                        })
-                    ]);
-                }
-            } else if(transaction.direction === TransactionDirection.INWARD) {
-                // INWARD TRANSACTIONS - update amountReceivable
-                const transactionAmount = Number(transaction.amount);
-                
-                if(transaction.paymentType === TransactionPaymentType.NORMAL) {
-                    await tx.agency.update({
-                        where: { id: transaction.agencyId },
-                        data: {
-                            amountReceivable: { decrement: transactionAmount }
-                        }
-                    });
-                } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY) {
-                    // THIRD_PARTY INWARD: Primary agency (R) is paying, decrements their amountDue
-                    // Third-party agency (ABCD) is receiving payment, decrements their amountReceivable
-                    await Promise.all([
-                        tx.agency.update({
-                            where: { id: transaction.agencyId },
-                            data: {
-                                amountDue: { decrement: transactionAmount }
-                            }
-                        }),
-                        tx.agency.update({
-                            where: { id: transaction.thirdPartyAgencyId! },
-                            data: {
-                                amountReceivable: { decrement: transactionAmount }
-                            }
-                        })
-                    ]);
-                }
-            }
-
             return tx.transaction.findUnique({
                 where: { id: transactionId },
                 include: {

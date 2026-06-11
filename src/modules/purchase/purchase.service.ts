@@ -529,18 +529,8 @@ export class PurchaseService {
             }
 
             /**
-             * Update agency outstanding balance
-             * Purchase approval increases vendor payable
+             * Outstanding balance is calculated at runtime by getAgencyOutstanding()
              */
-            await tx.agency.update({
-                where: { id: lockedPurchase.agencyId },
-                data: {
-                    amountDue: {
-                        increment: Number(lockedPurchase.grandTotal)
-                    }
-                }
-            });
-
             return lockedPurchase;
         });
     }
