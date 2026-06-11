@@ -1099,20 +1099,7 @@ export class TransactionService {
             const settings = await this.getSettings();
 
             if(!settings.allowNegativeTransaction) {
-                if(finalPaymentType === TransactionPaymentType.THIRD_PARTY) {
-                    // For THIRD_PARTY, check against opposite outstanding
-                    const effectiveOutstanding =
-                        finalDirection === TransactionDirection.INWARD
-                            ? outstanding.purchaseOutstanding
-                            : outstanding.salesOutstanding;
-
-                    if (finalAmount > effectiveOutstanding) {
-                        throw new ApiError(
-                            `Amount exceeds available outstanding. Allow negativeTransaction in settings`,
-                            400
-                        );
-                    }
-                } else {
+                if(finalPaymentType === TransactionPaymentType.NORMAL) {
                     // For NORMAL transactions, check against standard outstanding
                     const effectiveOutstanding =
                         finalDirection === TransactionDirection.INWARD
@@ -1124,6 +1111,44 @@ export class TransactionService {
                             `Amount exceeds available outstanding. Allow negativeTransaction in settings`,
                             400
                         );
+                    }
+                } else if(finalPaymentType === TransactionPaymentType.THIRD_PARTY && finalThirdPartyAgencyId) {
+                    // For THIRD_PARTY, check both agencies
+                    const thirdPartyOutstanding = await this.getAgencyOutstanding(
+                        actor,
+                        finalThirdPartyAgencyId,
+                        finalBranchId,
+                        transactionId,
+                    );
+
+                    if(finalDirection === TransactionDirection.INWARD) {
+                        // INWARD: Primary receives (salesOutstanding), Third-party pays (purchaseOutstanding)
+                        if (finalAmount > outstanding.salesOutstanding) {
+                            throw new ApiError(
+                                `Amount exceeds primary agency sales outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                        if (finalAmount > thirdPartyOutstanding.purchaseOutstanding) {
+                            throw new ApiError(
+                                `Amount exceeds third-party agency purchase outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                    } else if(finalDirection === TransactionDirection.OUTWARD) {
+                        // OUTWARD: Primary pays (purchaseOutstanding), Third-party receives (salesOutstanding)
+                        if (finalAmount > outstanding.purchaseOutstanding) {
+                            throw new ApiError(
+                                `Amount exceeds primary agency purchase outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                        if (finalAmount > thirdPartyOutstanding.salesOutstanding) {
+                            throw new ApiError(
+                                `Amount exceeds third-party agency sales outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
                     }
                 }
             }
