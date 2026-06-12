@@ -325,6 +325,7 @@ export class TransactionService {
         actor: any,
         agencyId?: string,
         branchId?: string,
+        tx?: any,
     ) {
         if(!actor?.id){
             throw new ApiError("Unauthorized", 401);
@@ -334,7 +335,8 @@ export class TransactionService {
             throw new ApiError("Agency ID is required", 400);
         }
 
-        const outstanding = await prisma.agencyOutstanding.findMany({
+        const client = tx || prisma;
+        const outstanding = await client.agencyOutstanding.findMany({
             where: {
                 agencyId,
                 branchId: branchId || actor.branchId
@@ -637,6 +639,7 @@ export class TransactionService {
                 actor,
                 transaction.agencyId,
                 transaction.branchId,
+                tx,
             );
 
             const settings = await this.getSettings();
@@ -646,20 +649,20 @@ export class TransactionService {
                     // For NORMAL transactions, check primary agency's outstanding
                     if (
                         transaction.direction === TransactionDirection.INWARD &&
-                        Number(transaction.amount) > outstanding.amountDue
+                        Number(transaction.amount) > outstanding.amountReceivable
                     ) {
                         throw new ApiError(
-                            `Outstanding changed. Available sales outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`,
+                            `Outstanding changed. Available sales outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`,
                             409
                         );
                     }
         
                     if (
                         transaction.direction === TransactionDirection.OUTWARD &&
-                        Number(transaction.amount) > outstanding.amountReceivable
+                        Number(transaction.amount) > outstanding.amountDue
                     ) {
                         throw new ApiError(
-                            `Outstanding changed. Available purchase outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`,
+                            `Outstanding changed. Available purchase outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`,
                             409
                         );
                     }
@@ -669,33 +672,16 @@ export class TransactionService {
                         actor,
                         transaction.thirdPartyAgencyId,
                         transaction.branchId,
+                        tx,
                     );
 
                     if(transaction.direction === TransactionDirection.INWARD) {
                         // INWARD: Primary receives (salesOutstanding), Third-party pays (purchaseOutstanding)
                         if (
-                            Number(transaction.amount) > outstanding.amountDue
-                        ) {
-                            throw new ApiError(
-                                `Outstanding changed. Available primary sales outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`,
-                                409
-                            );
-                        }
-                        if (
-                            Number(transaction.amount) > thirdPartyOutstanding.amountReceivable
-                        ) {
-                            throw new ApiError(
-                                `Outstanding changed. Available third-party purchase outstanding: ${thirdPartyOutstanding.amountReceivable}. Allow negativeTransaction in settings`,
-                                409
-                            );
-                        }
-                    } else if(transaction.direction === TransactionDirection.OUTWARD) {
-                        // OUTWARD: Primary pays (purchaseOutstanding), Third-party benefit (salesOutstanding)
-                        if (
                             Number(transaction.amount) > outstanding.amountReceivable
                         ) {
                             throw new ApiError(
-                                `Outstanding changed. Available primary purchase outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`,
+                                `Outstanding changed. Available primary sales outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`,
                                 409
                             );
                         }
@@ -703,7 +689,25 @@ export class TransactionService {
                             Number(transaction.amount) > thirdPartyOutstanding.amountDue
                         ) {
                             throw new ApiError(
-                                `Outstanding changed. Available third-party sales outstanding: ${thirdPartyOutstanding.amountDue}. Allow negativeTransaction in settings`,
+                                `Outstanding changed. Available third-party purchase outstanding: ${thirdPartyOutstanding.amountDue}. Allow negativeTransaction in settings`,
+                                409
+                            );
+                        }
+                    } else if(transaction.direction === TransactionDirection.OUTWARD) {
+                        // OUTWARD: Primary pays (purchaseOutstanding), Third-party benefit (salesOutstanding)
+                        if (
+                            Number(transaction.amount) > outstanding.amountDue
+                        ) {
+                            throw new ApiError(
+                                `Outstanding changed. Available primary purchase outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`,
+                                409
+                            );
+                        }
+                        if (
+                            Number(transaction.amount) > thirdPartyOutstanding.amountReceivable
+                        ) {
+                            throw new ApiError(
+                                `Outstanding changed. Available third-party sales outstanding: ${thirdPartyOutstanding.amountReceivable}. Allow negativeTransaction in settings`,
                                 409
                             );
                         }

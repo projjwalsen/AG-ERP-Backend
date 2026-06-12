@@ -578,7 +578,7 @@ export class PurchaseService {
                     data: {
                         agencyId: lockedPurchase.agencyId,
                         branchId: lockedPurchase.branchId,
-                        type: OutstandingType.CREDIT,
+                        type: OutstandingType.DEBIT,
                         amount: invoiceTotal
                     }
                 });
