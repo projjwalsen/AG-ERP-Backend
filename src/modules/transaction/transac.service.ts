@@ -242,27 +242,52 @@ export class TransactionService {
         };
     }
 
+    /**
+     * State synchronization processor engine
+     * Updates agency position balancing dynamically while strictly protecting the single-row constraint
+     */
     static async updatePersistentOutstanding(
         tx: any,
         agencyId: string,
         branchId: string,
         deltaAmount: number,
-        type: OutstandingType,
+        type: OutstandingType, // The type of operation coming in (CREDIT or DEBIT)
         operation: 'ADD' | 'DECREMENT'
     ) {
+        // FIXED: Look for ANY row matching the unique constraint, completely ignoring type for the lookup
         const existing = await tx.agencyOutstanding.findFirst({
-            where: { agencyId, branchId, type }
+            where: { agencyId, branchId }
         });
 
+        // Determine value adjustment value direction multiplier
+        let adjustment = operation === 'ADD' ? deltaAmount : -deltaAmount;
+
         if (existing) {
-            const currentAmount = Number(existing.amount);
-            const nextAmount = operation === 'ADD' ? currentAmount + deltaAmount : currentAmount - deltaAmount;
+            let currentAmount = Number(existing.amount);
+            let currentType = existing.type;
+
+            // Compute net positional shift based on whether the incoming type matches the current row state
+            if (currentType === type) {
+                currentAmount += adjustment;
+            } else {
+                currentAmount -= adjustment;
+            }
+
+            // If a balance crosses below zero, flip the accounting classification type flag
+            if (currentAmount < 0) {
+                currentAmount = Math.abs(currentAmount);
+                currentType = currentType === OutstandingType.DEBIT ? OutstandingType.CREDIT : OutstandingType.DEBIT;
+            }
 
             await tx.agencyOutstanding.update({
                 where: { id: existing.id },
-                data: { amount: nextAmount }
+                data: { 
+                    amount: currentAmount,
+                    type: currentType
+                }
             });
         } else {
+            // Safe baseline fallback if absolutely no record exists yet for this profile relationship combo
             await tx.agencyOutstanding.create({
                 data: {
                     agencyId,
