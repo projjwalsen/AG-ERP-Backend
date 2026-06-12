@@ -88,6 +88,7 @@ model Branch {
   sales Sale[]
   inventories Inventory[]
   transactions Transaction[]
+  outstanding AgencyOutstanding[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -189,12 +190,16 @@ model Agency {
 
   isActive Boolean @default(true)
 
+  amountReceivable Decimal @default(0.00) @db.Decimal(18, 2)
+  amountPayable Decimal @default(0.00) @db.Decimal(18, 2)
+
   ledger Ledger[]
   branches  AgencyBranch[]
   purchases Purchase[]
   sales Sale[]
   transactions Transaction[]
   thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
+  outstanding AgencyOutstanding[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,6 +225,30 @@ model AgencyBranch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  @@unique([agencyId, branchId])
+  @@index([agencyId])
+  @@index([branchId])
+}
+
+enum OutstandingType {
+  DEBIT
+  CREDIT
+}
+model AgencyOutstanding {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  type OutstandingType
+  amount Decimal @default(0.00) @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([agencyId, branchId])
   @@index([agencyId])
   @@index([branchId])
