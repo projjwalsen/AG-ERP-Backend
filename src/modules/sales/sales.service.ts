@@ -673,7 +673,7 @@ export class SalesService {
                     data: {
                         agencyId: lockedSale.agencyId,
                         branchId: lockedSale.branchId,
-                        type: OutstandingType.CREDIT,
+                        type: OutstandingType.DEBIT,
                         amount: invoiceTotal
                     }
                 });
