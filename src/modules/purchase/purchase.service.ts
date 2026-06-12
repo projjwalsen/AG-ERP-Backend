@@ -552,8 +552,8 @@ export class PurchaseService {
                 let newAmount = Number(existing.amount);
                 let currentType = existing.type;
 
-                // Net positional shift calculation relative to DEBIT target
-                if (currentType === OutstandingType.DEBIT) {
+                // Net positional shift calculation relative to CREDIT target
+                if (currentType === OutstandingType.CREDIT) {
                     newAmount += invoiceTotal;
                 } else {
                     newAmount -= invoiceTotal;
@@ -562,7 +562,7 @@ export class PurchaseService {
                 // If balance drops below zero, invert financial position layout
                 if (newAmount < 0) {
                     newAmount = Math.abs(newAmount);
-                    currentType = currentType === OutstandingType.DEBIT ? OutstandingType.CREDIT : OutstandingType.DEBIT;
+                    currentType = currentType === OutstandingType.CREDIT ? OutstandingType.DEBIT : OutstandingType.CREDIT;
                 }
 
                 await tx.agencyOutstanding.update({
@@ -573,12 +573,12 @@ export class PurchaseService {
                     }
                 });
             } else {
-                // If it's a brand new relationship for this branch, insert standard DEBIT baseline
+                // If it's a brand new relationship for this branch, insert standard CREDIT baseline
                 await tx.agencyOutstanding.create({
                     data: {
                         agencyId: lockedPurchase.agencyId,
                         branchId: lockedPurchase.branchId,
-                        type: OutstandingType.DEBIT,
+                        type: OutstandingType.CREDIT,
                         amount: invoiceTotal
                     }
                 });
