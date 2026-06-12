@@ -1,4 +1,4 @@
-import { ProductUnit } from "@prisma/client";
+import { OutstandingType, ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { RBACService } from "../rbac/rbac.service";
@@ -624,6 +624,58 @@ export class SalesService {
                     batchId: item.batchId,
                     quantity: Number(item.quantity),
                     unit: item.unit
+                });
+            }
+
+            // ========================================================
+            // PERSISTENT OUTSTANDING STATE SYNCHRONIZATION HOOK
+            // ========================================================
+            // A sale creates an asset/receivable that a customer owes us.
+            // We register this by executing an atomic positional check relative to CREDIT.
+            const existing = await tx.agencyOutstanding.findUnique({
+                where: {
+                    agencyId_branchId: {
+                        agencyId: lockedSale.agencyId,
+                        branchId: lockedSale.branchId
+                    }
+                }
+            });
+
+            const invoiceTotal = Number(lockedSale.grandTotal);
+
+            if (existing) {
+                let newAmount = Number(existing.amount);
+                let currentType = existing.type;
+
+                // Net positional shift calculation relative to CREDIT target
+                if (currentType === OutstandingType.CREDIT) {
+                    newAmount += invoiceTotal;
+                } else {
+                    newAmount -= invoiceTotal;
+                }
+
+                // If balance drops below zero, invert financial position layout
+                if (newAmount < 0) {
+                    newAmount = Math.abs(newAmount);
+                    currentType = currentType === OutstandingType.CREDIT ? OutstandingType.DEBIT : OutstandingType.CREDIT;
+                }
+
+                await tx.agencyOutstanding.update({
+                    where: { id: existing.id },
+                    data: {
+                        amount: newAmount,
+                        type: currentType
+                    }
+                });
+            } else {
+                // If it's a brand new relationship for this branch, insert standard CREDIT baseline
+                await tx.agencyOutstanding.create({
+                    data: {
+                        agencyId: lockedSale.agencyId,
+                        branchId: lockedSale.branchId,
+                        type: OutstandingType.CREDIT,
+                        amount: invoiceTotal
+                    }
                 });
             }
 
