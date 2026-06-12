@@ -81,12 +81,14 @@ model Branch {
   isActive Boolean @default(true)
 
   users User[]
+  ledger Ledger[]
   agencies AgencyBranch[]
   inventoryBatches InventoryBatch[]
   purchases Purchase[]
   sales Sale[]
   inventories Inventory[]
   transactions Transaction[]
+  outstanding AgencyOutstanding[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -188,11 +190,16 @@ model Agency {
 
   isActive Boolean @default(true)
 
+  amountReceivable Decimal @default(0.00) @db.Decimal(18, 2)
+  amountPayable Decimal @default(0.00) @db.Decimal(18, 2)
+
+  ledger Ledger[]
   branches  AgencyBranch[]
   purchases Purchase[]
   sales Sale[]
   transactions Transaction[]
   thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
+  outstanding AgencyOutstanding[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -218,6 +225,30 @@ model AgencyBranch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
+  @@unique([agencyId, branchId])
+  @@index([agencyId])
+  @@index([branchId])
+}
+
+enum OutstandingType {
+  DEBIT
+  CREDIT
+}
+model AgencyOutstanding {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  type OutstandingType
+  amount Decimal @default(0.00) @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([agencyId, branchId])
   @@index([agencyId])
   @@index([branchId])
@@ -261,6 +292,17 @@ model Product {
   @@index([name])
   @@index([category])
   @@index([hsnNo])
+}
+
+model Setting {
+  id    String @id @default(uuid())
+
+  allowNegativeInventory Boolean @default(false)
+
+  allowNegativeTransaction Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum PurchaseStatus {
@@ -498,6 +540,19 @@ enum PaymentMode {
   OFFLINE
 }
 
+enum PaymentType {
+  //ONLINE
+  NEFT
+  RTGS
+  BANK_DEPOSIT
+  UPI
+
+  //OFFLINE
+  CHEQUE
+  DD
+  CASH
+}
+
 enum TransactionStatus {
   PENDING
   APPROVED
@@ -521,16 +576,21 @@ model Transaction {
   agencyId String?
   agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
 
-  paymentType TransactionPaymentType
 
   thirdPartyAgencyId String?
   thirdPartyAgency   Agency? @relation("ThirdPartyAgencyTransactions", fields: [thirdPartyAgencyId], references: [id], onDelete: SetNull)
 
-  transactionRefNo String?
 
   amount Decimal @db.Decimal(18, 2)
 
   paymentMode PaymentMode
+  paymentType TransactionPaymentType
+
+  paymentThrough PaymentType?
+
+  transactionRefNo String? // NEFT/RTGS/UPI/BANK_DEPOSIT
+
+  referenceNo String? // CHEQUE/DD number
 
   remarks String?
 
@@ -565,4 +625,109 @@ model TransactionAllocation {
   allocatedAmount Decimal @db.Decimal(18, 2)
 
   createdAt DateTime @default(now())
+}
+
+enum LedgerType {
+  CUSTOMER
+  VENDOR
+  BANK
+  CASH
+  GST
+  SALES
+  PURCHASE
+  EXPENSE
+  INCOME
+  SUSPENSE
+}
+
+model Ledger {
+  id  String @id @default(uuid())
+
+  code String @unique
+  name String
+  category LedgerType
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  agencyId String? @unique
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+  openingBalance Decimal @default(0.00) @db.Decimal(18, 2)
+  currentBalance Decimal @default(0.00) @db.Decimal(18, 2)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries LedgerEntry[]
+
+  @@index([agencyId])
+  @@index([branchId])
+  @@index([category])
+}
+
+
+enum VoucherType {
+  SALES
+  PURCHASE
+
+  RECEIPT
+  PAYMENT
+
+  JOURNAL
+
+  CONTRA
+}
+
+model Voucher {
+  id   String @id @default(uuid())
+
+  voucherNo String @unique
+
+  voucherType VoucherType
+
+  sourceId String?
+
+  narration String?
+
+  totalDebit Decimal @default(0.00) @db.Decimal(18, 2)
+  totalCredit Decimal @default(0.00) @db.Decimal(18, 2)
+
+  voucherDate DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  entries LedgerEntry[]
+
+  @@index([voucherType])
+  @@index([sourceId])
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+model LedgerEntry {
+  id   String @id @default(uuid())
+
+  voucherId String
+  voucher   Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  ledgerId String
+  ledger   Ledger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  entryType EntryType
+
+  amount Decimal @db.Decimal(18, 2)
+
+  narration String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ledgerId])
+  @@index([voucherId])
 }

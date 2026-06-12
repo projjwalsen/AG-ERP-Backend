@@ -1,4 +1,4 @@
-import { TransactionDirection, TransactionPaymentType, PaymentMode, TransactionStatus } from "@prisma/client";
+import { TransactionDirection, TransactionPaymentType, PaymentMode, TransactionStatus, PaymentType, OutstandingType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { randomUUID } from "crypto"
@@ -14,7 +14,9 @@ type TransactionPayload = {
     thirdPartyAgencyId?: string;
     amount: number;
     paymentMode: PaymentMode;
-    transactionRefNo?: string;
+    paymentThrough?: PaymentType;
+    transactionRefNo?: string; // NEFT/RTGS/UPI/BANK_DEPOSIT
+    referenceNo?: string; // CHEQUE / DD
     remarks?: string;
 }
 
@@ -38,6 +40,122 @@ export class TransactionService {
             .toUpperCase();
 
         return `TRX-${branch.code}-${unique}`;
+    }
+
+    private static async getSettings() {
+        let setting = await prisma.setting.findFirst();
+        if(!setting){
+            setting = await prisma.setting.create({
+                data: {}
+            });
+        }
+
+        return setting;
+    }
+
+    private static validatePaymentDetails(
+        paymentMode: PaymentMode,
+        paymentThrough: PaymentType,
+        transactionRefNo?: string,
+        referenceNo?: string
+    ) {
+        const onlineTypes: PaymentType[] = [
+            PaymentType.NEFT,
+            PaymentType.RTGS,
+            PaymentType.UPI,
+            PaymentType.BANK_DEPOSIT
+        ];
+
+        const offlineRefTypes: PaymentType[] = [
+            PaymentType.CHEQUE,
+            PaymentType.DD
+        ];
+
+        if (
+            paymentMode === PaymentMode.ONLINE &&
+            !onlineTypes.includes(paymentThrough)
+        ) {
+            throw new ApiError(
+                "Invalid payment type for ONLINE mode",
+                400
+            );
+        }
+
+        if (
+            paymentMode === PaymentMode.OFFLINE &&
+            ![
+                "CASH", "CHEQUE", "DD"
+            ].includes(paymentThrough)
+        ) {
+            throw new ApiError(
+                "Invalid payment type for OFFLINE mode",
+                400
+            );
+        }
+
+        // ONLINE -> requires transactionRefNo
+        if (
+            onlineTypes.includes(paymentThrough) &&
+            !transactionRefNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} mode requires Transaction Reference Number`,
+                400
+            );
+        }
+
+        // ONLINE -> should not contain referenceNo
+        if(
+            onlineTypes.includes(paymentThrough) &&
+            referenceNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} mode should not contain Reference Number`,
+                400
+            );
+        }
+
+        // OFFLINE -> requires referenceNo
+        if (
+            offlineRefTypes.includes(paymentThrough) &&
+            !referenceNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} requires Reference Number`,
+                400
+            );
+        }
+
+        // OFFLINE -> should not contain transactionRefNo
+        if (
+            offlineRefTypes.includes(paymentThrough) &&
+            transactionRefNo?.trim()
+        ) {
+            throw new ApiError(
+                `${paymentThrough} should not contain Transaction Reference Number`,
+                400
+            );
+        }
+        // CASH -> should not contain transactionRefNo or referenceNo
+        if (
+            paymentThrough === PaymentType.CASH &&
+            referenceNo
+        ) {
+            throw new ApiError(
+                "Cash transaction should not contain reference number",
+                400
+            );
+        }
+
+        if(
+            paymentThrough === PaymentType.CASH &&
+            transactionRefNo
+        ) {
+            throw new ApiError(
+                "Cash transaction should not contain transaction reference number",
+                400
+            );
+        }
     }
 
     static async createTransaction(
@@ -81,27 +199,100 @@ export class TransactionService {
             throw new ApiError("Amount must be greater than zero", 400);
         }
 
+        if (!payload.paymentThrough) {
+            throw new ApiError("Payment type is required", 400);
+        }
+        
         const transactionNo = await this.generateTransactionNo(payload.branchId);
 
-        const outstanding = await this.getAgencyOutstanding(
-            actor,
-            payload.agencyId,
-            payload.branchId,
-            payload.direction
+        // THIRD - PARTY TRANSACTIONS
+        if(!payload.suspense && payload.agencyId) {
+            const settings = await this.getSettings();
+
+            if(!settings.allowNegativeTransaction) {
+                
+                if(payload.paymentType === TransactionPaymentType.NORMAL) {
+                    // For NORMAL transactions, check primary agency's outstanding
+                    const outstanding = await this.getAgencyOutstanding(
+                        actor,
+                        payload.agencyId,
+                        payload.branchId,
+                    );
+
+                    if(payload.direction === TransactionDirection.INWARD &&
+                        payload.amount > outstanding.amountReceivable
+                    ) {
+                        throw new ApiError(`Payment exceeds sales outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`, 400);
+                    }
+            
+                    if(payload.direction === TransactionDirection.OUTWARD &&
+                        payload.amount > outstanding.amountDue
+                    ) {
+                        throw new ApiError(`Payment exceeds purchase outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`, 400);
+                    }
+                } else if(payload.paymentType === TransactionPaymentType.THIRD_PARTY && payload.thirdPartyAgencyId) {
+                    // For THIRD_PARTY transactions, check both agencies
+                    const primaryOutstanding = await this.getAgencyOutstanding(
+                        actor,
+                        payload.agencyId,
+                        payload.branchId,
+                    );
+
+                    const thirdPartyOutstanding = await this.getAgencyOutstanding(
+                        actor,
+                        payload.thirdPartyAgencyId,
+                        payload.branchId,
+                    );
+
+                    if(payload.direction === TransactionDirection.INWARD) {
+                        // INWARD: Primary receives (salesOutstanding), Third-party pays (purchaseOutstanding)
+                        if(payload.amount > primaryOutstanding.amountReceivable) {
+                            throw new ApiError(`Payment exceeds primary agency sales outstanding: ${primaryOutstanding.amountReceivable}. Allow negativeTransaction in settings`, 400);
+                        }
+                        if(payload.amount > thirdPartyOutstanding.amountDue) {
+                            throw new ApiError(`Payment exceeds third-party agency purchase outstanding: ${thirdPartyOutstanding.amountDue}. Allow negativeTransaction in settings`, 400);
+                        }
+                    } else if(payload.direction === TransactionDirection.OUTWARD) {
+                        // OUTWARD: Primary pays (purchaseOutstanding), Third-party benefit (salesOutstanding)
+                        if(payload.amount > primaryOutstanding.amountDue) {
+                            throw new ApiError(`Payment exceeds primary agency purchase outstanding: ${primaryOutstanding.amountDue}. Allow negativeTransaction in settings`, 400);
+                        }
+                        if(payload.amount > thirdPartyOutstanding.amountReceivable) {
+                            throw new ApiError(`Payment exceeds third-party agency sales outstanding: ${thirdPartyOutstanding.amountReceivable}. Allow negativeTransaction in settings`, 400);
+                        }
+                    }
+                }
+            }
+
+        }
+        
+        const paymentMode = 
+            payload.paymentType === TransactionPaymentType.THIRD_PARTY
+            ? PaymentMode.OFFLINE
+            : payload.paymentMode;
+        
+        const paymentThrough = 
+            payload.paymentType === TransactionPaymentType.THIRD_PARTY
+            ? PaymentType.CASH
+            : payload.paymentThrough;
+
+        this.validatePaymentDetails(
+            paymentMode,
+            paymentThrough,
+            payload.transactionRefNo,
+            payload.referenceNo
         );
 
-        if(payload.direction === TransactionDirection.INWARD &&
-            payload.amount > outstanding.salesOutstanding
-        ) {
-            throw new ApiError(`Payment exceeds sales outstanding:  ${outstanding.salesOutstanding}`, 400);
-        }
+        const isOnlinePayment =
+            paymentThrough === PaymentType.NEFT ||
+            paymentThrough === PaymentType.RTGS ||
+            paymentThrough === PaymentType.UPI ||
+            paymentThrough === PaymentType.BANK_DEPOSIT;
 
-        if(payload.direction === TransactionDirection.OUTWARD &&
-            payload.amount > outstanding.purchaseOutstanding
-        ) {
-            throw new ApiError(`Payment exceeds purchase outstanding:  ${outstanding.purchaseOutstanding}`, 400);
-        }
-
+        const isOfflineRefPayment =
+            paymentThrough === PaymentType.CHEQUE ||
+            paymentThrough === PaymentType.DD;
+        
         const transaction = await prisma.transaction.create({
             data: {
                 transactionNo,
@@ -113,8 +304,10 @@ export class TransactionService {
                 paymentType: payload.paymentType,
                 thirdPartyAgencyId: payload.thirdPartyAgencyId,
                 amount: payload.amount,
-                paymentMode: payload.paymentMode,
-                transactionRefNo: payload.transactionRefNo,
+                paymentMode,
+                paymentThrough,
+                transactionRefNo: isOnlinePayment ? payload.transactionRefNo : null,
+                referenceNo: isOfflineRefPayment ? payload.referenceNo : null,
                 remarks: payload.remarks,
                 createdById: actor.id,
             }
@@ -123,94 +316,94 @@ export class TransactionService {
         return transaction;
     }
 
+    /** 
+     * ===================
+     *  Directly point lookup from persistent state table
+    */
+
     static async getAgencyOutstanding(
         actor: any,
         agencyId?: string,
         branchId?: string,
-        direction?: TransactionDirection
     ) {
         if(!actor?.id){
             throw new ApiError("Unauthorized", 401);
         }
 
-        if(!agencyId && !branchId){
-            throw new ApiError("Either agency ID or branch ID must be provided", 400);
+        if(!agencyId){
+            throw new ApiError("Agency ID is required", 400);
         }
 
-        let salesOutstanding = 0;
-        let purchaseOutstanding = 0;
+        const outstanding = await prisma.agencyOutstanding.findMany({
+            where: {
+                agencyId,
+                branchId: branchId || actor.branchId
+            }
+        });
 
-         // =========================
-        // 🔵 SALES OUTSTANDING (INWARD) --> money we r getting from customer
-        // =========================
-        if (!direction || direction === TransactionDirection.INWARD) {
-            const sales = await prisma.sale.findMany({
-                where: {
-                    branchId,
-                    agencyId,
-                    status: "APPROVED",
-                },
-                select: {
-                    id: true,
-                    grandTotal: true,
-                    allocations: {
-                        select: {
-                            allocatedAmount: true,
-                        },
-                    },
-                },
-            });
+        let debitSum = 0;
+        let creditSum = 0;
 
-            for (const sale of sales) {
-                const allocated = sale.allocations.reduce(
-                    (sum, a) => sum + Number(a.allocatedAmount),
-                    0
-                );
-
-                salesOutstanding +=
-                    Number(sale.grandTotal) - allocated;
+        for(const entry of outstanding) {
+            if(entry.type === OutstandingType.DEBIT){
+                debitSum += Number(entry.amount);
+            } else if(entry.type === OutstandingType.CREDIT){
+                creditSum += Number(entry.amount);
             }
         }
 
-        // =========================
-        // 🔴 PURCHASE OUTSTANDING (OUTWARD) --> money we r paying to vendor
-        // =========================
-        if(!direction || direction === TransactionDirection.OUTWARD){
-            const purchases = await prisma.purchase.findMany({
-                where: {
-                    branchId,
-                    agencyId,
-                    status: "APPROVED",
-                },
-                select: {
-                    id: true,
-                    grandTotal: true,
-                    allocations: {
-                        select: {
-                            allocatedAmount: true,
-                        },
-                    },
-                },
-            });
-    
-            for (const purchase of purchases) {
-                const allocated = purchase.allocations.reduce(
-                    (sum, a) => sum + Number(a.allocatedAmount),
-                    0
-                );
-    
-                purchaseOutstanding +=
-                    Number(purchase.grandTotal) - allocated;
-            }
-        }
+        const netDue = debitSum - creditSum;
+        const netReceivable = creditSum - debitSum;
 
         return {
-            direction,
-            salesOutstanding,
-            purchaseOutstanding,
-            netOutstanding: salesOutstanding - purchaseOutstanding
-        };
+            amountDue: netDue > 0 ? netDue : 0,
+            amountReceivable: netReceivable > 0 ? netReceivable : 0
+        }
+        
     }
+
+    /**
+     *  State synchronization processor engine
+     * update agency amountReceivable and amountDue based on their sales and purchases
+     */
+    static async updatePersistentOutstanding(
+        tx: any,
+        agencyId: string,
+        branchId: string,
+        deltaAmount: number,
+        type: OutstandingType,
+        operation: 'ADD' | 'DECREMENT'
+    ) {
+        const existing = await tx.agencyOutstanding.findFirst({
+            where: {
+                agencyId, branchId, type
+            }
+        });
+
+        if(existing) {
+            const currentAmount = Number(existing.amount);
+            const nextAmount = operation === 'ADD' ? currentAmount + deltaAmount : currentAmount - deltaAmount;
+
+            await tx.agencyOutstanding.update({
+                where: { id: existing.id },
+                data: { amount: nextAmount }
+            });
+        } else {
+            await tx.agencyOutstanding.create({
+                data: {
+                    agencyId,
+                    branchId,
+                    type,
+                    amount: operation === 'ADD' ? deltaAmount : -deltaAmount
+                }
+            })
+        }
+    }
+
+
+
+
+
 
     static async getAllTransactions(
         actor: any,
@@ -310,7 +503,7 @@ export class TransactionService {
                 include: {
                     branch: true,
                     agency: true,
-                    thirdParty: true,
+                    thirdPartyAgency: true,
                     createdBy: true
                 },
                 orderBy: {
@@ -422,8 +615,7 @@ export class TransactionService {
                 },
                 data: {
                     status: TransactionStatus.APPROVED,
-                    approvedById: actor.id,
-                    approvedAt: new Date()
+                    updatedAt: new Date()
                 }
             });
 
@@ -445,123 +637,368 @@ export class TransactionService {
                 actor,
                 transaction.agencyId,
                 transaction.branchId,
-                transaction.direction
             );
 
-            if (
-                transaction.direction === TransactionDirection.INWARD &&
-                Number(transaction.amount) > outstanding.salesOutstanding
-            ) {
-                throw new ApiError(
-                    `Outstanding changed. Available sales outstanding: ${outstanding.salesOutstanding}`,
-                    409
-                );
-            }
+            const settings = await this.getSettings();
 
-            if (
-                transaction.direction === TransactionDirection.OUTWARD &&
-                Number(transaction.amount) > outstanding.purchaseOutstanding
-            ) {
-                throw new ApiError(
-                    `Outstanding changed. Available purchase outstanding: ${outstanding.purchaseOutstanding}`,
-                    409
-                );
-            }
-
-            let remainingAmount = Number(transaction.amount);
-
-            /** Customer payment received */
-            if(transaction.direction === TransactionDirection.INWARD){
-                const sales = await tx.sale.findMany({
-                    where: {
-                        agencyId: transaction.agencyId,
-                        branchId: transaction.branchId,
-                        status: "APPROVED",
-                    },
-                    include: {
-                        allocations: true
-                    },
-                    orderBy: {
-                        createdAt: "asc"
+            if(!settings.allowNegativeTransaction) {
+                if(transaction.paymentType === TransactionPaymentType.NORMAL) {
+                    // For NORMAL transactions, check primary agency's outstanding
+                    if (
+                        transaction.direction === TransactionDirection.INWARD &&
+                        Number(transaction.amount) > outstanding.amountReceivable
+                    ) {
+                        throw new ApiError(
+                            `Outstanding changed. Available sales outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`,
+                            409
+                        );
                     }
-                });
-
-                for(const sale of sales){
-
-                    if(remainingAmount <= 0){
-                        break;
+        
+                    if (
+                        transaction.direction === TransactionDirection.OUTWARD &&
+                        Number(transaction.amount) > outstanding.amountDue
+                    ) {
+                        throw new ApiError(
+                            `Outstanding changed. Available purchase outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`,
+                            409
+                        );
                     }
-
-                    const allocated = sale.allocations.reduce(
-                        (sum, a) => sum + Number(a.allocatedAmount),
-                        0
+                } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
+                    // For THIRD_PARTY, check both agencies
+                    const thirdPartyOutstanding = await this.getAgencyOutstanding(
+                        actor,
+                        transaction.thirdPartyAgencyId,
+                        transaction.branchId,
                     );
 
-                    const outstanding = Number(sale.grandTotal) - allocated;
-
-                    if(outstanding <= 0){
-                        continue;
-                    }
-
-                    const allocationAmount = Math.min(outstanding, remainingAmount);
-
-                    await tx.transactionAllocation.create({
-                        data: {
-                            transactionId : transaction.id,
-                            saleId: sale.id,
-                            allocatedAmount: allocationAmount,
-                            sourceType: "SALE"
+                    if(transaction.direction === TransactionDirection.INWARD) {
+                        // INWARD: Primary receives (salesOutstanding), Third-party pays (purchaseOutstanding)
+                        if (
+                            Number(transaction.amount) > outstanding.amountReceivable
+                        ) {
+                            throw new ApiError(
+                                `Outstanding changed. Available primary sales outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`,
+                                409
+                            );
                         }
-                    });
-
-                    remainingAmount -= allocationAmount;
+                        if (
+                            Number(transaction.amount) > thirdPartyOutstanding.amountDue
+                        ) {
+                            throw new ApiError(
+                                `Outstanding changed. Available third-party purchase outstanding: ${thirdPartyOutstanding.amountDue}. Allow negativeTransaction in settings`,
+                                409
+                            );
+                        }
+                    } else if(transaction.direction === TransactionDirection.OUTWARD) {
+                        // OUTWARD: Primary pays (purchaseOutstanding), Third-party benefit (salesOutstanding)
+                        if (
+                            Number(transaction.amount) > outstanding.amountDue
+                        ) {
+                            throw new ApiError(
+                                `Outstanding changed. Available primary purchase outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`,
+                                409
+                            );
+                        }
+                        if (
+                            Number(transaction.amount) > thirdPartyOutstanding.amountReceivable
+                        ) {
+                            throw new ApiError(
+                                `Outstanding changed. Available third-party sales outstanding: ${thirdPartyOutstanding.amountReceivable}. Allow negativeTransaction in settings`,
+                                409
+                            );
+                        }
+                    }
                 }
             }
 
-            /** Vendor Payment to be Made */
-            if(transaction.direction === TransactionDirection.OUTWARD){
-                const purchases = await tx.purchase.findMany({
-                    where: {
-                        agencyId: transaction.agencyId,
-                        branchId: transaction.branchId,
-                        status: "APPROVED",
-                    },
-                    include: {
-                        allocations: true
-                    },
-                    orderBy: {
-                        createdAt: "asc"
-                    }
-                });
+            const amt = Number(transaction.amount);
 
-                for(const purchase of purchases){
-                    if(remainingAmount <= 0){
-                        break;
-                    }
+            // ==========================================
+            // ACCOUNTING DEBIT/CREDIT PERSISTENT TRACKING
+            // ==========================================
+            if (transaction.paymentType === TransactionPaymentType.NORMAL) {
+                if (transaction.direction === TransactionDirection.INWARD) {
+                    // Normal Inward: Customer pays Biryani Club -> Gained CREDIT row to reduce their amountDue
+                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "CREDIT", 'ADD');
+                } else {
+                    // Normal Outward: We pay a vendor -> Gained DEBIT row to reduce our amountReceivable
+                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "DEBIT", 'ADD');
+                }
+            } 
+            else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
+                if (transaction.direction === TransactionDirection.INWARD) {
+                    // Primary Agency A (Amit) clears liability balance via incoming payment -> ADD CREDIT
+                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "CREDIT", 'ADD');
+                    // Third-Party Agency B (Bappa) pays on their behalf -> Gaining credit balance with us -> ADD CREDIT
+                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "CREDIT", 'ADD');
+                } 
+                else if (transaction.direction === TransactionDirection.OUTWARD) {
+                    // Primary Vendor gets clear -> ADD DEBIT
+                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "DEBIT", 'ADD');
+                    // Third-Party Agency reclaims/consumes balance credit -> ADD DEBIT
+                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "DEBIT", 'ADD');
+                }
+            }
 
-                    const allocated = purchase.allocations.reduce(
-                        (sum, a) => sum + Number(a.allocatedAmount),
-                        0
-                    );
 
-                    const outstanding = Number(purchase.grandTotal) - allocated;
+            let remainingAmount = amt;
 
-                    if(outstanding <= 0){
-                        continue;
-                    }
-
-                    const allocationAmount = Math.min(outstanding, remainingAmount);
-
-                    await tx.transactionAllocation.create({
-                        data: {
-                            transactionId : transaction.id,
-                            purchaseId: purchase.id,
-                            allocatedAmount: allocationAmount,
-                            sourceType: "PURCHASE"
+            /**
+             * Allocation logic depends on transaction type
+             */
+            if(transaction.paymentType === TransactionPaymentType.NORMAL) {
+                // NORMAL: allocate to primary agency's sales (INWARD) or purchases (OUTWARD)
+                if(transaction.direction === TransactionDirection.INWARD) {
+                    // INWARD: allocate to primary's SALES
+                    const sales = await tx.sale.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
                         }
                     });
 
-                    remainingAmount -= allocationAmount;
+                    for(const sale of sales){
+                        if(remainingAmount <= 0) break;
+
+                        const allocated = sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(sale.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, remainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                saleId: sale.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "SALE"
+                            }
+                        });
+
+                        remainingAmount -= allocationAmount;
+                    }
+                } else {
+                    // OUTWARD: allocate to primary's PURCHASES
+                    const purchases = await tx.purchase.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const purchase of purchases){
+                        if(remainingAmount <= 0) break;
+
+                        const allocated = purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(purchase.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, remainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                purchaseId: purchase.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "PURCHASE"
+                            }
+                        });
+
+                        remainingAmount -= allocationAmount;
+                    }
+                }
+            } else if(transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
+                // THIRD_PARTY: primary and third-party allocate differently based on direction
+                if(transaction.direction === TransactionDirection.OUTWARD) {
+                    // OUTWARD: Primary pays vendors (PURCHASES), Third-party benefits sales (SALES)
+                    let primaryRemainingAmount = remainingAmount;
+                    let thirdPartyRemainingAmount = remainingAmount;
+
+                    // Allocate PRIMARY to PURCHASES (they pay vendors)
+                    const primaryPurchases = await tx.purchase.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const purchase of primaryPurchases){
+                        if(primaryRemainingAmount <= 0) break;
+
+                        const allocated = purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(purchase.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, primaryRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                purchaseId: purchase.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "PURCHASE"
+                            }
+                        });
+
+                        primaryRemainingAmount -= allocationAmount;
+                    }
+
+                    // Allocate THIRD-PARTY to SALES (payment benefits their sales)
+                    const thirdPartySales = await tx.sale.findMany({
+                        where: {
+                            agencyId: transaction.thirdPartyAgencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const sale of thirdPartySales){
+                        if(thirdPartyRemainingAmount <= 0) break;
+
+                        const allocated = sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(sale.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, thirdPartyRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                saleId: sale.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "SALE"
+                            }
+                        });
+
+                        thirdPartyRemainingAmount -= allocationAmount;
+                    }
+                } else {
+                    // INWARD: Primary receives customer payments (SALES), Third-party pays vendors (PURCHASES)
+                    let primaryRemainingAmount = remainingAmount;
+                    let thirdPartyRemainingAmount = remainingAmount;
+
+                    // Allocate PRIMARY to SALES (they receive payment)
+                    const primarySales = await tx.sale.findMany({
+                        where: {
+                            agencyId: transaction.agencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const sale of primarySales){
+                        if(primaryRemainingAmount <= 0) break;
+
+                        const allocated = sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(sale.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, primaryRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                saleId: sale.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "SALE"
+                            }
+                        });
+
+                        primaryRemainingAmount -= allocationAmount;
+                    }
+
+                    // Allocate THIRD-PARTY to PURCHASES (payment reduces what they owe vendors)
+                    const thirdPartyPurchases = await tx.purchase.findMany({
+                        where: {
+                            agencyId: transaction.thirdPartyAgencyId,
+                            branchId: transaction.branchId,
+                            status: "APPROVED",
+                        },
+                        include: {
+                            allocations: true
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    });
+
+                    for(const purchase of thirdPartyPurchases){
+                        if(thirdPartyRemainingAmount <= 0) break;
+
+                        const allocated = purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                        const outstanding = Number(purchase.grandTotal) - allocated;
+                        if(outstanding <= 0) continue;
+
+                        const allocationAmount = Math.min(outstanding, thirdPartyRemainingAmount);
+
+                        await tx.transactionAllocation.create({
+                            data: {
+                                transactionId: transaction.id,
+                                purchaseId: purchase.id,
+                                allocatedAmount: allocationAmount,
+                                sourceType: "PURCHASE"
+                            }
+                        });
+
+                        thirdPartyRemainingAmount -= allocationAmount;
+                    }
                 }
             }
 
@@ -573,7 +1010,6 @@ export class TransactionService {
                     agency: true,
                     thirdPartyAgency: true,
                     createdBy: true,
-                    approvedBy: true
                 }
             });
         });
@@ -626,8 +1062,8 @@ export class TransactionService {
                 },
                 data: {
                     status: TransactionStatus.REJECTED,
-                    approvedById: actor.id,
-                    approvedAt: new Date(),
+                    createdById: actor.id,
+                    updatedAt: new Date(),
                     remarks: remarks?.trim() ? remarks.trim() : transaction.remarks
                 }
             });
@@ -644,7 +1080,6 @@ export class TransactionService {
                     agency: true,
                     thirdPartyAgency: true,
                     createdBy: true,
-                    approvedBy: true
                 }
             });
         });
@@ -713,6 +1148,20 @@ export class TransactionService {
         const finalAmount =
             payload.amount ?? Number(transaction.amount);
 
+        let finalPaymentMode =
+            payload.paymentMode ?? transaction.paymentMode;
+
+        let finalPaymentThrough =
+            payload.paymentThrough ?? transaction.paymentThrough;
+
+        const finalTransactionRefNo =
+            payload.transactionRefNo ??
+            transaction.transactionRefNo;
+
+        const finalReferenceNo =
+            payload.referenceNo ??
+            transaction.referenceNo;
+
         // Branch restricted users cannot move transactions to another branch
         if (
             actor.branchAccessType !== "ALL" &&
@@ -749,6 +1198,20 @@ export class TransactionService {
             );
         }
 
+        if(
+            finalPaymentType === TransactionPaymentType.THIRD_PARTY
+        ) {
+            finalPaymentMode = PaymentMode.OFFLINE;
+            finalPaymentThrough = PaymentType.CASH;
+        }
+
+        this.validatePaymentDetails(
+            finalPaymentMode,
+            finalPaymentThrough,
+            finalTransactionRefNo,
+            finalReferenceNo
+        );
+
         // Outstanding validation
         if (!finalSuspense && finalAgencyId) {
             const outstanding =
@@ -756,32 +1219,64 @@ export class TransactionService {
                     actor,
                     finalAgencyId,
                     finalBranchId,
-                    finalDirection
                 );
 
-            if (
-                finalDirection ===
-                    TransactionDirection.INWARD &&
-                finalAmount >
-                    outstanding.salesOutstanding
-            ) {
-                throw new ApiError(
-                    `Payment exceeds sales outstanding: ${outstanding.salesOutstanding}`,
-                    400
-                );
+            const settings = await this.getSettings();
+
+            if(!settings.allowNegativeTransaction) {
+                if(finalPaymentType === TransactionPaymentType.NORMAL) {
+                    // For NORMAL transactions, check against standard outstanding
+                    const effectiveOutstanding =
+                        finalDirection === TransactionDirection.INWARD
+                            ? outstanding.amountReceivable
+                            : outstanding.amountDue;
+
+                    if (finalAmount > effectiveOutstanding) {
+                        throw new ApiError(
+                            `Amount exceeds available outstanding. Allow negativeTransaction in settings`,
+                            400
+                        );
+                    }
+                } else if(finalPaymentType === TransactionPaymentType.THIRD_PARTY && finalThirdPartyAgencyId) {
+                    // For THIRD_PARTY, check both agencies
+                    const thirdPartyOutstanding = await this.getAgencyOutstanding(
+                        actor,
+                        finalThirdPartyAgencyId,
+                        finalBranchId,
+                    );
+
+                    if(finalDirection === TransactionDirection.INWARD) {
+                        // INWARD: Primary receives (salesOutstanding), Third-party pays (purchaseOutstanding)
+                        if (finalAmount > outstanding.amountReceivable) {
+                            throw new ApiError(
+                                `Amount exceeds primary agency sales outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                        if (finalAmount > thirdPartyOutstanding.amountDue) {
+                            throw new ApiError(
+                                `Amount exceeds third-party agency purchase outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                    } else if(finalDirection === TransactionDirection.OUTWARD) {
+                        // OUTWARD: Primary pays (purchaseOutstanding), Third-party benefit (salesOutstanding)
+                        if (finalAmount > outstanding.amountDue) {
+                            throw new ApiError(
+                                `Amount exceeds primary agency purchase outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                        if (finalAmount > thirdPartyOutstanding.amountReceivable) {
+                            throw new ApiError(
+                                `Amount exceeds third-party agency sales outstanding. Allow negativeTransaction in settings`,
+                                400
+                            );
+                        }
+                    }
+                }
             }
 
-            if (
-                finalDirection ===
-                    TransactionDirection.OUTWARD &&
-                finalAmount >
-                    outstanding.purchaseOutstanding
-            ) {
-                throw new ApiError(
-                    `Payment exceeds purchase outstanding: ${outstanding.purchaseOutstanding}`,
-                    400
-                );
-            }
         }
 
         // Optimistic locking
@@ -799,12 +1294,20 @@ export class TransactionService {
                 thirdPartyAgencyId:
                     finalThirdPartyAgencyId,
                 amount: finalAmount,
-                paymentMode:
-                    payload.paymentMode ??
-                    transaction.paymentMode,
+                paymentMode: finalPaymentMode,
+                paymentThrough: finalPaymentThrough,
                 transactionRefNo:
-                    payload.transactionRefNo ??
-                    transaction.transactionRefNo,
+                    finalPaymentThrough === PaymentType.NEFT ||
+                    finalPaymentThrough === PaymentType.RTGS ||
+                    finalPaymentThrough === PaymentType.UPI ||
+                    finalPaymentThrough === PaymentType.BANK_DEPOSIT
+                    ? finalTransactionRefNo
+                    : null,
+                referenceNo: 
+                    finalPaymentThrough === PaymentType.CHEQUE ||
+                    finalPaymentThrough === PaymentType.DD
+                    ? finalReferenceNo
+                    : null,
                 remarks:
                     payload.remarks ??
                     transaction.remarks,
@@ -825,7 +1328,6 @@ export class TransactionService {
                 agency: true,
                 thirdPartyAgency: true,
                 createdBy: true,
-                approvedBy: true,
             },
         });
     }

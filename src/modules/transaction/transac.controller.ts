@@ -14,7 +14,9 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
             thirdPartyAgencyId,
             amount,
             paymentMode,
+            paymentThrough,
             transactionRefNo,
+            referenceNo,
             remarks
         } = req.body;
 
@@ -27,7 +29,9 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
             thirdPartyAgencyId,
             amount,
             paymentMode,
+            paymentThrough,
             transactionRefNo,
+            referenceNo,
             remarks
         });
 
@@ -103,14 +107,12 @@ export const getAgencyOutstanding = async (req: Request, res: Response, next: Ne
         const {
             branchId,
             agencyId,
-            direction
         } = (req as any).query;
 
         const outstanding = await TransactionService.getAgencyOutstanding(
             actor,
             agencyId,
             branchId,
-            direction
         );
 
         return res.status(200).json({
@@ -175,6 +177,8 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
             amount,
             paymentMode,
             transactionRefNo,
+            paymentThrough,
+            referenceNo,
             remarks
         } = req.body;
 
@@ -187,7 +191,9 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
             thirdPartyAgencyId,
             amount,
             paymentMode,
+            paymentThrough,
             transactionRefNo,
+            referenceNo,
             remarks
         });
 
