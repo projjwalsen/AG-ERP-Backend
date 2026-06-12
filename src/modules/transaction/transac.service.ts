@@ -518,20 +518,24 @@ export class TransactionService {
                 }
             } 
             // =================================================================
-            // THIRD PARTY LEDGER PERSISTENCE CONFIGURATION
+            // THIRD PARTY LEDGER PERSISTENCE CONFIGURATION (DEDUCTION FIX)
             // =================================================================
             else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
                 if (transaction.direction === TransactionDirection.INWARD) {
-                    // Primary Customer (Amit) gets cleared via incoming payment -> ADD CREDIT
+                    // Primary Customer (Amit) clears liability balance via incoming payment -> ADD CREDIT
                     await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "CREDIT", 'ADD');
-                    // Third-Party Agency (Bappa) pays on their behalf -> Gaining credit balance with us -> ADD CREDIT
-                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "CREDIT", 'ADD');
+                    
+                    // Third-Party Agency B (Bappa) -> DEDUCT the transaction amount from their pool
+                    // Changed from 'ADD' to 'DECREMENT' to draw down their DEBIT balance position
+                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "DEBIT", 'ADD');
                 } 
                 else if (transaction.direction === TransactionDirection.OUTWARD) {
                     // Primary Vendor gets clear -> ADD DEBIT
                     await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "DEBIT", 'ADD');
-                    // Third-Party Agency reclaims/consumes balance credit -> ADD DEBIT
-                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "DEBIT", 'ADD');
+                    
+                    // Third-Party Agency -> DEDUCT the transaction amount from their pool
+                    // Changed from 'ADD' to 'DECREMENT' to draw down their DEBIT balance position
+                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "CREDIT", 'ADD');
                 }
             }
 
