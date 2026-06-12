@@ -526,8 +526,8 @@ export class TransactionService {
                     await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "CREDIT", 'ADD');
                     
                     // Third-Party Agency B (Bappa) -> DEDUCT the transaction amount from their pool
-                    // Changed from 'ADD' to 'DECREMENT' to draw down their CREDIT balance position
-                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "CREDIT", 'DECREMENT');
+                    // Changed from 'ADD' to 'DECREMENT' to draw down their DEBIT balance position
+                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "DEBIT", 'ADD');
                 } 
                 else if (transaction.direction === TransactionDirection.OUTWARD) {
                     // Primary Vendor gets clear -> ADD DEBIT
@@ -535,7 +535,7 @@ export class TransactionService {
                     
                     // Third-Party Agency -> DEDUCT the transaction amount from their pool
                     // Changed from 'ADD' to 'DECREMENT' to draw down their DEBIT balance position
-                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "DEBIT", 'DECREMENT');
+                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "CREDIT", 'ADD');
                 }
             }
 
