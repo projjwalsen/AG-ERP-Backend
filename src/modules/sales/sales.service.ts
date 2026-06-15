@@ -6,6 +6,7 @@ import { InventoryService } from "../inventory/inventory.service";
 import { SalesToInvMapper } from "../../core/utils/saleToInvMapper";
 import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
 import { randomUUID } from "crypto";
+import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 
 type SalesItemPayload = {
     productId: string;
@@ -614,10 +615,11 @@ export class SalesService {
 
             /**
              * STEP 2:
-             * Deduct inventory
+             * Deduct inventory & Update Product Ledger
              */
             for (const item of lockedSale.items) {
 
+                // Deduct stock from inventory
                 await InventoryService.removeStock(tx, {
                     branchId: lockedSale.branchId,
                     productId: item.productId,
@@ -625,10 +627,38 @@ export class SalesService {
                     quantity: Number(item.quantity),
                     unit: item.unit
                 });
+
+                // ========================================================
+                // PRODUCT LEDGER: Create sale movement entry
+                // ========================================================
+                // Get or create ProductLedger for this product
+                const productLedger = await ProductLedgerService.getOrCreateProductLedger(
+                    item.productId,
+                    tx
+                );
+
+                // Get the batch details for FIFO traceability
+                const batch = await tx.inventoryBatch.findUnique({
+                    where: { id: item.batchId }
+                });
+
+                if (!batch) {
+                    throw new ApiError(`Batch not found for item ${item.productId}`, 404);
+                }
+
+                // Create immutable ledger entry for sale movement
+                // Batch ID is MANDATORY for FIFO traceability
+                await ProductLedgerService.createSaleMovement(tx, {
+                    productLedgerId: productLedger.id,
+                    sale: lockedSale,
+                    saleItem: item,
+                    batchId: item.batchId,
+                    batchNo: batch.batchNo
+                });
             }
 
             // ========================================================
-            // PERSISTENT OUTSTANDING STATE SYNCHRONIZATION HOOK
+            // STEP 3: Update Agency Outstanding
             // ========================================================
             // A sale creates an asset/receivable that a customer owes us.
             // We register this by executing an atomic positional check relative to CREDIT.
@@ -680,7 +710,7 @@ export class SalesService {
             }
 
             /**
-             * STEP 3:
+             * STEP 4:
              * Return updated sale
              * Outstanding balance is calculated at runtime by getAgencyOutstanding()
              */

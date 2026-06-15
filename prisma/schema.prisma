@@ -46,6 +46,7 @@ model User {
   salesCreated Sale[] @relation("SaleCreatedBy")
   salesApproved Sale[] @relation("SaleApprovedBy")
   transactionsCreated Transaction[] @relation("TransactionCreatedBy")
+  productLedgerEntries ProductLedgerEntry[]
 
   createdById  String?
   createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -82,6 +83,7 @@ model Branch {
 
   users User[]
   ledger Ledger[]
+  ledgerEntries LedgerEntry[]
   agencies AgencyBranch[]
   inventoryBatches InventoryBatch[]
   purchases Purchase[]
@@ -89,6 +91,8 @@ model Branch {
   inventories Inventory[]
   transactions Transaction[]
   outstanding AgencyOutstanding[]
+  vouchers Voucher[]
+  productLedgerEntries ProductLedgerEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -200,6 +204,7 @@ model Agency {
   transactions Transaction[]
   thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
   outstanding AgencyOutstanding[]
+  productLedgerEntries ProductLedgerEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -259,6 +264,27 @@ enum ProductUnit {
   LTR
 }
 
+// ============================================
+// PRODUCT LEDGER ENUMS
+// ============================================
+enum ProductMovementType {
+  OPENING_BALANCE  // Initial stock entry when creating ledger
+  PURCHASE         // Stock received from vendor
+  SALE             // Stock sold to customer
+  RETURN_IN        // Stock returned from customer
+  RETURN_OUT       // Stock returned to vendor
+  ADJUSTMENT_IN    // Manual adjustment increase
+  ADJUSTMENT_OUT   // Manual adjustment decrease
+  DAMAGE           // Damaged/defective stock
+  TRANSFER_IN      // Stock transferred from another branch
+  TRANSFER_OUT     // Stock transferred to another branch
+}
+
+enum ProductMovementDirection {
+  INBOUND          // Stock increases (purchase, return_in, adjustment_in, transfer_in, opening)
+  OUTBOUND         // Stock decreases (sale, return_out, adjustment_out, damage, transfer_out)
+}
+
 model Product {
   id    String @id @default(uuid())
 
@@ -287,12 +313,114 @@ model Product {
   inventoryBatches InventoryBatch[]
   purchaseItems PurchaseItem[]
   salesItems SalesItem[]
+  ledger Ledger[]
+  ledgerEntries LedgerEntry[]
+  productLedger ProductLedger?
 
   @@index([sku])
   @@index([name])
   @@index([category])
   @@index([hsnNo])
 }
+
+// ============================================
+// PRODUCT LEDGER - Inventory Tracking System
+// ============================================
+// GLOBAL: One ledger per product across ALL branches
+// Tracks: Stock movements (purchase/sale/adjustment)
+// Purpose: Complete product history + analytics
+// NOTE: Stock is cached in Inventory table (branch-wise)
+//       Global stock = SUM(Inventory.currentStockKG) for all branches
+
+model ProductLedger {
+  id                String   @id @default(cuid())
+  
+  // Product Reference (GLOBAL - ONE per product)
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Code Generation
+  code              String   @unique  // PROD-pr123456
+  
+  // Movement History (immutable)
+  entries           ProductLedgerEntry[]
+  
+  // Status
+  isActive          Boolean  @default(true)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([productId])
+  @@index([code])
+}
+
+model ProductLedgerEntry {
+  id                    String   @id @default(cuid())
+  
+  // Reference to Product Ledger
+  productLedgerId       String
+  productLedger         ProductLedger @relation(fields: [productLedgerId], references: [id], onDelete: Cascade)
+  
+  // Stock Movement Type & Direction (Enums - prevents data inconsistency)
+  movementType          ProductMovementType
+  direction             ProductMovementDirection
+  
+  // Quantity Details (IMMUTABLE - never modified)
+  quantityKG            Decimal  @db.Decimal(18, 3)
+  quantityLTR           Decimal? @db.Decimal(18, 3)
+  unit                  ProductUnit
+  
+  // Context (Where did this movement happen?)
+  branchId              String?
+  branch                Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  
+  agencyId              String?  // For vendor/customer reference
+  agency                Agency?  @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  
+  // Source Document References (Strong relationships)
+  purchaseId            String?  // For PURCHASE movements
+  purchase              Purchase? @relation("ProductLedgerFromPurchase", fields: [purchaseId], references: [id], onDelete: SetNull)
+  
+  saleId                String?  // For SALE movements
+  sale                  Sale? @relation("ProductLedgerFromSale", fields: [saleId], references: [id], onDelete: SetNull)
+  
+  // Batch Traceability (Mandatory for sales - FIFO tracking)
+  batchId               String?
+  batch                 InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  batchNo               String?
+  
+  // Invoice Reference
+  invoiceNo             String?
+  
+  // Cost Info (for analytics & FIFO weighted average)
+  unitCost              Decimal? @db.Decimal(18, 2)  // Purchase price per unit
+  totalCost             Decimal? @db.Decimal(18, 2)  // unitCost * quantity
+  
+  // Stock Entry Date (When stock physically entered warehouse)
+  entryDate             DateTime // Used for FIFO calculations and aging
+  
+  // Additional Info
+  remarks               String?
+  reference             String?  // Additional reference
+  
+  // Audit Trail
+  createdAt             DateTime @default(now())
+  createdById           String?
+  user                  User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  
+  @@index([productLedgerId])
+  @@index([purchaseId])
+  @@index([saleId])
+  @@index([branchId])
+  @@index([agencyId])
+  @@index([batchId])
+  @@index([entryDate])
+  @@index([createdAt])
+  @@index([movementType])
+}
+
 
 model Setting {
   id    String @id @default(uuid())
@@ -339,6 +467,7 @@ model InventoryBatch {
 
   purchaseItems PurchaseItem[]
   salesItems SalesItem[]
+  productLedgerEntries ProductLedgerEntry[]
 
   @@index([branchId])
   @@index([productId])
@@ -374,11 +503,18 @@ model Purchase {
   approvedAt DateTime?
 
   items PurchaseItem[]
+  
+  // Product Ledger Entries (for product movement history)
+  productLedgerEntries ProductLedgerEntry[] @relation("ProductLedgerFromPurchase")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   allocations TransactionAllocation[]
+  
+  @@index([agencyId])
+  @@index([branchId])
+  @@index([status])
 }
 
 model PurchaseItem {
@@ -461,11 +597,18 @@ model Sale {
   approvedAt DateTime?
 
   items SalesItem[]
+  
+  // Product Ledger Entries (for product movement history)
+  productLedgerEntries ProductLedgerEntry[] @relation("ProductLedgerFromSale")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   allocations TransactionAllocation[]
+  
+  @@index([agencyId])
+  @@index([branchId])
+  @@index([status])
 }
 
 
@@ -635,8 +778,7 @@ enum LedgerType {
   GST
   SALES
   PURCHASE
-  EXPENSE
-  INCOME
+  PRODUCT
   SUSPENSE
 }
 
@@ -647,13 +789,22 @@ model Ledger {
   name String
   category LedgerType
 
+  /**
+    OPTIONAL Context
+  **/
+
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
-  agencyId String? @unique
+  agencyId String?
   agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
 
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
   openingBalance Decimal @default(0.00) @db.Decimal(18, 2)
+
+  /** Only for performance caching **/
   currentBalance Decimal @default(0.00) @db.Decimal(18, 2)
 
   isActive Boolean @default(true)
@@ -665,6 +816,7 @@ model Ledger {
 
   @@index([agencyId])
   @@index([branchId])
+  @@index([productId])
   @@index([category])
 }
 
@@ -673,12 +825,10 @@ enum VoucherType {
   SALES
   PURCHASE
 
-  RECEIPT
-  PAYMENT
-
+  TRANSACTION
   JOURNAL
 
-  CONTRA
+  OPENING_BALANCE
 }
 
 model Voucher {
@@ -689,6 +839,9 @@ model Voucher {
   voucherType VoucherType
 
   sourceId String?
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
   narration String?
 
@@ -704,6 +857,7 @@ model Voucher {
 
   @@index([voucherType])
   @@index([sourceId])
+  @@index([branchId])
 }
 
 enum EntryType {
@@ -720,6 +874,12 @@ model LedgerEntry {
   ledgerId String
   ledger   Ledger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
 
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
   entryType EntryType
 
   amount Decimal @db.Decimal(18, 2)
@@ -730,4 +890,7 @@ model LedgerEntry {
 
   @@index([ledgerId])
   @@index([voucherId])
+
+  @@index([branchId])
+  @@index([productId])
 }
