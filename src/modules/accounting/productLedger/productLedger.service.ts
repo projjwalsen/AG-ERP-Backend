@@ -647,7 +647,7 @@ export class ProductLedgerService {
                 batch: true,
                 user: { select: { id: true, name: true, email: true } },
             },
-            orderBy: { entryDate: "asc", createdAt: "asc" },
+            orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
         });
 
         // Calculate running balances (safe - full history)
