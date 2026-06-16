@@ -3,6 +3,7 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { RBACService } from "../rbac/rbac.service";
 import { InventoryService } from "../inventory/inventory.service";
+import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 
 type PurchaseItemPayload = {
     productId: string;
@@ -515,9 +516,12 @@ export class PurchaseService {
                 throw new ApiError("Purchase not found after locking", 404);
             }
 
-
+            // ========================================================
+            // STEP 1: Update Inventory & Product Ledger
+            // ========================================================
             for (const item of lockedPurchase.items) {
 
+                // Add stock to inventory
                 const batch = await InventoryService.addStock(tx, {
                     branchId: lockedPurchase.branchId,
                     productId: item.productId,
@@ -526,6 +530,24 @@ export class PurchaseService {
                     unit: item.unit,
                     purchasePrice: Number(item.purchasePrice)
                 });
+
+                // ========================================================
+                // PRODUCT LEDGER: Create inventory movement entry
+                // ========================================================
+                // Get or create ProductLedger for this product
+                const productLedger = await ProductLedgerService.getOrCreateProductLedger(
+                    item.productId,
+                    tx
+                );
+
+                // Create immutable ledger entry for purchase movement
+                await ProductLedgerService.createPurchaseMovement(tx, {
+                    productLedgerId: productLedger.id,
+                    purchase: lockedPurchase,
+                    purchaseItem: item,
+                    batchId: batch.id,
+                    batchNo: item.batchNo
+                });
             }
 
             /**
@@ -533,7 +555,7 @@ export class PurchaseService {
              */
 
             // ========================================================
-            // PERSISTENT OUTSTANDING STATE SYNCHRONIZATION HOOK
+            // STEP 2: Update Agency Outstanding
             // ========================================================
             // A purchase creates a liability/debt that we owe to a vendor.
             // We register this by executing an atomic 'ADD' of a 'DEBIT' position.

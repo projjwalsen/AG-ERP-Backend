@@ -1,0 +1,2 @@
+ALTER TYPE "ProductMovementDirection" RENAME VALUE 'INBOUND' TO 'CREDIT';
+ALTER TYPE "ProductMovementDirection" RENAME VALUE 'OUTBOUND' TO 'DEBIT';
