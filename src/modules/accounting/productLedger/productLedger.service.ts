@@ -58,8 +58,6 @@ export class ProductLedgerService {
                 data: {
                     productId,
                     code,
-                    currentStockKG: 0,
-                    currentStockLTR: 0,
                     isActive: true,
                 }
             });
@@ -103,7 +101,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.OPENING_BALANCE,
-            direction: ProductMovementDirection.INBOUND,
+            direction: ProductMovementDirection.DEBIT,
             quantityKG: payload.quantity,
             quantityLTR: undefined,
             unit: payload.unit,
@@ -148,7 +146,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.PURCHASE,
-            direction: ProductMovementDirection.INBOUND,
+            direction: ProductMovementDirection.DEBIT,
             quantityKG: Number(purchaseItem.quantity),
             quantityLTR: undefined,
             unit: purchaseItem.unit,
@@ -197,7 +195,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.SALE,
-            direction: ProductMovementDirection.OUTBOUND,
+            direction: ProductMovementDirection.CREDIT,
             quantityKG: Number(saleItem.quantity),
             quantityLTR: undefined,
             unit: saleItem.unit,
@@ -325,7 +323,7 @@ export class ProductLedgerService {
             const quantityKG = Number(entry.quantityKG);
             const quantityLTR = entry.quantityLTR ? Number(entry.quantityLTR) : 0;
 
-            if (entry.direction === ProductMovementDirection.INBOUND) {
+            if (entry.direction === ProductMovementDirection.DEBIT) {
                 balanceKG += quantityKG;
                 balanceLTR += quantityLTR;
             } else {
@@ -375,7 +373,7 @@ export class ProductLedgerService {
      * - Analytics (sales, purchases, turnover)
      * - Paginated movement history
      */
-    static async getProductLedgerDetail(
+    static async getProductDetails(
         productId: string,
         query?: {
             page?: number;
@@ -386,84 +384,71 @@ export class ProductLedgerService {
         tx?: Prisma.TransactionClient
     ) {
         const client = tx || prisma;
+
         const page = query?.page || 1;
         const limit = query?.limit || 20;
         const skip = (page - 1) * limit;
 
+        // 1. Get product (ALWAYS REQUIRED)
+        const product = await client.product.findUnique({
+            where: { id: productId }
+        });
+
+        if (!product) {
+            throw new ApiError("Product not found", 404);
+        }
+
+        // 2. Get ledger (OPTIONAL)
         const ledger = await client.productLedger.findUnique({
             where: { productId },
             include: { product: true }
         });
 
-        if (!ledger) {
-            throw new ApiError("Product Ledger not found", 404);
-        }
-
-        // Get global stock from Inventory aggregation
-        const globalStock = await this.getGlobalProductStock(productId);
-
-        // Get branch-wise stock
-        const branchWiseStock = await this.getBranchWiseStock(productId);
-
-        // Get analytics
-        const analytics = await this.getProductAnalytics(productId);
-
-        // Get paginated movement history
-        const where: any = {
-            productLedgerId: ledger.id,
-            ...(query?.movementType && { movementType: query.movementType }),
-            ...(query?.branchId && { branchId: query.branchId }),
-        };
-
-        const [movements, totalMovements] = await Promise.all([
-            client.productLedgerEntry.findMany({
-                where,
-                include: {
-                    branch: { select: { id: true, name: true, code: true } },
-                    agency: { select: { id: true, name: true, type: true } },
-                    batch: true,
-                    user: { select: { id: true, name: true, email: true } },
-                },
-                orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
-                skip,
-                take: limit,
-            }),
-            client.productLedgerEntry.count({ where })
+        // 3. Stock + analytics (safe even without ledger)
+        const [globalStock, branchWiseStock, analytics] = await Promise.all([
+            this.getGlobalProductStock(productId),
+            this.getBranchWiseStock(productId),
+            this.getProductAnalytics(productId),
         ]);
 
-        return {
-            id: ledger.id,
-            productId: ledger.productId,
-            code: ledger.code,
+        // 4. Movements ONLY if ledger exists
+        let movements: any = {
+            entries: [],
+            meta: {
+                total: 0,
+                page,
+                limit,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPreviousPage: false,
+            }
+        };
 
-            // Product Metadata
-            productName: ledger.product.name,
-            productSKU: ledger.product.sku,
-            productCategory: ledger.product.category,
-            baseUnit: ledger.product.baseUnit,
-            density: ledger.product.density ? Number(ledger.product.density) : null,
-            minimumStockKG: ledger.product.minimumStockKG ? Number(ledger.product.minimumStockKG) : null,
-            applicableGST: Number(ledger.product.applicableGST || 0),
-            sellPricePerUnit: Number(ledger.product.sellPricePerUnit),
+        if (ledger) {
+            const where: any = {
+                productLedgerId: ledger.id,
+                ...(query?.movementType && { movementType: query.movementType }),
+                ...(query?.branchId && { branchId: query.branchId }),
+            };
 
-            // Global Stock
-            stock: {
-                globalStockKG: globalStock.globalStockKG,
-                globalStockLTR: globalStock.globalStockLTR,
-                isLowStock: ledger.product.minimumStockKG
-                    ? globalStock.globalStockKG < Number(ledger.product.minimumStockKG)
-                    : false,
-            },
+            const [entries, total] = await Promise.all([
+                client.productLedgerEntry.findMany({
+                    where,
+                    include: {
+                        branch: { select: { id: true, name: true, code: true } },
+                        agency: { select: { id: true, name: true, type: true } },
+                        batch: true,
+                        user: { select: { id: true, name: true, email: true } },
+                    },
+                    orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
+                    skip,
+                    take: limit,
+                }),
+                client.productLedgerEntry.count({ where })
+            ]);
 
-            // Branch-wise Stock Distribution
-            branchStock: branchWiseStock,
-
-            // Analytics
-            analytics,
-
-            // Paginated Movement History (NO running balance)
-            movements: {
-                entries: movements.map((e) => ({
+            movements = {
+                entries: entries.map((e) => ({
                     id: e.id,
                     movementType: e.movementType,
                     direction: e.direction,
@@ -484,19 +469,54 @@ export class ProductLedgerService {
                     createdAt: e.createdAt,
                 })),
                 meta: {
-                    total: totalMovements,
+                    total,
                     page,
                     limit,
-                    totalPages: Math.ceil(totalMovements / limit),
-                    hasNextPage: page * limit < totalMovements,
+                    totalPages: Math.ceil(total / limit),
+                    hasNextPage: page * limit < total,
                     hasPreviousPage: page > 1,
                 }
+            };
+        }
+
+        // 5. Final response (clean separation)
+        return {
+            product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                category: product.category,
+                baseUnit: product.baseUnit,
+                density: product.density ? Number(product.density) : null,
+                minimumStockKG: product.minimumStockKG ? Number(product.minimumStockKG) : null,
+                applicableGST: Number(product.applicableGST || 0),
+                sellPricePerUnit: Number(product.sellPricePerUnit),
+                isActive: product.isActive,
+                createdAt: product.createdAt,
+                updatedAt: product.updatedAt,
             },
 
-            // Status & Timestamps
-            isActive: ledger.isActive,
-            createdAt: ledger.createdAt,
-            updatedAt: ledger.updatedAt,
+            ledger: ledger
+                ? {
+                    id: ledger.id,
+                    code: ledger.code,
+                    isActive: ledger.isActive,
+                }
+                : null,
+
+            stock: {
+                globalStockKG: globalStock.globalStockKG,
+                globalStockLTR: globalStock.globalStockLTR,
+                isLowStock: product.minimumStockKG
+                    ? globalStock.globalStockKG < Number(product.minimumStockKG)
+                    : false,
+            },
+
+            branchStock: branchWiseStock,
+
+            // analytics,
+
+            movements
         };
     }
 
@@ -606,84 +626,98 @@ export class ProductLedgerService {
             branchId?: string;
             startDate?: Date;
             endDate?: Date;
-        }
+        },
+        tx?: Prisma.TransactionClient
     ) {
-        const ledger = await prisma.productLedger.findUnique({
-            where: { productId },
-            include: { product: true }
+        const client = tx || prisma;
+
+        // 1. ALWAYS fetch product first
+        const product = await client.product.findUnique({
+            where: { id: productId }
         });
 
-        if (!ledger) {
-            throw new ApiError("Product Ledger not found", 404);
+        if (!product) {
+            throw new ApiError("Product not found", 404);
         }
 
-        // Get global stock
-        const globalStock = await this.getGlobalProductStock(productId);
-
-        // Get branch-wise stock
-        const branchWiseStock = await this.getBranchWiseStock(productId);
-
-        // Get analytics
-        const analytics = await this.getProductAnalytics(productId);
-
-        // Get FULL movement history (no pagination)
-        const where: any = {
-            productLedgerId: ledger.id,
-            ...(query?.movementType && { movementType: query.movementType }),
-            ...(query?.branchId && { branchId: query.branchId }),
-            ...(query?.startDate || query?.endDate) && {
-                entryDate: {
-                    ...(query?.startDate && { gte: query.startDate }),
-                    ...(query?.endDate && { lte: query.endDate }),
-                }
-            }
-        };
-
-        const allMovements = await prisma.productLedgerEntry.findMany({
-            where,
-            include: {
-                branch: { select: { id: true, name: true, code: true } },
-                agency: { select: { id: true, name: true, type: true } },
-                batch: true,
-                user: { select: { id: true, name: true, email: true } },
-            },
-            orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
+        // 2. Ledger is OPTIONAL
+        const ledger = await client.productLedger.findUnique({
+            where: { productId }
         });
 
-        // Calculate running balances (safe - full history)
-        const entriesWithBalance = this.calculateRunningBalances(allMovements);
+        // 3. Parallel safe reads
+        const [globalStock, branchWiseStock, analytics] = await Promise.all([
+            this.getGlobalProductStock(productId),
+            this.getBranchWiseStock(productId),
+            this.getProductAnalytics(productId),
+        ]);
 
+        // 4. Build where only if ledger exists
+        let entriesWithBalance: any[] = [];
+
+        if (ledger) {
+            const where: any = {
+                productLedgerId: ledger.id,
+                ...(query?.movementType && { movementType: query.movementType }),
+                ...(query?.branchId && { branchId: query.branchId }),
+                ...(query?.startDate || query?.endDate) && {
+                    entryDate: {
+                        ...(query?.startDate && { gte: query.startDate }),
+                        ...(query?.endDate && { lte: query.endDate }),
+                    }
+                }
+            };
+
+            const allMovements = await client.productLedgerEntry.findMany({
+                where,
+                include: {
+                    branch: { select: { id: true, name: true, code: true } },
+                    agency: { select: { id: true, name: true, type: true } },
+                    batch: true,
+                    user: { select: { id: true, name: true, email: true } },
+                },
+                orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
+            });
+
+            entriesWithBalance = this.calculateRunningBalances(allMovements);
+        }
+
+        // 5. FINAL RESPONSE
         return {
-            id: ledger.id,
-            productId: ledger.productId,
-            code: ledger.code,
+            product: {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                category: product.category,
+                baseUnit: product.baseUnit,
+                density: product.density ? Number(product.density) : null,
+                minimumStockKG: product.minimumStockKG ? Number(product.minimumStockKG) : null,
+                applicableGST: Number(product.applicableGST || 0),
+                sellPricePerUnit: Number(product.sellPricePerUnit),
+                isActive: product.isActive,
+            },
 
-            // Product Metadata
-            productName: ledger.product.name,
-            productSKU: ledger.product.sku,
-            productCategory: ledger.product.category,
-            baseUnit: ledger.product.baseUnit,
-            density: ledger.product.density ? Number(ledger.product.density) : null,
-            minimumStockKG: ledger.product.minimumStockKG ? Number(ledger.product.minimumStockKG) : null,
-            applicableGST: Number(ledger.product.applicableGST || 0),
-            sellPricePerUnit: Number(ledger.product.sellPricePerUnit),
+            ledger: ledger
+                ? {
+                    id: ledger.id,
+                    code: ledger.code,
+                    isActive: ledger.isActive,
+                }
+                : null,
 
-            // Global Stock
             stock: {
                 globalStockKG: globalStock.globalStockKG,
                 globalStockLTR: globalStock.globalStockLTR,
-                isLowStock: ledger.product.minimumStockKG
-                    ? globalStock.globalStockKG < Number(ledger.product.minimumStockKG)
+                isLowStock: product.minimumStockKG
+                    ? globalStock.globalStockKG < Number(product.minimumStockKG)
                     : false,
             },
 
-            // Branch-wise Stock Distribution
             branchStock: branchWiseStock,
 
-            // Analytics
-            analytics,
+            // analytics,
 
-            // FULL Movement History with Running Balance (complete audit trail)
+            // FULL HISTORY ALWAYS (even if empty)
             movements: {
                 entries: entriesWithBalance.map((e) => ({
                     id: e.id,
@@ -692,8 +726,8 @@ export class ProductLedgerService {
                     quantityKG: Number(e.quantityKG),
                     quantityLTR: e.quantityLTR ? Number(e.quantityLTR) : null,
                     unit: e.unit,
-                    balanceKG: e.balanceKG, // Calculated with full history
-                    balanceLTR: e.balanceLTR, // Calculated with full history
+                    balanceKG: e.balanceKG ?? 0,
+                    balanceLTR: e.balanceLTR ?? null,
                     branch: e.branch,
                     agency: e.agency,
                     purchaseId: e.purchaseId,
@@ -708,12 +742,7 @@ export class ProductLedgerService {
                     createdAt: e.createdAt,
                 })),
                 total: entriesWithBalance.length,
-            },
-
-            // Status & Timestamps
-            isActive: ledger.isActive,
-            createdAt: ledger.createdAt,
-            updatedAt: ledger.updatedAt,
+            }
         };
     }
 

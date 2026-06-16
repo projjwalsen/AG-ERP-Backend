@@ -126,7 +126,7 @@ async function main() {
                         data: {
                             productLedgerId: ledger.id,
                             movementType: ProductMovementType.PURCHASE,
-                            direction: ProductMovementDirection.INBOUND,
+                            direction: ProductMovementDirection.CREDIT,
                             quantityKG: Number(item.quantity),
                             quantityLTR: null,
                             unit: "KG",
@@ -199,7 +199,7 @@ async function main() {
                         data: {
                             productLedgerId: ledger.id,
                             movementType: ProductMovementType.SALE,
-                            direction: ProductMovementDirection.OUTBOUND,
+                            direction: ProductMovementDirection.DEBIT,
                             quantityKG: Number(item.quantity),
                             quantityLTR: null,
                             unit: "KG",
@@ -248,7 +248,7 @@ async function main() {
         let balance = 0;
         allEntries.forEach((entry, index) => {
             const quantity =
-                entry.direction === ProductMovementDirection.INBOUND
+                entry.direction === ProductMovementDirection.CREDIT
                     ? entry.quantityKG
                     : -entry.quantityKG;
 

@@ -281,8 +281,8 @@ enum ProductMovementType {
 }
 
 enum ProductMovementDirection {
-  INBOUND          // Stock increases (purchase, return_in, adjustment_in, transfer_in, opening)
-  OUTBOUND         // Stock decreases (sale, return_out, adjustment_out, damage, transfer_out)
+  CREDIT          // Stock increases (purchase, return_in, adjustment_in, transfer_in, opening)
+  DEBIT           // Stock decreases (sale, return_out, adjustment_out, damage, transfer_out)
 }
 
 model Product {

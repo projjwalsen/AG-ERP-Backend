@@ -44,7 +44,7 @@ export const getProductLedgerDetail = async (
             branchId: req.query.branchId as string | undefined,
         };
 
-        const detail = await ProductLedgerService.getProductLedgerDetail(productId, query);
+        const detail = await ProductLedgerService.getProductDetails(productId, query);
 
         return res.status(200).json({
             success: true,

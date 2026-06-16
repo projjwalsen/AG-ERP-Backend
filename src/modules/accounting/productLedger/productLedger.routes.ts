@@ -257,7 +257,7 @@ router.get(
  *                                 type: string
  *                               movementType:
  *                                 type: string
- *                               direction:
+ *                               action:
  *                                 type: string
  *                               quantityKG:
  *                                 type: number
@@ -391,9 +391,9 @@ router.get(
  *                           movementType:
  *                             type: string
  *                             description: Type of movement (PURCHASE, SALE, etc)
- *                           direction:
+ *                           action:
  *                             type: string
- *                             enum: [INBOUND, OUTBOUND]
+ *                             enum: [DEBIT, CREDIT]
  *                           quantityKG:
  *                             type: number
  *                             description: Quantity moved in KG
