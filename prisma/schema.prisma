@@ -47,6 +47,7 @@ model User {
   salesApproved Sale[] @relation("SaleApprovedBy")
   transactionsCreated Transaction[] @relation("TransactionCreatedBy")
   productLedgerEntries ProductLedgerEntry[]
+  ledgersCreated Ledger[] @relation("LedgerCreatedBy")
 
   createdById  String?
   createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -782,12 +783,49 @@ enum LedgerType {
   SUSPENSE
 }
 
+enum LedgerNature {
+  DEBIT
+  CREDIT
+}
+
+model LedgerGroup {
+  id String @id @default(uuid())
+
+  code String @unique
+  name String
+
+  parentId String?
+  parent LedgerGroup? @relation("LedgerGroupTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children LedgerGroup[] @relation("LedgerGroupTree")
+
+  nature LedgerNature
+
+  ledgers Ledger[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([nature])
+}
+
 model Ledger {
   id  String @id @default(uuid())
 
   code String @unique
   name String
   category LedgerType
+
+  groupId String
+  group LedgerGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  nature LedgerNature
+
+  gstApplicable Boolean @default(false)
+  gstin String?
+  pan String?
+
+  creditLimit Decimal? @db.Decimal(18, 2)
 
   /**
     OPTIONAL Context
@@ -809,6 +847,9 @@ model Ledger {
 
   isActive Boolean @default(true)
 
+  createdById String?
+  createdBy User? @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -818,15 +859,23 @@ model Ledger {
   @@index([branchId])
   @@index([productId])
   @@index([category])
+  @@index([groupId])
+  @@index([nature])
+  @@index([gstin])
+  @@index([pan])
+  @@index([createdById])
 }
 
 
 enum VoucherType {
-  SALES
+  SALE
   PURCHASE
 
-  TRANSACTION
+  RECEIPT
+  PAYMENT
+
   JOURNAL
+  CONTRA
 
   OPENING_BALANCE
 }
@@ -838,7 +887,7 @@ model Voucher {
 
   voucherType VoucherType
 
-  sourceId String?
+  sourceId String @default(uuid())
 
   branchId String?
   branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
@@ -858,6 +907,7 @@ model Voucher {
   @@index([voucherType])
   @@index([sourceId])
   @@index([branchId])
+  @@unique([voucherType, sourceId])
 }
 
 enum EntryType {

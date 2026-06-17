@@ -4,6 +4,7 @@ import { prisma } from "../../config/db";
 import { RBACService } from "../rbac/rbac.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 type PurchaseItemPayload = {
     productId: string;
@@ -605,6 +606,9 @@ export class PurchaseService {
                     }
                 });
             }
+
+            await LedgerService.postPurchaseApproval(tx, lockedPurchase.id);
+
             return lockedPurchase;
         });
     }

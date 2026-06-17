@@ -6,6 +6,7 @@ import {
   ProductMovementDirection,
   ProductUnit 
 } from "@prisma/client";
+import { parseDate } from "../../../core/utils/loc.utils";
 
 export class ProductLedgerService {
 
@@ -380,6 +381,8 @@ export class ProductLedgerService {
             limit?: number;
             movementType?: ProductMovementType;
             branchId?: string;
+            startDate?: string;
+            endDate?: string;
         },
         tx?: Prisma.TransactionClient
     ) {
@@ -389,6 +392,17 @@ export class ProductLedgerService {
         const limit = query?.limit || 20;
         const skip = (page - 1) * limit;
 
+        const startDate =
+            query?.startDate
+                ? parseDate(query.startDate, "startDate")
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(query.endDate, "endDate")
+                : new Date();
+
+        
         // 1. Get product (ALWAYS REQUIRED)
         const product = await client.product.findUnique({
             where: { id: productId }
@@ -403,6 +417,70 @@ export class ProductLedgerService {
             where: { productId },
             include: { product: true }
         });
+
+        const periodWhere =
+            ledger
+                ? {
+                    productLedgerId: ledger.id,
+
+                    ...(query?.movementType && {
+                        movementType: query.movementType
+                    }),
+
+                    ...(query?.branchId && {
+                        branchId: query.branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            entryDate: {
+                                ...(startDate && { gte: startDate }),
+                                ...(endDate && { lte: endDate })
+                            }
+                        }
+                        : {})
+                }
+                : null;
+
+        const priorWhere =
+        ledger && startDate
+            ? {
+                productLedgerId: ledger.id,
+
+                ...(query?.branchId && {
+                    branchId: query.branchId
+                }),
+
+                entryDate: {
+                    lt: startDate
+                }
+            }
+            : null;
+
+        let openingStockKG = 0;
+
+        if (ledger && priorWhere) {
+
+            const priorEntries =
+                await client.productLedgerEntry.findMany({
+                    where: priorWhere,
+                    select: {
+                        direction: true,
+                        quantityKG: true
+                    }
+                });
+
+            openingStockKG =
+                priorEntries.reduce((total, row) => {
+
+                    const qty =
+                        Number(row.quantityKG);
+
+                    return row.direction === ProductMovementDirection.CREDIT
+                    ? total + qty
+                    : total - qty;
+                }, 0);
+        }        
 
         // 3. Stock + analytics (safe even without ledger)
         const [globalStock, branchWiseStock, analytics] = await Promise.all([
@@ -425,11 +503,7 @@ export class ProductLedgerService {
         };
 
         if (ledger) {
-            const where: any = {
-                productLedgerId: ledger.id,
-                ...(query?.movementType && { movementType: query.movementType }),
-                ...(query?.branchId && { branchId: query.branchId }),
-            };
+            const where: any = periodWhere;
 
             const [entries, total] = await Promise.all([
                 client.productLedgerEntry.findMany({
@@ -447,34 +521,128 @@ export class ProductLedgerService {
                 client.productLedgerEntry.count({ where })
             ]);
 
+            let runningStockKG = openingStockKG;
+
+            const movementRows: any[] = [];
+
+            if (startDate) {
+                movementRows.push({
+                    id: null,
+
+                    movementType: "OPENING",
+
+                    direction: null,
+
+                    quantityKG: 0,
+
+                    quantityLTR: null,
+
+                    runningStockKG: openingStockKG,
+
+                    unit: product.baseUnit,
+
+                    branch: null,
+
+                    agency: null,
+
+                    purchaseId: null,
+
+                    saleId: null,
+
+                    invoiceNo: null,
+
+                    batchNo: null,
+
+                    unitCost: null,
+
+                    totalCost: null,
+
+                    remarks: "Opening Stock",
+
+                    entryDate: startDate,
+
+                    createdBy: null,
+
+                    createdAt: null,
+                });
+            }
+
+            movementRows.push(
+                ...entries.map((e) => {
+
+                    const qty = Number(e.quantityKG);
+
+                    runningStockKG =
+                        e.direction === ProductMovementDirection.CREDIT
+                            ? runningStockKG + qty
+                            : runningStockKG - qty;
+
+                    return {
+                        id: e.id,
+
+                        movementType: e.movementType,
+
+                        direction: e.direction,
+
+                        quantityKG: qty,
+
+                        quantityLTR:
+                            e.quantityLTR
+                                ? Number(e.quantityLTR)
+                                : null,
+
+                        runningStockKG,
+
+                        unit: e.unit,
+
+                        branch: e.branch,
+
+                        agency: e.agency,
+
+                        purchaseId: e.purchaseId,
+
+                        saleId: e.saleId,
+
+                        invoiceNo: e.invoiceNo,
+
+                        batchNo: e.batchNo,
+
+                        unitCost:
+                            e.unitCost
+                                ? Number(e.unitCost)
+                                : null,
+
+                        totalCost:
+                            e.totalCost
+                                ? Number(e.totalCost)
+                                : null,
+
+                        remarks: e.remarks,
+
+                        entryDate: e.entryDate,
+
+                        createdBy: e.user,
+
+                        createdAt: e.createdAt,
+                    };
+                })
+            );
+
             movements = {
-                entries: entries.map((e) => ({
-                    id: e.id,
-                    movementType: e.movementType,
-                    direction: e.direction,
-                    quantityKG: Number(e.quantityKG),
-                    quantityLTR: e.quantityLTR ? Number(e.quantityLTR) : null,
-                    unit: e.unit,
-                    branch: e.branch,
-                    agency: e.agency,
-                    purchaseId: e.purchaseId,
-                    saleId: e.saleId,
-                    invoiceNo: e.invoiceNo,
-                    batchNo: e.batchNo,
-                    unitCost: e.unitCost ? Number(e.unitCost) : null,
-                    totalCost: e.totalCost ? Number(e.totalCost) : null,
-                    remarks: e.remarks,
-                    entryDate: e.entryDate,
-                    createdBy: e.user,
-                    createdAt: e.createdAt,
-                })),
+                entries: movementRows,
+
                 meta: {
                     total,
                     page,
                     limit,
+
                     totalPages: Math.ceil(total / limit),
-                    hasNextPage: page * limit < total,
-                    hasPreviousPage: page > 1,
+
+                    hasNextPage:
+                        page * limit < total,
+
+                    hasPreviousPage:
+                        page > 1,
                 }
             };
         }

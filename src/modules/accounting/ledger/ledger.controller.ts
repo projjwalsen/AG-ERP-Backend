@@ -1,0 +1,202 @@
+import { Request, Response, NextFunction } from "express";
+import { LedgerService } from "./ledger.service"; // Adjust path as needed
+import { LedgerType } from "@prisma/client";
+
+/**
+ * @route   POST /api/ledgers
+ * @desc    Create a new manual ledger master
+ * @access  Protected
+ */
+// export const createLedger = async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         const actor = (req as any).user; 
+//         const payload = req.body;
+
+//         const ledger = await LedgerService.createLedgerMaster(actor, payload);
+
+//         res.status(201).json({
+//             success: true,
+//             message: "Ledger created successfully",
+//             data: ledger
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
+/**
+ * @route   PUT /api/ledgers/:id
+ * @desc    Update an existing ledger master
+ * @access  Protected
+ */
+// export const updateLedger = async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         const actor = (req as any).user;
+//         const ledgerId = (req as any).params.id;
+//         const payload = req.body;
+
+//         const ledger = await LedgerService.updateLedgerMaster(actor, ledgerId, payload);
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Ledger updated successfully",
+//             data: ledger
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
+/**
+ * @route   GET /api/ledgers
+ * @desc    Get all ledgers with pagination and filters
+ * @access  Protected
+ */
+export const getLedgers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        
+        const query = {
+            branchId: (req as any).query.branchId as string,
+            groupCode: (req as any).query.groupCode as string,
+            category: (req as any).query.category as LedgerType,
+            search: (req as any).query.search as string,
+            isActive: (req as any).query.isActive !== undefined ? (req as any).query.isActive === "true" : undefined,
+            page: (req as any).query.page ? parseInt((req as any).query.page as string, 10) : undefined,
+            limit: (req as any).query.limit ? parseInt((req as any).query.limit as string, 10) : undefined,
+        };
+
+        const result = await LedgerService.getLedgers(actor, query);
+
+        res.status(200).json({
+            success: true,
+            data: result.data,
+            meta: result.meta
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/ledgers/:id
+ * @desc    Get a single ledger by ID with current balance
+ * @access  Protected
+ */
+export const getLedgerById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const ledgerId = (req as any).params.ledgerId;
+
+        const ledger = await LedgerService.getLedgerById(actor, ledgerId);
+
+        res.status(200).json({
+            success: true,
+            data: ledger
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/ledgers/:id/statement
+ * @desc    Get detailed account statement (Passbook) for a ledger
+ * @access  Protected
+ */
+export const getLedgerStatement = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const ledgerId = (req as any).params.ledgerId;
+
+        const query = {
+            startDate: req.query.startDate as string,
+            endDate: req.query.endDate as string,
+            page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+            limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+        };
+
+        const statement = await LedgerService.getLedgerStatement(actor, ledgerId, query);
+
+        res.status(200).json({
+            success: true,
+            data: statement
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   POST /api/ledgers/:id/opening-balance
+ * @desc    Set or update the opening balance for a ledger
+ * @access  Protected
+ */
+export const setOpeningBalance = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+        const ledgerId = (req as any).params.ledgerId;
+        const { openingBalance } = req.body;
+
+        if (openingBalance === undefined || openingBalance === null) {
+            return res.status(400).json({
+                success: false,
+                message: "openingBalance is required in request body"
+            });
+        }
+
+        const result = await LedgerService.setOpeningBalance(actor, ledgerId, Number(openingBalance));
+
+        res.status(200).json({
+            success: true,
+            message: "Opening balance updated successfully",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/reports/trial-balance
+ * @desc    Generate a Trial Balance report
+ * @access  Protected
+ */
+export const getTrialBalance = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+
+        const query = {
+            branchId: req.query.branchId as string,
+            groupCode: req.query.groupCode as string,
+            includeZero: req.query.includeZero === "true",
+        };
+
+        const trialBalance = await LedgerService.getTrialBalance(actor, query);
+
+        res.status(200).json({
+            success: true,
+            data: trialBalance
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @route   GET /api/ledger-groups
+ * @desc    Get all hierarchical Tally-style ledger groups
+ * @access  Protected
+ */
+export const getLedgerGroups = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const groups = await LedgerService.getLedgerGroups();
+
+        res.status(200).json({
+            success: true,
+            data: groups
+        });
+    } catch (error) {
+        next(error);
+    }
+};
