@@ -450,6 +450,8 @@ export class LedgerService {
             isActive?: boolean;
             page?: number;
             limit?: number;
+            startDate?: string;
+            endDate?: string;
         }
     ) {
         if (!actor?.id) {
@@ -459,6 +461,25 @@ export class LedgerService {
         const page = query?.page || 1;
         const limit = query?.limit || 25;
         const skip = (page - 1) * limit;
+
+        const startDate =
+            query?.startDate
+                ? parseDate(query.startDate, "startDate")
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(query.endDate, "endDate")
+                : undefined;
+
+        if (startDate) {
+            startDate.setHours(0, 0, 0, 0);
+        }
+
+        if (endDate) {
+            endDate.setHours(23, 59, 59, 999);
+        }
+
         const branchId = actor.branchAccessType === "ALL" ? query?.branchId : actor.branchId;
         const groupCodes = query?.groupCode ? await this.getGroupCodesWithChildren(query.groupCode) : undefined;
 
@@ -483,7 +504,16 @@ export class LedgerService {
             ...(andFilters.length > 0 && { AND: andFilters }),
             ...(query?.category && { category: query.category }),
             ...(query?.isActive !== undefined && { isActive: query.isActive }),
-            ...(groupCodes && { group: { is: { code: { in: groupCodes } } } })
+            ...(groupCodes && { group: { is: { code: { in: groupCodes } } } }),
+            ...(startDate || endDate
+                ? {
+                    createdAt: {
+                        ...(startDate && { gte: startDate }),
+                        ...(endDate && { lte: endDate })
+                    }
+                }
+                : {}
+            ),
         };
 
         const [ledgers, total] = await Promise.all([
@@ -565,7 +595,10 @@ export class LedgerService {
 
                     pan: ledger.pan,
 
-                    isActive: ledger.isActive
+                    isActive: ledger.isActive,
+
+                    createdAt: ledger.createdAt,
+                    updatedAt: ledger.updatedAt,
                 };
             })
         );

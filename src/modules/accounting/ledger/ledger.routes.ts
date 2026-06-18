@@ -132,6 +132,16 @@ router.get("/trial-balance", getTrialBalance);
  *         schema:
  *           type: integer
  *           default: 25
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
  *     responses:
  *       200:
  *         description: Ledgers fetched successfully

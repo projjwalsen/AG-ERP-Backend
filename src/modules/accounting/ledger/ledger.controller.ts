@@ -64,6 +64,8 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
             isActive: (req as any).query.isActive !== undefined ? (req as any).query.isActive === "true" : undefined,
             page: (req as any).query.page ? parseInt((req as any).query.page as string, 10) : undefined,
             limit: (req as any).query.limit ? parseInt((req as any).query.limit as string, 10) : undefined,
+            startDate: (req as any).query.startDate as string,
+            endDate: (req as any).query.endDate as string,
         };
 
         const result = await LedgerService.getLedgers(actor, query);
@@ -110,10 +112,10 @@ export const getLedgerStatement = async (req: Request, res: Response, next: Next
         const ledgerId = (req as any).params.ledgerId;
 
         const query = {
-            startDate: req.query.startDate as string,
-            endDate: req.query.endDate as string,
-            page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
-            limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+            startDate: (req as any).query.startDate as string,
+            endDate: (req as any).query.endDate as string,
+            page: (req as any).query.page ? parseInt((req as any).query.page as string, 10) : undefined,
+            limit: (req as any).query.limit ? parseInt((req as any).query.limit as string, 10) : undefined,
         };
 
         const statement = await LedgerService.getLedgerStatement(actor, ledgerId, query);
