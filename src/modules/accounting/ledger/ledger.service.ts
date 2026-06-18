@@ -515,6 +515,10 @@ export class LedgerService {
                         id: true,
                         code: true,
                         name: true,
+                        gstin: true,
+                        createdAt: true,
+                        updatedAt: true,
+
                         _count: {
                             select: {
                                 ledger: true
@@ -527,13 +531,76 @@ export class LedgerService {
                     }
                 });
 
+            const branchRows = await Promise.all(
+                branches.map(async branch => {
+
+                    const ledgers =
+                        await prisma.ledger.findMany({
+                            where: {
+                                branchId: branch.id
+                            }
+                        });
+
+                    let openingBalance = 0;
+                    let closingBalance = 0;
+                    let totalDebit = 0;
+                    let totalCredit = 0;
+
+                    for (const ledger of ledgers) {
+
+                        const balance =
+                            await this.calculateLedgerBalance(
+                                ledger.id
+                            );
+
+                        openingBalance +=
+                            Number(ledger.openingBalance);
+
+                        closingBalance +=
+                            Math.abs(balance.closingBalance);
+
+                        totalDebit +=
+                            balance.totalDebit;
+
+                        totalCredit +=
+                            balance.totalCredit;
+                    }
+
+                    return {
+                        id: branch.id,
+
+                        code: branch.code,
+
+                        name: branch.name,
+
+                        gstin: branch.gstin,
+
+                        ledgerCount:
+                            branch._count.ledger,
+
+                        openingBalance:
+                            money(openingBalance),
+
+                        totalDebit:
+                            money(totalDebit),
+
+                        totalCredit:
+                            money(totalCredit),
+
+                        closingBalance:
+                            money(closingBalance),
+
+                        createdAt:
+                            branch.createdAt,
+
+                        updatedAt:
+                            branch.updatedAt
+                    };
+                })
+            );
+
             return {
-                data: branches.map(branch => ({
-                    id: branch.id,
-                    code: branch.code,
-                    name: branch.name,
-                    ledgerCount: branch._count.ledger
-                }))
+                data: branchRows
             };
         }
 
@@ -552,6 +619,9 @@ export class LedgerService {
                     select: {
                         id: true,
                         name: true,
+                        gstin: true,
+                        createdAt: true,
+                        updatedAt: true,
 
                         _count: {
                             select: {
@@ -565,18 +635,188 @@ export class LedgerService {
                     }
                 });
 
+            const agencyRows = await Promise.all(
+                agencies.map(async agency => {
+
+                    const ledgers =
+                        await prisma.ledger.findMany({
+                            where: {
+                                agencyId: agency.id
+                            }
+                        });
+
+                    let openingBalance = 0;
+                    let closingBalance = 0;
+                    let totalDebit = 0;
+                    let totalCredit = 0;
+
+                    for (const ledger of ledgers) {
+
+                        const balance =
+                            await this.calculateLedgerBalance(
+                                ledger.id
+                            );
+
+                        openingBalance +=
+                            Number(ledger.openingBalance);
+
+                        closingBalance +=
+                            Math.abs(balance.closingBalance);
+
+                        totalDebit +=
+                            balance.totalDebit;
+
+                        totalCredit +=
+                            balance.totalCredit;
+                    }
+
+                    return {
+                        id: agency.id,
+
+                        name: agency.name,
+
+                        gstin: agency.gstin,
+
+                        ledgerCount:
+                            agency._count.ledger,
+
+                        openingBalance:
+                            money(openingBalance),
+
+                        totalDebit:
+                            money(totalDebit),
+
+                        totalCredit:
+                            money(totalCredit),
+
+                        closingBalance:
+                            money(closingBalance),
+
+                        createdAt:
+                            agency.createdAt,
+
+                        updatedAt:
+                            agency.updatedAt
+                    };
+                })
+            );
+
             return {
-                data: agencies.map(agency => ({
-                    id: agency.id,
-                    name: agency.name,
-                    ledgerCount: agency._count.ledger
-                }))
+                data: agencyRows
             };
         }
 
         if (query?.view === "SUSPENSE") {
-            viewFilter = {
-                category: LedgerType.SUSPENSE
+
+            const suspenseLedgers =
+                await prisma.ledger.findMany({
+                    where: {
+                        category: LedgerType.SUSPENSE,
+
+                        ...(branchId && {
+                            branchId
+                        }),
+
+                        ...(query?.isActive !== undefined && {
+                            isActive: query.isActive
+                        })
+                    },
+
+                    include: {
+                        branch: true
+                    },
+
+                    orderBy: {
+                        name: "asc"
+                    }
+                });
+
+            const rows =
+                await Promise.all(
+                    suspenseLedgers.map(async ledger => {
+
+                        const balance =
+                            await this.calculateLedgerBalance(
+                                ledger.id
+                            );
+
+                        return {
+                            id: ledger.id,
+
+                            code: ledger.code,
+
+                            name: ledger.name,
+
+                            branch: ledger.branch
+                                ? {
+                                    id: ledger.branch.id,
+                                    code: ledger.branch.code,
+                                    name: ledger.branch.name,
+                                    gstin: ledger.branch.gstin
+                                }
+                                : null,
+
+                            openingBalance:
+                                money(ledger.openingBalance),
+
+                            debit:
+                                balance.totalDebit,
+
+                            credit:
+                                balance.totalCredit,
+
+                            closingBalance:
+                                Math.abs(balance.closingBalance),
+
+                            balanceType:
+                                resolveBalanceType(
+                                    balance.closingBalance,
+                                    ledger.nature
+                                ),
+
+                            isActive:
+                                ledger.isActive,
+
+                            createdAt:
+                                ledger.createdAt,
+
+                            updatedAt:
+                                ledger.updatedAt
+                        };
+                    })
+                );
+
+            return {
+                summary: {
+                    totalLedgers:
+                        rows.length,
+
+                    totalDebit:
+                        money(
+                            rows.reduce(
+                                (sum, row) => sum + row.debit,
+                                0
+                            )
+                        ),
+
+                    totalCredit:
+                        money(
+                            rows.reduce(
+                                (sum, row) => sum + row.credit,
+                                0
+                            )
+                        ),
+
+                    totalBalance:
+                        money(
+                            rows.reduce(
+                                (sum, row) => sum + row.closingBalance,
+                                0
+                            )
+                        )
+                },
+
+                data: rows
             };
         }
 
