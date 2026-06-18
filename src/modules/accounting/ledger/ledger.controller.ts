@@ -180,6 +180,41 @@ export const getLedgerByAgencyId = async (
 };
 
 
+export const getLedgerBySuspenseId = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor = (req as any).user;
+
+        const { branchId } = (req as any).params;
+
+        const category =
+            req.query.category as
+                | "ACCOUNTING_LEDGER"
+                | "CASH"
+                | undefined;
+
+        const result =
+            await LedgerService.getLedgerBySuspenseId(
+                actor,
+                branchId,
+                category
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 /**
  * @route   GET /api/ledgers/:id/statement
  * @desc    Get detailed account statement (Passbook) for a ledger

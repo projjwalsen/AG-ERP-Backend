@@ -7,7 +7,8 @@ import {
     getTrialBalance, 
     getLedgerGroups, 
     getLedgerByBranchId,
-    getLedgerByAgencyId
+    getLedgerByAgencyId,
+    getLedgerBySuspenseId
 } from "./ledger.controller";
 import { authMiddleware } from "../../../core/middleware/auth";
 
@@ -257,6 +258,67 @@ router.get(
     "/agency/:agencyId",
     getLedgerByAgencyId
 )
+
+
+/**
+ * @openapi
+ * /api/ledgers/suspense/{branchId}:
+ *   get:
+ *     summary: Get Suspense Ledger By Branch
+ *     description: |
+ *       Returns suspense transactions for a branch.
+ *
+ *       Suspense transactions are transactions where:
+ *
+ *       suspenseAccount = true
+ *
+ *       Supports category wise filtering:
+ *
+ *       - ACCOUNTING_LEDGER → All suspense inward and outward transactions.
+ *       - CASH → Only suspense cash transactions.
+ *
+ *     tags:
+ *       - Ledgers
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: branchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Branch ID
+ *
+ *       - in: query
+ *         name: category
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - ACCOUNTING_LEDGER
+ *             - CASH
+ *         description: Suspense category filter
+ *
+ *     responses:
+ *       200:
+ *         description: Suspense ledger fetched successfully
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Access denied for this branch
+ *
+ *       404:
+ *         description: Branch not found
+ */
+
+router.get(
+    "/suspense/:branchId",
+    getLedgerBySuspenseId
+);
 
 
 
