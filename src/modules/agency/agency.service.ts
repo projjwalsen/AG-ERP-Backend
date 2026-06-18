@@ -2,6 +2,7 @@ import { AgencyType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { getGSTStateCode, isValidIndianPincode } from "../../core/utils/loc.utils";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 export type AgencyBranchInput = {
     branchId: string;
@@ -172,6 +173,21 @@ export class AgencyService {
                     })),
                     skipDuplicates: true,
                 });
+            }
+
+            const ledgerBranchIds = payload.branches?.length
+                ? payload.branches.map((branch) => branch.branchId)
+                : actor.branchId
+                    ? [actor.branchId]
+                    : [];
+
+            if (ledgerBranchIds.length > 0) {
+                await LedgerService.ensureAgencyLedgers(
+                    tx,
+                    createdAgency.id,
+                    ledgerBranchIds,
+                    createdAgency.type
+                );
             }
 
             return createdAgency;
@@ -519,6 +535,35 @@ export class AgencyService {
                     })),
                     skipDuplicates: true,
                 });
+            }
+
+            const existingBranches = payload.branches
+                ? []
+                : await tx.agencyBranch.findMany({
+                    where: {
+                        agencyId,
+                        isActive: true
+                    },
+                    select: {
+                        branchId: true
+                    }
+                });
+
+            const ledgerBranchIds = payload.branches?.length
+                ? payload.branches.map((branch) => branch.branchId)
+                : existingBranches.length > 0
+                    ? existingBranches.map((branch) => branch.branchId)
+                    : actor.branchId
+                        ? [actor.branchId]
+                        : [];
+
+            if (ledgerBranchIds.length > 0) {
+                await LedgerService.ensureAgencyLedgers(
+                    tx,
+                    agencyId,
+                    ledgerBranchIds,
+                    agency.type
+                );
             }
 
             return agency;

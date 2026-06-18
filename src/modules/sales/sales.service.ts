@@ -7,6 +7,7 @@ import { SalesToInvMapper } from "../../core/utils/saleToInvMapper";
 import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
 import { randomUUID } from "crypto";
 import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 type SalesItemPayload = {
     productId: string;
@@ -708,6 +709,8 @@ export class SalesService {
                     }
                 });
             }
+
+            await LedgerService.postSaleApproval(tx, lockedSale.id);
 
             /**
              * STEP 4:

@@ -12,6 +12,7 @@ import purchaseRoute from "../modules/purchase/purchase.routes";
 import transactionRoute from "../modules/transaction/transac.routes";
 import settingRoute from "../modules/settings/setting.routes";
 import productLedgerRoute from "../modules/accounting/productLedger/productLedger.routes";
+import financialLedgerRoute from "../modules/accounting/ledger/ledger.routes";
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use("/purchases", purchaseRoute);
 router.use("/settings", settingRoute);
 router.use("/transactions", transactionRoute);
 router.use("/product-ledger", productLedgerRoute);
+router.use("/ledgers", financialLedgerRoute);
 
 
 

@@ -7,7 +7,8 @@
     "dev": "tsx --watch -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
     "start": "node -r tsconfig-paths/register dist/server.js",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "accounting:sync": "tsx src/scripts/backfill-ledger.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",

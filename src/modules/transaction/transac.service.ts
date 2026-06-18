@@ -3,6 +3,7 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { randomUUID } from "crypto";
 import { RBACService } from "../rbac/rbac.service";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 type TransactionPayload = {
     branchId: string;
@@ -458,6 +459,8 @@ export class TransactionService {
 
             /** Suspensse transaction --> no allocation */
             if (transaction.suspenseAccount || !transaction.agencyId) {
+                await LedgerService.postTransactionApproval(tx, transaction.id);
+
                 return tx.transaction.findUnique({
                     where: { id: transactionId },
                 });
@@ -662,6 +665,8 @@ export class TransactionService {
                     }
                 }
             }
+
+            await LedgerService.postTransactionApproval(tx, transaction.id);
 
             return tx.transaction.findUnique({
                 where: { id: transactionId },

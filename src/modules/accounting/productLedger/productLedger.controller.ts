@@ -38,10 +38,21 @@ export const getProductLedgerDetail = async (
         }
 
         const query = {
-            page: req.query.page ? Number(req.query.page) : 1,
-            limit: req.query.limit ? Number(req.query.limit) : 20,
-            movementType: req.query.movementType as ProductMovementType | undefined,
-            branchId: req.query.branchId as string | undefined,
+            page: Number(req.query.page || 1),
+
+            limit: Number(req.query.limit || 20),
+
+            movementType:
+                req.query.movementType as ProductMovementType | undefined,
+
+            branchId:
+                req.query.branchId as string | undefined,
+
+            startDate:
+                req.query.startDate as string | undefined,
+
+            endDate:
+                req.query.endDate as string | undefined,
         };
 
         const detail = await ProductLedgerService.getProductDetails(productId, query);
