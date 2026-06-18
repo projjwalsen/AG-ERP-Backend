@@ -5,7 +5,9 @@ import {
     getLedgerStatement, 
     setOpeningBalance, 
     getTrialBalance, 
-    getLedgerGroups 
+    getLedgerGroups, 
+    getLedgerByBranchId,
+    getLedgerByAgencyId
 } from "./ledger.controller";
 import { authMiddleware } from "../../../core/middleware/auth";
 
@@ -108,10 +110,13 @@ router.get("/trial-balance", getTrialBalance);
  *             - SUSPENSE
  *         description: Ledger category
  *       - in: query
- *         name: groupCode
+ *         name: view
  *         schema:
  *           type: string
- *         description: Ledger group code
+ *           enum:
+ *            - BRANCH
+ *            - AGENCY
+ *            - SUSPENSE
  *       - in: query
  *         name: branchId
  *         schema:
@@ -176,6 +181,85 @@ router.get("/get-all", getLedgers);
  *         description: Unauthorized
  */
 router.get("/:ledgerId", getLedgerById);
+
+/**
+ * @openapi
+ * /api/ledgers/branch/{branchId}:
+ *   get:
+ *    summary: Get Ledgers By Branch ID
+ *    description: Returns all ledgers associated with a specific branch, optionally filtered by category.
+ *    tags:
+ *      - Ledgers
+ *    security:
+ *      - bearerAuth: []
+ *   parameters:
+ *     - in: path
+ *       name: branchId
+ *       required: true
+ *       schema:
+ *         type: string
+ *     - in: query
+ *       name: category
+ *       schema:
+ *         type: string
+ *         enum:
+ *           - ACCOUNTING_LEDGER
+ *           - CASH
+ *           - GST
+ *           - DEBTORS
+ *           - CREDITORS
+ *           
+ *   responses:
+ *     200:
+ *       description: Ledgers fetched successfully
+ *     401:
+ *       description: Unauthorized
+ */
+router.get(
+    "/branch/:branchId",
+    getLedgerByBranchId
+)
+
+
+/**
+ * @openapi
+ * /api/ledgers/agency/{agencyId}:
+ *   get:
+ *    summary: Get Ledgers By Agency ID
+ *    description: Returns all ledgers associated with a specific agency, optionally filtered by category.
+ *    tags:
+ *      - Ledgers
+ *    security:
+ *      - bearerAuth: []
+ *   parameters:
+ *     - in: path
+ *       name: agencyId
+ *       required: true
+ *       schema:
+ *         type: string
+ *     - in: query
+ *       name: category
+ *       schema:
+ *         type: string
+ *         enum:
+ *           - ACCOUNTING_LEDGER
+ *           - CASH
+ *           - DEBTORS
+ *           - CREDITORS
+ *   responses:
+ *     200:
+ *       description: Ledgers fetched successfully
+ *     401:
+ *       description: Unauthorized
+*/
+
+router.get(
+    "/agency/:agencyId",
+    getLedgerByAgencyId
+)
+
+
+
 
 /**
  * @openapi

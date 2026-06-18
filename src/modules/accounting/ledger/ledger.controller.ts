@@ -58,7 +58,8 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
         
         const query = {
             branchId: (req as any).query.branchId as string,
-            groupCode: (req as any).query.groupCode as string,
+            view: (req as any).query.view as
+                "BRANCH" | "AGENCY" | "SUSPENSE" | undefined,
             category: (req as any).query.category as LedgerType,
             search: (req as any).query.search as string,
             isActive: (req as any).query.isActive !== undefined ? (req as any).query.isActive === "true" : undefined,
@@ -100,6 +101,84 @@ export const getLedgerById = async (req: Request, res: Response, next: NextFunct
         next(error);
     }
 };
+
+
+
+export const getLedgerByBranchId = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor = (req as any).user;
+
+        const { branchId } = (req as any).params;
+
+        const category =
+            req.query.category as
+                | "ACCOUNTING_LEDGER"
+                | "CASH"
+                | "DEBTORS"
+                | "CREDITORS"
+                | "GST"
+                | undefined;
+
+        const result =
+            await LedgerService.getLedgerByBranchId(
+                actor,
+                branchId,
+                category
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+
+export const getLedgerByAgencyId = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor = (req as any).user;
+
+        const { agencyId } = (req as any).params;
+
+        const category =
+            req.query.category as
+                | "ACCOUNTING_LEDGER"
+                | "CASH"
+                | "DEBTORS"
+                | "CREDITORS"
+                | undefined;
+
+        const result =
+            await LedgerService.getLedgerByAgencyId(
+                actor,
+                agencyId,
+                category
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 
 /**
  * @route   GET /api/ledgers/:id/statement

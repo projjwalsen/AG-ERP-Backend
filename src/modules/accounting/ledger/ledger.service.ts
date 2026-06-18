@@ -444,7 +444,7 @@ export class LedgerService {
         actor: any,
         query?: {
             branchId?: string;
-            groupCode?: string;
+            view?: "BRANCH" | "AGENCY" | "SUSPENSE";
             category?: LedgerType;
             search?: string;
             isActive?: boolean;
@@ -481,7 +481,6 @@ export class LedgerService {
         }
 
         const branchId = actor.branchAccessType === "ALL" ? query?.branchId : actor.branchId;
-        const groupCodes = query?.groupCode ? await this.getGroupCodesWithChildren(query.groupCode) : undefined;
 
         const andFilters: Prisma.LedgerWhereInput[] = [];
 
@@ -500,11 +499,92 @@ export class LedgerService {
             });
         }
 
+        let viewFilter: Prisma.LedgerWhereInput = {};
+
+        if (query?.view === "BRANCH") {
+
+            const branches =
+                await prisma.branch.findMany({
+                    where: {
+                        ...(branchId && {
+                            id: branchId
+                        })
+                    },
+
+                    select: {
+                        id: true,
+                        code: true,
+                        name: true,
+                        _count: {
+                            select: {
+                                ledger: true
+                            }
+                        }
+                    },
+
+                    orderBy: {
+                        name: "asc"
+                    }
+                });
+
+            return {
+                data: branches.map(branch => ({
+                    id: branch.id,
+                    code: branch.code,
+                    name: branch.name,
+                    ledgerCount: branch._count.ledger
+                }))
+            };
+        }
+
+        if (query?.view === "AGENCY") {
+
+            const agencies =
+                await prisma.agency.findMany({
+
+                    where: {
+                        isActive: true,
+                        ledger: {
+                            some: {}
+                        }
+                    },
+
+                    select: {
+                        id: true,
+                        name: true,
+
+                        _count: {
+                            select: {
+                                ledger: true
+                            }
+                        }
+                    },
+
+                    orderBy: {
+                        name: "asc"
+                    }
+                });
+
+            return {
+                data: agencies.map(agency => ({
+                    id: agency.id,
+                    name: agency.name,
+                    ledgerCount: agency._count.ledger
+                }))
+            };
+        }
+
+        if (query?.view === "SUSPENSE") {
+            viewFilter = {
+                category: LedgerType.SUSPENSE
+            };
+        }
+
         const where: Prisma.LedgerWhereInput = {
             ...(andFilters.length > 0 && { AND: andFilters }),
+            ...(viewFilter && viewFilter),
             ...(query?.category && { category: query.category }),
             ...(query?.isActive !== undefined && { isActive: query.isActive }),
-            ...(groupCodes && { group: { is: { code: { in: groupCodes } } } }),
             ...(startDate || endDate
                 ? {
                     createdAt: {
@@ -854,6 +934,704 @@ export class LedgerService {
                 voucherCount
             }
         };
+    }
+
+    static async getLedgerByBranchId(
+        actor: any,
+        branchId: string,
+        category?:
+            | "ACCOUNTING_LEDGER"
+            | "CASH"
+            | "GST"
+            | "DEBTORS"
+            | "CREDITORS"
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if (
+            actor.branchAccessType !== "ALL" &&
+            actor.branchId !== branchId
+        ) {
+            throw new ApiError(
+                "You do not have access to this branch",
+                403
+            );
+        }
+
+        const branch =
+            await prisma.branch.findUnique({
+                where: {
+                    id: branchId
+                }
+            });
+
+        if (!branch) {
+            throw new ApiError(
+                "Branch not found",
+                404
+            );
+        }
+
+        const ledgers =
+            await prisma.ledger.findMany({
+                where: {
+                    branchId
+                },
+
+                include: {
+                    group: true,
+                    branch: true,
+                    agency: true
+                },
+
+                orderBy: {
+                    name: "asc"
+                }
+            });
+
+        const ledgerRows =
+            await Promise.all(
+                ledgers.map(async ledger => {
+
+                    const balance =
+                        await this.calculateLedgerBalance(
+                            ledger.id
+                        );
+
+                    return {
+                        id: ledger.id,
+                        code: ledger.code,
+                        name: ledger.name,
+                        category: ledger.category,
+                        nature: ledger.nature,
+
+                        group: {
+                            code: ledger.group.code,
+                            name: ledger.group.name
+                        },
+
+                        branch: ledger.branch
+                            ? {
+                                id: ledger.branch.id,
+                                code: ledger.branch.code,
+                                name: ledger.branch.name
+                            }
+                            : null,
+
+                        agency: ledger.agency
+                            ? {
+                                id: ledger.agency.id,
+                                name: ledger.agency.name
+                            }
+                            : null,
+
+                        openingBalance:
+                            money(ledger.openingBalance),
+
+                        debit:
+                            balance.totalDebit,
+
+                        credit:
+                            balance.totalCredit,
+
+                        closingBalance:
+                            Math.abs(balance.closingBalance),
+
+                        balanceType:
+                            resolveBalanceType(
+                                balance.closingBalance,
+                                ledger.nature
+                            ),
+
+                        gstin: ledger.gstin,
+                        pan: ledger.pan,
+
+                        isActive:
+                            ledger.isActive,
+
+                        createdAt:
+                            ledger.createdAt,
+
+                        updatedAt:
+                            ledger.updatedAt
+                    };
+                })
+            );
+
+        const inward =
+            await prisma.transaction.aggregate({
+                where: {
+                    branchId,
+                    direction: TransactionDirection.INWARD
+                },
+                _sum: {
+                    amount: true
+                }
+            });
+
+        const outward =
+            await prisma.transaction.aggregate({
+                where: {
+                    branchId,
+                    direction: TransactionDirection.OUTWARD
+                },
+                _sum: {
+                    amount: true
+                }
+            });
+
+        switch (category) {
+
+            case "ACCOUNTING_LEDGER":
+
+                const transactions =
+                    await prisma.transaction.findMany({
+                        where: {
+                            branchId
+                        },
+                        orderBy: {
+                            createdAt: "desc"
+                        }
+                    });
+
+                return {
+                    branch: {
+                        id: branch.id,
+                        code: branch.code,
+                        name: branch.name
+                    },
+
+                    category: "ACCOUNTING_LEDGER",
+
+                    summary: {
+                        totalTransactions:
+                            transactions.length,
+
+                        inward:
+                            money(inward._sum.amount ?? 0),
+
+                        outward:
+                            money(outward._sum.amount ?? 0),
+
+                        netMovement:
+                            money(
+                                Number(inward._sum.amount ?? 0) -
+                                Number(outward._sum.amount ?? 0)
+                            )
+                    },
+
+                    ledgers:
+                        transactions.map(t => ({
+                            id: t.id,
+
+                            transactionNo: t.transactionNo,
+
+                            direction: t.direction,
+
+                            amount: money(t.amount),
+
+                            narration: t.remarks,
+
+                            createdAt: t.createdAt
+                        }))
+                };
+
+            case "CASH":
+
+                const cashLedgers =
+                    ledgerRows.filter(
+                        x =>
+                            x.category === LedgerType.CASH ||
+                            x.category === LedgerType.BANK
+                    );
+
+                return {
+                    branch: {
+                        id: branch.id,
+                        code: branch.code,
+                        name: branch.name
+                    },
+
+                    category: "CASH",
+                    summary: {
+                        totalLedgers:
+                            cashLedgers.length,
+
+                        totalDebit:
+                            money(
+                                cashLedgers.reduce(
+                                    (sum, x) => sum + x.debit,
+                                    0
+                                )
+                            ),
+
+                        totalCredit:
+                            money(
+                                cashLedgers.reduce(
+                                    (sum, x) => sum + x.credit,
+                                    0
+                                )
+                            ),
+
+                        totalBalance:
+                            money(
+                                cashLedgers.reduce(
+                                    (sum, x) => sum + x.closingBalance,
+                                    0
+                                )
+                            ),
+
+                        createdAt: 
+                            cashLedgers.length 
+                                ? cashLedgers.reduce(
+                                    (a, b) => a.createdAt < b.createdAt ? a : b
+                                ).createdAt
+                            : null,
+                    },
+
+                    ledgers:
+                        cashLedgers
+                };
+
+                case "GST":
+
+                    const gstLedgers =
+                        ledgerRows.filter(
+                            x =>
+                                x.category === LedgerType.GST
+                        );
+
+                    return {
+                        branch: {
+                            id: branch.id,
+                            code: branch.code,
+                            name: branch.name
+                        },
+
+                        category: "GST",
+
+                        summary: {
+                            totalGSTLedgers:
+                                gstLedgers.length,
+
+                            totalDebit:
+                                money(
+                                    gstLedgers.reduce(
+                                        (sum, x) => sum + x.debit,
+                                        0
+                                    )
+                                ),
+
+                            totalCredit:
+                                money(
+                                    gstLedgers.reduce(
+                                        (sum, x) => sum + x.credit,
+                                        0
+                                    )
+                                ),
+
+                            totalBalance:
+                                money(
+                                    gstLedgers.reduce(
+                                        (sum, x) => sum + x.closingBalance,
+                                        0
+                                    )
+                                ),
+
+                            createdAt:
+                                gstLedgers.length
+                                    ? gstLedgers.reduce(
+                                        (a, b) =>
+                                            a.createdAt < b.createdAt
+                                                ? a
+                                                : b
+                                    ).createdAt
+                                    : null,
+
+                            updatedAt:
+                                gstLedgers.length
+                                    ? gstLedgers.reduce(
+                                        (a, b) =>
+                                            a.updatedAt > b.updatedAt
+                                                ? a
+                                                : b
+                                    ).updatedAt
+                                    : null
+                        },
+
+                        ledgers: gstLedgers
+                    };
+
+            case "DEBTORS":
+
+                const debtors =
+                    ledgerRows.filter(
+                        x =>
+                            x.category === LedgerType.CUSTOMER
+                    );
+
+                return {
+                    branch: {
+                        id: branch.id,
+                        code: branch.code,
+                        name: branch.name
+                    },
+
+                    category: "DEBTORS",
+
+                    summary: {
+                        totalDebtors:
+                            debtors.length,
+
+                        totalReceivable:
+                            money(
+                                debtors.reduce(
+                                    (sum, x) => sum + x.closingBalance,
+                                    0
+                                )
+                            ),
+
+                        createdAt: 
+                            debtors.length 
+                                ? debtors.reduce(
+                                    (a, b) => a.createdAt < b.createdAt ? a : b
+                                ).createdAt
+                            : null,
+                    },
+
+                    ledgers:
+                        debtors
+                };
+
+            case "CREDITORS":
+
+                const creditors =
+                    ledgerRows.filter(
+                        x =>
+                            x.category === LedgerType.VENDOR
+                    );
+
+                return {
+                    branch: {
+                        id: branch.id,
+                        code: branch.code,
+                        name: branch.name
+                    },
+
+                    category: "CREDITORS",
+
+                    summary: {
+                        totalCreditors:
+                            creditors.length,
+
+                        totalPayable:
+                            money(
+                                creditors.reduce(
+                                    (sum, x) => sum + x.closingBalance,
+                                    0
+                                )
+                            ),
+
+                        createdAt: 
+                            creditors.length 
+                                ? creditors.reduce(
+                                    (a, b) => a.createdAt < b.createdAt ? a : b
+                                ).createdAt
+                            : null,
+                    },
+
+                    ledgers:
+                        creditors
+                };
+
+            default:
+
+                return {
+                    branch: {
+                        id: branch.id,
+                        code: branch.code,
+                        name: branch.name
+                    },
+
+                    summary: {
+                        totalLedgers:
+                            ledgerRows.length,
+
+                        totalDebit:
+                            money(
+                                ledgerRows.reduce(
+                                    (sum, x) => sum + x.debit,
+                                    0
+                                )
+                            ),
+
+                        totalCredit:
+                            money(
+                                ledgerRows.reduce(
+                                    (sum, x) => sum + x.credit,
+                                    0
+                                )
+                            )
+                    },
+
+                    ledgers:
+                        ledgerRows
+                };
+        }
+    }
+
+    static async getLedgerByAgencyId(
+        actor: any,
+        agencyId: string,
+        category?: 
+            | "ACCOUNTING_LEDGER"
+            | "CASH"
+            | "DEBTORS"
+            | "CREDITORS"
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const agency =
+            await prisma.agency.findUnique({
+                where: {
+                    id: agencyId
+                }
+            });
+
+        if (!agency) {
+            throw new ApiError("Agency not found", 404);
+        }
+
+        const ledgers = await prisma.ledger.findMany({
+            where: {
+                agencyId
+            },
+
+            include: {
+                group: true,
+                branch: true,
+                agency: true
+            },
+
+            orderBy: {
+                name: "asc"
+            }
+        });
+
+        const ledgerRows =
+            await Promise.all(
+                ledgers.map(async ledger => {
+
+                    const balance =
+                        await this.calculateLedgerBalance(
+                            ledger.id
+                        );
+
+                    return {
+                        id: ledger.id,
+                        code: ledger.code,
+                        name: ledger.name,
+                        category: ledger.category,
+                        nature: ledger.nature,
+
+                        group: {
+                            code: ledger.group.code,
+                            name: ledger.group.name
+                        },
+
+                        branch: ledger.branch
+                            ? ledger.branch
+                            : null,
+
+                        agency: ledger.agency!,
+
+                        openingBalance:
+                            money(ledger.openingBalance),
+
+                        debit:
+                            balance.totalDebit,
+
+                        credit:
+                            balance.totalCredit,
+
+                        closingBalance:
+                            Math.abs(balance.closingBalance),
+
+                        balanceType:
+                            resolveBalanceType(
+                                balance.closingBalance,
+                                ledger.nature
+                            ),
+
+                        gstin: ledger.gstin,
+
+                        isActive:
+                            ledger.isActive,
+
+                        createdAt:
+                            ledger.createdAt,
+
+                        updatedAt:
+                            ledger.updatedAt
+                    };
+                })
+            );
+
+        switch (category) {
+            case "ACCOUNTING_LEDGER":
+                const transactions =
+                    await prisma.transaction.findMany({
+                        where: {
+                            agencyId
+                        },
+
+                        orderBy: {
+                            createdAt: "desc"
+                        }
+                    });
+
+                return {
+                    agency,
+
+                    category: "ACCOUNTING_LEDGER",
+
+                    summary: {
+                        totalTransactions:
+                            transactions.length,
+
+                        inward:
+                            money(
+                                transactions
+                                    .filter(x => x.direction === TransactionDirection.INWARD)
+                                    .reduce((s, x) => s + Number(x.amount), 0)
+                            ),
+
+                        outward:
+                            money(
+                                transactions
+                                    .filter(x => x.direction === TransactionDirection.OUTWARD)
+                                    .reduce((s, x) => s + Number(x.amount), 0)
+                            )
+                    },
+
+                    ledgers:
+                        transactions
+                };
+
+            case "CASH":
+                const cashLedgers =
+                    ledgerRows.filter(
+                        x =>
+                            x.category === LedgerType.CASH ||
+                            x.category === LedgerType.BANK
+                    );
+
+                return {
+                    agency,
+
+                    category: "CASH",
+
+                    summary: {
+                        totalLedgers:
+                            cashLedgers.length,
+
+                        totalBalance:
+                            money(
+                                cashLedgers.reduce(
+                                    (sum, x) =>
+                                        sum + x.closingBalance,
+                                    0
+                                )
+                            )
+                    },
+
+                    ledgers:
+                        cashLedgers
+                };
+
+            case "DEBTORS":
+                const debtors =
+                    ledgerRows.filter(
+                        x =>
+                            x.category === LedgerType.CUSTOMER
+                    );
+
+                return {
+                    agency,
+
+                    category: "DEBTORS",
+
+                    summary: {
+                        totalDebtors:
+                            debtors.length,
+
+                        totalReceivable:
+                            money(
+                                debtors.reduce(
+                                    (sum, x) => sum + x.closingBalance,
+                                    0
+                                )
+                            )
+                    },
+
+                    ledgers:
+                        debtors
+                };
+
+            case "CREDITORS":
+                const creditors =
+                    ledgerRows.filter(
+                        x =>
+                            x.category === LedgerType.VENDOR
+                    );
+
+                return {
+                    agency,
+
+                    category: "CREDITORS",
+
+                    summary: {
+                        totalCreditors:
+                            creditors.length,
+
+                        totalPayable:
+                            money(
+                                creditors.reduce(
+                                    (sum, x) => sum + x.closingBalance,
+                                    0
+                                )
+                            )
+                    },
+
+                    ledgers:
+                        creditors
+                };
+
+            default:
+                return {
+                    agency,
+
+                    summary: {
+                        totalLedgers:
+                            ledgerRows.length,
+
+                        totalBalance:
+                            money(
+                                ledgerRows.reduce(
+                                    (sum, x) => sum + x.closingBalance,
+                                    0
+                                )
+                            )
+                    },
+
+                    ledgers:
+                        ledgerRows
+                };
+        }
     }
 
     static async calculateLedgerBalance( //✅
