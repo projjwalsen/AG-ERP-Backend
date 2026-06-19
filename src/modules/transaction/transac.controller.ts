@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { TransactionService } from './transac.service';
+import { ExcelService } from '../../core/utils/export.service';
+import { transactionColumns } from '../exports/transaction.export';
 
 
 export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
@@ -57,8 +59,9 @@ export const getAllTransactions = async (req: Request, res: Response, next: Next
             direction,
             paymentType,
             search,
-            suspenseAccount
+            suspenseAccount,
         } = (req as any).query;
+        const isExport = (req.query.export as string) === "true" || false;
 
         const transactions = await TransactionService.getAllTransactions(actor, {
             page: Number(page) || 1,
@@ -69,8 +72,25 @@ export const getAllTransactions = async (req: Request, res: Response, next: Next
             direction,
             paymentType,
             search,
-            suspenseAccount
+            suspenseAccount,
+            export: isExport
         });
+
+        if (isExport) {
+
+            return ExcelService.export(
+                res,
+                {
+                    filename: `transactions_${Date.now()}`,
+
+                    sheetName: "Transactions",
+
+                    columns: transactionColumns,
+
+                    data: transactions.data
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,

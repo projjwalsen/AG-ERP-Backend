@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { ProductLedgerService } from "./productLedger.service";
 import { ProductMovementType } from "@prisma/client";
+import { ExcelService } from "../../../core/utils/export.service";
+import { productLedgerColumns } from "../../exports/product.export";
 
 /**
  * ========================================
@@ -172,8 +174,45 @@ export const getAllProductLedgers = async (
             category: req.query.category as string | undefined,
             isLowStock: req.query.isLowStock === 'true' ? true : undefined,
         };
+        const isExport = (req.query.export as string) === "true" || false;
+        const ledgers = await ProductLedgerService.getAllProductLedgers({ ...query, export: isExport });
 
-        const ledgers = await ProductLedgerService.getAllProductLedgers(query);
+        if (isExport) {
+
+            return ExcelService.export(
+                res,
+                {
+                    filename: "product-ledgers",
+
+                    sheetName:
+                        "Product Ledgers",
+
+                    columns:
+                        productLedgerColumns,
+
+                    data:
+                        ledgers.data,
+
+                    customRowStyles:
+                        (row) => {
+
+                            if (row.isLowStock) {
+                                return {
+                                    fill: {
+                                        type: "pattern",
+                                        pattern: "solid",
+                                        fgColor: {
+                                            argb: "FFF2CC"
+                                        }
+                                    }
+                                };
+                            }
+
+                            return {};
+                        }
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,

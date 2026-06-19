@@ -1,0 +1,368 @@
+import { Router } from "express";
+import * as ReportingController from "./reporting.controller";
+import { authMiddleware } from "../../core/middleware/auth";
+
+const router = Router();
+router.use(authMiddleware)
+
+/**
+ * @openapi
+ * /api/reports/branch/{branchId}/day-book:
+ *   get:
+ *     summary: Branch Wise Day Book / Cash Book
+ *     description: |
+ *       Returns a chronological cash and bank movement report for a branch.
+ *
+ *       Features:
+ *       - Cash Receipts (Inward)
+ *       - Cash Payments (Outward)
+ *       - Online / Offline Payment Mode
+ *       - Transaction Reference Number (UTR / Cheque / DD)
+ *       - Routed Transactions (Via Secondary Agency)
+ *       - Invoice Allocations
+ *       - Date Range Filtering
+ *
+ *       This is an operational report generated from Transactions and Transaction Allocations.
+ *     tags:
+ *       - Reports
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: branchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         example: 1548c22a-8751-4de9-8161-df6baad75d95
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-01
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-30
+ *
+ *     responses:
+ *       200:
+ *         description: Day Book generated successfully
+ *
+ *       400:
+ *         description: Invalid date range
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Access denied for branch
+ *
+ *       404:
+ *         description: Branch not found
+ */
+
+router.get(
+    "/branch/:branchId/day-book",
+    ReportingController.getBranchDayBook
+)
+
+
+/**
+ * @openapi
+ * /api/reports/gstr1:
+ *   get:
+ *     summary: Generate GSTR-1 Outward Supplies Report
+ *     description: |
+ *       Generates the statutory GSTR-1 outward supplies report for approved sales invoices.
+ *
+ *       Features:
+ *       - B2B / B2C classification
+ *       - GSTIN based reporting
+ *       - Place of Supply (POS)
+ *       - Taxable value calculation
+ *       - CGST / SGST / IGST breakup
+ *       - Branch-wise filtering
+ *       - Date range filtering
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Branch ID to filter report.
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-01
+ *         description: Start date of reporting period.
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-30
+ *         description: End date of reporting period.
+ *
+ *     responses:
+ *       200:
+ *         description: GSTR-1 report generated successfully.
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal server error
+ */
+
+router.get(
+    "/gstr1",
+    ReportingController.getGSTR1Report
+)
+
+
+/**
+ * @openapi
+ * /api/reports/gst-suspense-log:
+ *   get:
+ *     summary: GST Suspense Account Clearing Log
+ *     description: |
+ *       Returns all transactions marked as suspense entries.
+ *
+ *       Suspense transactions represent unidentified or anonymous funds
+ *       received by a branch that have not yet been mapped to a valid
+ *       customer/vendor agency.
+ *
+ *       Business Workflow:
+ *       - Transaction enters with suspenseAccount = true
+ *       - Funds remain in holding state
+ *       - Supervisor verifies source
+ *       - Agency is linked
+ *       - Entry becomes AUTHENTICATED
+ *
+ *       This report helps accountants track pending suspense entries
+ *       awaiting authentication and reconciliation.
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Branch ID filter.
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-01
+ *         description: Start date filter.
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-30
+ *         description: End date filter.
+ *
+ *     responses:
+ *       200:
+ *         description: GST Suspense Account Clearing Log generated successfully.
+ *    
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal Server Error
+ */
+
+router.get(
+    "/gst-suspense-log",
+    ReportingController.getGSTSuspenseAccountLog
+)
+
+/**
+ * @openapi
+ * /api/reports/stock-inventory:
+ *   get:
+ *     summary: Stock Inventory Report
+ *     description: |
+ *       Generates a stock and inventory report showing current stock position
+ *       batch-wise and product-wise for a branch.
+ *
+ *       This report provides:
+ *       - Product Code
+ *       - Product Name
+ *       - Batch Number
+ *       - Branch Details
+ *       - Current Stock (KG/LTR)
+ *       - Batch Creation Date
+ *       - Last Updated Date
+ *
+ *       Used by warehouse managers and accountants to monitor available stock.
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter inventory by branch.
+ *
+ *       - in: query
+ *         name: productId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter inventory by product.
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2026-06-01"
+ *         description: Filter batches created on or after this date.
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2026-06-30"
+ *         description: Filter batches created on or before this date.
+ *
+ *     responses:
+ *       200:
+ *         description: Stock inventory report generated successfully
+ *         
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal Server Error
+ */
+
+router.get(
+    "/stock-inventory",
+    ReportingController.getStockInventoryReport
+);
+
+/**
+ * @openapi
+ * /api/reports/outstanding-report:
+ *   get:
+ *     summary: Accounts Receivable / Payable Outstanding Report
+ *     description: |
+ *       Generates an Accounts Receivable (AR) and Accounts Payable (AP)
+ *       Outstanding Report.
+ *
+ *       This report shows:
+ *       - Agency ID
+ *       - Agency Name
+ *       - Agency Type
+ *       - Total Outstanding Amount
+ *       - Outstanding Type (Receivable / Payable)
+ *
+ *       Receivable = Agency owes money to the company.
+ *       Payable = Company owes money to the agency.
+ *
+ *       Data is sourced from Agency Outstanding balances maintained
+ *       within the accounting system.
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter report for a specific branch.
+ *
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - RECEIVABLE
+ *             - PAYABLE
+ *         description: |
+ *           RECEIVABLE = Customer owes money.
+ *           PAYABLE = Company owes money.
+ *
+ *     responses:
+ *       200:
+ *         description: Outstanding report generated successfully.
+ * 
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal Server Error
+ */
+
+
+router.get(
+    "/outstanding-report",
+    ReportingController.getOutstandingReport
+);
+
+
+export default router;

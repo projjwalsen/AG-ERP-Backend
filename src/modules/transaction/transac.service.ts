@@ -311,6 +311,7 @@ export class TransactionService {
             direction?: TransactionDirection;
             paymentType?: TransactionPaymentType;
             search?: string;
+            export?: boolean;
             suspenseAccount?: boolean;
         }
     ) {
@@ -373,8 +374,7 @@ export class TransactionService {
                 where,
                 include: { branch: true, agency: true, thirdPartyAgency: true, createdBy: true },
                 orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
+                ...(query?.export ? {} : { skip, take: limit })
             }),
             prisma.transaction.count({ where })
         ]);

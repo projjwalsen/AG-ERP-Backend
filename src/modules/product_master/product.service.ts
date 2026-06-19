@@ -139,6 +139,7 @@ export class ProductService {
             category?: string;
             page?: number;
             limit?: number;
+            export?: boolean;
         }
     ) {
         if(!actor?.id){
@@ -166,9 +167,14 @@ export class ProductService {
             })
         };
 
-        const [products, total] = await Promise.all([
-            prisma.product.findMany({
+        const total = await prisma.product.count({
+            where,
+        });
+
+        const products =
+            await prisma.product.findMany({
                 where,
+
                 select: {
                     id: true,
                     sku: true,
@@ -185,23 +191,43 @@ export class ProductService {
                     isActive: true,
                     createdAt: true,
                 },
-                orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
-            }),
-            prisma.product.count({ where })
-        ]);
-        
+
+                orderBy: {
+                    createdAt: "desc",
+                },
+
+                ...(query?.export
+                    ? {}
+                    : {
+                        skip: (page - 1) * limit,
+                        take: limit,
+                    }),
+            });
+
         return {
             data: products,
+
             meta: {
                 total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-                hasNextPage: page < Math.ceil(total / limit),
-                hasPrevPage: page > 1,
-            }
+
+                page: query?.export ? 1 : page,
+
+                limit: query?.export
+                    ? total
+                    : limit,
+
+                totalPages: query?.export
+                    ? 1
+                    : Math.ceil(total / limit),
+
+                hasNextPage: query?.export
+                    ? false
+                    : page < Math.ceil(total / limit),
+
+                hasPrevPage: query?.export
+                    ? false
+                    : page > 1,
+            },
         };
     }
 

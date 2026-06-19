@@ -203,6 +203,7 @@ export class AgencyService {
             branch?: string;
             page?: number;
             limit?: number;
+            export?: boolean;
         }
     ) {
         if(!actor?.id) {
@@ -283,8 +284,7 @@ export class AgencyService {
                     }
                 },
                 orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
+                ...(query?.export ? {} : { skip, take: limit })
             }),
             prisma.agency.count({ where })
         ]);

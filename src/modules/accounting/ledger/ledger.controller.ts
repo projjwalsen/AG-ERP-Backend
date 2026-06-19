@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { LedgerService } from "./ledger.service"; // Adjust path as needed
 import { LedgerType } from "@prisma/client";
+import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
+import { ExcelService } from "../../../core/utils/export.service";
 
 /**
  * @route   POST /api/ledgers
@@ -55,6 +57,7 @@ import { LedgerType } from "@prisma/client";
 export const getLedgers = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
+        const isExport = (req.query.export as string) === "true" || false;
         
         const query = {
             branchId: (req as any).query.branchId as string,
@@ -67,9 +70,42 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
             limit: (req as any).query.limit ? parseInt((req as any).query.limit as string, 10) : undefined,
             startDate: (req as any).query.startDate as string,
             endDate: (req as any).query.endDate as string,
+            export: isExport,
         };
 
         const result = await LedgerService.getLedgers(actor, query);
+
+        if (isExport) {
+
+            let columns = ledgerColumns;
+
+            if (query.view === "BRANCH") {
+                columns = branchLedgerColumns;
+            }
+
+            if (query.view === "AGENCY") {
+                columns = agencyLedgerColumns;
+            }
+
+            if (query.view === "SUSPENSE") {
+                columns = suspenseLedgerColumns;
+            }
+
+            return ExcelService.export(
+                res,
+                {
+                    filename: `ledger_${query.view || "default"}`,
+
+                    sheetName:
+                        query.view || "Ledgers",
+
+                    columns,
+
+                    data:
+                        result.data
+                }
+            );
+        }
 
         res.status(200).json({
             success: true,

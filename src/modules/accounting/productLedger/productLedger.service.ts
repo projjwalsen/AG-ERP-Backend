@@ -489,6 +489,7 @@ export class ProductLedgerService {
             this.getProductAnalytics(productId),
         ]);
 
+        let closingStockKG = openingStockKG;
         // 4. Movements ONLY if ledger exists
         let movements: any = {
             entries: [],
@@ -628,6 +629,8 @@ export class ProductLedgerService {
                 })
             );
 
+            closingStockKG = runningStockKG;
+
             movements = {
                 entries: movementRows,
 
@@ -645,6 +648,7 @@ export class ProductLedgerService {
                         page > 1,
                 }
             };
+            
         }
 
         // 5. Final response (clean separation)
@@ -675,6 +679,17 @@ export class ProductLedgerService {
             stock: {
                 globalStockKG: globalStock.globalStockKG,
                 globalStockLTR: globalStock.globalStockLTR,
+
+                openingStockKG:
+                    startDate
+                        ? openingStockKG
+                        : globalStock.globalStockKG,
+
+                closingStockKG:
+                    startDate
+                        ? closingStockKG
+                        : globalStock.globalStockKG,
+
                 isLowStock: product.minimumStockKG
                     ? globalStock.globalStockKG < Number(product.minimumStockKG)
                     : false,
@@ -950,6 +965,7 @@ export class ProductLedgerService {
             search?: string;
             isLowStock?: boolean;
             category?: string;
+            export?: boolean;
         }
     ) {
         const page = query?.page || 1;
@@ -979,8 +995,7 @@ export class ProductLedgerService {
                 where,
                 include: { product: true },
                 orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
+                ...(query?.export ? {} : { skip, take: limit })
             }),
             prisma.productLedger.count({ where })
         ]);

@@ -24,6 +24,7 @@
     "country-state-city": "^3.2.1",
     "crypto": "^1.0.1",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "handlebars": "^4.7.9",
     "jsonwebtoken": "^9.0.3",
