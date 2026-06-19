@@ -76,5 +76,226 @@ router.get(
 )
 
 
+/**
+ * @openapi
+ * /api/reports/gstr1:
+ *   get:
+ *     summary: Generate GSTR-1 Outward Supplies Report
+ *     description: |
+ *       Generates the statutory GSTR-1 outward supplies report for approved sales invoices.
+ *
+ *       Features:
+ *       - B2B / B2C classification
+ *       - GSTIN based reporting
+ *       - Place of Supply (POS)
+ *       - Taxable value calculation
+ *       - CGST / SGST / IGST breakup
+ *       - Branch-wise filtering
+ *       - Date range filtering
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Branch ID to filter report.
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-01
+ *         description: Start date of reporting period.
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-30
+ *         description: End date of reporting period.
+ *
+ *     responses:
+ *       200:
+ *         description: GSTR-1 report generated successfully.
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal server error
+ */
+
+router.get(
+    "/gstr1",
+    ReportingController.getGSTR1Report
+)
+
+
+/**
+ * @openapi
+ * /api/reports/gst-suspense-log:
+ *   get:
+ *     summary: GST Suspense Account Clearing Log
+ *     description: |
+ *       Returns all transactions marked as suspense entries.
+ *
+ *       Suspense transactions represent unidentified or anonymous funds
+ *       received by a branch that have not yet been mapped to a valid
+ *       customer/vendor agency.
+ *
+ *       Business Workflow:
+ *       - Transaction enters with suspenseAccount = true
+ *       - Funds remain in holding state
+ *       - Supervisor verifies source
+ *       - Agency is linked
+ *       - Entry becomes AUTHENTICATED
+ *
+ *       This report helps accountants track pending suspense entries
+ *       awaiting authentication and reconciliation.
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Branch ID filter.
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-01
+ *         description: Start date filter.
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: 2026-06-30
+ *         description: End date filter.
+ *
+ *     responses:
+ *       200:
+ *         description: GST Suspense Account Clearing Log generated successfully.
+ *    
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal Server Error
+ */
+
+router.get(
+    "/gst-suspense-log",
+    ReportingController.getGSTSuspenseAccountLog
+)
+
+/**
+ * @openapi
+ * /api/reports/stock-inventory:
+ *   get:
+ *     summary: Stock Inventory Report
+ *     description: |
+ *       Generates a stock and inventory report showing current stock position
+ *       batch-wise and product-wise for a branch.
+ *
+ *       This report provides:
+ *       - Product Code
+ *       - Product Name
+ *       - Batch Number
+ *       - Branch Details
+ *       - Current Stock (KG/LTR)
+ *       - Batch Creation Date
+ *       - Last Updated Date
+ *
+ *       Used by warehouse managers and accountants to monitor available stock.
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter inventory by branch.
+ *
+ *       - in: query
+ *         name: productId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter inventory by product.
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2026-06-01"
+ *         description: Filter batches created on or after this date.
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *           example: "2026-06-30"
+ *         description: Filter batches created on or before this date.
+ *
+ *     responses:
+ *       200:
+ *         description: Stock inventory report generated successfully
+ *         
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal Server Error
+ */
+
+router.get(
+    "/stock-inventory",
+    ReportingController.getStockInventoryReport
+);
+
+
 
 export default router;
