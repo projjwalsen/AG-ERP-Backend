@@ -965,6 +965,7 @@ export class ProductLedgerService {
             search?: string;
             isLowStock?: boolean;
             category?: string;
+            export?: boolean;
         }
     ) {
         const page = query?.page || 1;
@@ -994,8 +995,7 @@ export class ProductLedgerService {
                 where,
                 include: { product: true },
                 orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
+                ...(query?.export ? {} : { skip, take: limit })
             }),
             prisma.productLedger.count({ where })
         ]);

@@ -486,6 +486,7 @@ export class InventoryService {
             productId?: string;
             search?: string;
             isActive?: boolean;
+            export?: boolean;
         }
     ){
         if(!actor?.id){
@@ -546,8 +547,12 @@ export class InventoryService {
                 orderBy: {
                     createdAt: "desc"
                 },
-                skip,
-                take: limit
+                ...(query?.export
+                    ? {}
+                    : {
+                        skip,
+                        take: limit
+                })
             }),
             prisma.inventoryBatch.count({ where })
         ]);
@@ -590,6 +595,7 @@ export class InventoryService {
             limit?: number;
             productId?: string;
             search?: string;
+            export?: boolean;
         } 
     ) {
         if(!actor?.id){
@@ -631,7 +637,13 @@ export class InventoryService {
                 take: limit,
                 orderBy: {
                     createdAt: "desc"
-                }
+                },
+                ...(query?.export
+                        ? {}
+                        : {
+                            skip,
+                            take: limit
+                    }),
             }),
             prisma.product.count({
                 where: productWhere
@@ -706,7 +718,7 @@ export class InventoryService {
 
     static async getProductBatchHistory(
         actor: any,
-        productId: string
+        productId: string,
     ){
         if(!actor?.id){
             throw new ApiError("Unauthorized", 401);

@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AgencyService } from "./agency.service";
+import { ExcelService } from "../../core/utils/export.service";
+import { agencyExportColumns } from "../exports/agency.export";
 
 export const createAgency = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -33,14 +35,75 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
 
         const page  = parseInt(req.query.page as string)  || 1;
         const limit = parseInt(req.query.limit as string) || 10;
-
+        const isExport = (req.query.export as string) === "true" || false;
         const result = await AgencyService.getAllAgencies(actor, {
             search: req.query.search as string | undefined,
             type: req.query.type as any,
             branch: req.query.branch as string | undefined,
             page,
-            limit
+            limit,
+            export: isExport
         });
+
+        if (isExport) {
+
+            const rows = result.data.flatMap(
+                agency =>
+                    agency.branches.map(
+                        branch => ({
+                            agencyName:
+                                agency.name,
+
+                            type:
+                                agency.type,
+
+                            gstin:
+                                agency.gstin,
+
+                            contactPerson:
+                                agency.contactPerson,
+
+                            mobileNumber:
+                                agency.mobileNumber,
+
+                            email:
+                                agency.email,
+
+                            city:
+                                agency.city,
+
+                            state:
+                                agency.state,
+
+                            branchName:
+                                branch.branch.name,
+
+                            branchCode:
+                                branch.branch.code,
+
+                            openingBalance:
+                                branch.openingBalance,
+
+                            isActive:
+                                agency.isActive
+                        })
+                    )
+            );
+
+            return ExcelService.export(
+                res,
+                {
+                    filename: "agencies",
+
+                    sheetName: "Agencies",
+
+                    columns:
+                        agencyExportColumns,
+
+                    data: rows
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,

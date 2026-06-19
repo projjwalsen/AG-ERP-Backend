@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ProductService } from "./product.service";
+import { ExcelService } from "../../core/utils/export.service";
+import { productColumns } from "../exports/products.export";
 
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -32,13 +34,35 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
         const { category, search } = (req as any).query;
         const page     = parseInt(req.query.page as string)     || 1;
         const limit    = parseInt(req.query.limit as string)    || 10;
+        const isExport = (req.query.export as string) === "true" || false;
 
         const result = await ProductService.getAllProducts(actor, { 
             search: search as string ,
             category: category as string,
             page,
-            limit
+            limit,
+            export: isExport
         });
+
+        if(isExport) {
+             return await ExcelService.export(
+                (res as any),
+                {
+                    filename: `products_${Date.now()}`,
+
+                    sheetName: "Products",
+
+                    columns: productColumns,
+
+                    data: result.data,
+
+                    filters: {
+                        search,
+                        category
+                    }
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,

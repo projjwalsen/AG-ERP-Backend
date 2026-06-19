@@ -35,3 +35,16 @@ export function parseDate(value: string, field: string): Date {
     if (isNaN(d.getTime())) throw new ApiError(`Invalid ${field}: "${value}"`, 400);
     return d;
 }
+
+export function getByPath(
+  obj: any,
+  path: string
+) {
+  return path
+    .split(".")
+    .reduce(
+      (acc, key) =>
+        acc?.[key] ?? undefined,
+      obj
+    );
+}

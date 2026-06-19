@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { BranchService } from "./branch.service";
+import { ExcelService } from "../../core/utils/export.service";
+import { branchColumns } from "../exports/branch.export";
 
 export const createBranch = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -38,8 +40,23 @@ export const getAllBranches = async (req: Request, res: Response, next: NextFunc
         const actor = (req as any).user;
         const page  = parseInt(req.query.page as string)  || 1;
         const limit = parseInt(req.query.limit as string) || 10;
+        const isExport = (req.query.export as string) === "true" || false;
+        const branches = await BranchService.getAllBranches(actor, page, limit, isExport);
 
-        const branches = await BranchService.getAllBranches(actor, page, limit);
+        if(isExport){
+            return ExcelService.export(
+                res,
+                {
+                    filename: "branches",
+
+                    sheetName: "Branches",
+
+                    columns: branchColumns,
+
+                    data: branches.data
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,

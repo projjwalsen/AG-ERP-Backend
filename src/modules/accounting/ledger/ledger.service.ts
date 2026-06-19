@@ -452,6 +452,7 @@ export class LedgerService {
             limit?: number;
             startDate?: string;
             endDate?: string;
+            export?: boolean;
         }
     ) {
         if (!actor?.id) {
@@ -827,8 +828,7 @@ export class LedgerService {
                 where,
                 include: { group: true, branch: true, agency: true, product: true },
                 orderBy: [{ group: { code: "asc" } }, { name: "asc" }],
-                skip,
-                take: limit
+                ...(query?.export ? {} : { skip, take: limit })
             }),
             prisma.ledger.count({ where })
         ]);
