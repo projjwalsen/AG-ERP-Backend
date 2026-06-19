@@ -82,3 +82,80 @@ export const branchColumns: ExportColumn<any>[] = [
         width: 18
     }
 ];
+
+export const branchDayBookColumns = [
+    { header: "Serial No", key: "serialNo" },
+    { header: "Voucher ID", key: "voucherId" },
+    { header: "Transaction Date", key: "transactionDate" },
+    { header: "Agency", key: "primaryAgencyName" },
+    { header: "Payment Mode", key: "paymentMode" },
+    { header: "Payment Type", key: "paymentType" },
+    { header: "Reference", key: "transactionRef" },
+    { header: "Receipt", key: "cashInFlowReceipt" },
+    { header: "Remarks", key: "remarks" }
+];
+
+export const gstr1Columns = [
+    { header: "Classification", key: "classification" },
+    { header: "Customer GSTIN", key: "customer_gstin" },
+    { header: "Invoice No", key: "invoice_number" },
+    { header: "Invoice Date", key: "invoice_date" },
+    { header: "POS", key: "place_of_supply_pos" },
+    { header: "Taxable Value", key: "taxable_value" },
+    { header: "CGST", key: "cgst_rate_amount" },
+    { header: "SGST", key: "sgst_rate_amount" },
+    { header: "IGST", key: "igst_rate_amount" },
+    { header: "Invoice Total", key: "invoice_total" }
+];
+
+export const gstSuspenseColumns = [
+    { header: "Suspense ID", key: "suspense_id" },
+    { header: "Clearance Date", key: "bank_clearance_date" },
+    { header: "Amount", key: "amount_received" },
+    { header: "Payment Channel", key: "payment_channel" },
+    { header: "Authentication Status", key: "auth_status" },
+    { header: "Agency Name", key: "agency_name" },
+    { header: "Remarks", key: "reported_remarks" }
+];
+
+export const stockInventoryColumns = [
+    { header: "Product Code", key: "productCode" },
+    { header: "Product Name", key: "productName" },
+    { header: "Batch No", key: "batchId" },
+
+    {
+        header: "Branch",
+        value: row => row.branch?.name
+    },
+
+    { header: "Stock KG", key: "stockKG" },
+    { header: "Stock LTR", key: "stockLTR" },
+
+    { header: "Created At", key: "createdAt" }
+];
+
+export const outstandingColumns = [
+    { header: "Agency Name", key: "agency_name" },
+    { header: "Agency Type", key: "agency_type" },
+
+    {
+        header: "Branch",
+        value: row => row.branch?.name
+    },
+
+    {
+        header: "Ledger Code",
+        value: row => row.ledger?.code
+    },
+
+    {
+        header: "Ledger Name",
+        value: row => row.ledger?.name
+    },
+
+    { header: "Opening Balance", key: "openingBalance" },
+    { header: "Debit", key: "debit" },
+    { header: "Credit", key: "credit" },
+    { header: "Outstanding", key: "total_outstanding" },
+    { header: "Balance Type", key: "balanceType" }
+];
