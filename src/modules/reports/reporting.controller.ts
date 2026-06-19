@@ -138,3 +138,35 @@ export const getStockInventoryReport = async (
         next(error);
     }
 };
+
+export const getOutstandingReport = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor = (req as any).user;
+
+        const query = {
+            branchId: req.query.branchId as string,
+            type: req.query.type as
+                | "RECEIVABLE"
+                | "PAYABLE"
+        };
+
+        const report =
+            await ReportingService.getOutstandingReport(
+                actor,
+                query
+            );
+
+        return res.status(200).json({
+            success: true,
+            data: report
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};

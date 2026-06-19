@@ -296,6 +296,73 @@ router.get(
     ReportingController.getStockInventoryReport
 );
 
+/**
+ * @openapi
+ * /api/reports/outstanding-report:
+ *   get:
+ *     summary: Accounts Receivable / Payable Outstanding Report
+ *     description: |
+ *       Generates an Accounts Receivable (AR) and Accounts Payable (AP)
+ *       Outstanding Report.
+ *
+ *       This report shows:
+ *       - Agency ID
+ *       - Agency Name
+ *       - Agency Type
+ *       - Total Outstanding Amount
+ *       - Outstanding Type (Receivable / Payable)
+ *
+ *       Receivable = Agency owes money to the company.
+ *       Payable = Company owes money to the agency.
+ *
+ *       Data is sourced from Agency Outstanding balances maintained
+ *       within the accounting system.
+ *
+ *     tags:
+ *       - Reports
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Filter report for a specific branch.
+ *
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - RECEIVABLE
+ *             - PAYABLE
+ *         description: |
+ *           RECEIVABLE = Customer owes money.
+ *           PAYABLE = Company owes money.
+ *
+ *     responses:
+ *       200:
+ *         description: Outstanding report generated successfully.
+ * 
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Forbidden
+ *
+ *       500:
+ *         description: Internal Server Error
+ */
+
+
+router.get(
+    "/outstanding-report",
+    ReportingController.getOutstandingReport
+);
 
 
 export default router;

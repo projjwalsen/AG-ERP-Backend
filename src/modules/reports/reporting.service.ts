@@ -1,7 +1,8 @@
-import { SalesStatus, TransactionDirection } from "@prisma/client";
+import { LedgerType, OutstandingType, Prisma, SalesStatus, TransactionDirection } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
-import { parseDate } from "../../core/utils/loc.utils";
+import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 export class ReportingService {
 
@@ -634,6 +635,162 @@ export class ReportingService {
             },
 
             rows
+        };
+    }
+
+    static async getOutstandingReport(
+        actor: any,
+        query?: {
+            branchId?: string;
+            type?: "RECEIVABLE" | "PAYABLE";
+        }
+    ) {
+
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query?.branchId
+                : actor.branchId;
+
+        const ledgerWhere: Prisma.LedgerWhereInput = {
+
+            ...(branchId && {
+                branchId
+            }),
+
+            ...(query?.type === "RECEIVABLE" && {
+                category: LedgerType.CUSTOMER
+            }),
+
+            ...(query?.type === "PAYABLE" && {
+                category: LedgerType.VENDOR
+            }),
+
+            agencyId: {
+                not: null
+            },
+
+            isActive: true
+        };
+
+        const ledgers =
+            await prisma.ledger.findMany({
+
+                where: ledgerWhere,
+
+                include: {
+                    agency: true,
+                    branch: true,
+                    group: true
+                },
+
+                orderBy: {
+                    name: "asc"
+                }
+            });
+
+        const rows =
+            await Promise.all(
+
+                ledgers.map(async ledger => {
+
+                    const balance =
+                        await LedgerService.calculateLedgerBalance(
+                            ledger.id
+                        );
+
+                    return {
+
+                        agency_id:
+                            ledger.agency?.id,
+
+                        agency_name:
+                            ledger.agency?.name,
+
+                        agency_type:
+                            ledger.agency?.type,
+
+                        branch: ledger.branch
+                            ? {
+                                id: ledger.branch.id,
+                                code: ledger.branch.code,
+                                name: ledger.branch.name
+                            }
+                            : null,
+
+                        ledger: {
+                            id: ledger.id,
+                            code: ledger.code,
+                            name: ledger.name
+                        },
+
+                        openingBalance:
+                                ledger.openingBalance,
+
+                        debit:
+                            balance.totalDebit,
+
+                        credit:
+                            balance.totalCredit,
+
+                        total_outstanding:
+                            Math.abs(
+                                balance.closingBalance
+                            ),
+
+                        balanceType:
+                            resolveBalanceType(
+                                balance.closingBalance,
+                                ledger.nature
+                            ),
+
+                        gstin:
+                            ledger.agency?.gstin,
+
+                        createdAt:
+                            ledger.createdAt,
+
+                        updatedAt:
+                            ledger.updatedAt
+                    };
+                })
+            );
+
+        const filteredRows =
+            rows.filter(
+                row => row.total_outstanding > 0
+            );
+
+        return {
+
+            reportName:
+                query?.type === "PAYABLE"
+                    ? "Accounts Payable Report"
+                    : query?.type === "RECEIVABLE"
+                        ? "Accounts Receivable Report"
+                        : "Outstanding Report",
+
+            generatedAt:
+                new Date(),
+
+            summary: {
+
+                totalAgencies:
+                    filteredRows.length,
+
+                totalOutstanding:
+                    filteredRows.reduce(
+                        (sum, row) =>
+                            sum + row.total_outstanding,
+                        0
+                    )
+            },
+
+            rows:
+                filteredRows
         };
     }
 }
