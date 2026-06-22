@@ -102,7 +102,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.OPENING_BALANCE,
-            direction: ProductMovementDirection.DEBIT,
+            direction: ProductMovementDirection.CREDIT,
             quantityKG: payload.quantity,
             quantityLTR: undefined,
             unit: payload.unit,
@@ -147,7 +147,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.PURCHASE,
-            direction: ProductMovementDirection.DEBIT,
+            direction: ProductMovementDirection.CREDIT,
             quantityKG: Number(purchaseItem.quantity),
             quantityLTR: undefined,
             unit: purchaseItem.unit,
@@ -196,7 +196,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.SALE,
-            direction: ProductMovementDirection.CREDIT,
+            direction: ProductMovementDirection.DEBIT,
             quantityKG: Number(saleItem.quantity),
             quantityLTR: undefined,
             unit: saleItem.unit,
@@ -324,7 +324,7 @@ export class ProductLedgerService {
             const quantityKG = Number(entry.quantityKG);
             const quantityLTR = entry.quantityLTR ? Number(entry.quantityLTR) : 0;
 
-            if (entry.direction === ProductMovementDirection.DEBIT) {
+            if (entry.direction === ProductMovementDirection.CREDIT) {
                 balanceKG += quantityKG;
                 balanceLTR += quantityLTR;
             } else {
@@ -476,9 +476,9 @@ export class ProductLedgerService {
 
                     const qty = Number(row.quantityKG);
 
-                    return row.direction === ProductMovementDirection.DEBIT
-                        ? total + qty
-                        : total - qty;
+                    return row.direction === ProductMovementDirection.CREDIT
+                    ? total + qty
+                    : total - qty;
                 }, 0);
         }        
 
@@ -573,7 +573,7 @@ export class ProductLedgerService {
                     const qty = Number(e.quantityKG);
 
                     runningStockKG =
-                    e.direction === ProductMovementDirection.DEBIT
+                    e.direction === ProductMovementDirection.CREDIT
                         ? runningStockKG + qty
                         : runningStockKG - qty;
 
