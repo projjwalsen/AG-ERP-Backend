@@ -474,12 +474,11 @@ export class ProductLedgerService {
             openingStockKG =
                 priorEntries.reduce((total, row) => {
 
-                    const qty =
-                        Number(row.quantityKG);
+                    const qty = Number(row.quantityKG);
 
-                    return row.direction === ProductMovementDirection.CREDIT
-                    ? total + qty
-                    : total - qty;
+                    return row.direction === ProductMovementDirection.DEBIT
+                        ? total + qty
+                        : total - qty;
                 }, 0);
         }        
 
@@ -574,9 +573,9 @@ export class ProductLedgerService {
                     const qty = Number(e.quantityKG);
 
                     runningStockKG =
-                        e.direction === ProductMovementDirection.CREDIT
-                            ? runningStockKG + qty
-                            : runningStockKG - qty;
+                    e.direction === ProductMovementDirection.DEBIT
+                        ? runningStockKG + qty
+                        : runningStockKG - qty;
 
                     return {
                         id: e.id,
