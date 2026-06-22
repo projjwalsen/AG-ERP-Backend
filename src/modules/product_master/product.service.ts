@@ -2,6 +2,7 @@ import { ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { convertKGToLTR } from "../../core/utils/density.utils";
+import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 
 type CreateProductPayload = {
     sku: string;
@@ -122,6 +123,10 @@ export class ProductService {
                 createdAt: true,
             }
         });
+
+        await ProductLedgerService.getOrCreateProductLedger(
+            product.id
+        );
 
         return {
             ...product,
