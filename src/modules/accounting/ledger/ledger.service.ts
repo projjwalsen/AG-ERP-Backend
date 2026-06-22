@@ -1962,28 +1962,33 @@ export class LedgerService {
                         gstin: branch.gstin
                     },
 
-                    categories: [
+                    summary: {
+                        totalTransactions: transactions.length,
 
-                        {
-                            category:
-                                "ACCOUNTING_LEDGER",
+                        totalInward: money(
+                            transactions
+                                .filter(
+                                    x => x.direction === TransactionDirection.INWARD
+                                )
+                                .reduce(
+                                    (sum, x) => sum + Number(x.amount),
+                                    0
+                                )
+                        ),
 
-                            totalTransactions:
-                                transactions.length
-                        },
+                        totalOutward: money(
+                            transactions
+                                .filter(
+                                    x => x.direction === TransactionDirection.OUTWARD
+                                )
+                                .reduce(
+                                    (sum, x) => sum + Number(x.amount),
+                                    0
+                                )
+                        )
+                    },
 
-                        {
-                            category:
-                                "CASH",
-
-                            totalTransactions:
-                                transactions.filter(
-                                    x =>
-                                        x.paymentThrough ===
-                                        PaymentType.CASH
-                                ).length
-                        }
-                    ]
+                    transactions: transactionRows
                 };
         }
     }
