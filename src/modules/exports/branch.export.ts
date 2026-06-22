@@ -84,66 +84,18 @@ export const branchColumns: ExportColumn<any>[] = [
 ];
 
 export const branchDayBookColumns = [
-
-    {
-        header: "Serial No",
-        key: "serialNo"
-    },
-
-    {
-        header: "Voucher ID",
-        key: "voucherId"
-    },
-
-    {
-        header: "Transaction Date",
-        key: "transactionDate"
-    },
-
-    {
-        header: "Agency",
-        key: "primaryAgencyName"
-    },
-
-    {
-        header: "Third Party Agency",
-        key: "secondaryAgencyName"
-    },
-
-    {
-        header: "Payment Mode",
-        key: "paymentMode"
-    },
-
-    {
-        header: "Payment Type",
-        key: "paymentType"
-    },
-
-    {
-        header: "Reference",
-        key: "transactionRef"
-    },
-
-    {
-        header: "Debit",
-        key: "debit"
-    },
-
-    {
-        header: "Credit",
-        key: "credit"
-    },
-
-    {
-        header: "Balance",
-        key: "runningBalance"
-    },
-
-    {
-        header: "Remarks",
-        key: "remarks"
-    }
+    { header: "Serial No", key: "serialNo", width: 15 },
+    { header: "Voucher ID", key: "voucherId", width: 25 },
+    { header: "Transaction Date", key: "transactionDate", width: 25 },
+    { header: "Agency", key: "primaryAgencyName", width: 30 },
+    { header: "Third Party Agency", key: "secondaryAgencyName", width: 30 },
+    { header: "Payment Mode", key: "paymentMode", width: 20 },
+    { header: "Payment Type", key: "paymentType", width: 20 },
+    { header: "Reference", key: "transactionRef", width: 25 },
+    { header: "Debit", key: "debit", width: 15 },
+    { header: "Credit", key: "credit", width: 15 },
+    { header: "Balance", key: "runningBalance", width: 15 },
+    { header: "Remarks", key: "remarks", width: 40 }
 ];
 
 export const gstr1Columns = [
