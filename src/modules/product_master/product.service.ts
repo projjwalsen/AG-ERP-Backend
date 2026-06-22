@@ -17,6 +17,7 @@ type CreateProductPayload = {
 
     operationalUnit: ProductUnit;
     minimumStockKG?: number;
+    openingStockKG?: number;
 
     sellPricePerUnit: number;
 }
@@ -103,6 +104,7 @@ export class ProductService {
                 density: payload.density,
                 operationalUnit: payload.operationalUnit || "LTR",
                 minimumStockKG: payload.minimumStockKG,
+                openingStockKG: payload.openingStockKG || 0,
                 sellPricePerUnit: normalizedPrice,
                 isActive: true
             },
@@ -118,6 +120,7 @@ export class ProductService {
                 applicableGST: true,
                 operationalUnit: true,
                 minimumStockKG: true,
+                openingStockKG: true,
                 sellPricePerUnit: true,
                 isActive: true,
                 createdAt: true,
@@ -192,6 +195,7 @@ export class ProductService {
                     applicableGST: true,
                     operationalUnit: true,
                     minimumStockKG: true,
+                    openingStockKG: true,
                     sellPricePerUnit: true,
                     isActive: true,
                     createdAt: true,

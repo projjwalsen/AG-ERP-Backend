@@ -52,6 +52,7 @@ export class ReportingService {
             await prisma.transaction.findMany({
                 where: {
                     branchId,
+                    status: "APPROVED",
 
                     ...(startDate || endDate
                         ? {
@@ -77,56 +78,76 @@ export class ReportingService {
                 }
             });
 
-        const entries = 
-            transactions.map((txn, index) => ({
-                serialNo: index + 1,
+        let runningBalance = 0;
 
-                voucherId: txn.transactionNo,
+        const entries =
+            transactions.map((txn, index) => {
 
-                transactionId: txn.id,
+                const debit =
+                    txn.direction === TransactionDirection.INWARD
+                        ? Number(txn.amount)
+                        : 0;
 
-                transactionDate: txn.createdAt,
+                const credit =
+                    txn.direction === TransactionDirection.OUTWARD
+                        ? Number(txn.amount)
+                        : 0;
 
-                primaryAgencyName: txn.agency?.name || null,
+                runningBalance =
+                    runningBalance + debit - credit;
 
-                paymentMode: txn.paymentMode,
+                return {
 
-                paymentType: txn.paymentType,
+                    serialNo: index + 1,
 
-                transactionRef: txn.transactionRefNo ||
+                    voucherId: txn.transactionNo,
+
+                    transactionId: txn.id,
+
+                    transactionDate: txn.createdAt,
+
+                    primaryAgencyName:
+                        txn.agency?.name || null,
+
+                    secondaryAgencyName:
+                        txn.thirdPartyAgency?.name || null,
+
+                    paymentMode:
+                        txn.paymentMode,
+
+                    paymentType:
+                        txn.paymentType,
+
+                    transactionRef:
+                        txn.transactionRefNo ||
                         txn.referenceNo ||
                         null,
 
-                inRoutedVia: !!txn.thirdPartyAgencyId,
+                    inRoutedVia:
+                        !!txn.thirdPartyAgencyId,
 
-                secondaryAgencyName: txn.thirdPartyAgency?.name || null,
+                    debit,
 
-                debit:
-                    txn.direction === TransactionDirection.INWARD
-                        ? Number(txn.amount)
-                        : 0,
+                    credit,
 
-                credit:
-                    txn.direction === TransactionDirection.OUTWARD
-                        ? Number(txn.amount)
-                        : 0,
+                    runningBalance,
 
-                remarks: txn.remarks,
+                    remarks:
+                        txn.remarks,
 
-                allocations:
-                    txn.allocations.map((a) => ({
-                    sourceType:
-                        a.sourceType,
+                    allocations:
+                        txn.allocations.map(a => ({
+                            sourceType: a.sourceType,
 
-                    invoiceNo:
-                        a.sale?.invoiceNo ||
-                        a.purchase?.invoiceNo,
+                            invoiceNo:
+                                a.sale?.invoiceNo ||
+                                a.purchase?.invoiceNo,
 
-                    allocatedAmount:
-                        Number(a.allocatedAmount)
-                }))
-            })
-        );
+                            allocatedAmount:
+                                Number(a.allocatedAmount)
+                        }))
+                };
+            });
 
         const totalReceipts =
             entries.reduce(

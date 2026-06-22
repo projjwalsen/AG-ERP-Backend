@@ -306,6 +306,8 @@ model Product {
   operationalUnit ProductUnit @default(LTR)
   minimumStockKG Decimal? @db.Decimal(18, 3)
 
+  openingStockKG Decimal @default(0)
+
   isActive Boolean @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

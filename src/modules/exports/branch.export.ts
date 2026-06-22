@@ -84,15 +84,66 @@ export const branchColumns: ExportColumn<any>[] = [
 ];
 
 export const branchDayBookColumns = [
-    { header: "Serial No", key: "serialNo" },
-    { header: "Voucher ID", key: "voucherId" },
-    { header: "Transaction Date", key: "transactionDate" },
-    { header: "Agency", key: "primaryAgencyName" },
-    { header: "Payment Mode", key: "paymentMode" },
-    { header: "Payment Type", key: "paymentType" },
-    { header: "Reference", key: "transactionRef" },
-    { header: "Receipt", key: "cashInFlowReceipt" },
-    { header: "Remarks", key: "remarks" }
+
+    {
+        header: "Serial No",
+        key: "serialNo"
+    },
+
+    {
+        header: "Voucher ID",
+        key: "voucherId"
+    },
+
+    {
+        header: "Transaction Date",
+        key: "transactionDate"
+    },
+
+    {
+        header: "Agency",
+        key: "primaryAgencyName"
+    },
+
+    {
+        header: "Third Party Agency",
+        key: "secondaryAgencyName"
+    },
+
+    {
+        header: "Payment Mode",
+        key: "paymentMode"
+    },
+
+    {
+        header: "Payment Type",
+        key: "paymentType"
+    },
+
+    {
+        header: "Reference",
+        key: "transactionRef"
+    },
+
+    {
+        header: "Debit",
+        key: "debit"
+    },
+
+    {
+        header: "Credit",
+        key: "credit"
+    },
+
+    {
+        header: "Balance",
+        key: "runningBalance"
+    },
+
+    {
+        header: "Remarks",
+        key: "remarks"
+    }
 ];
 
 export const gstr1Columns = [
@@ -236,5 +287,213 @@ export const outstandingColumns = [
             new Date(row.createdAt)
                 .toLocaleDateString("en-IN"),
         width: 18
+    }
+];
+
+export const accountingLedgerColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Date",
+        key: "date",
+        width: 18
+    },
+
+    {
+        header: "Transaction No",
+        key: "transactionNo",
+        width: 25
+    },
+
+    {
+        header: "Direction",
+        key: "direction",
+        width: 15
+    },
+
+    {
+        header: "Agency",
+        key: "agency",
+        width: 35
+    },
+
+    {
+        header: "Payment Mode",
+        key: "paymentMode",
+        width: 20
+    },
+
+    {
+        header: "Reference No",
+        key: "transactionRefNo",
+        width: 25
+    },
+
+    {
+        header: "Inward",
+        key: "inward",
+        width: 18
+    },
+
+    {
+        header: "Outward",
+        key: "outward",
+        width: 18
+    },
+
+    {
+        header: "Running Balance",
+        key: "runningBalance",
+        width: 20
+    },
+];
+
+export const cashBookColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Date",
+        key: "date",
+        width: 18
+    },
+
+    {
+        header: "Voucher No",
+        key: "voucherNo",
+        width: 25
+    },
+
+    {
+        header: "Voucher Type",
+        key: "voucherType",
+        width: 20
+    },
+
+    {
+        header: "Particulars",
+        key: "particulars",
+        width: 40
+    },
+
+    {
+        header: "Receipt",
+        key: "receipt",
+        width: 18
+    },
+
+    {
+        header: "Payment",
+        key: "payment",
+        width: 18
+    },
+
+    {
+        header: "Narration",
+        key: "narration",
+        width: 50
+    }
+];
+
+export const debtorLedgerColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Ledger Code",
+        key: "ledgerCode"
+    },
+
+    {
+        header: "Ledger Name",
+        key: "ledgerName"
+    },
+
+    {
+        header: "Date",
+        key: "date"
+    },
+
+    {
+        header: "Voucher No",
+        key: "voucherNo"
+    },
+
+    {
+        header: "Voucher Type",
+        key: "voucherType"
+    },
+
+    {
+        header: "Debit",
+        key: "debit"
+    },
+
+    {
+        header: "Credit",
+        key: "credit"
+    },
+
+    {
+        header: "Running Balance",
+        key: "runningBalance"
+    },
+
+    {
+        header: "Balance Type",
+        key: "balanceType"
+    },
+
+    {
+        header: "Narration",
+        key: "narration"
+    }
+];
+
+export const creditorLedgerColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Ledger Code",
+        key: "ledgerCode"
+    },
+
+    {
+        header: "Ledger Name",
+        key: "ledgerName"
+    },
+
+    {
+        header: "Date",
+        key: "date"
+    },
+
+    {
+        header: "Voucher No",
+        key: "voucherNo"
+    },
+
+    {
+        header: "Voucher Type",
+        key: "voucherType"
+    },
+
+    {
+        header: "Debit",
+        key: "debit"
+    },
+
+    {
+        header: "Credit",
+        key: "credit"
+    },
+
+    {
+        header: "Running Balance",
+        key: "runningBalance"
+    },
+
+    {
+        header: "Balance Type",
+        key: "balanceType"
+    },
+
+    {
+        header: "Narration",
+        key: "narration"
     }
 ];
