@@ -1310,60 +1310,6 @@ export class LedgerService {
 
         switch (category) {
 
-            case "ACCOUNTING_LEDGER":
-
-                const transactions =
-                    await prisma.transaction.findMany({
-                        where: {
-                            branchId
-                        },
-                        orderBy: {
-                            createdAt: "desc"
-                        }
-                    });
-
-                return {
-                    branch: {
-                        id: branch.id,
-                        code: branch.code,
-                        name: branch.name
-                    },
-
-                    category: "ACCOUNTING_LEDGER",
-
-                    summary: {
-                        totalTransactions:
-                            transactions.length,
-
-                        inward:
-                            money(inward._sum.amount ?? 0),
-
-                        outward:
-                            money(outward._sum.amount ?? 0),
-
-                        netMovement:
-                            money(
-                                Number(inward._sum.amount ?? 0) -
-                                Number(outward._sum.amount ?? 0)
-                            )
-                    },
-
-                    ledgers:
-                        transactions.map(t => ({
-                            id: t.id,
-
-                            transactionNo: t.transactionNo,
-
-                            direction: t.direction,
-
-                            amount: money(t.amount),
-
-                            narration: t.remarks,
-
-                            createdAt: t.createdAt
-                        }))
-                };
-
             case "CASH":
 
                 const cashLedgers =
@@ -1571,7 +1517,7 @@ export class LedgerService {
                     ledgers:
                         creditors
                 };
-
+            case "ACCOUNTING_LEDGER":
             default:
 
                 return {
@@ -1708,46 +1654,7 @@ export class LedgerService {
             );
 
         switch (category) {
-            case "ACCOUNTING_LEDGER":
-                const transactions =
-                    await prisma.transaction.findMany({
-                        where: {
-                            agencyId
-                        },
-
-                        orderBy: {
-                            createdAt: "desc"
-                        }
-                    });
-
-                return {
-                    agency,
-
-                    category: "ACCOUNTING_LEDGER",
-
-                    summary: {
-                        totalTransactions:
-                            transactions.length,
-
-                        inward:
-                            money(
-                                transactions
-                                    .filter(x => x.direction === TransactionDirection.INWARD)
-                                    .reduce((s, x) => s + Number(x.amount), 0)
-                            ),
-
-                        outward:
-                            money(
-                                transactions
-                                    .filter(x => x.direction === TransactionDirection.OUTWARD)
-                                    .reduce((s, x) => s + Number(x.amount), 0)
-                            )
-                    },
-
-                    ledgers:
-                        transactions
-                };
-
+            
             case "CASH":
                 const cashLedgers =
                     ledgerRows.filter(
@@ -1836,7 +1743,7 @@ export class LedgerService {
                     ledgers:
                         creditors
                 };
-
+            case "ACCOUNTING_LEDGER":
             default:
                 return {
                     agency,
@@ -1971,65 +1878,6 @@ export class LedgerService {
 
         switch (category) {
 
-            case "ACCOUNTING_LEDGER": {
-
-                const inward =
-                    transactions
-                        .filter(
-                            x =>
-                                x.direction ===
-                                TransactionDirection.INWARD
-                        )
-                        .reduce(
-                            (sum, x) =>
-                                sum + Number(x.amount),
-                            0
-                        );
-
-                const outward =
-                    transactions
-                        .filter(
-                            x =>
-                                x.direction ===
-                                TransactionDirection.OUTWARD
-                        )
-                        .reduce(
-                            (sum, x) =>
-                                sum + Number(x.amount),
-                            0
-                        );
-
-                return {
-
-                    branch: {
-                        id: branch.id,
-                        code: branch.code,
-                        name: branch.name,
-                        gstin: branch.gstin
-                    },
-
-                    category: "ACCOUNTING_LEDGER",
-
-                    summary: {
-
-                        totalTransactions:
-                            transactions.length,
-
-                        totalInward:
-                            money(inward),
-
-                        totalOutward:
-                            money(outward),
-
-                        closingBalance:
-                            money(inward - outward)
-                    },
-
-                    transactions:
-                        transactionRows
-                };
-            }
-
             case "CASH": {
 
                 const cashTransactions =
@@ -2102,7 +1950,7 @@ export class LedgerService {
                         )
                 };
             }
-
+            case "ACCOUNTING_LEDGER":
             default:
 
                 return {

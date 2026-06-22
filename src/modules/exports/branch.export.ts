@@ -96,16 +96,81 @@ export const branchDayBookColumns = [
 ];
 
 export const gstr1Columns = [
-    { header: "Classification", key: "classification" },
-    { header: "Customer GSTIN", key: "customer_gstin" },
-    { header: "Invoice No", key: "invoice_number" },
-    { header: "Invoice Date", key: "invoice_date" },
-    { header: "POS", key: "place_of_supply_pos" },
-    { header: "Taxable Value", key: "taxable_value" },
-    { header: "CGST", key: "cgst_rate_amount" },
-    { header: "SGST", key: "sgst_rate_amount" },
-    { header: "IGST", key: "igst_rate_amount" },
-    { header: "Invoice Total", key: "invoice_total" }
+    {
+        header: "Branch Name",
+        key: "branchName",
+        width: 25
+    },
+
+    {
+        header: "Branch GSTIN",
+        key: "branchGst",
+        width: 25
+    },
+
+    {
+        header: "Classification",
+        key: "classification",
+        width: 15
+    },
+
+    {
+        header: "Customer GSTIN",
+        key: "customer_gstin",
+        width: 25
+    },
+
+    {
+        header: "Invoice No",
+        key: "invoice_number",
+        width: 20
+    },
+
+    {
+        header: "Invoice Date",
+        value: row =>
+            row.invoice_date
+                ? new Date(row.invoice_date)
+                    .toLocaleDateString("en-IN")
+                : "",
+        width: 18
+    },
+
+    {
+        header: "Place Of Supply",
+        key: "place_of_supply_pos",
+        width: 20
+    },
+
+    {
+        header: "Taxable Value",
+        key: "taxable_value",
+        width: 18
+    },
+
+    {
+        header: "CGST Amount",
+        key: "cgst_rate_amount",
+        width: 18
+    },
+
+    {
+        header: "SGST Amount",
+        key: "sgst_rate_amount",
+        width: 18
+    },
+
+    {
+        header: "IGST Amount",
+        key: "igst_rate_amount",
+        width: 18
+    },
+
+    {
+        header: "Invoice Total",
+        key: "invoice_total",
+        width: 18
+    }
 ];
 
 export const gstSuspenseColumns = [
@@ -135,27 +200,41 @@ export const stockInventoryColumns = [
 ];
 
 export const outstandingColumns = [
-    { header: "Agency Name", key: "agency_name" },
-    { header: "Agency Type", key: "agency_type" },
+    {
+        header: "Agency Name",
+        key: "agency_name",
+        width: 35
+    },
 
     {
         header: "Branch",
-        value: row => row.branch?.name
+        value: row => row.branch?.name,
+        width: 25
     },
 
     {
-        header: "Ledger Code",
-        value: row => row.ledger?.code
+        header: "GSTIN",
+        key: "gstin",
+        width: 25
     },
 
     {
-        header: "Ledger Name",
-        value: row => row.ledger?.name
+        header: "Outstanding Amount",
+        key: "total_outstanding",
+        width: 20
     },
 
-    { header: "Opening Balance", key: "openingBalance" },
-    { header: "Debit", key: "debit" },
-    { header: "Credit", key: "credit" },
-    { header: "Outstanding", key: "total_outstanding" },
-    { header: "Balance Type", key: "balanceType" }
+    {
+        header: "Balance Type",
+        key: "balanceType",
+        width: 15
+    },
+
+    {
+        header: "Created At",
+        value: row =>
+            new Date(row.createdAt)
+                .toLocaleDateString("en-IN"),
+        width: 18
+    }
 ];

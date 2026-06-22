@@ -101,7 +101,13 @@ export class ReportingService {
 
                 secondaryAgencyName: txn.thirdPartyAgency?.name || null,
 
-                cashInFlowReceipt: txn.direction === TransactionDirection.INWARD
+                debit:
+                    txn.direction === TransactionDirection.INWARD
+                        ? Number(txn.amount)
+                        : 0,
+
+                credit:
+                    txn.direction === TransactionDirection.OUTWARD
                         ? Number(txn.amount)
                         : 0,
 
@@ -122,8 +128,19 @@ export class ReportingService {
             })
         );
 
-        const totalReceipts = entries.reduce((sum, row) => sum + row.cashInFlowReceipt, 0);
-        const totalPayments = entries.reduce((sum, row) => sum + row.cashInFlowReceipt, 0);
+        const totalReceipts =
+            entries.reduce(
+                (sum, row) =>
+                    sum + row.debit,
+                0
+            );
+
+        const totalPayments =
+            entries.reduce(
+                (sum, row) =>
+                    sum + row.credit,
+                0
+            );
 
         return {
             branch,
@@ -215,6 +232,9 @@ export class ReportingService {
                     branchStateCode === posStateCode;
 
                 return {
+                    branchName: sale.branch.name,
+
+                    branchGst: sale.branch.gstin,
 
                     classification,
 
@@ -703,38 +723,20 @@ export class ReportingService {
                         );
 
                     return {
-
                         agency_id:
                             ledger.agency?.id,
 
                         agency_name:
                             ledger.agency?.name,
 
-                        agency_type:
-                            ledger.agency?.type,
-
-                        branch: ledger.branch
-                            ? {
-                                id: ledger.branch.id,
-                                code: ledger.branch.code,
-                                name: ledger.branch.name
-                            }
-                            : null,
-
-                        ledger: {
-                            id: ledger.id,
-                            code: ledger.code,
-                            name: ledger.name
-                        },
-
-                        openingBalance:
-                                ledger.openingBalance,
-
-                        debit:
-                            balance.totalDebit,
-
-                        credit:
-                            balance.totalCredit,
+                        branch:
+                            ledger.branch
+                                ? {
+                                    id: ledger.branch.id,
+                                    code: ledger.branch.code,
+                                    name: ledger.branch.name
+                                }
+                                : null,
 
                         total_outstanding:
                             Math.abs(
@@ -751,10 +753,7 @@ export class ReportingService {
                             ledger.agency?.gstin,
 
                         createdAt:
-                            ledger.createdAt,
-
-                        updatedAt:
-                            ledger.updatedAt
+                            ledger.createdAt
                     };
                 })
             );

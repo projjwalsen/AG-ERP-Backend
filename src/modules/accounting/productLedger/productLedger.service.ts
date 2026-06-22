@@ -383,6 +383,7 @@ export class ProductLedgerService {
             branchId?: string;
             startDate?: string;
             endDate?: string;
+            export?: boolean;
         },
         tx?: Prisma.TransactionClient
     ) {
@@ -516,8 +517,7 @@ export class ProductLedgerService {
                         user: { select: { id: true, name: true, email: true } },
                     },
                     orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
-                    skip,
-                    take: limit,
+                    ...(query?.export ? {} : { skip, take: limit })
                 }),
                 client.productLedgerEntry.count({ where })
             ]);

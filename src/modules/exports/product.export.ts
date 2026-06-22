@@ -63,3 +63,81 @@ export const productLedgerColumns: ExportColumn<any>[] = [
         width: 15
     }
 ];
+
+
+export const productMovementColumns = [
+    {
+        header: "Date",
+        value: row =>
+            row.entryDate
+                ? new Date(row.entryDate)
+                    .toLocaleDateString("en-IN")
+                : ""
+    },
+
+    {
+        header: "Movement Type",
+        key: "movementType",
+        width: 20
+    },
+
+    {
+        header: "Direction",
+        key: "direction",
+        width: 15
+    },
+
+    {
+        header: "Branch",
+        value: row => row.branch?.name || "-"
+    },
+
+    {
+        header: "Agency",
+        value: row => row.agency?.name || "-"
+    },
+
+    {
+        header: "Invoice No",
+        key: "invoiceNo"
+    },
+
+    {
+        header: "Batch No",
+        key: "batchNo"
+    },
+
+    {
+        header: "Quantity KG",
+        key: "quantityKG"
+    },
+
+    {
+        header: "Running Stock KG",
+        key: "runningStockKG"
+    },
+
+    {
+        header: "Unit Cost",
+        key: "unitCost"
+    },
+
+    {
+        header: "Total Cost",
+        key: "totalCost"
+    },
+
+    {
+        header: "Remarks",
+        key: "remarks",
+        width: 35
+    },
+
+    {
+        header: "Created By",
+        value: row =>
+            row.createdBy?.name ||
+            row.createdBy?.email ||
+            "-"
+    }
+];
