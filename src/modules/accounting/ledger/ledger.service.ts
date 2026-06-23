@@ -2613,6 +2613,45 @@ export class LedgerService {
                 )
                 : undefined;
 
+                let openingBalance = 0;
+
+                if (startDate) {
+
+                    const previousTransactions =
+                        await prisma.transaction.findMany({
+
+                            where: {
+
+                                status:
+                                    TransactionStatus.APPROVED,
+
+                                ...(branchId && {
+                                    branchId
+                                }),
+
+                                createdAt: {
+                                    lt: startDate
+                                }
+                            }
+                        });
+
+                    openingBalance =
+                        previousTransactions.reduce(
+                            (balance, txn) => {
+
+                                const amount =
+                                    Number(txn.amount);
+
+                                return txn.direction ===
+                                    TransactionDirection.INWARD
+                                        ? balance + amount
+                                        : balance - amount;
+
+                            },
+                            0
+                        );
+                }
+
         const transactions =
             await prisma.transaction.findMany({
 
@@ -2650,11 +2689,34 @@ export class LedgerService {
                 }
             });
 
-        const rows: any[] = [];
 
-        let runningBalance = 0;
+        let runningBalance = openingBalance;
 
         let serialNo = 1;
+
+        const rows: any[] = [];
+
+        rows.push({
+
+            serialNo: 0,
+
+            date:
+                startDate
+                    ? formatISTDate(startDate)
+                    : null,
+
+            branch: null,
+
+            description:
+                "Opening Balance",
+
+            income: 0,
+
+            expense: 0,
+
+            balance:
+                openingBalance
+        });
 
         for (const txn of transactions) {
 
@@ -2849,11 +2911,13 @@ export class LedgerService {
 
             summary: {
 
+                openingBalance,
+
                 totalIncome:
                     money(
                         rows.reduce(
                             (s, x) =>
-                                s + x.income,
+                                s + Number(x.income || 0),
                             0
                         )
                     ),
@@ -2862,7 +2926,7 @@ export class LedgerService {
                     money(
                         rows.reduce(
                             (s, x) =>
-                                s + x.expense,
+                                s + Number(x.expense || 0),
                             0
                         )
                     ),
