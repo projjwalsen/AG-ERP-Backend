@@ -289,6 +289,10 @@ export const bankAccCashColumns = [
         header: "Date",
         key: "date"
     },
+    {
+        header: "Branch",
+        key: "branch"
+    },
 
     {
         header: "Description",

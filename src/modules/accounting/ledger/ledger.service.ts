@@ -2719,29 +2719,6 @@ export class LedgerService {
                             txn.createdAt
                         ),
 
-                    description:
-                        `Amount received from ${txn.agency?.name}`,
-
-                    income:
-                        amount,
-
-                    expense:
-                        0,
-
-                    balance:
-                        runningBalance += amount
-                });
-
-                rows.push({
-
-                    serialNo:
-                        serialNo++,
-
-                    date:
-                        formatISTDate(
-                            txn.createdAt
-                        ),
-
                     branch:
                         txn.branch?.name,
 
