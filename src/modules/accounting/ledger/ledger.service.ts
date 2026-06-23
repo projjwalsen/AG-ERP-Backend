@@ -14,7 +14,7 @@ import {
 import { randomUUID } from "crypto";
 import { prisma } from "../../../config/db";
 import { ApiError } from "../../../core/middleware/errorHandler";
-import { parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
+import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
 
 type DbClient = any;
 type TaxKind = "CGST" | "SGST" | "IGST";
@@ -1210,7 +1210,11 @@ export class LedgerService {
             | "CASH"
             | "GST"
             | "DEBTORS"
-            | "CREDITORS"
+            | "CREDITORS",
+             query?: {
+                startDate?: string;
+                endDate?: string;
+            }
     ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
@@ -1225,6 +1229,42 @@ export class LedgerService {
                 403
             );
         }
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : undefined;
+
+                if (startDate) {
+
+                    startDate.setHours(
+                        0,
+                        0,
+                        0,
+                        0
+                    );
+                }
+
+                if (endDate) {
+
+                    endDate.setHours(
+                        23,
+                        59,
+                        59,
+                        999
+                    );
+                }
 
         const branch =
             await prisma.branch.findUnique({
@@ -1393,14 +1433,29 @@ export class LedgerService {
                 const transactions =
                     await prisma.transaction.findMany({
 
-                        where: {
+                       where: {
 
-                            branchId,
+                        branchId,
 
-                            status: TransactionStatus.APPROVED,
+                        status:
+                            TransactionStatus.APPROVED,
 
-                            paymentMode: PaymentMode.OFFLINE
-                        },
+                        paymentMode:
+                            PaymentMode.OFFLINE,
+
+                        ...(startDate || endDate
+                            ? {
+                                createdAt: {
+                                    ...(startDate && {
+                                        gte: startDate
+                                    }),
+                                    ...(endDate && {
+                                        lte: endDate
+                                    })
+                                }
+                            }
+                            : {})
+                    },
 
                         include: {
                             agency: true,
@@ -1428,37 +1483,63 @@ export class LedgerService {
                         }))
                     );
 
+                let balance = 0;
+
                 const rows =
-                    transactions.map(txn => ({
+                    transactions.map((txn, index) => {
 
-                        date: txn.createdAt,
-
-                        transactionNo: txn.transactionNo,
-
-                        transactionRefNo: txn.transactionRefNo,
-
-                        agency:
-                            txn.agency?.name,
-
-                        relatedParty:
-                            txn.thirdPartyAgency?.name || null,
-
-                        direction:
-                            txn.direction,
-
-                        receipt:
+                        const income =
                             txn.direction === TransactionDirection.INWARD
                                 ? Number(txn.amount)
-                                : 0,
+                                : 0;
 
-                        payment:
+                        const expense =
                             txn.direction === TransactionDirection.OUTWARD
                                 ? Number(txn.amount)
-                                : 0,
+                                : 0;
 
-                        narration:
-                            txn.remarks
-                    }));
+                        balance =
+                            balance + income - expense;
+
+                        let description = "";
+
+                        if (
+                            txn.thirdPartyAgency
+                        ) {
+
+                            description =
+                                `${txn.thirdPartyAgency.name} paid on behalf of ${txn.agency?.name}`;
+
+                        } else if (
+                            txn.direction === TransactionDirection.INWARD
+                        ) {
+
+                            description =
+                                `Cash received from ${txn.agency?.name}`;
+
+                        } else {
+
+                            description =
+                                `Cash paid to ${txn.agency?.name}`;
+                        }
+
+                        return {
+
+                            serialNo:
+                                index + 1,
+
+                            date:
+                                formatISTDate(txn.createdAt),
+
+                            description,
+
+                            income,
+
+                            expense,
+
+                            balance
+                        };
+                    });
 
                 return {
 
@@ -1481,21 +1562,20 @@ export class LedgerService {
                         totalTransactions:
                             rows.length,
 
-                        totalReceipt:
-                            money(
-                                rows.reduce(
-                                    (s, x) => s + x.receipt,
-                                    0
-                                )
+                        totalIncome:
+                            rows.reduce(
+                                (s, x) => s + x.income,
+                                0
                             ),
 
-                        totalPayment:
-                            money(
-                                rows.reduce(
-                                    (s, x) => s + x.payment,
-                                    0
-                                )
-                            )
+                        totalExpense:
+                            rows.reduce(
+                                (s, x) => s + x.expense,
+                                0
+                            ),
+
+                        closingBalance:
+                            balance
                     },
 
                     entries: rows
@@ -1665,87 +1745,203 @@ export class LedgerService {
             case "ACCOUNTING_LEDGER":
             default: {
 
+                let openingBalance = 0;
+
+                if (startDate) {
+
+                    const previousDayEnd =
+                        startDate
+                            ? new Date(startDate)
+                            : null;
+
+                    if (previousDayEnd) {
+
+                        previousDayEnd.setMilliseconds(
+                            previousDayEnd.getMilliseconds() - 1
+                        );
+                    }
+
+                    const previousTransactions =
+                        await prisma.transaction.findMany({
+
+                            where: {
+
+                                branchId,
+
+                                status:
+                                    TransactionStatus.APPROVED,
+
+                                ...(previousDayEnd && {
+                                    createdAt: {
+                                        lte: previousDayEnd
+                                    }
+                                })
+                            }
+                        });
+
+
+                    openingBalance =
+                        previousTransactions.reduce(
+                            (balance, txn) => {
+
+                                const amount =
+                                    Number(txn.amount);
+
+                                return txn.direction ===
+                                    TransactionDirection.INWARD
+                                    ? balance + amount
+                                    : balance - amount;
+
+                            },
+                            0
+                        );
+                }
+
                 const transactions =
                     await prisma.transaction.findMany({
+
                         where: {
+
                             branchId,
-                            status: TransactionStatus.APPROVED
+
+                            status:
+                                TransactionStatus.APPROVED,
+
+                            ...(startDate || endDate
+                                ? {
+                                    createdAt: {
+                                        ...(startDate && {
+                                            gte: startDate
+                                        }),
+                                        ...(endDate && {
+                                            lte: endDate
+                                        })
+                                    }
+                                }
+                                : {})
                         },
+
                         include: {
-                            agency: true
+                            agency: true,
+                            thirdPartyAgency: true
                         },
+
                         orderBy: {
                             createdAt: "asc"
                         }
                     });
+                    
 
-                let balance = 0;
+                let balance = openingBalance;
 
-                const rows = transactions.map(txn => {
+                const entries = [
 
-                    const amount = Number(txn.amount);
+                    {
+                        serialNo: 0,
+                        date: null,
+                        description: "Opening Balance",
+                        income: 0,
+                        expense: 0,
+                        balance: openingBalance
+                    },
 
-                    const inward =
-                        txn.direction === TransactionDirection.INWARD
-                            ? amount
-                            : 0;
+                    ...transactions.map(
+                        (txn, index) => {
 
-                    const outward =
-                        txn.direction === TransactionDirection.OUTWARD
-                            ? amount
-                            : 0;
+                            const income =
+                                txn.direction ===
+                                    TransactionDirection.INWARD
+                                    ? Number(txn.amount)
+                                    : 0;
 
-                    balance += inward - outward;
+                            const expense =
+                                txn.direction ===
+                                    TransactionDirection.OUTWARD
+                                    ? Number(txn.amount)
+                                    : 0;
 
-                    return {
-                        date: txn.createdAt,
-                        transactionNo: txn.transactionNo,
-                        transactionRefNo: txn.transactionRefNo,
+                            balance =
+                                balance +
+                                income -
+                                expense;
 
-                        agency:
-                            txn.agency?.name,
+                            let description = "";
 
-                        paymentMode:
-                            txn.paymentMode,
+                            if (
+                                txn.thirdPartyAgency
+                            ) {
 
-                        paymentType:
-                            txn.paymentType,
+                                description =
+                                    `${txn.thirdPartyAgency.name} paid on behalf of ${txn.agency?.name}`;
 
-                        direction:
-                            txn.direction,
+                            } else if (
+                                txn.direction ===
+                                TransactionDirection.INWARD
+                            ) {
 
-                        inward,
-                        outward,
+                                description =
+                                    `Amount received from ${txn.agency?.name}`;
 
-                        runningBalance:
-                            balance,
+                            } else {
 
-                        remarks:
-                            txn.remarks
-                    };
-                });
+                                description =
+                                    `Amount paid to ${txn.agency?.name}`;
+                            }
+
+                            return {
+
+                                serialNo:
+                                    index + 1,
+
+                                date:
+                                    formatISTDate(
+                                        txn.createdAt
+                                    ),
+
+                                description,
+
+                                income,
+
+                                expense,
+
+                                balance
+                            };
+                        }
+                    )
+                ];
 
                 return {
+
                     branch: {
                         id: branch.id,
                         code: branch.code,
                         name: branch.name
                     },
 
-                    category: "ACCOUNTING_LEDGER",
+                    category:
+                        "ACCOUNTING_LEDGER",
 
                     summary: {
-                        totalTransactions: rows.length,
 
-                        totalInward:
-                            rows.reduce(
-                                (s, x) => s + x.inward,
+                        openingBalance,
+
+                        totalIncome:
+                            entries.reduce(
+                                (sum, row) =>
+                                    sum +
+                                    Number(
+                                        row.income || 0
+                                    ),
                                 0
                             ),
 
-                        totalOutward:
-                            rows.reduce(
-                                (s, x) => s + x.outward,
+                        totalExpense:
+                            entries.reduce(
+                                (sum, row) =>
+                                    sum +
+                                    Number(
+                                        row.expense || 0
+                                    ),
                                 0
                             ),
 
@@ -1753,7 +1949,7 @@ export class LedgerService {
                             balance
                     },
 
-                    entries: rows
+                    entries
                 };
             }
         }
@@ -1766,7 +1962,11 @@ export class LedgerService {
             | "ACCOUNTING_LEDGER"
             | "CASH"
             | "DEBTORS"
-            | "CREDITORS"
+            | "CREDITORS",
+             query?: {
+                startDate?: string;
+                endDate?: string;
+            }
     ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
@@ -1782,6 +1982,22 @@ export class LedgerService {
         if (!agency) {
             throw new ApiError("Agency not found", 404);
         }
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : undefined;
 
         const ledgers = await prisma.ledger.findMany({
             where: {
@@ -1904,47 +2120,53 @@ export class LedgerService {
                         }))
                     );
 
+                let runningBalance = 0;
+
                 const rows =
-                    transactions.map(txn => ({
+                    transactions
+                        .sort(
+                            (a, b) =>
+                                a.createdAt.getTime() -
+                                b.createdAt.getTime()
+                        )
+                        .map(txn => {
 
-                        date:
-                            txn.createdAt,
+                            const debit =
+                                txn.direction === TransactionDirection.INWARD
+                                    ? Number(txn.amount)
+                                    : 0;
 
-                        transactionNo:
-                            txn.transactionNo,
+                            const credit =
+                                txn.direction === TransactionDirection.OUTWARD
+                                    ? Number(txn.amount)
+                                    : 0;
 
-                        transactionRefNo:
-                            txn.transactionRefNo,
+                            runningBalance =
+                                runningBalance +
+                                debit -
+                                credit;
 
-                        branch:
-                            txn.branch?.name,
+                            return {
 
-                        agency:
-                            txn.agencyId === agencyId
-                                ? txn.agency?.name
-                                : txn.thirdPartyAgency?.name,
+                                date:
+                                    formatISTDate(txn.createdAt),
 
-                        relatedParty:
-                            txn.agencyId === agencyId
-                                ? txn.thirdPartyAgency?.name
-                                : txn.agency?.name,
+                                voucherNo:
+                                    txn.transactionNo,
 
-                        direction:
-                            txn.direction,
+                                particular:
+                                    txn.thirdPartyAgencyId
+                                        ? `${txn.agency?.name} via ${txn.thirdPartyAgency?.name}`
+                                        : txn.agency?.name,
 
-                        receipt:
-                            txn.direction === TransactionDirection.INWARD
-                                ? Number(txn.amount)
-                                : 0,
+                                debit,
 
-                        payment:
-                            txn.direction === TransactionDirection.OUTWARD
-                                ? Number(txn.amount)
-                                : 0,
+                                credit,
 
-                        narration:
-                            txn.remarks
-                    }));
+                                balance:
+                                    runningBalance
+                            };
+                        });
 
                 const agencyLedgers =
                     await prisma.ledger.findMany({
@@ -2008,30 +2230,12 @@ export class LedgerService {
 
             summary: {
 
-                totalTransactions:
-                    rows.length,
+            totalTransactions:
+                rows.length,
+            },
 
-                totalReceipt:
-                    money(
-                        rows.reduce(
-                            (sum, x) =>
-                                        sum + x.receipt,
-                                    0
-                                )
-                            ),
-
-                        totalPayment:
-                            money(
-                                rows.reduce(
-                                    (sum, x) =>
-                                        sum + x.payment,
-                                    0
-                                )
-                            )
-                    },
-
-                    entries:
-                        rows
+                entries:
+                    rows
                 };
             }
 
@@ -2063,7 +2267,36 @@ export class LedgerService {
                                     },
 
                                     entries:
-                                        statement.entries,
+                                        [
+
+                                            ...statement.entries
+                                                .filter(
+                                                    x =>
+                                                        x.type !== "OPENING" &&
+                                                        x.voucherType !== VoucherType.CONTRA
+                                                )
+                                                .map(row => ({
+
+                                                    date:
+                                                        row.date,
+
+                                                    voucherNo:
+                                                        row.invoiceNo ||
+                                                        row.voucherNo,
+
+                                                    particular:
+                                                        row.narration,
+
+                                                    debit:
+                                                        Number(row.debit),
+
+                                                    credit:
+                                                        Number(row.credit),
+
+                                                    balance:
+                                                        row.runningBalance
+                                                }))
+                                        ],
 
                                     summary:
                                         statement.summary
@@ -2111,7 +2344,36 @@ export class LedgerService {
                                     },
 
                                     entries:
-                                        statement.entries,
+                                        [
+
+                                            ...statement.entries
+                                                .filter(
+                                                    x =>
+                                                        x.type !== "OPENING" &&
+                                                        x.voucherType !== VoucherType.CONTRA
+                                                )
+                                                .map(row => ({
+
+                                                    date:
+                                                        formatISTDate(row.date),
+
+                                                    voucherNo:
+                                                        row.invoiceNo ||
+                                                        row.voucherNo,
+
+                                                    particular:
+                                                        row.narration,
+
+                                                    debit:
+                                                        Number(row.debit),
+
+                                                    credit:
+                                                        Number(row.credit),
+
+                                                    balance:
+                                                        row.runningBalance
+                                                }))
+                                        ],
 
                                     summary:
                                         statement.summary
@@ -2133,124 +2395,554 @@ export class LedgerService {
             case "ACCOUNTING_LEDGER":
             default: {
 
-                const transactions =
-                    await prisma.transaction.findMany({
+                const ledger =
+                    ledgers.find(
+                        x =>
+                            x.category === LedgerType.CUSTOMER ||
+                            x.category === LedgerType.VENDOR
+                    );
 
-                        where: {
-                            OR: [
-                                {
-                                    agencyId
-                                },
-                                {
-                                    thirdPartyAgencyId: agencyId
-                                }
-                            ],
+                if (!ledger) {
+                    return {
+                        agency,
+                        category: "ACCOUNTING_LEDGER",
 
-                            status:
-                                TransactionStatus.APPROVED
+                        summary: {
+                            openingBalance: 0,
+                            totalPurchases: 0,
+                            totalPayments: 0,
+                            closingBalance: 0
                         },
 
-                        include: {
-                            agency: true,
-                            thirdPartyAgency: true
-                        },
+                        entries: []
+                    };
+                }
 
-                        orderBy: {
-                            createdAt: "asc"
+                const statement =
+                    await this.getLedgerStatement(
+                        actor,
+                        ledger.id,
+                        {
+                            startDate:
+                                query?.startDate,
+
+                            endDate:
+                                query?.endDate
                         }
-                    });
+                    );
 
-                let balance = 0;
+                let openingBalance =
+                    startDate
+                        ? Number(
+                            statement.summary.openingBalance || 0
+                        )
+                        : 0;
 
-                const rows =
-                    transactions.map(txn => {
+                let totalPurchases = 0;
+                let totalPayments = 0;
 
-                        const amount =
-                            Number(txn.amount);
+                const entries = [
 
-                        const inward =
-                            txn.direction === TransactionDirection.INWARD
-                                ? amount
-                                : 0;
+                    {
+                        date:
+                            startDate
+                                ? formatISTDate(startDate)
+                                : formatISTDate(
+                                    ledger.createdAt
+                                ),
 
-                        const outward =
-                            txn.direction === TransactionDirection.OUTWARD
-                                ? amount
-                                : 0;
+                        voucherNo:
+                            "OB",
 
-                        balance += inward - outward;
+                        particular:
+                            "Opening Balance",
 
-                        return {
+                        debit:
+                            0,
 
-                            date:
-                                txn.createdAt,
+                        credit:
+                            0,
 
-                            transactionNo:
-                                txn.transactionNo,
+                        balance:
+                            openingBalance
+                    },
+                
+                    ...statement.entries
+                        .filter(
+                            row => row.type !== "OPENING"
+                        )
+                        .map(row => {
 
-                            transactionRefNo:
-                                txn.transactionRefNo,
+                            const debit =
+                                Number(row.debit || 0);
 
-                            direction:
-                                txn.direction,
+                            const credit =
+                                Number(row.credit || 0);
 
-                            paymentMode:
-                                txn.paymentMode,
+                            totalPurchases += debit;
+                            totalPayments += credit;
 
-                            paymentType:
-                                txn.paymentType,
+                            let particular =
+                                row.narration ||
+                                `${row.voucherType} Voucher`;
 
-                            agency:
-                                txn.agency?.name,
+                            if (
+                                row.voucherType === VoucherType.SALE
+                            ) {
+                                particular =
+                                    `Sale Invoice ${row.invoiceNo || row.voucherNo}`;
+                            }
 
-                            inward,
+                            if (
+                                row.voucherType === VoucherType.RECEIPT
+                            ) {
+                                particular =
+                                    `Payment received against ${row.invoiceNo || row.voucherNo}`;
+                            }
 
-                            outward,
+                            if (
+                                row.voucherType === VoucherType.PAYMENT
+                            ) {
+                                particular =
+                                    `Payment made against ${row.invoiceNo || row.voucherNo}`;
+                            }
 
-                            runningBalance:
-                                balance,
+                            if (
+                                row.voucherType === VoucherType.PURCHASE
+                            ) {
+                                particular =
+                                    `Purchase Invoice ${row.invoiceNo || row.voucherNo}`;
+                            }
 
-                            remarks:
-                                txn.remarks
-                        };
-                    });
+                            return {
+
+                                date:
+                                    formatISTDate(row.date),
+
+                                voucherNo:
+                                    row.invoiceNo ||
+                                    row.voucherNo,
+
+                                particular,
+
+                                debit,
+
+                                credit,
+
+                                balance:
+                                    row.runningBalance
+                            };
+                        })
+                    ]
 
                 return {
 
-                    agency,
+                    agency: {
+                        id: agency.id,
+                        name: agency.name,
+                        type: agency.type,
+                        gstin: agency.gstin,
+                        contactPerson: agency.contactPerson,
+                        mobileNumber: agency.mobileNumber,
+                        email: agency.email
+                    },
 
-                    category:
-                        "ACCOUNTING_LEDGER",
+                    category: "ACCOUNTING_LEDGER",
 
                     summary: {
 
-                        totalTransactions:
-                            rows.length,
+                        openingBalance:
+                            money(openingBalance),
 
-                        totalInward:
-                            rows.reduce(
-                                (s, x) =>
-                                    s + x.inward,
-                                0
-                            ),
+                        totalPurchases:
+                            money(totalPurchases),
 
-                        totalOutward:
-                            rows.reduce(
-                                (s, x) =>
-                                    s + x.outward,
-                                0
-                            ),
+                        totalPayments:
+                            money(totalPayments),
 
                         closingBalance:
-                            balance
+                            money(
+                                openingBalance +
+                                totalPurchases -
+                                totalPayments
+                            )
                     },
-
-                    entries:
-                        rows
+                    entries
                 };
             }
         }
     }
+
+    static async getCompanyLedger(
+        actor: any,
+        query?: {
+            branchId?: string;
+            startDate?: string;
+            endDate?: string;
+            page?: number;
+            limit?: number;
+            export?: boolean;
+        }
+    ) {
+
+        if (!actor?.id) {
+            throw new ApiError(
+                "Unauthorized",
+                401
+            );
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query?.branchId
+                : actor.branchId;
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : undefined;
+
+                let openingBalance = 0;
+
+                if (startDate) {
+
+                    const previousTransactions =
+                        await prisma.transaction.findMany({
+
+                            where: {
+
+                                status:
+                                    TransactionStatus.APPROVED,
+
+                                ...(branchId && {
+                                    branchId
+                                }),
+
+                                createdAt: {
+                                    lt: startDate
+                                }
+                            }
+                        });
+
+                    openingBalance =
+                        previousTransactions.reduce(
+                            (balance, txn) => {
+
+                                const amount =
+                                    Number(txn.amount);
+
+                                return txn.direction ===
+                                    TransactionDirection.INWARD
+                                        ? balance + amount
+                                        : balance - amount;
+
+                            },
+                            0
+                        );
+                }
+
+        const transactions =
+            await prisma.transaction.findMany({
+
+                where: {
+
+                    status:
+                        TransactionStatus.APPROVED,
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            createdAt: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
+                },
+
+                include: {
+                    agency: true,
+                    thirdPartyAgency: true,
+                    branch: true
+                },
+
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+
+        let runningBalance = openingBalance;
+
+        let serialNo = 1;
+
+        const rows: any[] = [];
+
+        rows.push({
+
+            serialNo: 0,
+
+            date:
+                startDate
+                    ? formatISTDate(startDate)
+                    : null,
+
+            branch: null,
+
+            description:
+                "Opening Balance",
+
+            income: 0,
+
+            expense: 0,
+
+            balance:
+                openingBalance
+        });
+
+        for (const txn of transactions) {
+
+            const amount =
+                Number(txn.amount);
+
+            /**
+             * NORMAL TRANSACTION
+             */
+            if (!txn.thirdPartyAgencyId) {
+
+                const income =
+                    txn.direction ===
+                        TransactionDirection.INWARD
+                        ? amount
+                        : 0;
+
+                const expense =
+                    txn.direction ===
+                        TransactionDirection.OUTWARD
+                        ? amount
+                        : 0;
+
+                runningBalance =
+                    runningBalance +
+                    income -
+                    expense;
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    branch:
+                        txn.branch?.name,
+
+                    description:
+                        txn.direction ===
+                            TransactionDirection.INWARD
+                            ? `Amount received from ${txn.agency?.name}`
+                            : `Amount paid to ${txn.agency?.name}`,
+
+                    income,
+
+                    expense,
+
+                    balance:
+                        runningBalance
+                });
+
+                continue;
+            }
+
+            /**
+             * THIRD PARTY INWARD
+             *
+             * Tata Steel owes us
+             * Apex pays us
+             */
+
+            if (
+                txn.direction ===
+                TransactionDirection.INWARD
+            ) {
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    branch:
+                        txn.branch?.name,
+
+                    description:
+                        `Amount received from ${txn.agency?.name}`,
+
+                    income:
+                        amount,
+
+                    expense:
+                        0,
+
+                    balance:
+                        runningBalance += amount
+                });
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    branch:
+                        txn.branch?.name,
+
+                    description:
+                        `Amount paid by ${txn.thirdPartyAgency?.name} on behalf of ${txn.agency?.name}`,
+
+                    income:
+                        0,
+
+                    expense:
+                        amount,
+
+                    balance:
+                        runningBalance -= amount
+                });
+
+                continue;
+            }
+
+            /**
+             * THIRD PARTY OUTWARD
+             *
+             * We owe Tata
+             * Paid through Apex
+             */
+
+            rows.push({
+
+                serialNo:
+                    serialNo++,
+
+                date:
+                    formatISTDate(
+                        txn.createdAt
+                    ),
+
+                branch:
+                    txn.branch?.name,
+
+                description:
+                    `Amount paid to ${txn.agency?.name}`,
+
+                income:
+                    0,
+
+                expense:
+                    amount,
+
+                balance:
+                    runningBalance -= amount
+            });
+
+            rows.push({
+
+                serialNo:
+                    serialNo++,
+
+                date:
+                    formatISTDate(
+                        txn.createdAt
+                    ),
+
+                branch:
+                    txn.branch?.name,
+
+                description:
+                    `Amount recovered from ${txn.thirdPartyAgency?.name} against payment for ${txn.agency?.name}`,
+
+                income:
+                    amount,
+
+                expense:
+                    0,
+
+                balance:
+                    runningBalance += amount
+            });
+        }
+
+        return {
+
+            company: {
+                name:
+                    "ASHTAVINAYAKA"
+            },
+
+            summary: {
+
+                openingBalance,
+
+                totalIncome:
+                    money(
+                        rows.reduce(
+                            (s, x) =>
+                                s + Number(x.income || 0),
+                            0
+                        )
+                    ),
+
+                totalExpense:
+                    money(
+                        rows.reduce(
+                            (s, x) =>
+                                s + Number(x.expense || 0),
+                            0
+                        )
+                    ),
+
+                closingBalance:
+                    money(runningBalance)
+            },
+
+            entries:
+                rows
+        };
+    }
+
+
+
+
 
     static async getLedgerBySuspenseId(
         actor: any,
@@ -3571,11 +4263,11 @@ export class LedgerService {
             .map(a => {
 
                 if (a.sale) {
-                    return `SALE:${a.sale.invoiceNo}:${a.allocatedAmount}`;
+                    return `SALE-INVOICE:#${a.sale.invoiceNo}`;
                 }
 
                 if (a.purchase) {
-                    return `PURCHASE:${a.purchase.invoiceNo}:${a.allocatedAmount}`;
+                    return `PURCHASE-INVOICE:#${a.purchase.invoiceNo}`;
                 }
 
                 return "";
@@ -3690,5 +4382,386 @@ export class LedgerService {
                 { ledgerId: paymentLedger.id, entryType: EntryType.CREDIT, amount, branchId: transaction.branchId, narration: `Payment ${transaction.transactionNo}` }
             ]
         }, tx);
+    }
+
+
+    static async getGSTLedger(
+        actor: any,
+        query?: {
+            branchId?: string;
+            startDate?: string;
+            endDate?: string;
+            export?: boolean;
+        }
+    ) {
+
+        if (!actor?.id) {
+            throw new ApiError(
+                "Unauthorized",
+                401
+            );
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query?.branchId
+                : actor.branchId;
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : new Date();
+
+        if (startDate) {
+            startDate.setHours(
+                0,
+                0,
+                0,
+                0
+            );
+        }
+
+        if (endDate) {
+            endDate.setHours(
+                23,
+                59,
+                59,
+                999
+            );
+        }
+
+        const purchases =
+            await prisma.purchase.findMany({
+
+                where: {
+
+                    status: "APPROVED",
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            createdAt: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
+                },
+
+                include: {
+                    agency: true
+                },
+
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+        const sales =
+            await prisma.sale.findMany({
+
+                where: {
+
+                    status: "APPROVED",
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            createdAt: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
+                },
+
+                include: {
+                    agency: true
+                },
+
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+        const inputGSTEntries =
+            purchases.map(p => {
+
+                const taxable =
+                    Number(p.subtotalAmount);
+
+                const gst =
+                    Number(p.totalGSTAmount);
+
+                const isInterState =
+                    false;
+
+                return {
+
+                    date:
+                        formatISTDate(
+                            p.createdAt
+                        ),
+
+                    particulars:
+                        `Purchase from ${p.agency.name}`,
+
+                    voucherNo:
+                        p.invoiceNo,
+
+                    taxableValue:
+                        taxable,
+
+                    cgst:
+                        isInterState
+                            ? 0
+                            : gst / 2,
+
+                    sgst:
+                        isInterState
+                            ? 0
+                            : gst / 2,
+
+                    igst:
+                        isInterState
+                            ? gst
+                            : 0,
+
+                    totalGST:
+                        gst
+                };
+            });
+
+        const outputGSTEntries =
+            sales.map(s => {
+
+                const taxable =
+                    Number(s.subTotalAmount);
+
+                const cgst =
+                    Number(
+                        s.totalCGSTAmount
+                    );
+
+                const sgst =
+                    Number(
+                        s.totalSGSTAmount
+                    );
+
+                const igst =
+                    Number(
+                        s.totalIGSTAmount
+                    );
+
+                return {
+
+                    date:
+                        formatISTDate(
+                            s.createdAt
+                        ),
+
+                    particulars:
+                        `Sales to ${s.agency.name}`,
+
+                    voucherNo:
+                        s.invoiceNo,
+
+                    taxableValue:
+                        taxable,
+
+                    cgst,
+
+                    sgst,
+
+                    igst,
+
+                    totalGST:
+                        cgst +
+                        sgst +
+                        igst
+                };
+            });
+
+        const totalInputGST = {
+
+            taxableValue:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.taxableValue,
+                    0
+                ),
+
+            cgst:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.cgst,
+                    0
+                ),
+
+            sgst:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.sgst,
+                    0
+                ),
+
+            igst:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.igst,
+                    0
+                ),
+
+            totalGST:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.totalGST,
+                    0
+                )
+        };
+
+        const totalOutputGST = {
+
+            taxableValue:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.taxableValue,
+                    0
+                ),
+
+            cgst:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.cgst,
+                    0
+                ),
+
+            sgst:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.sgst,
+                    0
+                ),
+
+            igst:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.igst,
+                    0
+                ),
+
+            totalGST:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.totalGST,
+                    0
+                )
+        };
+
+        return {
+
+            company: {
+                name:
+                    "ASHTAVINAYAKA"
+            },
+
+            period: {
+                startDate,
+                endDate
+            },
+
+            inputGSTLedger: {
+                entries:
+                    inputGSTEntries,
+
+                totals:
+                    totalInputGST
+            },
+
+            outputGSTLedger: {
+                entries:
+                    outputGSTEntries,
+
+                totals:
+                    totalOutputGST
+            },
+
+            liabilitySummary: {
+
+                cgst: {
+                    output:
+                        totalOutputGST.cgst,
+
+                    input:
+                        totalInputGST.cgst,
+
+                    payable:
+                        totalOutputGST.cgst -
+                        totalInputGST.cgst
+                },
+
+                sgst: {
+                    output:
+                        totalOutputGST.sgst,
+
+                    input:
+                        totalInputGST.sgst,
+
+                    payable:
+                        totalOutputGST.sgst -
+                        totalInputGST.sgst
+                },
+
+                igst: {
+                    output:
+                        totalOutputGST.igst,
+
+                    input:
+                        totalInputGST.igst,
+
+                    payable:
+                        totalOutputGST.igst -
+                        totalInputGST.igst
+                },
+
+                total: {
+
+                    output:
+                        totalOutputGST.totalGST,
+
+                    input:
+                        totalInputGST.totalGST,
+
+                    payable:
+                        totalOutputGST.totalGST -
+                        totalInputGST.totalGST
+                }
+            }
+        };
     }
 }

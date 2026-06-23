@@ -8,7 +8,9 @@ import {
     getLedgerGroups, 
     getLedgerByBranchId,
     getLedgerByAgencyId,
-    getLedgerBySuspenseId
+    getLedgerBySuspenseId,
+    getCompanyLedger,
+    getGSTLedger
 } from "./ledger.controller";
 import { authMiddleware } from "../../../core/middleware/auth";
 
@@ -155,6 +157,233 @@ router.get("/trial-balance", getTrialBalance);
  *         description: Unauthorized
  */
 router.get("/get-all", getLedgers);
+
+
+/**
+ * @openapi
+ * /api/ledgers/company-ledger:
+ *   get:
+ *     summary: Company Ledger (Ashtavinayaka View)
+ *     description: |
+ *       Returns company level cashflow ledger from Ashtavinayaka's perspective.
+ *
+ *       This report is generated directly from APPROVED Transactions.
+ *
+ *       Features:
+ *
+ *       - All Approved Inward Transactions
+ *       - All Approved Outward Transactions
+ *       - Running Company Balance
+ *       - Third Party Adjustments
+ *       - Branch Filter
+ *       - Date Range Filter
+ *       - Excel Export
+ *
+ *       Third Party Example:
+ *
+ *       Tata Steel owes ₹5,000 to Ashtavinayaka.
+ *
+ *       Apex Technologies pays ₹5,000 on behalf of Tata Steel.
+ *
+ *       Ledger will show:
+ *
+ *       1. Income from Tata Steel
+ *       2. Expense against Apex Technologies
+ *
+ *       This report is intended for Management / Directors.
+ *
+ *     tags:
+ *       - Ledgers
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         example: 1548c22a-8751-4de9-8161-df6baad75d95
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-01
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-30
+ *
+ *       - in: query
+ *         name: export
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         example: true
+ *
+ *     responses:
+ *       200:
+ *         description: Company ledger generated successfully
+ *
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 company:
+ *                   name: ASHTAVINAYAKA
+ *
+ *                 summary:
+ *                   totalIncome: 250000
+ *                   totalExpense: 180000
+ *                   closingBalance: 70000
+ *
+ *                 entries:
+ *                   - serialNo: 1
+ *                     date: 22-Jun-2026
+ *                     description: Amount received from Tata Steel Limited
+ *                     income: 5000
+ *                     expense: 0
+ *                     balance: 5000
+ *
+ *                   - serialNo: 2
+ *                     date: 22-Jun-2026
+ *                     description: Amount paid by Apex Technologies on behalf of Tata Steel Limited
+ *                     income: 0
+ *                     expense: 5000
+ *                     balance: 0
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Access denied
+ */
+
+router.get(
+    "/company-ledger",
+    getCompanyLedger
+);
+
+/**
+ * @openapi
+ * /api/ledgers/gst-ledger:
+ *   get:
+ *     summary: GST Ledger Register
+ *     description: |
+ *       Returns the complete GST Ledger Report for the selected period.
+ *
+ *       The report is generated from approved Purchase and Sale transactions
+ *       and provides:
+ *
+ *       ### Input GST Ledger
+ *       - GST paid on Purchases
+ *       - Taxable Value
+ *       - CGST
+ *       - SGST
+ *       - IGST
+ *       - Total GST Credit Available
+ *
+ *       ### Output GST Ledger
+ *       - GST collected on Sales
+ *       - Taxable Value
+ *       - CGST
+ *       - SGST
+ *       - IGST
+ *       - Total GST Liability Generated
+ *
+ *       ### GST Liability Summary
+ *       Calculates net GST payable after adjusting input tax credit.
+ *
+ *       Formula:
+ *
+ *       Net GST Payable = Output GST - Input GST
+ *
+ *       Supports:
+ *       - Branch-wise filtering
+ *       - Date range filtering
+ *       - Excel export
+ *
+ *     tags:
+ *       - Ledgers
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         description: Branch ID for branch-specific GST ledger
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         example: 1548c22a-8751-4de9-8161-df6baad75d95
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         description: Report start date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-01
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         description: Report end date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-30
+ *
+ *       - in: query
+ *         name: export
+ *         required: false
+ *         description: Export GST Ledger to Excel
+ *         schema:
+ *           type: boolean
+ *         example: true
+ *
+ *     responses:
+ *
+ *       200:
+ *         description: GST Ledger generated successfully
+ *
+ *       400:
+ *         description: Invalid date range supplied
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Branch access denied
+ *
+ *       404:
+ *         description: Branch not found
+ *
+ *       500:
+ *         description: Internal server error
+ */
+
+router.get(
+    "/gst-ledger",
+    getGSTLedger
+)
+
+
 
 /**
  * @openapi
@@ -360,6 +589,9 @@ router.get(
  *         description: Ledger not found
  */
 router.post("/:ledgerId/opening-balance", setOpeningBalance);
+
+
+
 
 /**
  * @openapi

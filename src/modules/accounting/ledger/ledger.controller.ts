@@ -3,7 +3,7 @@ import { LedgerService } from "./ledger.service"; // Adjust path as needed
 import { LedgerType } from "@prisma/client";
 import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
 import { ExcelService } from "../../../core/utils/export.service";
-import { accountingLedgerColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
+import { accountingLedgerColumns, bankAccCashColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
 
 /**
  * @route   POST /api/ledgers
@@ -118,6 +118,86 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
     }
 };
 
+export const getCompanyLedger = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor =
+            (req as any).user;
+
+        const query = {
+
+            branchId:
+                req.query.branchId as string,
+
+            startDate:
+                req.query.startDate as string,
+
+            endDate:
+                req.query.endDate as string,
+
+            page:
+                Number(req.query.page || 1),
+
+            limit:
+                Number(req.query.limit || 50)
+        };
+
+        const isExport =
+            String(req.query.export)
+                .toLowerCase() === "true";
+
+        const result =
+            await LedgerService.getCompanyLedger(
+                actor,
+                {
+                    ...query,
+                    export: isExport
+                }
+            );
+
+        if (isExport) {
+
+            return ExcelService.exportAccountingLedger(
+                res,
+                {
+                    filename:
+                        "company-ledger",
+
+                    title:
+                        "ASHTAVINAYAKA COMPANY LEDGER",
+
+                    period:
+                        `${query.startDate || ""} - ${query.endDate || ""}`,
+
+                    data:
+                        result.entries
+                }
+            );
+        }
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Company ledger fetched successfully",
+
+            data:
+                result
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+
+
 /**
  * @route   GET /api/ledgers/:id
  * @desc    Get a single ledger by ID with current balance
@@ -161,12 +241,19 @@ export const getLedgerByBranchId = async (
                 | "GST"
                 | undefined;
         const isExport = (req as any).query.export === "true" || false;
+        const query = {
+            startDate:
+                req.query.startDate as string,
+            endDate:
+                req.query.endDate as string,
+        }
 
         const result =
             await LedgerService.getLedgerByBranchId(
                 actor,
                 branchId,
-                category
+                category,
+                query
             );
 
         if (isExport) {
@@ -175,31 +262,39 @@ export const getLedgerByBranchId = async (
 
                 case "ACCOUNTING_LEDGER":
 
-                    return ExcelService.export(
+                    return ExcelService.exportAccountingLedger(
                         res,
                         {
-                            filename: "accounting-ledger",
+                            filename:
+                                `branch-ledger-${result.branch.code}`,
 
-                            sheetName: "Accounting Ledger",
+                            title:
+                                `${result.branch.name} BRANCH LEDGER`,
 
-                            columns: accountingLedgerColumns,
+                            period:
+                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
 
-                            data: result.entries as any[]
+                            data:
+                                result.entries
                         }
                     );
 
                 case "CASH":
 
-                    return ExcelService.export(
+                    return ExcelService.exportAccountingLedger(
                         res,
                         {
-                            filename: "cash-book",
+                            filename:
+                                `branch-ledger-${result.branch.code}`,
 
-                            sheetName: "Cash Book",
+                            title:
+                                `${result.branch.name} BRANCH LEDGER`,
 
-                            columns: cashBookColumns,
+                            period:
+                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
 
-                            data: result.entries as any[]
+                            data:
+                                result.entries
                         }
                     );
 
@@ -361,11 +456,19 @@ export const getLedgerByAgencyId = async (
         const isExport =
             req.query.export === "true";
 
+        const query = {
+            startDate:
+                req.query.startDate as string,
+            endDate:
+                req.query.endDate as string,
+        }
+
         const result =
             await LedgerService.getLedgerByAgencyId(
                 actor,
                 agencyId,
-                category
+                category,
+                query
             );
 
         if (isExport) {
@@ -515,6 +618,63 @@ export const getLedgerByAgencyId = async (
         });
 
     } catch (error) {
+        next(error);
+    }
+};
+
+export const getGSTLedger =
+async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+
+    try {
+
+        const actor =
+            (req as any).user;
+
+        const result =
+            await LedgerService.getGSTLedger(
+                actor,
+                {
+                    branchId:
+                        req.query.branchId as string,
+
+                    startDate:
+                        req.query.startDate as string,
+
+                    endDate:
+                        req.query.endDate as string
+                }
+            );
+
+        const isExport =
+            String(
+                req.query.export
+            ).toLowerCase() === "true";
+
+        if (isExport) {
+
+            return ExcelService.exportGSTLedger(
+                res,
+                result
+            );
+        }
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "GST Ledger fetched successfully",
+
+            data:
+                result
+        });
+
+    } catch (error) {
+
         next(error);
     }
 };

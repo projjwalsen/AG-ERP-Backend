@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
-import { getByPath } from "./loc.utils";
+import { formatISTDate, getByPath } from "./loc.utils";
 
 export interface ExportColumn<T> {
   header: string;
@@ -34,6 +34,68 @@ export interface ExportRequest<T> {
 }
 
 export class ExcelService {
+
+    private static styleLedgerHeader(
+        row: ExcelJS.Row
+    ) {
+
+        row.eachCell(cell => {
+
+            cell.font = {
+                bold: true,
+                color: {
+                    argb: "FFFFFF"
+                }
+            };
+
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: {
+                    argb: "1F4E78"
+                }
+            };
+
+            cell.alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
+
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+        });
+    }
+
+    private static styleTotalRow(
+        row: ExcelJS.Row
+    ) {
+
+        row.eachCell(cell => {
+
+            cell.font = {
+                bold: true
+            };
+
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: {
+                    argb: "D9EAD3"
+                }
+            };
+
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+        });
+    }
     private static applyStyles<T>(
         worksheet: ExcelJS.Worksheet,
         options: ExportRequest<T>
@@ -191,6 +253,30 @@ export class ExcelService {
             const excelRow =
                 worksheet.addRow(values);
 
+            options.columns.forEach((col, index) => {
+
+                const cell =
+                    excelRow.getCell(index + 1);
+
+                const raw =
+                    typeof col.value === "function"
+                        ? col.value(row)
+                        : getByPath(
+                            row,
+                            String(col.key)
+                        );
+
+                if (
+                    raw instanceof Date
+                ) {
+
+                    cell.value = raw;
+
+                    cell.numFmt =
+                        "dd-mmm-yyyy";
+                }
+            });
+
             /**
              * Default row alignment
              */
@@ -309,4 +395,438 @@ export class ExcelService {
 
         return output;
     }
+
+    static async exportAccountingLedger(
+        res: Response,
+        options: {
+            filename: string;
+            sheetName?: string;
+            title: string;
+            period?: string;
+            data: any[];
+        }
+    ) {
+
+        const workbook =
+            new ExcelJS.Workbook();
+
+        const worksheet =
+            workbook.addWorksheet(
+                options.sheetName ||
+                "Accounting Ledger"
+            );
+
+        /**
+         * Title
+         */
+        worksheet.mergeCells("B2:F2");
+
+        const titleCell =
+            worksheet.getCell("B2");
+
+        titleCell.value =
+            options.title;
+
+        titleCell.font = {
+            bold: true,
+            size: 16
+        };
+
+        /**
+         * Period
+         */
+        worksheet.getCell("E3").value =
+            "Time Period:";
+
+        worksheet.getCell("E4").value =
+            options.period || "";
+
+        /**
+         * Header
+         */
+        const headerRow =
+            worksheet.getRow(6);
+
+        headerRow.values = [
+            "",
+            "NO",
+            "DATE",
+            "DESCRIPTION",
+            "INCOME",
+            "EXPENSE",
+            "BALANCE"
+        ];
+
+        headerRow.eachCell(cell => {
+
+            cell.font = {
+                bold: true
+            };
+
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: {
+                    argb: "FFF3E242"
+                }
+            };
+
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+
+            cell.alignment = {
+                vertical: "middle",
+                horizontal: "center"
+            };
+        });
+
+        worksheet.columns = [
+
+            { width: 3 },
+
+            { width: 10 },
+
+            { width: 18 },
+
+            { width: 55 },
+
+            { width: 18 },
+
+            { width: 18 },
+
+            { width: 18 }
+        ];
+
+        /**
+         * Data
+         */
+        options.data.forEach(
+            (row, index) => {
+
+                const excelRow =
+                    worksheet.addRow([
+                        "",
+                        index + 1,
+                        row.date,
+                        row.description,
+                        row.income || 0,
+                        row.expense || 0,
+                        row.balance || 0
+                    ]);
+
+                excelRow.height = 22;
+
+                excelRow.eachCell(cell => {
+
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        right: { style: "thin" },
+                        bottom: { style: "thin" }
+                    };
+                });
+
+                excelRow.getCell(3).numFmt =
+                    "dd-mmm-yyyy";
+
+                excelRow.getCell(5).numFmt =
+                    "#,##0.00";
+
+                excelRow.getCell(6).numFmt =
+                    "#,##0.00";
+
+                excelRow.getCell(7).numFmt =
+                    "#,##0.00";
+            }
+        );
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${options.filename}.xlsx"`
+        );
+
+        await workbook.xlsx.write(
+            res as any
+        );
+
+        res.end();
+    }
+
+    static async exportGSTLedger(
+        res: Response,
+        data: any
+    ) {
+
+        const workbook =
+            new ExcelJS.Workbook();
+
+        const worksheet =
+            workbook.addWorksheet(
+                "GST Ledger"
+            );
+
+        /**
+         * ==================================================
+         * COMPANY HEADER
+         * ==================================================
+         */
+
+        worksheet.mergeCells("A1:H1");
+
+        const titleCell =
+            worksheet.getCell("A1");
+
+        titleCell.value =
+            `${data.company.name} - GST LEDGER`;
+
+        titleCell.font = {
+            bold: true,
+            size: 18
+        };
+
+        titleCell.alignment = {
+            horizontal: "center"
+        };
+
+        worksheet.addRow([]);
+
+        worksheet.addRow([
+            "Period",
+            `${data.period?.startDate
+                ? formatISTDate(data.period.startDate)
+                : "Beginning"} To ${data.period?.endDate
+                ? formatISTDate(data.period.endDate)
+                : formatISTDate(new Date())
+            }`
+        ]);
+
+        worksheet.addRow([]);
+
+        /**
+         * ==================================================
+         * INPUT GST LEDGER
+         * ==================================================
+         */
+
+        worksheet.addRow([
+            "INPUT GST LEDGER"
+        ]);
+
+        const inputHeader =
+            worksheet.addRow([
+                "Date",
+                "Particulars",
+                "Voucher No",
+                "Taxable Value",
+                "CGST",
+                "SGST",
+                "IGST",
+                "Total GST"
+            ]);
+
+        this.styleLedgerHeader(
+            inputHeader
+        );
+
+        data.inputGSTLedger.entries.forEach(
+            (row: any) => {
+
+                worksheet.addRow([
+                    row.date,
+                    row.particulars,
+                    row.voucherNo,
+                    row.taxableValue,
+                    row.cgst,
+                    row.sgst,
+                    row.igst,
+                    row.totalGST
+                ]);
+            }
+        );
+
+        const inputTotal =
+            worksheet.addRow([
+                "",
+                "TOTAL INPUT GST",
+                "",
+                data.inputGSTLedger.totals.taxableValue,
+                data.inputGSTLedger.totals.cgst,
+                data.inputGSTLedger.totals.sgst,
+                data.inputGSTLedger.totals.igst,
+                data.inputGSTLedger.totals.totalGST
+            ]);
+
+        this.styleTotalRow(
+            inputTotal
+        );
+
+        worksheet.addRow([]);
+
+        /**
+         * ==================================================
+         * OUTPUT GST LEDGER
+         * ==================================================
+         */
+
+        worksheet.addRow([
+            "OUTPUT GST LEDGER"
+        ]);
+
+        const outputHeader =
+            worksheet.addRow([
+                "Date",
+                "Particulars",
+                "Voucher No",
+                "Taxable Value",
+                "CGST",
+                "SGST",
+                "IGST",
+                "Total GST"
+            ]);
+
+        this.styleLedgerHeader(
+            outputHeader
+        );
+
+        data.outputGSTLedger.entries.forEach(
+            (row: any) => {
+
+                worksheet.addRow([
+                    row.date,
+                    row.particulars,
+                    row.voucherNo,
+                    row.taxableValue,
+                    row.cgst,
+                    row.sgst,
+                    row.igst,
+                    row.totalGST
+                ]);
+            }
+        );
+
+        const outputTotal =
+            worksheet.addRow([
+                "",
+                "TOTAL OUTPUT GST",
+                "",
+                data.outputGSTLedger.totals.taxableValue,
+                data.outputGSTLedger.totals.cgst,
+                data.outputGSTLedger.totals.sgst,
+                data.outputGSTLedger.totals.igst,
+                data.outputGSTLedger.totals.totalGST
+            ]);
+
+        this.styleTotalRow(
+            outputTotal
+        );
+
+        worksheet.addRow([]);
+        worksheet.addRow([]);
+
+        /**
+         * ==================================================
+         * LIABILITY SUMMARY
+         * ==================================================
+         */
+
+        worksheet.addRow([
+            "GST LIABILITY SUMMARY"
+        ]);
+
+        const summaryHeader =
+            worksheet.addRow([
+                "GST Type",
+                "Output GST",
+                "Input GST",
+                "Net Payable"
+            ]);
+
+        this.styleLedgerHeader(
+            summaryHeader
+        );
+
+        worksheet.addRow([
+            "CGST",
+            data.liabilitySummary.cgst.output,
+            data.liabilitySummary.cgst.input,
+            data.liabilitySummary.cgst.payable
+        ]);
+
+        worksheet.addRow([
+            "SGST",
+            data.liabilitySummary.sgst.output,
+            data.liabilitySummary.sgst.input,
+            data.liabilitySummary.sgst.payable
+        ]);
+
+        worksheet.addRow([
+            "IGST",
+            data.liabilitySummary.igst.output,
+            data.liabilitySummary.igst.input,
+            data.liabilitySummary.igst.payable
+        ]);
+
+        const finalRow =
+            worksheet.addRow([
+                "TOTAL",
+                data.liabilitySummary.total.output,
+                data.liabilitySummary.total.input,
+                data.liabilitySummary.total.payable
+            ]);
+
+        this.styleTotalRow(
+            finalRow
+        );
+
+        /**
+         * ==================================================
+         * WIDTHS
+         * ==================================================
+         */
+
+        worksheet.columns = [
+            { width: 15 },
+            { width: 45 },
+            { width: 25 },
+            { width: 18 },
+            { width: 18 },
+            { width: 18 },
+            { width: 18 },
+            { width: 18 }
+        ];
+
+        /**
+         * ==================================================
+         * RESPONSE
+         * ==================================================
+         */
+
+        res.status(200);
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="gst-ledger.xlsx"`
+        );
+
+        await workbook.xlsx.write(
+            res as any
+        );
+
+        res.end();
+    }
+    
 }
