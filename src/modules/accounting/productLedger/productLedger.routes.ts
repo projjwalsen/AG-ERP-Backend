@@ -182,6 +182,11 @@ router.get(
  *           type: string
  *           format: date-time
  *         description: Filter movements until end date
+ *       - in: query
+ *         name: export
+ *         schema:
+ *           type: string
+ *         description: Flag to indicate if the report should be exported (true/false)
  *     responses:
  *       200:
  *         description: Product ledger detail retrieved successfully

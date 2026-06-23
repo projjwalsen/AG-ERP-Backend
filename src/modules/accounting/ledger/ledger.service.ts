@@ -543,11 +543,9 @@ export class LedgerService {
                                 branchId: branch.id
                             }
                         });
-
                     let openingBalance = 0;
-                    let closingBalance = 0;
-                    let totalDebit = 0;
-                    let totalCredit = 0;
+                    let amountReceivable = 0;
+                    let amountPayable = 0;
 
                     for (const ledger of ledgers) {
 
@@ -559,14 +557,25 @@ export class LedgerService {
                         openingBalance +=
                             Number(ledger.openingBalance);
 
-                        closingBalance +=
-                            Math.abs(balance.closingBalance);
+                        if (
+                            ledger.category === LedgerType.CUSTOMER
+                        ) {
 
-                        totalDebit +=
-                            balance.totalDebit;
+                            amountReceivable +=
+                                Math.abs(
+                                    balance.closingBalance
+                                );
+                        }
 
-                        totalCredit +=
-                            balance.totalCredit;
+                        if (
+                            ledger.category === LedgerType.VENDOR
+                        ) {
+
+                            amountPayable +=
+                                Math.abs(
+                                    balance.closingBalance
+                                );
+                        }
                     }
 
                     return {
@@ -584,15 +593,24 @@ export class LedgerService {
                         openingBalance:
                             money(openingBalance),
 
-                        totalDebit:
-                            money(totalDebit),
+                        totalReceivable:
+                            money(amountReceivable),
 
-                        totalCredit:
-                            money(totalCredit),
+                        totalPayable:
+                            money(amountPayable),
 
                         closingBalance:
-                            money(closingBalance),
+                            money(
+                                Math.abs(
+                                    amountReceivable -
+                                    amountPayable
+                                )
+                            ),
 
+                        balanceType:
+                            amountReceivable >= amountPayable
+                                ? "RECEIVABLE"
+                                : "PAYABLE",
                         createdAt:
                             branch.createdAt,
 
@@ -649,9 +667,8 @@ export class LedgerService {
                         });
 
                     let openingBalance = 0;
-                    let closingBalance = 0;
-                    let totalDebit = 0;
-                    let totalCredit = 0;
+                    let amountReceivable = 0;
+                    let amountPayable = 0;
 
                     for (const ledger of ledgers) {
 
@@ -663,14 +680,25 @@ export class LedgerService {
                         openingBalance +=
                             Number(ledger.openingBalance);
 
-                        closingBalance +=
-                            Math.abs(balance.closingBalance);
+                        if (
+                            ledger.category === LedgerType.CUSTOMER
+                        ) {
 
-                        totalDebit +=
-                            balance.totalDebit;
+                            amountReceivable +=
+                                Math.abs(
+                                    balance.closingBalance
+                                );
+                        }
 
-                        totalCredit +=
-                            balance.totalCredit;
+                        if (
+                            ledger.category === LedgerType.VENDOR
+                        ) {
+
+                            amountPayable +=
+                                Math.abs(
+                                    balance.closingBalance
+                                );
+                        }
                     }
 
                     return {
@@ -686,14 +714,24 @@ export class LedgerService {
                         openingBalance:
                             money(openingBalance),
 
-                        totalDebit:
-                            money(totalDebit),
+                        totalReceivable:
+                            money(amountReceivable),
 
-                        totalCredit:
-                            money(totalCredit),
+                        totalPayable:
+                            money(amountPayable),
 
                         closingBalance:
-                            money(closingBalance),
+                            money(
+                                Math.abs(
+                                    amountReceivable -
+                                    amountPayable
+                                )
+                            ),
+
+                        balanceType:
+                            amountReceivable >= amountPayable
+                                ? "RECEIVABLE"
+                                : "PAYABLE",
 
                         createdAt:
                             agency.createdAt,
@@ -1314,6 +1352,44 @@ export class LedgerService {
 
             case "CASH": {
 
+                const branchLedgers =
+                    await prisma.ledger.findMany({
+                        where: {
+                            branchId,
+                            category: {
+                                in: [
+                                    LedgerType.CUSTOMER,
+                                    LedgerType.VENDOR
+                                ]
+                            }
+                        }
+                    });
+
+                let amountReceivable = 0;
+                let amountPayable = 0;
+
+                for (const ledger of branchLedgers) {
+
+                    const balance =
+                        await this.calculateLedgerBalance(
+                            ledger.id
+                        );
+
+                    if (
+                        ledger.category === LedgerType.CUSTOMER
+                    ) {
+                        amountReceivable +=
+                            Math.abs(balance.closingBalance);
+                    }
+
+                    if (
+                        ledger.category === LedgerType.VENDOR
+                    ) {
+                        amountPayable +=
+                            Math.abs(balance.closingBalance);
+                    }
+                }
+
                 const transactions =
                     await prisma.transaction.findMany({
 
@@ -1327,13 +1403,30 @@ export class LedgerService {
                         },
 
                         include: {
-                            agency: true
+                            agency: true,
+                            thirdPartyAgency: true
                         },
 
                         orderBy: {
                             createdAt: "desc"
                         }
                     });
+
+                    console.log(
+                        "CASH TXNS",
+                        transactions.length
+                    );
+
+                    console.table(
+                        transactions.map(x => ({
+                            transactionNo: x.transactionNo,
+                            amount: x.amount,
+                            paymentMode: x.paymentMode,
+                            direction: x.direction,
+                            agencyId: x.agencyId,
+                            thirdPartyAgencyId: x.thirdPartyAgencyId
+                        }))
+                    );
 
                 const rows =
                     transactions.map(txn => ({
@@ -1344,9 +1437,14 @@ export class LedgerService {
 
                         transactionRefNo: txn.transactionRefNo,
 
-                        agency: txn.agency?.name,
+                        agency:
+                            txn.agency?.name,
 
-                        direction: txn.direction,
+                        relatedParty:
+                            txn.thirdPartyAgency?.name || null,
+
+                        direction:
+                            txn.direction,
 
                         receipt:
                             txn.direction === TransactionDirection.INWARD
@@ -1358,7 +1456,8 @@ export class LedgerService {
                                 ? Number(txn.amount)
                                 : 0,
 
-                        narration: txn.remarks
+                        narration:
+                            txn.remarks
                     }));
 
                 return {
@@ -1366,7 +1465,13 @@ export class LedgerService {
                     branch: {
                         id: branch.id,
                         code: branch.code,
-                        name: branch.name
+                        name: branch.name,
+
+                        amountReceivable:
+                            money(amountReceivable),
+
+                        amountPayable:
+                            money(amountPayable)
                     },
 
                     category: "CASH",
@@ -1762,9 +1867,11 @@ export class LedgerService {
 
                         where: {
 
-                            status: TransactionStatus.APPROVED,
+                            status:
+                                TransactionStatus.APPROVED,
 
-                            paymentMode: PaymentMode.OFFLINE,
+                            paymentMode:
+                                PaymentMode.OFFLINE,
 
                             OR: [
                                 {
@@ -1787,6 +1894,16 @@ export class LedgerService {
                         }
                     });
 
+                    console.table(
+                        transactions.map(x => ({
+                            transactionNo: x.transactionNo,
+                            agencyId: x.agencyId,
+                            agencyName: x.agency?.name,
+                            thirdPartyAgencyId: x.thirdPartyAgencyId,
+                            amount: x.amount
+                        }))
+                    );
+
                 const rows =
                     transactions.map(txn => ({
 
@@ -1803,7 +1920,14 @@ export class LedgerService {
                             txn.branch?.name,
 
                         agency:
-                            txn.agency?.name,
+                            txn.agencyId === agencyId
+                                ? txn.agency?.name
+                                : txn.thirdPartyAgency?.name,
+
+                        relatedParty:
+                            txn.agencyId === agencyId
+                                ? txn.thirdPartyAgency?.name
+                                : txn.agency?.name,
 
                         direction:
                             txn.direction,
@@ -1822,21 +1946,77 @@ export class LedgerService {
                             txn.remarks
                     }));
 
-                return {
+                const agencyLedgers =
+                    await prisma.ledger.findMany({
+                        where: {
+                            agencyId,
+                            category: {
+                                in: [
+                                    LedgerType.CUSTOMER,
+                                    LedgerType.VENDOR
+                                ]
+                            }
+                        }
+                    });
 
-                    agency,
+                let amountReceivable = 0;
+                let amountPayable = 0;
 
-                    category: "CASH",
+                for (const ledger of agencyLedgers) {
 
-                    summary: {
+                    const balance =
+                        await this.calculateLedgerBalance(
+                            ledger.id
+                        );
 
-                        totalTransactions:
-                            rows.length,
+                    if (
+                        ledger.category === LedgerType.CUSTOMER
+                    ) {
+                        amountReceivable +=
+                            Math.max(
+                                balance.closingBalance,
+                                0
+                            );
+                    }
 
-                        totalReceipt:
-                            money(
-                                rows.reduce(
-                                    (sum, x) =>
+                    if (
+                        ledger.category === LedgerType.VENDOR
+                    ) {
+                        amountPayable +=
+                            Math.abs(
+                                Math.min(
+                                    balance.closingBalance,
+                                    0
+                                )
+                            );
+                    }
+                }
+        return {
+
+            agency: {
+                id: agency.id,
+                name: agency.name,
+                type: agency.type,
+                gstin: agency.gstin,
+
+                amountReceivable:
+                    money(amountReceivable),
+
+                amountPayable:
+                    money(amountPayable)
+            },
+
+            category: "CASH",
+
+            summary: {
+
+                totalTransactions:
+                    rows.length,
+
+                totalReceipt:
+                    money(
+                        rows.reduce(
+                            (sum, x) =>
                                         sum + x.receipt,
                                     0
                                 )
