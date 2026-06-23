@@ -1822,23 +1822,11 @@ export class LedgerService {
 
                     {
                         serialNo: 0,
-
-                        date:
-                            startDate
-                                ? formatISTDate(startDate)
-                                : formatISTDate(
-                                    branch.createdAt
-                                ),
-
-                        description:
-                            "Opening Balance",
-
+                        date: null,
+                        description: "Opening Balance",
                         income: 0,
-
                         expense: 0,
-
-                        balance:
-                            openingBalance
+                        balance: openingBalance
                     },
 
                     ...transactions.map(
@@ -2689,6 +2677,9 @@ export class LedgerService {
                             txn.createdAt
                         ),
 
+                    branch:
+                        txn.branch?.name,
+
                     description:
                         txn.direction ===
                             TransactionDirection.INWARD
@@ -2751,6 +2742,35 @@ export class LedgerService {
                             txn.createdAt
                         ),
 
+                    branch:
+                        txn.branch?.name,
+
+                    description:
+                        `Amount received from ${txn.agency?.name}`,
+
+                    income:
+                        amount,
+
+                    expense:
+                        0,
+
+                    balance:
+                        runningBalance += amount
+                });
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    branch:
+                        txn.branch?.name,
+
                     description:
                         `Amount paid by ${txn.thirdPartyAgency?.name} on behalf of ${txn.agency?.name}`,
 
@@ -2784,6 +2804,9 @@ export class LedgerService {
                         txn.createdAt
                     ),
 
+                branch:
+                    txn.branch?.name,
+
                 description:
                     `Amount paid to ${txn.agency?.name}`,
 
@@ -2806,6 +2829,9 @@ export class LedgerService {
                     formatISTDate(
                         txn.createdAt
                     ),
+
+                branch:
+                    txn.branch?.name,
 
                 description:
                     `Amount recovered from ${txn.thirdPartyAgency?.name} against payment for ${txn.agency?.name}`,
