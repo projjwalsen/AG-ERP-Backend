@@ -14,7 +14,7 @@ import {
 import { randomUUID } from "crypto";
 import { prisma } from "../../../config/db";
 import { ApiError } from "../../../core/middleware/errorHandler";
-import { parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
+import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
 
 type DbClient = any;
 type TaxKind = "CGST" | "SGST" | "IGST";
@@ -1428,37 +1428,63 @@ export class LedgerService {
                         }))
                     );
 
+                let balance = 0;
+
                 const rows =
-                    transactions.map(txn => ({
+                    transactions.map((txn, index) => {
 
-                        date: txn.createdAt,
-
-                        transactionNo: txn.transactionNo,
-
-                        transactionRefNo: txn.transactionRefNo,
-
-                        agency:
-                            txn.agency?.name,
-
-                        relatedParty:
-                            txn.thirdPartyAgency?.name || null,
-
-                        direction:
-                            txn.direction,
-
-                        receipt:
+                        const income =
                             txn.direction === TransactionDirection.INWARD
                                 ? Number(txn.amount)
-                                : 0,
+                                : 0;
 
-                        payment:
+                        const expense =
                             txn.direction === TransactionDirection.OUTWARD
                                 ? Number(txn.amount)
-                                : 0,
+                                : 0;
 
-                        narration:
-                            txn.remarks
-                    }));
+                        balance =
+                            balance + income - expense;
+
+                        let description = "";
+
+                        if (
+                            txn.thirdPartyAgency
+                        ) {
+
+                            description =
+                                `${txn.thirdPartyAgency.name} paid on behalf of ${txn.agency?.name}`;
+
+                        } else if (
+                            txn.direction === TransactionDirection.INWARD
+                        ) {
+
+                            description =
+                                `Cash received from ${txn.agency?.name}`;
+
+                        } else {
+
+                            description =
+                                `Cash paid to ${txn.agency?.name}`;
+                        }
+
+                        return {
+
+                            serialNo:
+                                index + 1,
+
+                            date:
+                                formatISTDate(txn.createdAt),
+
+                            description,
+
+                            income,
+
+                            expense,
+
+                            balance
+                        };
+                    });
 
                 return {
 
@@ -1481,21 +1507,20 @@ export class LedgerService {
                         totalTransactions:
                             rows.length,
 
-                        totalReceipt:
-                            money(
-                                rows.reduce(
-                                    (s, x) => s + x.receipt,
-                                    0
-                                )
+                        totalIncome:
+                            rows.reduce(
+                                (s, x) => s + x.income,
+                                0
                             ),
 
-                        totalPayment:
-                            money(
-                                rows.reduce(
-                                    (s, x) => s + x.payment,
-                                    0
-                                )
-                            )
+                        totalExpense:
+                            rows.reduce(
+                                (s, x) => s + x.expense,
+                                0
+                            ),
+
+                        closingBalance:
+                            balance
                     },
 
                     entries: rows
@@ -1667,13 +1692,17 @@ export class LedgerService {
 
                 const transactions =
                     await prisma.transaction.findMany({
+
                         where: {
                             branchId,
                             status: TransactionStatus.APPROVED
                         },
+
                         include: {
-                            agency: true
+                            agency: true,
+                            thirdPartyAgency: true
                         },
+
                         orderBy: {
                             createdAt: "asc"
                         }
@@ -1681,51 +1710,64 @@ export class LedgerService {
 
                 let balance = 0;
 
-                const rows = transactions.map(txn => {
+                const entries =
+                    transactions.map((txn, index) => {
 
-                    const amount = Number(txn.amount);
+                        const income =
+                            txn.direction === TransactionDirection.INWARD
+                                ? Number(txn.amount)
+                                : 0;
 
-                    const inward =
-                        txn.direction === TransactionDirection.INWARD
-                            ? amount
-                            : 0;
+                        const expense =
+                            txn.direction === TransactionDirection.OUTWARD
+                                ? Number(txn.amount)
+                                : 0;
 
-                    const outward =
-                        txn.direction === TransactionDirection.OUTWARD
-                            ? amount
-                            : 0;
+                        balance =
+                            balance + income - expense;
 
-                    balance += inward - outward;
+                        let description = "";
 
-                    return {
-                        date: txn.createdAt,
-                        transactionNo: txn.transactionNo,
-                        transactionRefNo: txn.transactionRefNo,
+                        if (
+                            txn.thirdPartyAgency
+                        ) {
 
-                        agency:
-                            txn.agency?.name,
+                            description =
+                                `${txn.thirdPartyAgency?.name} paid on behalf of ${txn.agency?.name}`;
 
-                        paymentMode:
-                            txn.paymentMode,
+                        } else if (
+                            txn.direction === TransactionDirection.INWARD
+                        ) {
 
-                        paymentType:
-                            txn.paymentType,
+                            description =
+                                `Amount received from ${txn.agency?.name}`;
 
-                        direction:
-                            txn.direction,
+                        } else {
 
-                        inward,
-                        outward,
+                            description =
+                                `Amount paid to ${txn.agency?.name}`;
+                        }
 
-                        runningBalance:
-                            balance,
+                        return {
 
-                        remarks:
-                            txn.remarks
-                    };
-                });
+                            serialNo:
+                                index + 1,
+
+                            date:
+                                (formatISTDate(txn.createdAt)),
+
+                            description,
+
+                            income,
+
+                            expense,
+
+                            balance
+                        };
+                    });
 
                 return {
+
                     branch: {
                         id: branch.id,
                         code: branch.code,
@@ -1735,17 +1777,18 @@ export class LedgerService {
                     category: "ACCOUNTING_LEDGER",
 
                     summary: {
-                        totalTransactions: rows.length,
 
-                        totalInward:
-                            rows.reduce(
-                                (s, x) => s + x.inward,
+                        openingBalance: 0,
+
+                        totalIncome:
+                            entries.reduce(
+                                (s, x) => s + x.income,
                                 0
                             ),
 
-                        totalOutward:
-                            rows.reduce(
-                                (s, x) => s + x.outward,
+                        totalExpense:
+                            entries.reduce(
+                                (s, x) => s + x.expense,
                                 0
                             ),
 
@@ -1753,7 +1796,7 @@ export class LedgerService {
                             balance
                     },
 
-                    entries: rows
+                    entries
                 };
             }
         }
@@ -1933,7 +1976,7 @@ export class LedgerService {
                             return {
 
                                 date:
-                                    txn.createdAt,
+                                    formatISTDate(txn.createdAt),
 
                                 voucherNo:
                                     txn.transactionNo,
@@ -2139,7 +2182,7 @@ export class LedgerService {
                                                 .map(row => ({
 
                                                     date:
-                                                        row.date,
+                                                        formatISTDate(row.date),
 
                                                     voucherNo:
                                                         row.invoiceNo ||
@@ -2281,7 +2324,7 @@ export class LedgerService {
                             return {
 
                                 date:
-                                    row.date,
+                                    formatISTDate(row.date),
 
                                 voucherNo:
                                     row.invoiceNo ||

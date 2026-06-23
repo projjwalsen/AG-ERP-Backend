@@ -277,3 +277,37 @@ export const creditorLedgerColumns = [
     { header: "Credit", key: "credit" },
     { header: "Balance", key: "balance" }
 ];
+
+export const bankAccCashColumns = [
+
+    {
+        header: "Sr No",
+        key: "serialNo"
+    },
+
+    {
+        header: "Date",
+        key: "date"
+    },
+
+    {
+        header: "Description",
+        key: "description",
+        width: 60
+    },
+
+    {
+        header: "Income",
+        key: "income"
+    },
+
+    {
+        header: "Expense",
+        key: "expense"
+    },
+
+    {
+        header: "Balance",
+        key: "balance"
+    }
+];

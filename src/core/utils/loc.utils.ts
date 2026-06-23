@@ -48,3 +48,24 @@ export function getByPath(
       obj
     );
 }
+
+export const formatISTDate = (
+    value?: Date | string | null
+) => {
+
+    if (!value) {
+        return "";
+    }
+
+    return new Intl.DateTimeFormat(
+        "en-GB",
+        {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    )
+        .format(new Date(value))
+        .replace(/ /g, "-");
+};

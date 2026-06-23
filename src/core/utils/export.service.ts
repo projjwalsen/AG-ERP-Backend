@@ -191,6 +191,30 @@ export class ExcelService {
             const excelRow =
                 worksheet.addRow(values);
 
+            options.columns.forEach((col, index) => {
+
+                const cell =
+                    excelRow.getCell(index + 1);
+
+                const raw =
+                    typeof col.value === "function"
+                        ? col.value(row)
+                        : getByPath(
+                            row,
+                            String(col.key)
+                        );
+
+                if (
+                    raw instanceof Date
+                ) {
+
+                    cell.value = raw;
+
+                    cell.numFmt =
+                        "dd-mmm-yyyy";
+                }
+            });
+
             /**
              * Default row alignment
              */

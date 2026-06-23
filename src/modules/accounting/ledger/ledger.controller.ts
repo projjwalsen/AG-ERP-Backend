@@ -3,7 +3,7 @@ import { LedgerService } from "./ledger.service"; // Adjust path as needed
 import { LedgerType } from "@prisma/client";
 import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
 import { ExcelService } from "../../../core/utils/export.service";
-import { accountingLedgerColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
+import { accountingLedgerColumns, bankAccCashColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
 
 /**
  * @route   POST /api/ledgers
@@ -182,7 +182,7 @@ export const getLedgerByBranchId = async (
 
                             sheetName: "Accounting Ledger",
 
-                            columns: accountingLedgerColumns,
+                            columns: bankAccCashColumns,
 
                             data: result.entries as any[]
                         }
@@ -197,7 +197,7 @@ export const getLedgerByBranchId = async (
 
                             sheetName: "Cash Book",
 
-                            columns: cashBookColumns,
+                            columns: bankAccCashColumns,
 
                             data: result.entries as any[]
                         }
