@@ -275,6 +275,109 @@ router.get(
     getCompanyLedger
 );
 
+/**
+ * @openapi
+ * /api/ledgers/gst-ledger:
+ *   get:
+ *     summary: GST Ledger Register
+ *     description: |
+ *       Returns the complete GST Ledger Report for the selected period.
+ *
+ *       The report is generated from approved Purchase and Sale transactions
+ *       and provides:
+ *
+ *       ### Input GST Ledger
+ *       - GST paid on Purchases
+ *       - Taxable Value
+ *       - CGST
+ *       - SGST
+ *       - IGST
+ *       - Total GST Credit Available
+ *
+ *       ### Output GST Ledger
+ *       - GST collected on Sales
+ *       - Taxable Value
+ *       - CGST
+ *       - SGST
+ *       - IGST
+ *       - Total GST Liability Generated
+ *
+ *       ### GST Liability Summary
+ *       Calculates net GST payable after adjusting input tax credit.
+ *
+ *       Formula:
+ *
+ *       Net GST Payable = Output GST - Input GST
+ *
+ *       Supports:
+ *       - Branch-wise filtering
+ *       - Date range filtering
+ *       - Excel export
+ *
+ *     tags:
+ *       - Ledgers
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         description: Branch ID for branch-specific GST ledger
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         example: 1548c22a-8751-4de9-8161-df6baad75d95
+ *
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         description: Report start date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-01
+ *
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         description: Report end date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-06-30
+ *
+ *       - in: query
+ *         name: export
+ *         required: false
+ *         description: Export GST Ledger to Excel
+ *         schema:
+ *           type: boolean
+ *         example: true
+ *
+ *     responses:
+ *
+ *       200:
+ *         description: GST Ledger generated successfully
+ *
+ *       400:
+ *         description: Invalid date range supplied
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       403:
+ *         description: Branch access denied
+ *
+ *       404:
+ *         description: Branch not found
+ *
+ *       500:
+ *         description: Internal server error
+ */
+
 router.get(
     "/gst-ledger",
     getGSTLedger
