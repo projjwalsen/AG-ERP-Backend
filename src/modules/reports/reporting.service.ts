@@ -83,18 +83,18 @@ export class ReportingService {
         const entries =
             transactions.map((txn, index) => {
 
-                const debit =
+                const credit =
                     txn.direction === TransactionDirection.INWARD
                         ? Number(txn.amount)
                         : 0;
 
-                const credit =
+                const debit =
                     txn.direction === TransactionDirection.OUTWARD
                         ? Number(txn.amount)
                         : 0;
 
                 runningBalance =
-                    runningBalance + debit - credit;
+                    runningBalance + credit - debit;
 
                 return {
 
@@ -152,14 +152,14 @@ export class ReportingService {
         const totalReceipts =
             entries.reduce(
                 (sum, row) =>
-                    sum + row.debit,
+                    sum + row.credit,
                 0
             );
 
         const totalPayments =
             entries.reduce(
                 (sum, row) =>
-                    sum + row.credit,
+                    sum + row.debit,
                 0
             );
 
