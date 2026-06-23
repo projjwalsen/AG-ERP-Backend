@@ -1745,6 +1745,43 @@ export class LedgerService {
             case "ACCOUNTING_LEDGER":
             default: {
 
+                let openingBalance = 0;
+
+                if (startDate) {
+
+                    const previousTransactions =
+                        await prisma.transaction.findMany({
+
+                            where: {
+
+                                branchId,
+
+                                status:
+                                    TransactionStatus.APPROVED,
+
+                                createdAt: {
+                                    lt: startDate
+                                }
+                            }
+                        });
+
+                    openingBalance =
+                        previousTransactions.reduce(
+                            (balance, txn) => {
+
+                                const amount =
+                                    Number(txn.amount);
+
+                                return txn.direction ===
+                                    TransactionDirection.INWARD
+                                    ? balance + amount
+                                    : balance - amount;
+
+                            },
+                            0
+                        );
+                }
+
                 const transactions =
                     await prisma.transaction.findMany({
 
@@ -1779,63 +1816,95 @@ export class LedgerService {
                         }
                     });
 
-                let balance = 0;
+                let balance = openingBalance;
 
-                const entries =
-                    transactions.map((txn, index) => {
+                const entries = [
 
-                        const income =
-                            txn.direction === TransactionDirection.INWARD
-                                ? Number(txn.amount)
-                                : 0;
+                    {
+                        serialNo: 0,
 
-                        const expense =
-                            txn.direction === TransactionDirection.OUTWARD
-                                ? Number(txn.amount)
-                                : 0;
+                        date:
+                            startDate
+                                ? formatISTDate(startDate)
+                                : formatISTDate(
+                                    branch.createdAt
+                                ),
 
-                        balance =
-                            balance + income - expense;
+                        description:
+                            "Opening Balance",
 
-                        let description = "";
+                        income: 0,
 
-                        if (
-                            txn.thirdPartyAgency
-                        ) {
+                        expense: 0,
 
-                            description =
-                                `${txn.thirdPartyAgency?.name} paid on behalf of ${txn.agency?.name}`;
+                        balance:
+                            openingBalance
+                    },
 
-                        } else if (
-                            txn.direction === TransactionDirection.INWARD
-                        ) {
+                    ...transactions.map(
+                        (txn, index) => {
 
-                            description =
-                                `Amount received from ${txn.agency?.name}`;
+                            const income =
+                                txn.direction ===
+                                    TransactionDirection.INWARD
+                                    ? Number(txn.amount)
+                                    : 0;
 
-                        } else {
+                            const expense =
+                                txn.direction ===
+                                    TransactionDirection.OUTWARD
+                                    ? Number(txn.amount)
+                                    : 0;
 
-                            description =
-                                `Amount paid to ${txn.agency?.name}`;
+                            balance =
+                                balance +
+                                income -
+                                expense;
+
+                            let description = "";
+
+                            if (
+                                txn.thirdPartyAgency
+                            ) {
+
+                                description =
+                                    `${txn.thirdPartyAgency.name} paid on behalf of ${txn.agency?.name}`;
+
+                            } else if (
+                                txn.direction ===
+                                TransactionDirection.INWARD
+                            ) {
+
+                                description =
+                                    `Amount received from ${txn.agency?.name}`;
+
+                            } else {
+
+                                description =
+                                    `Amount paid to ${txn.agency?.name}`;
+                            }
+
+                            return {
+
+                                serialNo:
+                                    index + 1,
+
+                                date:
+                                    formatISTDate(
+                                        txn.createdAt
+                                    ),
+
+                                description,
+
+                                income,
+
+                                expense,
+
+                                balance
+                            };
                         }
-
-                        return {
-
-                            serialNo:
-                                index + 1,
-
-                            date:
-                                (formatISTDate(txn.createdAt)),
-
-                            description,
-
-                            income,
-
-                            expense,
-
-                            balance
-                        };
-                    });
+                    )
+                ];
 
                 return {
 
@@ -1845,21 +1914,30 @@ export class LedgerService {
                         name: branch.name
                     },
 
-                    category: "ACCOUNTING_LEDGER",
+                    category:
+                        "ACCOUNTING_LEDGER",
 
                     summary: {
 
-                        openingBalance: 0,
+                        openingBalance,
 
                         totalIncome:
                             entries.reduce(
-                                (s, x) => s + x.income,
+                                (sum, row) =>
+                                    sum +
+                                    Number(
+                                        row.income || 0
+                                    ),
                                 0
                             ),
 
                         totalExpense:
                             entries.reduce(
-                                (s, x) => s + x.expense,
+                                (sum, row) =>
+                                    sum +
+                                    Number(
+                                        row.expense || 0
+                                    ),
                                 0
                             ),
 
@@ -2349,36 +2427,41 @@ export class LedgerService {
                         }
                     );
 
-                    let openingBalance =
-                        Number(
+                let openingBalance =
+                    startDate
+                        ? Number(
                             statement.summary.openingBalance || 0
-                        );
+                        )
+                        : 0;
 
                 let totalPurchases = 0;
                 let totalPayments = 0;
 
                 const entries = [
 
-                    ...(startDate
-                        ? [{
-                            date:
-                                formatISTDate(startDate),
+                    {
+                        date:
+                            startDate
+                                ? formatISTDate(startDate)
+                                : formatISTDate(
+                                    ledger.createdAt
+                                ),
 
-                            voucherNo:
-                                "OB",
+                        voucherNo:
+                            "OB",
 
-                            particular:
-                                "Opening Balance",
+                        particular:
+                            "Opening Balance",
 
-                            debit: 0,
+                        debit:
+                            0,
 
-                            credit: 0,
+                        credit:
+                            0,
 
-                            balance:
-                                openingBalance
-                        }]
-                        : []
-                    ),
+                        balance:
+                            openingBalance
+                    },
                 
                     ...statement.entries
                         .filter(
