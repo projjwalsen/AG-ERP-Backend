@@ -161,53 +161,17 @@ export const getCompanyLedger = async (
 
         if (isExport) {
 
-            return ExcelService.export(
+            return ExcelService.exportAccountingLedger(
                 res,
                 {
                     filename:
                         "company-ledger",
 
-                    sheetName:
-                        "Company Ledger",
+                    title:
+                        "ASHTAVINAYAKA COMPANY LEDGER",
 
-                    columns: [
-
-                        {
-                            header: "Serial No",
-                            key: "serialNo",
-                            width: 12
-                        },
-
-                        {
-                            header: "Date",
-                            key: "date",
-                            width: 18
-                        },
-
-                        {
-                            header: "Description",
-                            key: "description",
-                            width: 60
-                        },
-
-                        {
-                            header: "Income",
-                            key: "income",
-                            width: 18
-                        },
-
-                        {
-                            header: "Expense",
-                            key: "expense",
-                            width: 18
-                        },
-
-                        {
-                            header: "Balance",
-                            key: "balance",
-                            width: 18
-                        }
-                    ],
+                    period:
+                        `${query.startDate || ""} - ${query.endDate || ""}`,
 
                     data:
                         result.entries
@@ -277,12 +241,19 @@ export const getLedgerByBranchId = async (
                 | "GST"
                 | undefined;
         const isExport = (req as any).query.export === "true" || false;
+        const query = {
+            startDate:
+                req.query.startDate as string,
+            endDate:
+                req.query.endDate as string,
+        }
 
         const result =
             await LedgerService.getLedgerByBranchId(
                 actor,
                 branchId,
-                category
+                category,
+                query
             );
 
         if (isExport) {
@@ -291,31 +262,39 @@ export const getLedgerByBranchId = async (
 
                 case "ACCOUNTING_LEDGER":
 
-                    return ExcelService.export(
+                    return ExcelService.exportAccountingLedger(
                         res,
                         {
-                            filename: "accounting-ledger",
+                            filename:
+                                `branch-ledger-${result.branch.code}`,
 
-                            sheetName: "Accounting Ledger",
+                            title:
+                                `${result.branch.name} BRANCH LEDGER`,
 
-                            columns: bankAccCashColumns,
+                            period:
+                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
 
-                            data: result.entries as any[]
+                            data:
+                                result.entries
                         }
                     );
 
                 case "CASH":
 
-                    return ExcelService.export(
+                    return ExcelService.exportAccountingLedger(
                         res,
                         {
-                            filename: "cash-book",
+                            filename:
+                                `branch-ledger-${result.branch.code}`,
 
-                            sheetName: "Cash Book",
+                            title:
+                                `${result.branch.name} BRANCH LEDGER`,
 
-                            columns: bankAccCashColumns,
+                            period:
+                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
 
-                            data: result.entries as any[]
+                            data:
+                                result.entries
                         }
                     );
 
@@ -477,11 +456,19 @@ export const getLedgerByAgencyId = async (
         const isExport =
             req.query.export === "true";
 
+        const query = {
+            startDate:
+                req.query.startDate as string,
+            endDate:
+                req.query.endDate as string,
+        }
+
         const result =
             await LedgerService.getLedgerByAgencyId(
                 actor,
                 agencyId,
-                category
+                category,
+                query
             );
 
         if (isExport) {

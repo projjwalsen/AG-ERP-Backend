@@ -1210,7 +1210,11 @@ export class LedgerService {
             | "CASH"
             | "GST"
             | "DEBTORS"
-            | "CREDITORS"
+            | "CREDITORS",
+             query?: {
+                startDate?: string;
+                endDate?: string;
+            }
     ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
@@ -1225,6 +1229,22 @@ export class LedgerService {
                 403
             );
         }
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : undefined;
 
         const branch =
             await prisma.branch.findUnique({
@@ -1393,14 +1413,29 @@ export class LedgerService {
                 const transactions =
                     await prisma.transaction.findMany({
 
-                        where: {
+                       where: {
 
-                            branchId,
+                        branchId,
 
-                            status: TransactionStatus.APPROVED,
+                        status:
+                            TransactionStatus.APPROVED,
 
-                            paymentMode: PaymentMode.OFFLINE
-                        },
+                        paymentMode:
+                            PaymentMode.OFFLINE,
+
+                        ...(startDate || endDate
+                            ? {
+                                createdAt: {
+                                    ...(startDate && {
+                                        gte: startDate
+                                    }),
+                                    ...(endDate && {
+                                        lte: endDate
+                                    })
+                                }
+                            }
+                            : {})
+                    },
 
                         include: {
                             agency: true,
@@ -1694,8 +1729,24 @@ export class LedgerService {
                     await prisma.transaction.findMany({
 
                         where: {
+
                             branchId,
-                            status: TransactionStatus.APPROVED
+
+                            status:
+                                TransactionStatus.APPROVED,
+
+                            ...(startDate || endDate
+                                ? {
+                                    createdAt: {
+                                        ...(startDate && {
+                                            gte: startDate
+                                        }),
+                                        ...(endDate && {
+                                            lte: endDate
+                                        })
+                                    }
+                                }
+                                : {})
                         },
 
                         include: {
@@ -1809,7 +1860,11 @@ export class LedgerService {
             | "ACCOUNTING_LEDGER"
             | "CASH"
             | "DEBTORS"
-            | "CREDITORS"
+            | "CREDITORS",
+             query?: {
+                startDate?: string;
+                endDate?: string;
+            }
     ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
@@ -1825,6 +1880,22 @@ export class LedgerService {
         if (!agency) {
             throw new ApiError("Agency not found", 404);
         }
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : undefined;
 
         const ledgers = await prisma.ledger.findMany({
             where: {
@@ -2248,31 +2319,46 @@ export class LedgerService {
                 const statement =
                     await this.getLedgerStatement(
                         actor,
-                        ledger.id
+                        ledger.id,
+                        {
+                            startDate:
+                                query?.startDate,
+
+                            endDate:
+                                query?.endDate
+                        }
                     );
+
+                    let openingBalance =
+                        Number(
+                            statement.summary.openingBalance || 0
+                        );
 
                 let totalPurchases = 0;
                 let totalPayments = 0;
 
                 const entries = [
 
-                    {
-                        date: null,
+                    ...(startDate
+                        ? [{
+                            date:
+                                formatISTDate(startDate),
 
-                        voucherNo: "OB",
+                            voucherNo:
+                                "OB",
 
-                        particular: "Opening Balance",
+                            particular:
+                                "Opening Balance",
 
-                        debit: 0,
+                            debit: 0,
 
-                        credit: 0,
+                            credit: 0,
 
-                        balance:
-                            Number(
-                                statement.summary.openingBalance || 0
-                            )
-                    },
-
+                            balance:
+                                openingBalance
+                        }]
+                        : []
+                    ),
                 
                     ...statement.entries
                         .filter(
@@ -2359,9 +2445,7 @@ export class LedgerService {
                     summary: {
 
                         openingBalance:
-                            Number(
-                                statement.summary.openingBalance || 0
-                            ),
+                            money(openingBalance),
 
                         totalPurchases:
                             money(totalPurchases),
@@ -2370,11 +2454,12 @@ export class LedgerService {
                             money(totalPayments),
 
                         closingBalance:
-                            Number(
-                                statement.summary.closingBalance || 0
+                            money(
+                                openingBalance +
+                                totalPurchases -
+                                totalPayments
                             )
                     },
-
                     entries
                 };
             }

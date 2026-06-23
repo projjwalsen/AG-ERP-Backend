@@ -333,4 +333,169 @@ export class ExcelService {
 
         return output;
     }
+
+    static async exportAccountingLedger(
+        res: Response,
+        options: {
+            filename: string;
+            sheetName?: string;
+            title: string;
+            period?: string;
+            data: any[];
+        }
+    ) {
+
+        const workbook =
+            new ExcelJS.Workbook();
+
+        const worksheet =
+            workbook.addWorksheet(
+                options.sheetName ||
+                "Accounting Ledger"
+            );
+
+        /**
+         * Title
+         */
+        worksheet.mergeCells("B2:F2");
+
+        const titleCell =
+            worksheet.getCell("B2");
+
+        titleCell.value =
+            options.title;
+
+        titleCell.font = {
+            bold: true,
+            size: 16
+        };
+
+        /**
+         * Period
+         */
+        worksheet.getCell("E3").value =
+            "Time Period:";
+
+        worksheet.getCell("E4").value =
+            options.period || "";
+
+        /**
+         * Header
+         */
+        const headerRow =
+            worksheet.getRow(6);
+
+        headerRow.values = [
+            "",
+            "NO",
+            "DATE",
+            "DESCRIPTION",
+            "INCOME",
+            "EXPENSE",
+            "BALANCE"
+        ];
+
+        headerRow.eachCell(cell => {
+
+            cell.font = {
+                bold: true
+            };
+
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: {
+                    argb: "FFF3E242"
+                }
+            };
+
+            cell.border = {
+                top: { style: "thin" },
+                left: { style: "thin" },
+                right: { style: "thin" },
+                bottom: { style: "thin" }
+            };
+
+            cell.alignment = {
+                vertical: "middle",
+                horizontal: "center"
+            };
+        });
+
+        worksheet.columns = [
+
+            { width: 3 },
+
+            { width: 10 },
+
+            { width: 18 },
+
+            { width: 55 },
+
+            { width: 18 },
+
+            { width: 18 },
+
+            { width: 18 }
+        ];
+
+        /**
+         * Data
+         */
+        options.data.forEach(
+            (row, index) => {
+
+                const excelRow =
+                    worksheet.addRow([
+                        "",
+                        index + 1,
+                        row.date,
+                        row.description,
+                        row.income || 0,
+                        row.expense || 0,
+                        row.balance || 0
+                    ]);
+
+                excelRow.height = 22;
+
+                excelRow.eachCell(cell => {
+
+                    cell.border = {
+                        top: { style: "thin" },
+                        left: { style: "thin" },
+                        right: { style: "thin" },
+                        bottom: { style: "thin" }
+                    };
+                });
+
+                excelRow.getCell(3).numFmt =
+                    "dd-mmm-yyyy";
+
+                excelRow.getCell(5).numFmt =
+                    "#,##0.00";
+
+                excelRow.getCell(6).numFmt =
+                    "#,##0.00";
+
+                excelRow.getCell(7).numFmt =
+                    "#,##0.00";
+            }
+        );
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${options.filename}.xlsx"`
+        );
+
+        await workbook.xlsx.write(
+            res as any
+        );
+
+        res.end();
+    }
 }
