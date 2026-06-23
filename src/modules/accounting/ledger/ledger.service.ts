@@ -1246,6 +1246,26 @@ export class LedgerService {
                 )
                 : undefined;
 
+                if (startDate) {
+
+                    startDate.setHours(
+                        0,
+                        0,
+                        0,
+                        0
+                    );
+                }
+
+                if (endDate) {
+
+                    endDate.setHours(
+                        23,
+                        59,
+                        59,
+                        999
+                    );
+                }
+
         const branch =
             await prisma.branch.findUnique({
                 where: {
