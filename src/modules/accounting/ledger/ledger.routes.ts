@@ -9,7 +9,8 @@ import {
     getLedgerByBranchId,
     getLedgerByAgencyId,
     getLedgerBySuspenseId,
-    getCompanyLedger
+    getCompanyLedger,
+    getGSTLedger
 } from "./ledger.controller";
 import { authMiddleware } from "../../../core/middleware/auth";
 
@@ -273,6 +274,11 @@ router.get(
     "/company-ledger",
     getCompanyLedger
 );
+
+router.get(
+    "/gst-ledger",
+    getGSTLedger
+)
 
 
 

@@ -4303,4 +4303,385 @@ export class LedgerService {
             ]
         }, tx);
     }
+
+
+    static async getGSTLedger(
+        actor: any,
+        query?: {
+            branchId?: string;
+            startDate?: string;
+            endDate?: string;
+            export?: boolean;
+        }
+    ) {
+
+        if (!actor?.id) {
+            throw new ApiError(
+                "Unauthorized",
+                401
+            );
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query?.branchId
+                : actor.branchId;
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : new Date();
+
+        if (startDate) {
+            startDate.setHours(
+                0,
+                0,
+                0,
+                0
+            );
+        }
+
+        if (endDate) {
+            endDate.setHours(
+                23,
+                59,
+                59,
+                999
+            );
+        }
+
+        const purchases =
+            await prisma.purchase.findMany({
+
+                where: {
+
+                    status: "APPROVED",
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            createdAt: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
+                },
+
+                include: {
+                    agency: true
+                },
+
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+        const sales =
+            await prisma.sale.findMany({
+
+                where: {
+
+                    status: "APPROVED",
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            createdAt: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
+                },
+
+                include: {
+                    agency: true
+                },
+
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+        const inputGSTEntries =
+            purchases.map(p => {
+
+                const taxable =
+                    Number(p.subtotalAmount);
+
+                const gst =
+                    Number(p.totalGSTAmount);
+
+                const isInterState =
+                    false;
+
+                return {
+
+                    date:
+                        formatISTDate(
+                            p.createdAt
+                        ),
+
+                    particulars:
+                        `Purchase from ${p.agency.name}`,
+
+                    voucherNo:
+                        p.invoiceNo,
+
+                    taxableValue:
+                        taxable,
+
+                    cgst:
+                        isInterState
+                            ? 0
+                            : gst / 2,
+
+                    sgst:
+                        isInterState
+                            ? 0
+                            : gst / 2,
+
+                    igst:
+                        isInterState
+                            ? gst
+                            : 0,
+
+                    totalGST:
+                        gst
+                };
+            });
+
+        const outputGSTEntries =
+            sales.map(s => {
+
+                const taxable =
+                    Number(s.subTotalAmount);
+
+                const cgst =
+                    Number(
+                        s.totalCGSTAmount
+                    );
+
+                const sgst =
+                    Number(
+                        s.totalSGSTAmount
+                    );
+
+                const igst =
+                    Number(
+                        s.totalIGSTAmount
+                    );
+
+                return {
+
+                    date:
+                        formatISTDate(
+                            s.createdAt
+                        ),
+
+                    particulars:
+                        `Sales to ${s.agency.name}`,
+
+                    voucherNo:
+                        s.invoiceNo,
+
+                    taxableValue:
+                        taxable,
+
+                    cgst,
+
+                    sgst,
+
+                    igst,
+
+                    totalGST:
+                        cgst +
+                        sgst +
+                        igst
+                };
+            });
+
+        const totalInputGST = {
+
+            taxableValue:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.taxableValue,
+                    0
+                ),
+
+            cgst:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.cgst,
+                    0
+                ),
+
+            sgst:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.sgst,
+                    0
+                ),
+
+            igst:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.igst,
+                    0
+                ),
+
+            totalGST:
+                inputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.totalGST,
+                    0
+                )
+        };
+
+        const totalOutputGST = {
+
+            taxableValue:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.taxableValue,
+                    0
+                ),
+
+            cgst:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.cgst,
+                    0
+                ),
+
+            sgst:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.sgst,
+                    0
+                ),
+
+            igst:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.igst,
+                    0
+                ),
+
+            totalGST:
+                outputGSTEntries.reduce(
+                    (s, x) =>
+                        s + x.totalGST,
+                    0
+                )
+        };
+
+        return {
+
+            company: {
+                name:
+                    "ASHTAVINAYAKA"
+            },
+
+            period: {
+                startDate,
+                endDate
+            },
+
+            inputGSTLedger: {
+                entries:
+                    inputGSTEntries,
+
+                totals:
+                    totalInputGST
+            },
+
+            outputGSTLedger: {
+                entries:
+                    outputGSTEntries,
+
+                totals:
+                    totalOutputGST
+            },
+
+            liabilitySummary: {
+
+                cgst: {
+                    output:
+                        totalOutputGST.cgst,
+
+                    input:
+                        totalInputGST.cgst,
+
+                    payable:
+                        totalOutputGST.cgst -
+                        totalInputGST.cgst
+                },
+
+                sgst: {
+                    output:
+                        totalOutputGST.sgst,
+
+                    input:
+                        totalInputGST.sgst,
+
+                    payable:
+                        totalOutputGST.sgst -
+                        totalInputGST.sgst
+                },
+
+                igst: {
+                    output:
+                        totalOutputGST.igst,
+
+                    input:
+                        totalInputGST.igst,
+
+                    payable:
+                        totalOutputGST.igst -
+                        totalInputGST.igst
+                },
+
+                total: {
+
+                    output:
+                        totalOutputGST.totalGST,
+
+                    input:
+                        totalInputGST.totalGST,
+
+                    payable:
+                        totalOutputGST.totalGST -
+                        totalInputGST.totalGST
+                }
+            }
+        };
+    }
 }

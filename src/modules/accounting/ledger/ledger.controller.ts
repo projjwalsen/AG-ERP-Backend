@@ -622,6 +622,63 @@ export const getLedgerByAgencyId = async (
     }
 };
 
+export const getGSTLedger =
+async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+
+    try {
+
+        const actor =
+            (req as any).user;
+
+        const result =
+            await LedgerService.getGSTLedger(
+                actor,
+                {
+                    branchId:
+                        req.query.branchId as string,
+
+                    startDate:
+                        req.query.startDate as string,
+
+                    endDate:
+                        req.query.endDate as string
+                }
+            );
+
+        const isExport =
+            String(
+                req.query.export
+            ).toLowerCase() === "true";
+
+        if (isExport) {
+
+            return ExcelService.exportGSTLedger(
+                res,
+                result
+            );
+        }
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "GST Ledger fetched successfully",
+
+            data:
+                result
+        });
+
+    } catch (error) {
+
+        next(error);
+    }
+};
+
 
 export const getLedgerBySuspenseId = async (
     req: Request,
