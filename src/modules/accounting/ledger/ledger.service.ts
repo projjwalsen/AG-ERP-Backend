@@ -1890,9 +1890,9 @@ export class LedgerService {
                                     index + 1,
 
                                 date:
-                                    formatISTDate(
-                                        txn.createdAt
-                                    ),
+                                    startDate
+                                        ? formatISTDate(startDate)
+                                        : "",
 
                                 description,
 
