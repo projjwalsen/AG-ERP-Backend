@@ -1749,6 +1749,18 @@ export class LedgerService {
 
                 if (startDate) {
 
+                    const previousDayEnd =
+                        startDate
+                            ? new Date(startDate)
+                            : null;
+
+                    if (previousDayEnd) {
+
+                        previousDayEnd.setMilliseconds(
+                            previousDayEnd.getMilliseconds() - 1
+                        );
+                    }
+
                     const previousTransactions =
                         await prisma.transaction.findMany({
 
@@ -1759,11 +1771,14 @@ export class LedgerService {
                                 status:
                                     TransactionStatus.APPROVED,
 
-                                createdAt: {
-                                    lt: startDate
-                                }
+                                ...(previousDayEnd && {
+                                    createdAt: {
+                                        lte: previousDayEnd
+                                    }
+                                })
                             }
                         });
+
 
                     openingBalance =
                         previousTransactions.reduce(
@@ -1815,6 +1830,7 @@ export class LedgerService {
                             createdAt: "asc"
                         }
                     });
+                    
 
                 let balance = openingBalance;
 
