@@ -118,6 +118,122 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
     }
 };
 
+export const getCompanyLedger = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor =
+            (req as any).user;
+
+        const query = {
+
+            branchId:
+                req.query.branchId as string,
+
+            startDate:
+                req.query.startDate as string,
+
+            endDate:
+                req.query.endDate as string,
+
+            page:
+                Number(req.query.page || 1),
+
+            limit:
+                Number(req.query.limit || 50)
+        };
+
+        const isExport =
+            String(req.query.export)
+                .toLowerCase() === "true";
+
+        const result =
+            await LedgerService.getCompanyLedger(
+                actor,
+                {
+                    ...query,
+                    export: isExport
+                }
+            );
+
+        if (isExport) {
+
+            return ExcelService.export(
+                res,
+                {
+                    filename:
+                        "company-ledger",
+
+                    sheetName:
+                        "Company Ledger",
+
+                    columns: [
+
+                        {
+                            header: "Serial No",
+                            key: "serialNo",
+                            width: 12
+                        },
+
+                        {
+                            header: "Date",
+                            key: "date",
+                            width: 18
+                        },
+
+                        {
+                            header: "Description",
+                            key: "description",
+                            width: 60
+                        },
+
+                        {
+                            header: "Income",
+                            key: "income",
+                            width: 18
+                        },
+
+                        {
+                            header: "Expense",
+                            key: "expense",
+                            width: 18
+                        },
+
+                        {
+                            header: "Balance",
+                            key: "balance",
+                            width: 18
+                        }
+                    ],
+
+                    data:
+                        result.entries
+                }
+            );
+        }
+
+        return res.status(200).json({
+
+            success: true,
+
+            message:
+                "Company ledger fetched successfully",
+
+            data:
+                result
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+
+
 /**
  * @route   GET /api/ledgers/:id
  * @desc    Get a single ledger by ID with current balance

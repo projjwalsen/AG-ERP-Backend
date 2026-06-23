@@ -2381,6 +2381,298 @@ export class LedgerService {
         }
     }
 
+    static async getCompanyLedger(
+        actor: any,
+        query?: {
+            branchId?: string;
+            startDate?: string;
+            endDate?: string;
+            page?: number;
+            limit?: number;
+            export?: boolean;
+        }
+    ) {
+
+        if (!actor?.id) {
+            throw new ApiError(
+                "Unauthorized",
+                401
+            );
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query?.branchId
+                : actor.branchId;
+
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : undefined;
+
+        const transactions =
+            await prisma.transaction.findMany({
+
+                where: {
+
+                    status:
+                        TransactionStatus.APPROVED,
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            createdAt: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
+                },
+
+                include: {
+                    agency: true,
+                    thirdPartyAgency: true,
+                    branch: true
+                },
+
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+        const rows: any[] = [];
+
+        let runningBalance = 0;
+
+        let serialNo = 1;
+
+        for (const txn of transactions) {
+
+            const amount =
+                Number(txn.amount);
+
+            /**
+             * NORMAL TRANSACTION
+             */
+            if (!txn.thirdPartyAgencyId) {
+
+                const income =
+                    txn.direction ===
+                        TransactionDirection.INWARD
+                        ? amount
+                        : 0;
+
+                const expense =
+                    txn.direction ===
+                        TransactionDirection.OUTWARD
+                        ? amount
+                        : 0;
+
+                runningBalance =
+                    runningBalance +
+                    income -
+                    expense;
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    description:
+                        txn.direction ===
+                            TransactionDirection.INWARD
+                            ? `Amount received from ${txn.agency?.name}`
+                            : `Amount paid to ${txn.agency?.name}`,
+
+                    income,
+
+                    expense,
+
+                    balance:
+                        runningBalance
+                });
+
+                continue;
+            }
+
+            /**
+             * THIRD PARTY INWARD
+             *
+             * Tata Steel owes us
+             * Apex pays us
+             */
+
+            if (
+                txn.direction ===
+                TransactionDirection.INWARD
+            ) {
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    description:
+                        `Amount received from ${txn.agency?.name}`,
+
+                    income:
+                        amount,
+
+                    expense:
+                        0,
+
+                    balance:
+                        runningBalance += amount
+                });
+
+                rows.push({
+
+                    serialNo:
+                        serialNo++,
+
+                    date:
+                        formatISTDate(
+                            txn.createdAt
+                        ),
+
+                    description:
+                        `Amount paid by ${txn.thirdPartyAgency?.name} on behalf of ${txn.agency?.name}`,
+
+                    income:
+                        0,
+
+                    expense:
+                        amount,
+
+                    balance:
+                        runningBalance -= amount
+                });
+
+                continue;
+            }
+
+            /**
+             * THIRD PARTY OUTWARD
+             *
+             * We owe Tata
+             * Paid through Apex
+             */
+
+            rows.push({
+
+                serialNo:
+                    serialNo++,
+
+                date:
+                    formatISTDate(
+                        txn.createdAt
+                    ),
+
+                description:
+                    `Amount paid to ${txn.agency?.name}`,
+
+                income:
+                    0,
+
+                expense:
+                    amount,
+
+                balance:
+                    runningBalance -= amount
+            });
+
+            rows.push({
+
+                serialNo:
+                    serialNo++,
+
+                date:
+                    formatISTDate(
+                        txn.createdAt
+                    ),
+
+                description:
+                    `Amount recovered from ${txn.thirdPartyAgency?.name} against payment for ${txn.agency?.name}`,
+
+                income:
+                    amount,
+
+                expense:
+                    0,
+
+                balance:
+                    runningBalance += amount
+            });
+        }
+
+        return {
+
+            company: {
+                name:
+                    "ASHTAVINAYAKA"
+            },
+
+            summary: {
+
+                totalIncome:
+                    money(
+                        rows.reduce(
+                            (s, x) =>
+                                s + x.income,
+                            0
+                        )
+                    ),
+
+                totalExpense:
+                    money(
+                        rows.reduce(
+                            (s, x) =>
+                                s + x.expense,
+                            0
+                        )
+                    ),
+
+                closingBalance:
+                    money(runningBalance)
+            },
+
+            entries:
+                rows
+        };
+    }
+
+
+
+
+
     static async getLedgerBySuspenseId(
         actor: any,
         branchId: string,
