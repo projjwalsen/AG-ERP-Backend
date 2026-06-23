@@ -1972,22 +1972,20 @@ export class LedgerService {
                     if (
                         ledger.category === LedgerType.CUSTOMER
                     ) {
+
                         amountReceivable +=
-                            Math.max(
-                                balance.closingBalance,
-                                0
+                            Math.abs(
+                                balance.closingBalance
                             );
                     }
 
                     if (
                         ledger.category === LedgerType.VENDOR
                     ) {
+
                         amountPayable +=
                             Math.abs(
-                                Math.min(
-                                    balance.closingBalance,
-                                    0
-                                )
+                                balance.closingBalance
                             );
                     }
                 }
