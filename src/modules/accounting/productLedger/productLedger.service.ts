@@ -102,7 +102,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.OPENING_BALANCE,
-            direction: ProductMovementDirection.DEBIT,
+            direction: ProductMovementDirection.CREDIT,
             quantityKG: payload.quantity,
             quantityLTR: undefined,
             unit: payload.unit,
@@ -147,7 +147,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.PURCHASE,
-            direction: ProductMovementDirection.DEBIT,
+            direction: ProductMovementDirection.CREDIT,
             quantityKG: Number(purchaseItem.quantity),
             quantityLTR: undefined,
             unit: purchaseItem.unit,
@@ -196,7 +196,7 @@ export class ProductLedgerService {
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.SALE,
-            direction: ProductMovementDirection.CREDIT,
+            direction: ProductMovementDirection.DEBIT,
             quantityKG: Number(saleItem.quantity),
             quantityLTR: undefined,
             unit: saleItem.unit,
@@ -324,7 +324,7 @@ export class ProductLedgerService {
             const quantityKG = Number(entry.quantityKG);
             const quantityLTR = entry.quantityLTR ? Number(entry.quantityLTR) : 0;
 
-            if (entry.direction === ProductMovementDirection.DEBIT) {
+            if (entry.direction === ProductMovementDirection.CREDIT) {
                 balanceKG += quantityKG;
                 balanceLTR += quantityLTR;
             } else {
@@ -383,6 +383,7 @@ export class ProductLedgerService {
             branchId?: string;
             startDate?: string;
             endDate?: string;
+            export?: boolean;
         },
         tx?: Prisma.TransactionClient
     ) {
@@ -457,13 +458,16 @@ export class ProductLedgerService {
             }
             : null;
 
-        let openingStockKG = 0;
+        let openingStockKG =
+            Number(product.openingStockKG || 0);
 
         if (ledger && priorWhere) {
 
             const priorEntries =
                 await client.productLedgerEntry.findMany({
+
                     where: priorWhere,
+
                     select: {
                         direction: true,
                         quantityKG: true
@@ -476,11 +480,13 @@ export class ProductLedgerService {
                     const qty =
                         Number(row.quantityKG);
 
-                    return row.direction === ProductMovementDirection.CREDIT
-                    ? total + qty
-                    : total - qty;
-                }, 0);
-        }        
+                    return row.direction ===
+                        ProductMovementDirection.CREDIT
+                            ? total + qty
+                            : total - qty;
+
+                }, openingStockKG);
+        }
 
         // 3. Stock + analytics (safe even without ledger)
         const [globalStock, branchWiseStock, analytics] = await Promise.all([
@@ -516,8 +522,7 @@ export class ProductLedgerService {
                         user: { select: { id: true, name: true, email: true } },
                     },
                     orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
-                    skip,
-                    take: limit,
+                    ...(query?.export ? {} : { skip, take: limit })
                 }),
                 client.productLedgerEntry.count({ where })
             ]);
@@ -526,15 +531,17 @@ export class ProductLedgerService {
 
             const movementRows: any[] = [];
 
-            if (startDate) {
+            if (startDate && openingStockKG !== 0) {
+
                 movementRows.push({
+
                     id: null,
 
                     movementType: "OPENING",
 
-                    direction: null,
+                    direction: ProductMovementDirection.CREDIT,
 
-                    quantityKG: 0,
+                    quantityKG: openingStockKG,
 
                     quantityLTR: null,
 
@@ -558,7 +565,7 @@ export class ProductLedgerService {
 
                     totalCost: null,
 
-                    remarks: "Opening Stock",
+                    remarks: "Adjusted Opening Stock",
 
                     entryDate: startDate,
 
@@ -574,9 +581,9 @@ export class ProductLedgerService {
                     const qty = Number(e.quantityKG);
 
                     runningStockKG =
-                        e.direction === ProductMovementDirection.CREDIT
-                            ? runningStockKG + qty
-                            : runningStockKG - qty;
+                    e.direction === ProductMovementDirection.CREDIT
+                        ? runningStockKG + qty
+                        : runningStockKG - qty;
 
                     return {
                         id: e.id,
@@ -677,22 +684,28 @@ export class ProductLedgerService {
                 : null,
 
             stock: {
-                globalStockKG: globalStock.globalStockKG,
-                globalStockLTR: globalStock.globalStockLTR,
+
+                globalStockKG:
+                    globalStock.globalStockKG,
+
+                globalStockLTR:
+                    globalStock.globalStockLTR,
 
                 openingStockKG:
                     startDate
                         ? openingStockKG
-                        : globalStock.globalStockKG,
+                        : Number(product.openingStockKG || 0),
 
                 closingStockKG:
                     startDate
                         ? closingStockKG
                         : globalStock.globalStockKG,
 
-                isLowStock: product.minimumStockKG
-                    ? globalStock.globalStockKG < Number(product.minimumStockKG)
-                    : false,
+                isLowStock:
+                    product.minimumStockKG
+                        ? globalStock.globalStockKG <
+                        Number(product.minimumStockKG)
+                        : false
             },
 
             branchStock: branchWiseStock,

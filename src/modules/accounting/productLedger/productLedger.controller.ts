@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ProductLedgerService } from "./productLedger.service";
 import { ProductMovementType } from "@prisma/client";
 import { ExcelService } from "../../../core/utils/export.service";
-import { productLedgerColumns } from "../../exports/product.export";
+import { productLedgerColumns, productMovementColumns } from "../../exports/product.export";
 
 /**
  * ========================================
@@ -56,8 +56,29 @@ export const getProductLedgerDetail = async (
             endDate:
                 req.query.endDate as string | undefined,
         };
+        const isExport = (req.query.export as string) === "true" || false;
 
-        const detail = await ProductLedgerService.getProductDetails(productId, query);
+        const detail = await ProductLedgerService.getProductDetails(productId, { ...query, export: isExport });
+
+        if (isExport) {
+
+            return ExcelService.export(
+                res,
+                {
+                    filename:
+                        `product_movements_${detail.product.sku}`,
+
+                    sheetName:
+                        detail.product.name,
+
+                    columns:
+                        productMovementColumns,
+
+                    data:
+                        detail.movements.entries
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,

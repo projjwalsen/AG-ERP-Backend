@@ -52,6 +52,13 @@ router.use(authMiddleware)
  *           type: string
  *           format: date
  *         example: 2026-06-30
+ * 
+ *       - in: query
+ *         name: export
+ *         required: false
+ *         schema:
+ *          type: string
+ *         description: Flag to indicate if the report should be exported.
  *
  *     responses:
  *       200:

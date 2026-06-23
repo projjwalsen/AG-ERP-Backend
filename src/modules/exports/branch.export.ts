@@ -84,28 +84,96 @@ export const branchColumns: ExportColumn<any>[] = [
 ];
 
 export const branchDayBookColumns = [
-    { header: "Serial No", key: "serialNo" },
-    { header: "Voucher ID", key: "voucherId" },
-    { header: "Transaction Date", key: "transactionDate" },
-    { header: "Agency", key: "primaryAgencyName" },
-    { header: "Payment Mode", key: "paymentMode" },
-    { header: "Payment Type", key: "paymentType" },
-    { header: "Reference", key: "transactionRef" },
-    { header: "Receipt", key: "cashInFlowReceipt" },
-    { header: "Remarks", key: "remarks" }
+    { header: "Serial No", key: "serialNo", width: 15 },
+    { header: "Voucher ID", key: "voucherId", width: 25 },
+    { header: "Transaction Date", key: "transactionDate", width: 25 },
+    { header: "Agency", key: "primaryAgencyName", width: 30 },
+    { header: "Third Party Agency", key: "secondaryAgencyName", width: 30 },
+    { header: "Payment Mode", key: "paymentMode", width: 20 },
+    { header: "Payment Type", key: "paymentType", width: 20 },
+    { header: "Reference", key: "transactionRef", width: 25 },
+    { header: "Debit", key: "debit", width: 15 },
+    { header: "Credit", key: "credit", width: 15 },
+    { header: "Balance", key: "runningBalance", width: 15 },
+    { header: "Remarks", key: "remarks", width: 40 }
 ];
 
 export const gstr1Columns = [
-    { header: "Classification", key: "classification" },
-    { header: "Customer GSTIN", key: "customer_gstin" },
-    { header: "Invoice No", key: "invoice_number" },
-    { header: "Invoice Date", key: "invoice_date" },
-    { header: "POS", key: "place_of_supply_pos" },
-    { header: "Taxable Value", key: "taxable_value" },
-    { header: "CGST", key: "cgst_rate_amount" },
-    { header: "SGST", key: "sgst_rate_amount" },
-    { header: "IGST", key: "igst_rate_amount" },
-    { header: "Invoice Total", key: "invoice_total" }
+    {
+        header: "Branch Name",
+        key: "branchName",
+        width: 25
+    },
+
+    {
+        header: "Branch GSTIN",
+        key: "branchGst",
+        width: 25
+    },
+
+    {
+        header: "Classification",
+        key: "classification",
+        width: 15
+    },
+
+    {
+        header: "Customer GSTIN",
+        key: "customer_gstin",
+        width: 25
+    },
+
+    {
+        header: "Invoice No",
+        key: "invoice_number",
+        width: 20
+    },
+
+    {
+        header: "Invoice Date",
+        value: row =>
+            row.invoice_date
+                ? new Date(row.invoice_date)
+                    .toLocaleDateString("en-IN")
+                : "",
+        width: 18
+    },
+
+    {
+        header: "Place Of Supply",
+        key: "place_of_supply_pos",
+        width: 20
+    },
+
+    {
+        header: "Taxable Value",
+        key: "taxable_value",
+        width: 18
+    },
+
+    {
+        header: "CGST Amount",
+        key: "cgst_rate_amount",
+        width: 18
+    },
+
+    {
+        header: "SGST Amount",
+        key: "sgst_rate_amount",
+        width: 18
+    },
+
+    {
+        header: "IGST Amount",
+        key: "igst_rate_amount",
+        width: 18
+    },
+
+    {
+        header: "Invoice Total",
+        key: "invoice_total",
+        width: 18
+    }
 ];
 
 export const gstSuspenseColumns = [
@@ -135,27 +203,249 @@ export const stockInventoryColumns = [
 ];
 
 export const outstandingColumns = [
-    { header: "Agency Name", key: "agency_name" },
-    { header: "Agency Type", key: "agency_type" },
-
     {
-        header: "Branch",
-        value: row => row.branch?.name
+        header: "Agency Name",
+        key: "agency_name",
+        width: 35
     },
 
     {
+        header: "Branch",
+        value: row => row.branch?.name,
+        width: 25
+    },
+
+    {
+        header: "GSTIN",
+        key: "gstin",
+        width: 25
+    },
+
+    {
+        header: "Outstanding Amount",
+        key: "total_outstanding",
+        width: 20
+    },
+
+    {
+        header: "Balance Type",
+        key: "balanceType",
+        width: 15
+    },
+
+    {
+        header: "Created At",
+        value: row =>
+            new Date(row.createdAt)
+                .toLocaleDateString("en-IN"),
+        width: 18
+    }
+];
+
+export const accountingLedgerColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Date",
+        key: "date",
+        width: 18
+    },
+
+    {
+        header: "Transaction No",
+        key: "transactionNo",
+        width: 25
+    },
+
+    {
+        header: "Direction",
+        key: "direction",
+        width: 15
+    },
+
+    {
+        header: "Agency",
+        key: "agency",
+        width: 35
+    },
+
+    {
+        header: "Payment Mode",
+        key: "paymentMode",
+        width: 20
+    },
+
+    {
+        header: "Reference No",
+        key: "transactionRefNo",
+        width: 25
+    },
+
+    {
+        header: "Inward",
+        key: "inward",
+        width: 18
+    },
+
+    {
+        header: "Outward",
+        key: "outward",
+        width: 18
+    },
+
+    {
+        header: "Running Balance",
+        key: "runningBalance",
+        width: 20
+    },
+];
+
+export const cashBookColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Date",
+        key: "date",
+        width: 18
+    },
+
+    {
+        header: "Voucher No",
+        key: "voucherNo",
+        width: 25
+    },
+
+    {
+        header: "Voucher Type",
+        key: "voucherType",
+        width: 20
+    },
+
+    {
+        header: "Particulars",
+        key: "particulars",
+        width: 40
+    },
+
+    {
+        header: "Receipt",
+        key: "receipt",
+        width: 18
+    },
+
+    {
+        header: "Payment",
+        key: "payment",
+        width: 18
+    },
+
+    {
+        header: "Narration",
+        key: "narration",
+        width: 50
+    }
+];
+
+export const debtorLedgerColumns: ExportColumn<any>[] = [
+
+    {
         header: "Ledger Code",
-        value: row => row.ledger?.code
+        key: "ledgerCode"
     },
 
     {
         header: "Ledger Name",
-        value: row => row.ledger?.name
+        key: "ledgerName"
     },
 
-    { header: "Opening Balance", key: "openingBalance" },
-    { header: "Debit", key: "debit" },
-    { header: "Credit", key: "credit" },
-    { header: "Outstanding", key: "total_outstanding" },
-    { header: "Balance Type", key: "balanceType" }
+    {
+        header: "Date",
+        key: "date"
+    },
+
+    {
+        header: "Voucher No",
+        key: "voucherNo"
+    },
+
+    {
+        header: "Voucher Type",
+        key: "voucherType"
+    },
+
+    {
+        header: "Debit",
+        key: "debit"
+    },
+
+    {
+        header: "Credit",
+        key: "credit"
+    },
+
+    {
+        header: "Running Balance",
+        key: "runningBalance"
+    },
+
+    {
+        header: "Balance Type",
+        key: "balanceType"
+    },
+
+    {
+        header: "Narration",
+        key: "narration"
+    }
+];
+
+export const creditorLedgerColumns: ExportColumn<any>[] = [
+
+    {
+        header: "Ledger Code",
+        key: "ledgerCode"
+    },
+
+    {
+        header: "Ledger Name",
+        key: "ledgerName"
+    },
+
+    {
+        header: "Date",
+        key: "date"
+    },
+
+    {
+        header: "Voucher No",
+        key: "voucherNo"
+    },
+
+    {
+        header: "Voucher Type",
+        key: "voucherType"
+    },
+
+    {
+        header: "Debit",
+        key: "debit"
+    },
+
+    {
+        header: "Credit",
+        key: "credit"
+    },
+
+    {
+        header: "Running Balance",
+        key: "runningBalance"
+    },
+
+    {
+        header: "Balance Type",
+        key: "balanceType"
+    },
+
+    {
+        header: "Narration",
+        key: "narration"
+    }
 ];

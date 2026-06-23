@@ -52,6 +52,7 @@ export class ReportingService {
             await prisma.transaction.findMany({
                 where: {
                     branchId,
+                    status: "APPROVED",
 
                     ...(startDate || endDate
                         ? {
@@ -77,53 +78,90 @@ export class ReportingService {
                 }
             });
 
-        const entries = 
-            transactions.map((txn, index) => ({
-                serialNo: index + 1,
+        let runningBalance = 0;
 
-                voucherId: txn.transactionNo,
+        const entries =
+            transactions.map((txn, index) => {
 
-                transactionId: txn.id,
+                const debit =
+                    txn.direction === TransactionDirection.INWARD
+                        ? Number(txn.amount)
+                        : 0;
 
-                transactionDate: txn.createdAt,
+                const credit =
+                    txn.direction === TransactionDirection.OUTWARD
+                        ? Number(txn.amount)
+                        : 0;
 
-                primaryAgencyName: txn.agency?.name || null,
+                runningBalance =
+                    runningBalance + debit - credit;
 
-                paymentMode: txn.paymentMode,
+                return {
 
-                paymentType: txn.paymentType,
+                    serialNo: index + 1,
 
-                transactionRef: txn.transactionRefNo ||
+                    voucherId: txn.transactionNo,
+
+                    transactionId: txn.id,
+
+                    transactionDate: txn.createdAt,
+
+                    primaryAgencyName:
+                        txn.agency?.name || null,
+
+                    secondaryAgencyName:
+                        txn.thirdPartyAgency?.name || null,
+
+                    paymentMode:
+                        txn.paymentMode,
+
+                    paymentType:
+                        txn.paymentType,
+
+                    transactionRef:
+                        txn.transactionRefNo ||
                         txn.referenceNo ||
                         null,
 
-                inRoutedVia: !!txn.thirdPartyAgencyId,
+                    inRoutedVia:
+                        !!txn.thirdPartyAgencyId,
 
-                secondaryAgencyName: txn.thirdPartyAgency?.name || null,
+                    debit,
 
-                cashInFlowReceipt: txn.direction === TransactionDirection.INWARD
-                        ? Number(txn.amount)
-                        : 0,
+                    credit,
 
-                remarks: txn.remarks,
+                    runningBalance,
 
-                allocations:
-                    txn.allocations.map((a) => ({
-                    sourceType:
-                        a.sourceType,
+                    remarks:
+                        txn.remarks,
 
-                    invoiceNo:
-                        a.sale?.invoiceNo ||
-                        a.purchase?.invoiceNo,
+                    allocations:
+                        txn.allocations.map(a => ({
+                            sourceType: a.sourceType,
 
-                    allocatedAmount:
-                        Number(a.allocatedAmount)
-                }))
-            })
-        );
+                            invoiceNo:
+                                a.sale?.invoiceNo ||
+                                a.purchase?.invoiceNo,
 
-        const totalReceipts = entries.reduce((sum, row) => sum + row.cashInFlowReceipt, 0);
-        const totalPayments = entries.reduce((sum, row) => sum + row.cashInFlowReceipt, 0);
+                            allocatedAmount:
+                                Number(a.allocatedAmount)
+                        }))
+                };
+            });
+
+        const totalReceipts =
+            entries.reduce(
+                (sum, row) =>
+                    sum + row.debit,
+                0
+            );
+
+        const totalPayments =
+            entries.reduce(
+                (sum, row) =>
+                    sum + row.credit,
+                0
+            );
 
         return {
             branch,
@@ -215,6 +253,9 @@ export class ReportingService {
                     branchStateCode === posStateCode;
 
                 return {
+                    branchName: sale.branch.name,
+
+                    branchGst: sale.branch.gstin,
 
                     classification,
 
@@ -703,38 +744,20 @@ export class ReportingService {
                         );
 
                     return {
-
                         agency_id:
                             ledger.agency?.id,
 
                         agency_name:
                             ledger.agency?.name,
 
-                        agency_type:
-                            ledger.agency?.type,
-
-                        branch: ledger.branch
-                            ? {
-                                id: ledger.branch.id,
-                                code: ledger.branch.code,
-                                name: ledger.branch.name
-                            }
-                            : null,
-
-                        ledger: {
-                            id: ledger.id,
-                            code: ledger.code,
-                            name: ledger.name
-                        },
-
-                        openingBalance:
-                                ledger.openingBalance,
-
-                        debit:
-                            balance.totalDebit,
-
-                        credit:
-                            balance.totalCredit,
+                        branch:
+                            ledger.branch
+                                ? {
+                                    id: ledger.branch.id,
+                                    code: ledger.branch.code,
+                                    name: ledger.branch.name
+                                }
+                                : null,
 
                         total_outstanding:
                             Math.abs(
@@ -751,10 +774,7 @@ export class ReportingService {
                             ledger.agency?.gstin,
 
                         createdAt:
-                            ledger.createdAt,
-
-                        updatedAt:
-                            ledger.updatedAt
+                            ledger.createdAt
                     };
                 })
             );

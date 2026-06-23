@@ -2,6 +2,7 @@ import { ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { convertKGToLTR } from "../../core/utils/density.utils";
+import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 
 type CreateProductPayload = {
     sku: string;
@@ -16,6 +17,7 @@ type CreateProductPayload = {
 
     operationalUnit: ProductUnit;
     minimumStockKG?: number;
+    openingStockKG?: number;
 
     sellPricePerUnit: number;
 }
@@ -102,6 +104,7 @@ export class ProductService {
                 density: payload.density,
                 operationalUnit: payload.operationalUnit || "LTR",
                 minimumStockKG: payload.minimumStockKG,
+                openingStockKG: payload.openingStockKG || 0,
                 sellPricePerUnit: normalizedPrice,
                 isActive: true
             },
@@ -117,11 +120,16 @@ export class ProductService {
                 applicableGST: true,
                 operationalUnit: true,
                 minimumStockKG: true,
+                openingStockKG: true,
                 sellPricePerUnit: true,
                 isActive: true,
                 createdAt: true,
             }
         });
+
+        await ProductLedgerService.getOrCreateProductLedger(
+            product.id
+        );
 
         return {
             ...product,
@@ -187,6 +195,7 @@ export class ProductService {
                     applicableGST: true,
                     operationalUnit: true,
                     minimumStockKG: true,
+                    openingStockKG: true,
                     sellPricePerUnit: true,
                     isActive: true,
                     createdAt: true,

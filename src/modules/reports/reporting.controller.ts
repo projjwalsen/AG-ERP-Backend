@@ -18,15 +18,19 @@ export const getBranchDayBook = async (
             startDate: (req as any).query.startDate as string,
             endDate: (req as any).query.endDate as string
         };
-        const isExport = (req as any).query.export === "true" || false;
+
+        console.log((req as any).query.export as string);
+        const isExport =
+            String(req.query.export).toLowerCase() === "true";
 
         const result = await ReportingService.getBranchDayBook(
             actor,
             branchId,
             query
         );
-
+        console.log("result", result.entries.length);
         if (isExport) {
+            console.log("Exporting branch day book report...");
             return ExcelService.export(
                 res,
                 {

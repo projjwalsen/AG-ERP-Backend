@@ -3,6 +3,7 @@ import { LedgerService } from "./ledger.service"; // Adjust path as needed
 import { LedgerType } from "@prisma/client";
 import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
 import { ExcelService } from "../../../core/utils/export.service";
+import { accountingLedgerColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
 
 /**
  * @route   POST /api/ledgers
@@ -159,6 +160,7 @@ export const getLedgerByBranchId = async (
                 | "CREDITORS"
                 | "GST"
                 | undefined;
+        const isExport = (req as any).query.export === "true" || false;
 
         const result =
             await LedgerService.getLedgerByBranchId(
@@ -166,6 +168,164 @@ export const getLedgerByBranchId = async (
                 branchId,
                 category
             );
+
+        if (isExport) {
+
+            switch (category) {
+
+                case "ACCOUNTING_LEDGER":
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename: "accounting-ledger",
+
+                            sheetName: "Accounting Ledger",
+
+                            columns: accountingLedgerColumns,
+
+                            data: result.entries as any[]
+                        }
+                    );
+
+                case "CASH":
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename: "cash-book",
+
+                            sheetName: "Cash Book",
+
+                            columns: cashBookColumns,
+
+                            data: result.entries as any[]
+                        }
+                    );
+
+                case "DEBTORS": {
+
+                    const rows:any[] = [];
+
+                    result.data.forEach((block:any) => {
+
+                        block.entries.forEach((entry:any) => {
+
+                            rows.push({
+
+                                ledgerCode:
+                                    block.ledger.code,
+
+                                ledgerName:
+                                    block.ledger.name,
+
+                                date:
+                                    entry.date,
+
+                                voucherNo:
+                                    entry.voucherNo,
+
+                                voucherType:
+                                    entry.voucherType,
+
+                                debit:
+                                    entry.debit,
+
+                                credit:
+                                    entry.credit,
+
+                                runningBalance:
+                                    entry.runningBalance,
+
+                                balanceType:
+                                    entry.balanceType,
+
+                                narration:
+                                    entry.narration
+                            });
+                        });
+                    });
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "debtors-ledger",
+
+                            sheetName:
+                                "Debtors",
+
+                            columns:
+                                debtorLedgerColumns,
+
+                            data:
+                                rows
+                        }
+                    );
+                }
+
+                case "CREDITORS": {
+
+                    const rows:any[] = [];
+
+                    result.data.forEach((block:any) => {
+
+                        block.entries.forEach((entry:any) => {
+
+                            rows.push({
+
+                                ledgerCode:
+                                    block.ledger.code,
+
+                                ledgerName:
+                                    block.ledger.name,
+
+                                date:
+                                    entry.date,
+
+                                voucherNo:
+                                    entry.voucherNo,
+
+                                voucherType:
+                                    entry.voucherType,
+
+                                debit:
+                                    entry.debit,
+
+                                credit:
+                                    entry.credit,
+
+                                runningBalance:
+                                    entry.runningBalance,
+
+                                balanceType:
+                                    entry.balanceType,
+
+                                narration:
+                                    entry.narration
+                            });
+                        });
+                    });
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "creditors-ledger",
+
+                            sheetName:
+                                "Creditors",
+
+                            columns:
+                                creditorLedgerColumns,
+
+                            data:
+                                rows
+                        }
+                    );
+                }
+            }
+        }
 
         return res.status(200).json({
             success: true,
@@ -198,12 +358,156 @@ export const getLedgerByAgencyId = async (
                 | "CREDITORS"
                 | undefined;
 
+        const isExport =
+            req.query.export === "true";
+
         const result =
             await LedgerService.getLedgerByAgencyId(
                 actor,
                 agencyId,
                 category
             );
+
+        if (isExport) {
+
+            switch (category) {
+
+                case "ACCOUNTING_LEDGER":
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "agency-accounting-ledger",
+
+                            sheetName:
+                                "Accounting Ledger",
+
+                            columns:
+                                accountingLedgerColumns,
+
+                            data:
+                                result.entries as any[]
+                        }
+                    );
+
+                case "CASH":
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "agency-cash-book",
+
+                            sheetName:
+                                "Cash Book",
+
+                            columns:
+                                cashBookColumns,
+
+                            data:
+                                result.entries as any[]
+                        }
+                    );
+
+                case "DEBTORS": {
+
+                    const rows: any[] = [];
+
+                    result.data.forEach((block: any) => {
+
+                        block.entries.forEach((entry: any) => {
+
+                            rows.push({
+
+                                ledgerCode:
+                                    block.ledger.code,
+
+                                ledgerName:
+                                    block.ledger.name,
+
+                                ...entry
+                            });
+                        });
+                    });
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "agency-debtors",
+
+                            sheetName:
+                                "Debtors",
+
+                            columns:
+                                debtorLedgerColumns,
+
+                            data:
+                                rows
+                        }
+                    );
+                }
+
+                case "CREDITORS": {
+
+                    const rows: any[] = [];
+
+                    result.data.forEach((block: any) => {
+
+                        block.entries.forEach((entry: any) => {
+
+                            rows.push({
+
+                                ledgerCode:
+                                    block.ledger.code,
+
+                                ledgerName:
+                                    block.ledger.name,
+
+                                ...entry
+                            });
+                        });
+                    });
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "agency-creditors",
+
+                            sheetName:
+                                "Creditors",
+
+                            columns:
+                                creditorLedgerColumns,
+
+                            data:
+                                rows
+                        }
+                    );
+                }
+
+                default:
+
+                    return ExcelService.export(
+                        res,
+                        {
+                            filename:
+                                "agency-accounting-ledger",
+
+                            sheetName:
+                                "Accounting Ledger",
+
+                            columns:
+                                accountingLedgerColumns,
+
+                            data:
+                                result.entries as any[]
+                        }
+                    );
+            }
+        }
 
         return res.status(200).json({
             success: true,
