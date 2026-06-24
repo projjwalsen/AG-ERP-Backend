@@ -2460,6 +2460,19 @@ export class LedgerService {
                                 let particular =
                                     row.narration ||
                                     `${row.voucherType} Voucher`;
+                                if (
+                                    row.voucherType === VoucherType.CONTRA
+                                ) {
+
+                                    const thirdParty =
+                                        row.counterLedgers?.[0]?.name;
+
+                                    particular =
+                                        thirdParty
+                                            ? `Payment via ${thirdParty}`
+                                            : "Third Party Payment";
+                                }
+
 
                                 if (
                                     row.voucherType === VoucherType.SALE
@@ -2479,14 +2492,14 @@ export class LedgerService {
                                     row.voucherType === VoucherType.RECEIPT
                                 ) {
                                     particular =
-                                        `Payment received against ${row.invoiceNo || row.voucherNo}`;
+                                        `Payment received through ${row.voucherNo}`;
                                 }
 
                                 if (
                                     row.voucherType === VoucherType.PAYMENT
                                 ) {
                                     particular =
-                                        `Payment made against ${row.invoiceNo || row.voucherNo}`;
+                                        `Payment made through ${row.voucherNo}`;
                                 }
 
                                 return {
@@ -2994,65 +3007,6 @@ export class LedgerService {
                     createdAt: "desc"
                 }
             });
-
-        const transactionRows =
-            transactions.map(transaction => ({
-
-                id:
-                    transaction.id,
-
-                transactionNo:
-                    transaction.transactionNo,
-
-                direction:
-                    transaction.direction,
-
-                amount:
-                    money(transaction.amount),
-
-                paymentMode:
-                    transaction.paymentMode,
-
-                paymentType:
-                    transaction.paymentType,
-
-                paymentThrough:
-                    transaction.paymentThrough,
-
-                transactionRefNo:
-                    transaction.transactionRefNo,
-
-                referenceNo:
-                    transaction.referenceNo,
-
-                agency:
-                    transaction.agency
-                        ? {
-                            id: transaction.agency.id,
-                            name: transaction.agency.name,
-                            gstin: transaction.agency.gstin
-                        }
-                        : null,
-
-                thirdPartyAgency:
-                    transaction.thirdPartyAgency
-                        ? {
-                            id: transaction.thirdPartyAgency.id,
-                            name: transaction.thirdPartyAgency.name,
-                            gstin: transaction.thirdPartyAgency.gstin
-                        }
-                        : null,
-
-                remarks:
-                    transaction.remarks,
-
-                createdAt:
-                    transaction.createdAt,
-
-                updatedAt:
-                    transaction.updatedAt
-            }));
-
 
         const entries =
             transactions.map(
