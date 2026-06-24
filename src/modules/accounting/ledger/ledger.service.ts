@@ -509,8 +509,36 @@ export class LedgerService {
             const branches =
                 await prisma.branch.findMany({
                     where: {
+
                         ...(branchId && {
                             id: branchId
+                        }),
+
+                        ...(query?.search && {
+
+                            OR: [
+
+                                {
+                                    name: {
+                                        contains: query.search,
+                                        mode: "insensitive"
+                                    }
+                                },
+
+                                {
+                                    code: {
+                                        contains: query.search,
+                                        mode: "insensitive"
+                                    }
+                                },
+
+                                {
+                                    gstin: {
+                                        contains: query.search,
+                                        mode: "insensitive"
+                                    }
+                                }
+                            ]
                         })
                     },
 
@@ -630,12 +658,34 @@ export class LedgerService {
             const agencies =
                 await prisma.agency.findMany({
 
-                    where: {
-                        isActive: true,
-                        ledger: {
-                            some: {}
-                        }
+                   where: {
+
+                    isActive: true,
+
+                    ledger: {
+                        some: {}
                     },
+
+                    ...(query?.search && {
+
+                        OR: [
+
+                            {
+                                name: {
+                                    contains: query.search,
+                                    mode: "insensitive"
+                                }
+                            },
+
+                            {
+                                gstin: {
+                                    contains: query.search,
+                                    mode: "insensitive"
+                                }
+                            }
+                        ]
+                    })
+                },
 
                     select: {
                         id: true,
@@ -752,12 +802,44 @@ export class LedgerService {
             const transactions =
                 await prisma.transaction.findMany({
                     where: {
-                        suspenseAccount: true,
 
-                        ...(branchId && {
-                            branchId
-                        })
+            suspenseAccount: true,
+
+            ...(branchId && {
+                branchId
+            }),
+
+            ...(query?.search && {
+
+                OR: [
+
+                    {
+                        transactionNo: {
+                            contains: query.search,
+                            mode: "insensitive"
+                        }
                     },
+
+                    {
+                        branch: {
+                            name: {
+                                contains: query.search,
+                                mode: "insensitive"
+                            }
+                        }
+                    },
+
+                    {
+                        agency: {
+                            name: {
+                                contains: query.search,
+                                mode: "insensitive"
+                            }
+                        }
+                    }
+                ]
+            })
+        },
 
                     include: {
                         branch: true,
@@ -2239,367 +2321,217 @@ export class LedgerService {
                 };
             }
 
-            case "DEBTORS":
-                const debtorLedgers =
-                    ledgers.filter(
-                        x =>
-                            x.category ===
-                            LedgerType.CUSTOMER
-                    );
-
-                const statements =
-                    await Promise.all(
-                        debtorLedgers.map(
-                            async ledger => {
-
-                                const statement =
-                                    await this.getLedgerStatement(
-                                        actor,
-                                        ledger.id
-                                    );
-
-                                return {
-
-                                    ledger: {
-                                        id: ledger.id,
-                                        code: ledger.code,
-                                        name: ledger.name
-                                    },
-
-                                    entries:
-                                        [
-
-                                            ...statement.entries
-                                                .filter(
-                                                    x =>
-                                                        x.type !== "OPENING" &&
-                                                        x.voucherType !== VoucherType.CONTRA
-                                                )
-                                                .map(row => ({
-
-                                                    date:
-                                                        row.date,
-
-                                                    voucherNo:
-                                                        row.invoiceNo ||
-                                                        row.voucherNo,
-
-                                                    particular:
-                                                        row.narration,
-
-                                                    debit:
-                                                        Number(row.debit),
-
-                                                    credit:
-                                                        Number(row.credit),
-
-                                                    balance:
-                                                        row.runningBalance
-                                                }))
-                                        ],
-
-                                    summary:
-                                        statement.summary
-                                };
-                            }
-                        )
-                    );
-
-                return {
-
-                    agency,
-
-                    category:
-                        "DEBTORS",
-
-                    data:
-                        statements
-                };
-
-            case "CREDITORS":
-                const creditorLedgers =
-                    ledgers.filter(
-                        x =>
-                            x.category ===
-                            LedgerType.VENDOR
-                    );
-
-                const statem =
-                    await Promise.all(
-                        creditorLedgers.map(
-                            async ledger => {
-
-                                const statement =
-                                    await this.getLedgerStatement(
-                                        actor,
-                                        ledger.id
-                                    );
-
-                                return {
-
-                                    ledger: {
-                                        id: ledger.id,
-                                        code: ledger.code,
-                                        name: ledger.name
-                                    },
-
-                                    entries:
-                                        [
-
-                                            ...statement.entries
-                                                .filter(
-                                                    x =>
-                                                        x.type !== "OPENING" &&
-                                                        x.voucherType !== VoucherType.CONTRA
-                                                )
-                                                .map(row => ({
-
-                                                    date:
-                                                        formatISTDate(row.date),
-
-                                                    voucherNo:
-                                                        row.invoiceNo ||
-                                                        row.voucherNo,
-
-                                                    particular:
-                                                        row.narration,
-
-                                                    debit:
-                                                        Number(row.debit),
-
-                                                    credit:
-                                                        Number(row.credit),
-
-                                                    balance:
-                                                        row.runningBalance
-                                                }))
-                                        ],
-
-                                    summary:
-                                        statement.summary
-                                };
-                            }
-                        )
-                    );
-
-                return {
-
-                    agency,
-
-                    category:
-                        "CREDITORS",
-
-                    data:
-                        statem
-                };
             case "ACCOUNTING_LEDGER":
             default: {
-
-                const accountingLedgers =
-                    ledgers.filter(
-                        x =>
-                            x.category === LedgerType.CUSTOMER ||
-                            x.category === LedgerType.VENDOR
-                    );
-
-                if (accountingLedgers.length === 0) {
-                    return {
-                        agency,
-                        category: "ACCOUNTING_LEDGER",
-
-                        summary: {
-                            openingBalance: 0,
-                            totalPurchases: 0,
-                            totalPayments: 0,
-                            closingBalance: 0
-                        },
-
-                        entries: []
-                    };
+                try {
+                    
+                                    const accountingLedgers =
+                                        ledgers.filter(
+                                            x =>
+                                                x.category === LedgerType.CUSTOMER ||
+                                                x.category === LedgerType.VENDOR
+                                        );
+                    
+                                    if (accountingLedgers.length === 0) {
+                                        return {
+                                            agency,
+                                            category: "ACCOUNTING_LEDGER",
+                    
+                                            summary: {
+                                                openingBalance: 0,
+                                                totalPurchases: 0,
+                                                totalPayments: 0,
+                                                closingBalance: 0
+                                            },
+                    
+                                            entries: []
+                                        };
+                                    }
+                    
+                                    let openingBalance = 0;
+                                    let totalPurchases = 0;
+                                    let totalPayments = 0;
+                    
+                                    const allEntries: any[] = [];
+                    
+                                    for (const ledger of accountingLedgers) {
+                    
+                                        const statement =
+                                            await this.getLedgerStatement(
+                                                actor,
+                                                ledger.id,
+                                                {
+                                                    startDate: query?.startDate,
+                                                    endDate: query?.endDate
+                                                }
+                                            );
+                    
+                                        openingBalance +=
+                                            Number(
+                                                statement.summary.openingBalance || 0
+                                            );
+                    
+                                        allEntries.push(
+                                            ...statement.entries
+                                                .filter(
+                                                    row => row.type !== "OPENING"
+                                                )
+                                                .map(row => {
+                    
+                                                    const debit =
+                                                        Number(row.debit || 0);
+                    
+                                                    const credit =
+                                                        Number(row.credit || 0);
+                    
+                                                    totalPurchases += debit;
+                                                    totalPayments += credit;
+                    
+                                                    let particular =
+                                                        row.narration ||
+                                                        `${row.voucherType} Voucher`;
+                                                    if (
+                                                        row.voucherType === VoucherType.CONTRA
+                                                    ) {
+                    
+                                                        const thirdParty =
+                                                            row.counterLedgers?.[0]?.name;
+                    
+                                                        particular =
+                                                            thirdParty
+                                                                ? `Payment via ${thirdParty}`
+                                                                : "Third Party Payment";
+                                                    }
+                    
+                                                    const paymentMethod =
+                                                            row.paymentThrough ||
+                                                            row.paymentMode ||
+                                                            row.paymentType;
+                    
+                    
+                                                    if (
+                                                        row.voucherType === VoucherType.SALE
+                                                    ) {
+                                                        particular =
+                                                            `Sale Invoice ${row.invoiceNo || row.voucherNo}`;
+                                                    }
+                    
+                                                    if (
+                                                        row.voucherType === VoucherType.PURCHASE
+                                                    ) {
+                                                        particular =
+                                                            `Purchase Invoice ${row.invoiceNo || row.voucherNo}`;
+                                                    }
+                    
+                                                    if (
+                                                        row.voucherType === VoucherType.RECEIPT
+                                                    ) {
+                    
+                                                        particular =
+                                                            paymentMethod
+                                                                ? `Payment received through ${String(paymentMethod)
+                                                                    .toUpperCase()}`
+                                                                : "Payment received";
+                                                    }
+                    
+                                                    if (
+                                                        row.voucherType === VoucherType.PAYMENT
+                                                    ) {
+                    
+                                                        particular =
+                                                            paymentMethod
+                                                                ? `Payment made through ${String(paymentMethod)
+                                                                    .toUpperCase()}`
+                                                                : "Payment made";
+                                                    }
+                    
+                                                    return {
+                                                        date: row.date,
+                                                        voucherNo:
+                                                            row.invoiceNo ||
+                                                            row.voucherNo,
+                                                        particular,
+                                                        debit,
+                                                        credit,
+                                                        balance:
+                                                            row.runningBalance
+                                                    };
+                                                })
+                                        );
+                                    }
+                    
+                                    allEntries.sort(
+                                        (a, b) =>
+                                            new Date(a.date).getTime() -
+                                            new Date(b.date).getTime()
+                                    );
+                    
+                                    const entries = [
+                    
+                                        {
+                                            date:
+                                                startDate
+                                                    ? formatISTDate(startDate)
+                                                    : "",
+                    
+                                            voucherNo: "OB",
+                    
+                                            particular: "Opening Balance",
+                    
+                                            debit: 0,
+                    
+                                            credit: 0,
+                    
+                                            balance: openingBalance
+                                        },
+                    
+                                        ...allEntries.map(row => ({
+                                            ...row,
+                                            date:
+                                                formatISTDate(row.date)
+                                        }))
+                                    ];
+                    
+                                    return {
+                    
+                                        agency: {
+                                            id: agency.id,
+                                            name: agency.name,
+                                            type: agency.type,
+                                            gstin: agency.gstin,
+                                            contactPerson: agency.contactPerson,
+                                            mobileNumber: agency.mobileNumber,
+                                            email: agency.email
+                                        },
+                    
+                                        category: "ACCOUNTING_LEDGER",
+                    
+                                        summary: {
+                    
+                                            openingBalance:
+                                                money(openingBalance),
+                    
+                                            totalPurchases:
+                                                money(totalPurchases),
+                    
+                                            totalPayments:
+                                                money(totalPayments),
+                    
+                                            closingBalance:
+                                                money(
+                                                    openingBalance +
+                                                    totalPurchases -
+                                                    totalPayments
+                                                )
+                                        },
+                    
+                                        entries
+                                    };
+                    
+                } catch (error) {
+                    console.error("Error fetching accounting ledger for agency:", error);
+                    throw error
                 }
-
-                let openingBalance = 0;
-                let totalPurchases = 0;
-                let totalPayments = 0;
-
-                const allEntries: any[] = [];
-
-                for (const ledger of accountingLedgers) {
-
-                    const statement =
-                        await this.getLedgerStatement(
-                            actor,
-                            ledger.id,
-                            {
-                                startDate: query?.startDate,
-                                endDate: query?.endDate
-                            }
-                        );
-
-                    openingBalance +=
-                        Number(
-                            statement.summary.openingBalance || 0
-                        );
-
-                    allEntries.push(
-                        ...statement.entries
-                            .filter(
-                                row => row.type !== "OPENING"
-                            )
-                            .map(row => {
-
-                                const debit =
-                                    Number(row.debit || 0);
-
-                                const credit =
-                                    Number(row.credit || 0);
-
-                                totalPurchases += debit;
-                                totalPayments += credit;
-
-                                let particular =
-                                    row.narration ||
-                                    `${row.voucherType} Voucher`;
-                                if (
-                                    row.voucherType === VoucherType.CONTRA
-                                ) {
-
-                                    const thirdParty =
-                                        row.counterLedgers?.[0]?.name;
-
-                                    particular =
-                                        thirdParty
-                                            ? `Payment via ${thirdParty}`
-                                            : "Third Party Payment";
-                                }
-
-
-                                if (
-                                    row.voucherType === VoucherType.SALE
-                                ) {
-                                    particular =
-                                        `Sale Invoice ${row.invoiceNo || row.voucherNo}`;
-                                }
-
-                                if (
-                                    row.voucherType === VoucherType.PURCHASE
-                                ) {
-                                    particular =
-                                        `Purchase Invoice ${row.invoiceNo || row.voucherNo}`;
-                                }
-
-                                if (
-                                    row.voucherType === VoucherType.RECEIPT
-                                ) {
-
-                                    const paymentMode =
-                                        row.paymentType ||
-                                        row.paymentMode ||
-                                        row.narration;
-
-                                    particular =
-                                        `Payment received through ${
-                                            paymentMode || "Payment"
-                                        }`;
-                                }
-
-                                if (
-                                    row.voucherType === VoucherType.PAYMENT
-                                ) {
-
-                                    const paymentMode =
-                                        row.paymentType ||
-                                        row.paymentMode ||
-                                        row.narration;
-
-                                    particular =
-                                        `Payment made through ${
-                                            paymentMode || "Payment"
-                                        }`;
-                                }
-
-                                return {
-                                    date: row.date,
-                                    voucherNo:
-                                        row.invoiceNo ||
-                                        row.voucherNo,
-                                    particular,
-                                    debit,
-                                    credit,
-                                    balance:
-                                        row.runningBalance
-                                };
-                            })
-                    );
-                }
-
-                allEntries.sort(
-                    (a, b) =>
-                        new Date(a.date).getTime() -
-                        new Date(b.date).getTime()
-                );
-
-                const entries = [
-
-                    {
-                        date:
-                            startDate
-                                ? formatISTDate(startDate)
-                                : "",
-
-                        voucherNo: "OB",
-
-                        particular: "Opening Balance",
-
-                        debit: 0,
-
-                        credit: 0,
-
-                        balance: openingBalance
-                    },
-
-                    ...allEntries.map(row => ({
-                        ...row,
-                        date:
-                            formatISTDate(row.date)
-                    }))
-                ];
-
-                return {
-
-                    agency: {
-                        id: agency.id,
-                        name: agency.name,
-                        type: agency.type,
-                        gstin: agency.gstin,
-                        contactPerson: agency.contactPerson,
-                        mobileNumber: agency.mobileNumber,
-                        email: agency.email
-                    },
-
-                    category: "ACCOUNTING_LEDGER",
-
-                    summary: {
-
-                        openingBalance:
-                            money(openingBalance),
-
-                        totalPurchases:
-                            money(totalPurchases),
-
-                        totalPayments:
-                            money(totalPayments),
-
-                        closingBalance:
-                            money(
-                                openingBalance +
-                                totalPurchases -
-                                totalPayments
-                            )
-                    },
-
-                    entries
-                };
             }
         }
     }
@@ -3429,6 +3361,46 @@ export class LedgerService {
                 : Promise.resolve(null)
         ]);
 
+        const sourceIds = [
+            ...new Set(
+                entries
+                    .filter(
+                        x =>
+                            x.voucher.voucherType === VoucherType.PAYMENT ||
+                            x.voucher.voucherType === VoucherType.RECEIPT ||
+                            x.voucher.voucherType === VoucherType.CONTRA
+                    )
+                    .map(x => x.voucher.sourceId)
+                    .filter(Boolean)
+            )
+        ];
+
+        const transactions =
+            await prisma.transaction.findMany({
+
+                where: {
+                    id: {
+                        in: sourceIds as string[]
+                    }
+                },
+
+                select: {
+                    id: true,
+                    paymentMode: true,
+                    paymentType: true,
+                    paymentThrough: true,
+                    transactionNo: true
+                }
+            });
+
+        const transactionMap =
+            new Map(
+                transactions.map(txn => [
+                    txn.id,
+                    txn
+                ])
+            );
+
 
 
         const priorDebit =
@@ -3503,6 +3475,13 @@ export class LedgerService {
                 
         statementRows.push(...entries.map(entry => {
 
+            const transaction =
+                transactionMap.get(
+                    String(
+                        entry.voucher.sourceId || ""
+                    )
+                );
+
             const debit =
                 entry.entryType === EntryType.DEBIT
                     ? money(entry.amount)
@@ -3554,6 +3533,18 @@ export class LedgerService {
 
                 voucherType:
                     entry.voucher.voucherType,
+
+                paymentMode:
+                    transaction?.paymentMode ?? null,
+
+                paymentType:
+                    transaction?.paymentType ?? null,
+
+                paymentThrough:
+                    transaction?.paymentThrough ?? null,
+
+                transactionNo:
+                    transaction?.transactionNo ?? null,
 
                 invoiceNo,
 

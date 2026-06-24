@@ -68,6 +68,9 @@ export const getProductLedgerDetail = async (
                     filename:
                         `product_movements_${detail.product.sku}`,
 
+                    title:
+                        `Product Movements - ${detail.product.name} (${detail.product.sku})`,
+
                     sheetName:
                         detail.product.name,
 
@@ -207,6 +210,8 @@ export const getAllProductLedgers = async (
 
                     sheetName:
                         "Product Ledgers",
+                    title:
+                        "Product Ledger" ,
 
                     columns:
                         productLedgerColumns,

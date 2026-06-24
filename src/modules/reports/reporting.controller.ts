@@ -35,6 +35,7 @@ export const getBranchDayBook = async (
                 res,
                 {
                     filename: "branch-day-book",
+                    title: "Branch Day Book",
                     sheetName: "Day Book",
                     columns: branchDayBookColumns,
                     data: result.entries
@@ -87,6 +88,8 @@ export const getGSTR1Report = async (
                 res,
                 {
                     filename: "gstr1-report",
+
+                    title: "GSTR-1 Report",
 
                     sheetName: "GSTR1",
 
@@ -141,6 +144,9 @@ export const getGSTSuspenseAccountLog = async (
                 {
                     filename:
                         "gst-suspense-log",
+
+                    title:
+                        "GST Suspense Account Log",
 
                     sheetName:
                         "GST Suspense",
@@ -198,6 +204,9 @@ export const getStockInventoryReport = async (
                     sheetName:
                         "Stock Inventory",
 
+                    title:
+                        "Stock Inventory Report",
+
                     columns:
                         stockInventoryColumns,
 
@@ -251,6 +260,8 @@ export const getOutstandingReport = async (
                     filename: "outstanding-report",
 
                     sheetName: "Outstanding",
+
+                    title: "Outstanding Report",
 
                     columns: outstandingColumns,
 

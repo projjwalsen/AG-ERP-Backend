@@ -748,6 +748,7 @@ model Transaction {
   updatedAt DateTime @updatedAt
 
   allocations TransactionAllocation[]
+  voucher Voucher[]
 }
 
 enum AllocationSource {
@@ -906,6 +907,7 @@ model Voucher {
   updatedAt DateTime @updatedAt
   
   entries LedgerEntry[]
+  transaction Transaction[]
 
   @@index([voucherType])
   @@index([sourceId])

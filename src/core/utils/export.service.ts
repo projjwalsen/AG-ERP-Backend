@@ -1,7 +1,12 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
 import { formatISTDate, getByPath } from "./loc.utils";
-
+export interface ExcelReportHeader {
+    title: string;
+    subtitle?: string;
+    period?: string;
+    companyName?: string;
+}
 export interface ExportColumn<T> {
   header: string;
 
@@ -17,6 +22,7 @@ export interface ExportColumn<T> {
 export interface ExportRequest<T> {
   filename: string;
   sheetName?: string;
+  title?: string;
 
   columns: ExportColumn<T>[];
 
@@ -96,42 +102,96 @@ export class ExcelService {
             };
         });
     }
-    private static applyStyles<T>(
-        worksheet: ExcelJS.Worksheet,
-        options: ExportRequest<T>
-    ) {
-        // Header Style
-        const headerRow = worksheet.getRow(1);
+    private static addReportHeader(
+    worksheet: ExcelJS.Worksheet,
+    header: ExcelReportHeader,
+    totalColumns: number
+) {
 
-        headerRow.eachCell((cell) => {
-            if (options.headerStyle?.fill)
-            cell.fill = options.headerStyle.fill;
+    worksheet.mergeCells(
+        1,
+        1,
+        1,
+        totalColumns
+    );
 
-            if (options.headerStyle?.font)
-            cell.font = options.headerStyle.font;
+    const companyCell =
+        worksheet.getCell(1, 1);
 
-            if (options.headerStyle?.alignment)
-            cell.alignment = options.headerStyle.alignment;
-        });
+    companyCell.value =
+        header.companyName ||
+        "ASHTAVINAYAKA";
 
-        // Row Style
-        if (options.rowStyle) {
-            for (let i = 2; i <= worksheet.rowCount; i++) {
-            const row = worksheet.getRow(i);
+    companyCell.font = {
+        bold: true,
+        size: 18
+    };
 
-            row.eachCell((cell) => {
-                if (options.rowStyle?.alignment)
-                cell.alignment = options.rowStyle.alignment;
+    companyCell.alignment = {
+        horizontal: "center"
+    };
 
-                if (options.rowStyle?.font)
-                cell.font = options.rowStyle.font;
-            });
-            }
-        }
+    worksheet.mergeCells(
+        2,
+        1,
+        2,
+        totalColumns
+    );
+
+    const titleCell =
+        worksheet.getCell(2, 1);
+
+    titleCell.value =
+        header.title;
+
+    titleCell.font = {
+        bold: true,
+        size: 14
+    };
+
+    titleCell.alignment = {
+        horizontal: "center"
+    };
+
+    if (header.subtitle) {
+
+        worksheet.mergeCells(
+            3,
+            1,
+            3,
+            totalColumns
+        );
+
+        worksheet.getCell(
+            3,
+            1
+        ).value =
+            header.subtitle;
     }
+
+    if (header.period) {
+
+        worksheet.mergeCells(
+            4,
+            1,
+            4,
+            totalColumns
+        );
+
+        worksheet.getCell(
+            4,
+            1
+        ).value =
+            `Period : ${header.period}`;
+    }
+
+    return 6;
+}
     static async export<T>(
         res: Response,
-        options: ExportRequest<T>
+        options: ExportRequest<T> & {
+            reportHeader?: ExcelReportHeader;
+        }
     ) {
         const workbook = new ExcelJS.Workbook();
 
@@ -139,7 +199,37 @@ export class ExcelService {
             options.sheetName || "Sheet1"
         );
 
-        const headerRowNumber = 1;
+        let headerRowNumber = 1;
+
+        if (options.title) {
+
+            worksheet.mergeCells(
+                1,
+                1,
+                1,
+                options.columns.length
+            );
+
+            const titleCell =
+                worksheet.getCell(1, 1);
+
+            titleCell.value =
+                options.title;
+
+            titleCell.font = {
+                bold: true,
+                size: 16
+            };
+
+            titleCell.alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
+
+            worksheet.getRow(1).height = 25;
+
+            headerRowNumber = 3;
+        }
 
 
         /**
@@ -148,10 +238,13 @@ export class ExcelService {
          * ==========================
          */
         const headerRow =
-            worksheet.addRow(
-                options.columns.map(
-                    col => col.header
-                )
+            worksheet.getRow(
+                headerRowNumber
+            );
+
+        headerRow.values =
+            options.columns.map(
+                col => col.header
             );
 
         /**
@@ -208,7 +301,7 @@ export class ExcelService {
         worksheet.views = [
             {
                 state: "frozen",
-                ySplit: 1
+                ySplit: headerRowNumber
             }
         ];
 
@@ -217,11 +310,11 @@ export class ExcelService {
          */
         worksheet.autoFilter = {
             from: {
-                row: 1,
+                row: headerRowNumber,
                 column: 1
             },
             to: {
-                row: 1,
+                row: headerRowNumber,
                 column: options.columns.length
             }
         };
