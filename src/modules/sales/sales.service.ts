@@ -256,7 +256,24 @@ export class SalesService {
             }
 
             /** GST calculation */
-            const taxableAmount = item.quantity * (item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit));
+            const systemSellingPrice =
+                item.unit === ProductUnit.LTR
+                    ? Number(
+                        batch.product.sellPriceLTR ||
+                        batch.product.sellPricePerUnit
+                    )
+                    : Number(
+                        batch.product.sellPricePerUnit
+                    );
+
+            const sellingPrice =
+                item.unitPrice
+                    ? Number(item.unitPrice)
+                    : systemSellingPrice;
+
+            const taxableAmount =
+                item.quantity *
+                sellingPrice;
             const gstPercent = Number(batch.product.applicableGST) || 0;
 
             /** GST Type Check */
@@ -292,7 +309,10 @@ export class SalesService {
                 batch,
                 product: batch.product,
 
+                sellingPrice,
+
                 taxableAmount,
+
                 gstPercent,
 
                 cgstPercent,
@@ -305,7 +325,7 @@ export class SalesService {
 
                 gstAmount,
                 totalAmount
-            })
+            });
 
         }
 
@@ -384,7 +404,7 @@ export class SalesService {
                          * AUTO FETCH SELL PRICE
                          */
                         sellingPrice:
-                            data.product.sellPricePerUnit,
+                            data.sellingPrice,
 
                         taxableAmount: data.taxableAmount,
                         gstPercent: data.gstPercent,
@@ -938,9 +958,15 @@ export class SalesService {
                     /**
                      * GST calculations
                      */
-                    const sellingPrice = Number(
-                        batch.product.sellPricePerUnit
-                    );
+                    const sellingPrice =
+                    item.unit === ProductUnit.LTR
+                        ? Number(
+                            batch.product.sellPriceLTR ||
+                            batch.product.sellPricePerUnit
+                        )
+                        : Number(
+                            batch.product.sellPricePerUnit
+                        );
 
                     const taxableAmount =
                         item.quantity * sellingPrice;

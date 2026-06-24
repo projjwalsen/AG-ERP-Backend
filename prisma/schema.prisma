@@ -302,6 +302,7 @@ model Product {
   density  Decimal? @db.Decimal(10, 4)
 
   sellPricePerUnit Decimal @db.Decimal(18, 2)
+  sellPriceLTR Decimal? @db.Decimal(18, 2)
 
   operationalUnit ProductUnit @default(LTR)
   minimumStockKG Decimal? @db.Decimal(18, 3)
