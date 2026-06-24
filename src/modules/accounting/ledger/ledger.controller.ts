@@ -691,17 +691,10 @@ export const getLedgerBySuspenseId = async (
 
         const { branchId } = (req as any).params;
 
-        const category =
-            req.query.category as
-                | "ACCOUNTING_LEDGER"
-                | "CASH"
-                | undefined;
-
         const result =
             await LedgerService.getLedgerBySuspenseId(
                 actor,
                 branchId,
-                category
             );
 
         return res.status(200).json({

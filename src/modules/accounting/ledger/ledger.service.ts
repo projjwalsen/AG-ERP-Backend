@@ -2949,7 +2949,6 @@ export class LedgerService {
     static async getLedgerBySuspenseId(
         actor: any,
         branchId: string,
-        category?: "ACCOUNTING_LEDGER" | "CASH"
     ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
@@ -3055,121 +3054,96 @@ export class LedgerService {
             }));
 
 
-        switch (category) {
+        const entries =
+            transactions.map(
+                (txn, index) => ({
 
-            case "CASH": {
+                    serialNo:
+                        index + 1,
 
-                const cashTransactions =
-                    transactions.filter(
-                        x =>
-                            x.paymentThrough ===
-                            PaymentType.CASH
-                    );
-
-                const cashInward =
-                    cashTransactions
-                        .filter(
-                            x =>
-                                x.direction ===
-                                TransactionDirection.INWARD
-                        )
-                        .reduce(
-                            (sum, x) =>
-                                sum + Number(x.amount),
-                            0
-                        );
-
-                const cashOutward =
-                    cashTransactions
-                        .filter(
-                            x =>
-                                x.direction ===
-                                TransactionDirection.OUTWARD
-                        )
-                        .reduce(
-                            (sum, x) =>
-                                sum + Number(x.amount),
-                            0
-                        );
-
-                return {
-
-                    branch: {
-                        id: branch.id,
-                        code: branch.code,
-                        name: branch.name,
-                        gstin: branch.gstin
-                    },
-
-                    category: "CASH",
-
-                    summary: {
-
-                        totalTransactions:
-                            cashTransactions.length,
-
-                        totalInward:
-                            money(cashInward),
-
-                        totalOutward:
-                            money(cashOutward),
-
-                        closingBalance:
-                            money(
-                                cashInward -
-                                cashOutward
-                            )
-                    },
-
-                    transactions:
-                        transactionRows.filter(
-                            x =>
-                                x.paymentThrough ===
-                                PaymentType.CASH
-                        )
-                };
-            }
-            case "ACCOUNTING_LEDGER":
-            default:
-
-                return {
-
-                    branch: {
-                        id: branch.id,
-                        code: branch.code,
-                        name: branch.name,
-                        gstin: branch.gstin
-                    },
-
-                    summary: {
-                        totalTransactions: transactions.length,
-
-                        totalInward: money(
-                            transactions
-                                .filter(
-                                    x => x.direction === TransactionDirection.INWARD
-                                )
-                                .reduce(
-                                    (sum, x) => sum + Number(x.amount),
-                                    0
-                                )
+                    date:
+                        formatISTDate(
+                            txn.createdAt
                         ),
 
-                        totalOutward: money(
-                            transactions
-                                .filter(
-                                    x => x.direction === TransactionDirection.OUTWARD
-                                )
-                                .reduce(
-                                    (sum, x) => sum + Number(x.amount),
-                                    0
-                                )
-                        )
-                    },
+                    voucherNo:
+                        txn.transactionNo,
 
-                    transactions: transactionRows
-                };
-        }
+                    description:
+                        txn.thirdPartyAgency
+                            ? `${txn.thirdPartyAgency.name} paid on behalf of ${txn.agency?.name}`
+                            : txn.direction === TransactionDirection.INWARD
+                                ? `Amount received from ${txn.agency?.name}`
+                                : `Amount paid to ${txn.agency?.name}`,
+
+                    income:
+                        txn.direction === TransactionDirection.INWARD
+                            ? Number(txn.amount)
+                            : 0,
+
+                    expense:
+                        txn.direction === TransactionDirection.OUTWARD
+                            ? Number(txn.amount)
+                            : 0,
+
+                    paymentMode:
+                        txn.paymentMode,
+
+                    paymentType:
+                        txn.paymentType,
+
+                    transactionRefNo:
+                        txn.transactionRefNo,
+
+                    remarks:
+                        txn.remarks
+                })
+            );
+
+            return {
+
+                branch: {
+                    id: branch.id,
+                    code: branch.code,
+                    name: branch.name,
+                    gstin: branch.gstin
+                },
+
+                summary: {
+
+                    totalTransactions:
+                        entries.length,
+
+                    totalIncome:
+                        money(
+                            entries.reduce(
+                                (s, x) =>
+                                    s + x.income,
+                                0
+                            )
+                        ),
+
+                    totalExpense:
+                        money(
+                            entries.reduce(
+                                (s, x) =>
+                                    s + x.expense,
+                                0
+                            )
+                        ),
+
+                    closingBalance:
+                        money(
+                            entries.reduce(
+                                (s, x) =>
+                                    s + x.income - x.expense,
+                                0
+                            )
+                        )
+                },
+
+                entries
+            };
     }
 
     static async calculateLedgerBalance( //✅
