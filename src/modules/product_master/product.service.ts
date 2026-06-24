@@ -44,9 +44,22 @@ export class ProductService {
                 400
             )
         }
-
-        const normalizedSKU = payload.sku.trim().toUpperCase();
         const normalizedPrice = Number(payload.sellPricePerUnit);
+        let sellPriceLTR: number | null = null;
+
+        if (
+            payload.density &&
+            payload.baseUnit === ProductUnit.KG
+        ) {
+            sellPriceLTR =
+                Number(
+                    (
+                        normalizedPrice *
+                        payload.density
+                    ).toFixed(2)
+                );
+        }
+        const normalizedSKU = payload.sku.trim().toUpperCase();
 
         const existingProduct = await prisma.product.findUnique({
             where: { sku: normalizedSKU }
@@ -106,6 +119,7 @@ export class ProductService {
                 minimumStockKG: payload.minimumStockKG,
                 openingStockKG: payload.openingStockKG || 0,
                 sellPricePerUnit: normalizedPrice,
+                sellPriceLTR: sellPriceLTR,
                 isActive: true
             },
             select: {
@@ -122,6 +136,7 @@ export class ProductService {
                 minimumStockKG: true,
                 openingStockKG: true,
                 sellPricePerUnit: true,
+                sellPriceLTR: true,
                 isActive: true,
                 createdAt: true,
             }
@@ -374,6 +389,29 @@ export class ProductService {
             );
         }
 
+        const finalSellPrice =
+            normalizedPrice ??
+            Number(existingProduct.sellPricePerUnit);
+
+        const finalDensity =
+            density ??
+            Number(existingProduct.density);
+
+        let sellPriceLTR: number | null = null;
+
+        if (
+            finalDensity &&
+            baseUnit === ProductUnit.KG
+        ) {
+            sellPriceLTR =
+                Number(
+                    (
+                        finalSellPrice *
+                        finalDensity
+                    ).toFixed(2)
+                );
+        }
+
         const updatedProduct = await prisma.product.update({
             where: { id: productId },
             data: {
@@ -387,7 +425,8 @@ export class ProductService {
                 applicableGST: payload.applicableGST,
                 operationalUnit: operationalUnit,
                 minimumStockKG: payload.minimumStockKG,
-                sellPricePerUnit: normalizedPrice,
+                sellPricePerUnit: finalSellPrice,
+                sellPriceLTR: sellPriceLTR,
             },
             select: {
                 id: true,
@@ -402,6 +441,7 @@ export class ProductService {
                 operationalUnit: true,
                 minimumStockKG: true,
                 sellPricePerUnit: true,
+                sellPriceLTR: true,
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
