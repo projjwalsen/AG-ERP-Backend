@@ -272,7 +272,7 @@ export const getLedgerByBranchId = async (
                                 `branch-ledger-${result.branch.code}`,
 
                             title:
-                                `${result.branch.name} BRANCH LEDGER`,
+                                `${result.branch.name} BRANCH ACCOUNTING LEDGER`,
 
                             period:
                                 `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
@@ -350,7 +350,7 @@ export const getLedgerByBranchId = async (
                             filename:
                                 "debtors-ledger",
 
-                            title: "DEBTORS LEDGER",
+                            title: `${result.branch.name} DEBTORS LEDGER`,
 
                             sheetName:
                                 "Debtors",
@@ -412,7 +412,7 @@ export const getLedgerByBranchId = async (
                         {
                             filename:
                                 "creditors-ledger",
-                            title: "CREDITORS LEDGER",
+                            title: `${result.branch.name} CREDITORS LEDGER`,
                             sheetName:
                                 "Creditors",
 
@@ -487,7 +487,7 @@ export const getLedgerByAgencyId = async (
                                 "agency-accounting-ledger",
 
                             title:
-                                "AGENCY ACCOUNTING LEDGER",
+                                `${result.agency.name} ACCOUNTING LEDGER`,
 
                             sheetName:
                                 "Accounting Ledger",
@@ -509,7 +509,7 @@ export const getLedgerByAgencyId = async (
                                 "agency-cash-book",
 
                             title:
-                                "AGENCY CASH BOOK",
+                                `${result.agency.name} CASH BOOK`,
 
                             sheetName:
                                 "Cash Book",
@@ -530,7 +530,7 @@ export const getLedgerByAgencyId = async (
                                 "agency-accounting-ledger",
 
                             title:
-                                "AGENCY ACCOUNTING LEDGER",
+                                `${result.agency.name} ACCOUNTING LEDGER`,
 
                             sheetName:
                                 "Accounting Ledger",
