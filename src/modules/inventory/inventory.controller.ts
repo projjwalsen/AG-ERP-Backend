@@ -52,6 +52,8 @@ export const getAllInventoryBatches = async (req: Request, res: Response, next: 
 
                     sheetName: "Inventory Batches",
 
+                    title: "INVENTORY BATCHES",
+
                     columns:
                         inventoryBatchColumns,
 
@@ -99,6 +101,8 @@ export const getBranchInventorySummary = async (req: Request, res: Response, nex
                     filename: "branch_inventory_summary",
 
                     sheetName: "Branch Inventory Summary",
+
+                    title: "BRANCH INVENTORY SUMMARY",
 
                     columns:
                         inventorySummaryColumns,
@@ -176,6 +180,9 @@ export const getProductBatchWiseHistory = async (req: Request, res: Response, ne
                 {
                     filename:
                         `product_batch_history_${result.product.sku}`,
+
+                    title:
+                        `Product Batch-wise History - ${result.product.name} (${result.product.sku})`,
 
                     sheetName:
                         "Batch History",

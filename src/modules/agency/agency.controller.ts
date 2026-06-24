@@ -95,6 +95,8 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
                 {
                     filename: "agencies",
 
+                    title: "AGENCIES",
+
                     sheetName: "Agencies",
 
                     columns:

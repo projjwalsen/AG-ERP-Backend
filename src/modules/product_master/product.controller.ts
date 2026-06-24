@@ -52,6 +52,8 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
 
                     sheetName: "Products",
 
+                    title: "PRODUCTS",
+
                     columns: productColumns,
 
                     data: result.data,

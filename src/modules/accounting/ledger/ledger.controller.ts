@@ -97,6 +97,8 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
                 {
                     filename: `ledger_${query.view || "default"}`,
 
+                    title: `Ledger - ${query.view || "All"}`,
+
                     sheetName:
                         query.view || "Ledgers",
 
@@ -169,6 +171,7 @@ export const getCompanyLedger = async (
 
                     title:
                         "ASHTAVINAYAKA COMPANY LEDGER",
+
 
                     period:
                         `${query.startDate || ""} - ${query.endDate || ""}`,
@@ -288,7 +291,7 @@ export const getLedgerByBranchId = async (
                                 `branch-ledger-${result.branch.code}`,
 
                             title:
-                                `${result.branch.name} BRANCH LEDGER`,
+                                `${result.branch.name} BRANCH CASH LEDGER`,
 
                             period:
                                 `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
@@ -346,6 +349,8 @@ export const getLedgerByBranchId = async (
                         {
                             filename:
                                 "debtors-ledger",
+
+                            title: "DEBTORS LEDGER",
 
                             sheetName:
                                 "Debtors",
@@ -407,7 +412,7 @@ export const getLedgerByBranchId = async (
                         {
                             filename:
                                 "creditors-ledger",
-
+                            title: "CREDITORS LEDGER",
                             sheetName:
                                 "Creditors",
 
@@ -449,8 +454,6 @@ export const getLedgerByAgencyId = async (
             req.query.category as
                 | "ACCOUNTING_LEDGER"
                 | "CASH"
-                | "DEBTORS"
-                | "CREDITORS"
                 | undefined;
 
         const isExport =
@@ -483,6 +486,9 @@ export const getLedgerByAgencyId = async (
                             filename:
                                 "agency-accounting-ledger",
 
+                            title:
+                                "AGENCY ACCOUNTING LEDGER",
+
                             sheetName:
                                 "Accounting Ledger",
 
@@ -502,6 +508,9 @@ export const getLedgerByAgencyId = async (
                             filename:
                                 "agency-cash-book",
 
+                            title:
+                                "AGENCY CASH BOOK",
+
                             sheetName:
                                 "Cash Book",
 
@@ -512,85 +521,6 @@ export const getLedgerByAgencyId = async (
                                 result.entries as any[]
                         }
                     );
-
-                case "DEBTORS": {
-
-                    const rows: any[] = [];
-
-                    result.data.forEach((block: any) => {
-
-                        block.entries.forEach((entry: any) => {
-
-                            rows.push({
-
-                                ledgerCode:
-                                    block.ledger.code,
-
-                                ledgerName:
-                                    block.ledger.name,
-
-                                ...entry
-                            });
-                        });
-                    });
-
-                    return ExcelService.export(
-                        res,
-                        {
-                            filename:
-                                "agency-debtors",
-
-                            sheetName:
-                                "Debtors",
-
-                            columns:
-                                debtorLedgerColumns,
-
-                            data:
-                                rows
-                        }
-                    );
-                }
-
-                case "CREDITORS": {
-
-                    const rows: any[] = [];
-
-                    result.data.forEach((block: any) => {
-
-                        block.entries.forEach((entry: any) => {
-
-                            rows.push({
-
-                                ledgerCode:
-                                    block.ledger.code,
-
-                                ledgerName:
-                                    block.ledger.name,
-
-                                ...entry
-                            });
-                        });
-                    });
-
-                    return ExcelService.export(
-                        res,
-                        {
-                            filename:
-                                "agency-creditors",
-
-                            sheetName:
-                                "Creditors",
-
-                            columns:
-                                creditorLedgerColumns,
-
-                            data:
-                                rows
-                        }
-                    );
-                }
-
                 default:
 
                     return ExcelService.export(
@@ -598,6 +528,9 @@ export const getLedgerByAgencyId = async (
                         {
                             filename:
                                 "agency-accounting-ledger",
+
+                            title:
+                                "AGENCY ACCOUNTING LEDGER",
 
                             sheetName:
                                 "Accounting Ledger",

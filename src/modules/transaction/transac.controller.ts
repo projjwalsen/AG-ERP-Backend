@@ -83,6 +83,8 @@ export const getAllTransactions = async (req: Request, res: Response, next: Next
                 {
                     filename: `transactions_${Date.now()}`,
 
+                    title: "TRANSACTIONS",
+
                     sheetName: "Transactions",
 
                     columns: transactionColumns,

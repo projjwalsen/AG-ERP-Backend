@@ -49,6 +49,8 @@ export const getAllBranches = async (req: Request, res: Response, next: NextFunc
                 {
                     filename: "branches",
 
+                    title: "BRANCHES",
+
                     sheetName: "Branches",
 
                     columns: branchColumns,
