@@ -119,7 +119,7 @@ export class ProductService {
                 minimumStockKG: payload.minimumStockKG,
                 openingStockKG: payload.openingStockKG || 0,
                 sellPricePerUnit: normalizedPrice,
-                sellPricePerLTR: sellPriceLTR,
+                sellPriceLTR: sellPriceLTR,
                 isActive: true
             },
             select: {
@@ -136,7 +136,7 @@ export class ProductService {
                 minimumStockKG: true,
                 openingStockKG: true,
                 sellPricePerUnit: true,
-                sellPricePerLTR: true,
+                sellPriceLTR: true,
                 isActive: true,
                 createdAt: true,
             }
@@ -426,7 +426,7 @@ export class ProductService {
                 operationalUnit: operationalUnit,
                 minimumStockKG: payload.minimumStockKG,
                 sellPricePerUnit: finalSellPrice,
-                sellPricePerLTR: sellPriceLTR,
+                sellPriceLTR: sellPriceLTR,
             },
             select: {
                 id: true,
@@ -441,7 +441,7 @@ export class ProductService {
                 operationalUnit: true,
                 minimumStockKG: true,
                 sellPricePerUnit: true,
-                sellPricePerLTR: true,
+                sellPriceLTR: true,
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
