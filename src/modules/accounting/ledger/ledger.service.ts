@@ -2491,15 +2491,31 @@ export class LedgerService {
                                 if (
                                     row.voucherType === VoucherType.RECEIPT
                                 ) {
+
+                                    const paymentMode =
+                                        row.paymentType ||
+                                        row.paymentMode ||
+                                        row.narration;
+
                                     particular =
-                                        `Payment received through ${row.voucherNo}`;
+                                        `Payment received through ${
+                                            paymentMode || "Payment"
+                                        }`;
                                 }
 
                                 if (
                                     row.voucherType === VoucherType.PAYMENT
                                 ) {
+
+                                    const paymentMode =
+                                        row.paymentType ||
+                                        row.paymentMode ||
+                                        row.narration;
+
                                     particular =
-                                        `Payment made through ${row.voucherNo}`;
+                                        `Payment made through ${
+                                            paymentMode || "Payment"
+                                        }`;
                                 }
 
                                 return {
