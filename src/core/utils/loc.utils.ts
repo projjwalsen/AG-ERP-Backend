@@ -58,14 +58,17 @@ export const formatISTDate = (
     }
 
     return new Intl.DateTimeFormat(
-        "en-GB",
+        "en-IN",
         {
             timeZone: "Asia/Kolkata",
             day: "2-digit",
             month: "short",
-            year: "numeric"
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
         }
     )
-        .format(new Date(value))
-        .replace(/ /g, "-");
+    .format(new Date(value))
+    .replace(",", "");
 };

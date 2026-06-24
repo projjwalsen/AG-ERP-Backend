@@ -521,7 +521,7 @@ export class ProductLedgerService {
                         batch: true,
                         user: { select: { id: true, name: true, email: true } },
                     },
-                    orderBy: [{ entryDate: "asc" }, { createdAt: "asc" }],
+                    orderBy: [{ createdAt: "asc" }],
                     ...(query?.export ? {} : { skip, take: limit })
                 }),
                 client.productLedgerEntry.count({ where })
