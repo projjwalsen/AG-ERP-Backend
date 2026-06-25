@@ -3,6 +3,7 @@ import { LedgerService } from "../accounting/ledger/ledger.service";
 import { ReportingService } from "./reporting.service";
 import { ExcelService } from "../../core/utils/export.service";
 import { branchDayBookColumns, gstr1Columns, gstSuspenseColumns, outstandingColumns, stockInventoryColumns } from "../exports/branch.export";
+import { formatISTDate } from "../../core/utils/loc.utils";
 
 
 export const getBranchDayBook = async (
@@ -35,7 +36,7 @@ export const getBranchDayBook = async (
                 res,
                 {
                     filename: "branch-day-book",
-                    title: "Branch Day Book",
+                    title: `${result.branch.name} - BRANCH DAY BOOK`,
                     sheetName: "Day Book",
                     columns: branchDayBookColumns,
                     data: result.entries
@@ -146,7 +147,7 @@ export const getGSTSuspenseAccountLog = async (
                         "gst-suspense-log",
 
                     title:
-                        "GST Suspense Account Log",
+                        `GST Suspense Account Log`,
 
                     sheetName:
                         "GST Suspense",
@@ -257,11 +258,11 @@ export const getOutstandingReport = async (
             return ExcelService.export(
                 res,
                 {
-                    filename: "outstanding-report",
+                    filename: "AP / AR Reports",
 
                     sheetName: "Outstanding",
 
-                    title: "Outstanding Report",
+                    title: `AP / AR Reports`,
 
                     columns: outstandingColumns,
 

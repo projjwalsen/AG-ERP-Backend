@@ -79,16 +79,20 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
         if (isExport) {
 
             let columns = ledgerColumns;
+            let title = `Ledger - ${query.view || "All"}`;
 
             if (query.view === "BRANCH") {
+                title = `Branch Ledger - ${query.branchId || "All"}`;
                 columns = branchLedgerColumns;
             }
 
             if (query.view === "AGENCY") {
+                title = `Agency Ledger - All`;
                 columns = agencyLedgerColumns;
             }
 
             if (query.view === "SUSPENSE") {
+                title = `Suspense Ledger - All`;
                 columns = suspenseLedgerColumns;
             }
 
@@ -97,7 +101,7 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
                 {
                     filename: `ledger_${query.view || "default"}`,
 
-                    title: `Ledger - ${query.view || "All"}`,
+                    title: title,
 
                     sheetName:
                         query.view || "Ledgers",
