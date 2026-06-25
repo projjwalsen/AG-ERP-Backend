@@ -203,6 +203,9 @@ export class ExcelService {
 
         if (options.title) {
 
+            /**
+             * Report Title
+             */
             worksheet.mergeCells(
                 1,
                 1,
@@ -218,7 +221,7 @@ export class ExcelService {
 
             titleCell.font = {
                 bold: true,
-                size: 16
+                size: 18
             };
 
             titleCell.alignment = {
@@ -226,9 +229,52 @@ export class ExcelService {
                 vertical: "middle"
             };
 
-            worksheet.getRow(1).height = 25;
+            worksheet.getRow(1).height = 28;
 
-            headerRowNumber = 3;
+            /**
+             * Date of Generation
+             */
+            worksheet.mergeCells(
+                2,
+                1,
+                2,
+                options.columns.length
+            );
+
+            const generatedCell =
+                worksheet.getCell(2, 1);
+
+            generatedCell.value =
+                `Date of Generation : ${new Intl.DateTimeFormat(
+                    "en-IN",
+                    {
+                        timeZone: "Asia/Kolkata",
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true
+                    }
+                ).format(new Date())}`;
+
+            generatedCell.font = {
+                bold: true,
+                size: 12,
+                color: {
+                    argb: "404040"
+                },
+                name: "Calibri"
+            };
+
+            generatedCell.alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
+
+            worksheet.getRow(2).height = 20;
+
+            headerRowNumber = 4;
         }
 
 

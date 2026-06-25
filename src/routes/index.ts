@@ -14,6 +14,7 @@ import settingRoute from "../modules/settings/setting.routes";
 import productLedgerRoute from "../modules/accounting/productLedger/productLedger.routes";
 import financialLedgerRoute from "../modules/accounting/ledger/ledger.routes";
 import reportingRoute from "../modules/reports/reporting.routes";
+import dashboardRoute from "../modules/dashboard/kpi.routes";
 
 const router = Router();
 
@@ -32,6 +33,7 @@ router.use("/transactions", transactionRoute);
 router.use("/product-ledger", productLedgerRoute);
 router.use("/ledgers", financialLedgerRoute);
 router.use("/reports", reportingRoute);
+router.use("/dashboard", dashboardRoute);
 
 
 
