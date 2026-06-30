@@ -515,6 +515,7 @@ model Purchase {
   updatedAt DateTime @updatedAt
 
   allocations TransactionAllocation[]
+  transactions Transaction[]
   
   @@index([agencyId])
   @@index([branchId])
@@ -609,6 +610,7 @@ model Sale {
   updatedAt DateTime @updatedAt
 
   allocations TransactionAllocation[]
+  transactions Transaction[]
   
   @@index([agencyId])
   @@index([branchId])
@@ -682,6 +684,11 @@ enum TransactionPaymentType {
   THIRD_PARTY
 }
 
+enum SettlementType {
+  INVOICE_TO_INVOICE
+  LUMPSUM
+}
+
 enum PaymentMode {
   ONLINE
   OFFLINE
@@ -713,6 +720,8 @@ model Transaction {
 
   status  TransactionStatus @default(PENDING)
 
+  settlementType SettlementType @default(INVOICE_TO_INVOICE)
+
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
@@ -727,11 +736,16 @@ model Transaction {
   thirdPartyAgencyId String?
   thirdPartyAgency   Agency? @relation("ThirdPartyAgencyTransactions", fields: [thirdPartyAgencyId], references: [id], onDelete: SetNull)
 
+  purchaseId String?
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  saleId String?
+  sale   Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
 
   amount Decimal @db.Decimal(18, 2)
 
-  paymentMode PaymentMode
-  paymentType TransactionPaymentType
+  paymentMode PaymentMode?
+  paymentType TransactionPaymentType?
 
   paymentThrough PaymentType?
 
