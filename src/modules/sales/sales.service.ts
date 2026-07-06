@@ -19,28 +19,61 @@ type SalesItemPayload = {
     unitPrice?: number; // Optional, will auto fetch from product if not provided
 }
 
-type CreateSalesPayload = {
-    agencyId: string;
-    branchId: string;
-    remarks?: string;
+type SaleTransportPayload = {
 
-    /** Invoice Metqadata */
-    invoiceDate?: string;
+    /** Delivery */
+
     deliveryNote?: string;
 
-    suppliersRef?: string;
-    otherReference?: string;
-
     buyerOrderNo?: string;
+
     buyerOrderDate?: string;
 
+    termsOfDelivery?: string;
+
+    /** Dispatch */
+
     despatchDocNo?: string;
+
     despatchDocDate?: string;
 
     despatchThrough?: string;
+
     destination?: string;
 
-    items: SalesItemPayload[];
+    vehicleOrFlightNo?: string;
+
+    /** Export */
+
+    portOfLoading?: string;
+
+    portOfDischarge?: string;
+
+    countryTo?: string;
+
+    shippingNo?: string;
+
+    shippingDate?: string;
+
+    portCode?: string;
+};
+
+type CreateSalesPayload = {
+
+    agencyId:string;
+    branchId:string;
+
+    invoiceNo?:string;
+    remarks?:string;
+    invoiceDate?:string;
+
+    voucherType?: string;
+    otherReference?:string;
+
+    transport?: SaleTransportPayload;
+    roundOffAmount?:number;
+
+    items:SalesItemPayload[];
 }
 
 export class SalesService {
@@ -330,10 +363,13 @@ export class SalesService {
         }
 
         const firstItem = validatedItems[0];
-        const invoiceNo = await this.generateInvoiceNo(
-            firstItem.product.name,
-            firstItem.batch.batchNo
-        );
+        const invoiceNo =
+            payload.invoiceNo?.trim()
+                ??
+            await this.generateInvoiceNo(
+                firstItem.product.name,
+                firstItem.batch.batchNo
+            );
 
         let subtotalAmount = 0;
         let totalGSTAmount = 0;
@@ -356,42 +392,108 @@ export class SalesService {
             grandTotal += item.totalAmount;
         }
 
+        grandTotal += payload.roundOffAmount ?? 0;
+
         /**
          * Create sales record
         */
         const sale = await prisma.sale.create({
             data: {
                 agencyId: payload.agencyId,
+
                 branchId: payload.branchId,
+
                 invoiceNo,
-                remarks: payload.remarks?.trim(),
 
-                /** Invoice Metadata */
-                invoiceDate: payload.invoiceDate ? new Date(payload.invoiceDate) : new Date(),
-                deliveryNote: payload.deliveryNote?.trim(),
+                invoiceDate:
+                    payload.invoiceDate
+                    ? new Date(payload.invoiceDate)
+                    : new Date(),
 
-                suppliersRef: payload.suppliersRef?.trim(),
-                otherReference: payload.otherReference?.trim(),
+                voucherType:
+                    "SALE",
 
-                buyerOrderNo: payload.buyerOrderNo?.trim(),
-                buyerOrderDate: payload.buyerOrderDate ? new Date(payload.buyerOrderDate) : undefined,
-                
-                despatchDocNo: payload.despatchDocNo?.trim(),
-                despatchDocDate: payload.despatchDocDate ? new Date(payload.despatchDocDate) : undefined,
+                otherReference:
+                    payload.otherReference?.trim(),
 
-                despatchThrough: payload.despatchThrough?.trim(),
-                destination: payload.destination?.trim(),
+                roundOffAmount:
+                    payload.roundOffAmount ?? 0,
+
+                remarks:
+                    payload.remarks?.trim(),
 
                 createdById: actor.id,
 
                 subTotalAmount: subtotalAmount,
+
                 totalGSTAmount,
 
                 totalCGSTAmount,
+
                 totalSGSTAmount,
+
                 totalIGSTAmount,
 
                 grandTotal,
+
+                transport:{
+
+                    create:{
+
+                        deliveryNote:
+                            payload.transport?.deliveryNote,
+
+                        buyerOrderNo:
+                            payload.transport?.buyerOrderNo,
+
+                        buyerOrderDate:
+                            payload.transport?.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : undefined,
+
+                        termsOfDelivery:
+                            payload.transport?.termsOfDelivery,
+
+                        despatchDocNo:
+                            payload.transport?.despatchDocNo,
+
+                        despatchDocDate:
+                            payload.transport?.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : undefined,
+
+                        despatchThrough:
+                            payload.transport?.despatchThrough,
+
+                        destination:
+                            payload.transport?.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport?.vehicleOrFlightNo,
+
+                        portOfLoading:
+                            payload.transport?.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport?.portOfDischarge,
+
+                        countryTo:
+                            payload.transport?.countryTo,
+
+                        shippingNo:
+                            payload.transport?.shippingNo,
+
+                        shippingDate:
+                            payload.transport?.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : undefined,
+
+                        portCode:
+                            payload.transport?.portCode
+
+                    }
+
+                },
 
                 items: {
                     create: validatedItems.map((data) => ({
@@ -425,7 +527,7 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
-
+                transactions: true,
                 items: {
                     include: {
                         product: true,
@@ -477,7 +579,7 @@ export class SalesService {
                     branch: true,
                     createdBy: true,
                     approvedBy: true,
-
+                    transport: true,
                     items: {
                         include: {
                             product: true,
@@ -529,6 +631,7 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
+                transport: true,
                 createdBy: true,
                 approvedBy: true,
                 items: {
@@ -1064,11 +1167,13 @@ export class SalesService {
                     id: saleId
                 },
                 data: {
+
                     agency: {
                         connect: {
                             id: agencyId
                         }
                     },
+
                     branch: {
                         connect: {
                             id: branchId
@@ -1077,68 +1182,165 @@ export class SalesService {
 
                     remarks:
                         payload.remarks !== undefined
-                            ? payload.remarks?.trim()
+                            ? payload.remarks.trim()
                             : undefined,
 
-                    invoiceDate: payload.invoiceDate ? new Date(payload.invoiceDate) : new Date(),
-
-                    deliveryNote:
-                        payload.deliveryNote !== undefined
-                            ? payload.deliveryNote?.trim()
+                    invoiceDate:
+                        payload.invoiceDate
+                            ? new Date(payload.invoiceDate)
                             : undefined,
 
-                    suppliersRef:
-                        payload.suppliersRef !== undefined
-                            ? payload.suppliersRef?.trim()
-                            : undefined,
+                    voucherType:
+                        "SALE",
 
                     otherReference:
-                        payload.otherReference !== undefined
-                            ? payload.otherReference?.trim()
-                            : undefined,
+                        payload.otherReference?.trim(),
 
-                    buyerOrderNo:
-                        payload.buyerOrderNo !== undefined
-                            ? payload.buyerOrderNo?.trim()
-                            : undefined,
-
-                    buyerOrderDate:
-                        payload.buyerOrderDate !== undefined
-                            ? new Date(payload.buyerOrderDate)
-                            : undefined,
-
-                    despatchDocNo:
-                        payload.despatchDocNo !== undefined
-                            ? payload.despatchDocNo?.trim()
-                            : undefined,
-
-                    despatchDocDate:
-                        payload.despatchDocDate !== undefined
-                            ? new Date(payload.despatchDocDate)
-                            : undefined,
-
-                    despatchThrough:
-                        payload.despatchThrough !== undefined
-                            ? payload.despatchThrough?.trim()
-                            : undefined,
-
-                    destination:
-                        payload.destination !== undefined
-                            ? payload.destination?.trim()
-                            : undefined,
+                    roundOffAmount:
+                        payload.roundOffAmount,
 
                     ...(payload.items && {
+
                         subTotalAmount: subtotalAmount,
+
                         totalGSTAmount,
 
                         totalCGSTAmount,
+
                         totalSGSTAmount,
+
                         totalIGSTAmount,
 
                         grandTotal
+
                     })
+
                 }
             });
+
+            if (payload.transport) {
+
+                await tx.saleTransport.upsert({
+
+                    where: {
+                        saleId
+                    },
+
+                    update: {
+
+                        deliveryNote:
+                            payload.transport.deliveryNote,
+
+                        buyerOrderNo:
+                            payload.transport.buyerOrderNo,
+
+                        buyerOrderDate:
+                            payload.transport.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : null,
+
+                        termsOfDelivery:
+                            payload.transport.termsOfDelivery,
+
+                        despatchDocNo:
+                            payload.transport.despatchDocNo,
+
+                        despatchDocDate:
+                            payload.transport.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : null,
+
+                        despatchThrough:
+                            payload.transport.despatchThrough,
+
+                        destination:
+                            payload.transport.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport.vehicleOrFlightNo,
+
+                        portOfLoading:
+                            payload.transport.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport.portOfDischarge,
+
+                        countryTo:
+                            payload.transport.countryTo,
+
+                        shippingNo:
+                            payload.transport.shippingNo,
+
+                        shippingDate:
+                            payload.transport.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : null,
+
+                        portCode:
+                            payload.transport.portCode
+
+                    },
+
+                    create: {
+
+                        saleId,
+
+                        deliveryNote:
+                            payload.transport.deliveryNote,
+
+                        buyerOrderNo:
+                            payload.transport.buyerOrderNo,
+
+                        buyerOrderDate:
+                            payload.transport.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : undefined,
+
+                        termsOfDelivery:
+                            payload.transport.termsOfDelivery,
+
+                        despatchDocNo:
+                            payload.transport.despatchDocNo,
+
+                        despatchDocDate:
+                            payload.transport.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : undefined,
+
+                        despatchThrough:
+                            payload.transport.despatchThrough,
+
+                        destination:
+                            payload.transport.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport.vehicleOrFlightNo,
+
+                        portOfLoading:
+                            payload.transport.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport.portOfDischarge,
+
+                        countryTo:
+                            payload.transport.countryTo,
+
+                        shippingNo:
+                            payload.transport.shippingNo,
+
+                        shippingDate:
+                            payload.transport.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : undefined,
+
+                        portCode:
+                            payload.transport.portCode
+
+                    }
+
+                });
+
+            }
 
             /**
              * Replace items
@@ -1166,7 +1368,7 @@ export class SalesService {
                 include: {
                     agency: true,
                     branch: true,
-
+                    transport: true,
                     createdBy: {
                         select: {
                             id: true,
@@ -1213,6 +1415,7 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
+                transport: true,
                 items: {
                     include: {
                         product: true,
@@ -1251,6 +1454,7 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
+                transport: true,
                 items: {
                     include: {
                         product: true,

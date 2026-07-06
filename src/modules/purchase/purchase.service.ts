@@ -1,4 +1,4 @@
-import { OutstandingType, ProductUnit } from "@prisma/client";
+import { OutstandingType, ProductUnit, VoucherType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { RBACService } from "../rbac/rbac.service";
@@ -15,12 +15,53 @@ type PurchaseItemPayload = {
     purchasePrice: number;
 }
 
+type PurchaseTransportPayload = {
+
+    purchaseOrderNo?: string;
+
+    purchaseOrderDate?: Date | string;
+
+    termsOfDelivery?: string;
+
+    receiptNoteNo?: string;
+
+    receiptNoteDate?: Date | string;
+
+    lrNo?: string;
+
+    dispatchThrough?: string;
+
+    destination?: string;
+
+    vehicleOrFlightNo?: string;
+
+    portOfLoading?: string;
+
+    portOfDischarge?: string;
+
+    countryTo?: string;
+
+    billOfEntryNo?: string;
+
+    billOfEntryDate?: Date | string;
+
+    portCode?: string;
+
+}
+
 type createPurchasePayload = {
     agencyId: string;
     branchId: string;
 
     invoiceNo: string;
+    invoiceDate?: Date | string;
+    voucherType?: VoucherType;
+    supplierInvoiceDate?: Date | string;
+    otherReference?: string;
     remarks?: string;
+
+    roundOffAmount?: number;
+    transport?: PurchaseTransportPayload;
 
     items: PurchaseItemPayload[];
 }
@@ -133,8 +174,19 @@ export class PurchaseService {
 
         /** Calculate the GST + Totals amounts */
         let subTotalAmount = 0;
+
+        let totalCGSTAmount = 0;
+
+        let totalSGSTAmount = 0;
+
+        let totalIGSTAmount = 0;
+
         let totalGSTAmount = 0;
+
         let grandTotal = 0;
+
+        const roundOffAmount =
+            payload.roundOffAmount ?? 0;
 
         const processedItems = [];
 
@@ -169,12 +221,38 @@ export class PurchaseService {
             const taxableAmount = Number(item.quantity) * Number(item.purchasePrice);
 
             // gst amount = taxable amount * gst percent / 100
-            const gstAmount = (taxableAmount * gstPercent) / 100;
+            let cgstAmount = 0;
+            let sgstAmount = 0;
+            let igstAmount = 0;
+
+            if (agency.stateCode === branch.stateCode) {
+
+                cgstAmount =
+                    (taxableAmount * gstPercent) / 200;
+
+                sgstAmount =
+                    (taxableAmount * gstPercent) / 200;
+
+            }
+            else {
+
+                igstAmount =
+                    (taxableAmount * gstPercent) / 100;
+
+            }
+
+            const gstAmount =
+            cgstAmount +
+            sgstAmount +
+            igstAmount;
 
             // total amount = taxable amount + gst amount
             const totalAmount = taxableAmount + gstAmount;
 
             subTotalAmount += taxableAmount;
+            totalCGSTAmount += cgstAmount;
+            totalSGSTAmount += sgstAmount;
+            totalIGSTAmount += igstAmount;
             totalGSTAmount += gstAmount;
             grandTotal += totalAmount;
 
@@ -186,36 +264,107 @@ export class PurchaseService {
                 purchasePrice: item.purchasePrice,
                 taxableAmount,
                 gstPercent,
+                cgstAmount,
+                sgstAmount,
+                igstAmount,
                 gstAmount,
                 totalAmount
             })
         }
 
-
+        grandTotal += roundOffAmount;
 
 
 
         /** Create Purchase */
         const purchase = await prisma.purchase.create({
-            data: {
+            data:{
+
                 agencyId: payload.agencyId,
+
                 branchId: payload.branchId,
+
                 invoiceNo: normalizedInvoiceNo,
-                remarks: payload.remarks?.trim(),
 
-                createdById: actor.id,
+                invoiceDate:
+                    payload.invoiceDate
+                    ? new Date(payload.invoiceDate)
+                    : new Date(),
 
-                subtotalAmount: subTotalAmount,
-                totalGSTAmount: totalGSTAmount,
-                grandTotal: grandTotal,
+                supplierInvoiceDate:
+                    payload.supplierInvoiceDate
+                    ? new Date(payload.supplierInvoiceDate)
+                    : undefined,
 
-                items: {
-                    create: processedItems
+                voucherType:"PURCHASE",
+
+                otherReference:
+                    payload.otherReference,
+
+                remarks:
+                    payload.remarks,
+
+                subtotalAmount:subTotalAmount,
+
+                totalCGSTAmount,
+
+                totalSGSTAmount,
+
+                totalIGSTAmount,
+
+                totalGSTAmount,
+
+                roundOffAmount,
+
+                grandTotal,
+
+                createdById:actor.id,
+
+                transport:
+
+                    payload.transport
+                    ?{
+
+                        create:{
+
+                            ...payload.transport,
+
+                            purchaseOrderDate:
+                                payload.transport.purchaseOrderDate
+                                ? new Date(
+                                    payload.transport.purchaseOrderDate
+                                )
+                                :undefined,
+
+                            receiptNoteDate:
+                                payload.transport.receiptNoteDate
+                                ? new Date(
+                                    payload.transport.receiptNoteDate
+                                )
+                                :undefined,
+
+                            billOfEntryDate:
+                                payload.transport.billOfEntryDate
+                                ? new Date(
+                                    payload.transport.billOfEntryDate
+                                )
+                                :undefined
+
+                        }
+
+                    }
+
+                    :undefined,
+
+                items:{
+                    create:processedItems
                 }
+
             },
             include: {
                 agency: true,
                 branch: true,
+                transport: true,
                 items: {
                     include: {
                         product: true
@@ -326,6 +475,8 @@ export class PurchaseService {
                     purchase.totalGSTAmount
                 ),
 
+                
+
                 grandTotal: Number(
                     purchase.grandTotal
                 ),
@@ -386,6 +537,7 @@ export class PurchaseService {
                         email: true
                     }
                 },
+                transport: true,
 
                 approvedBy: {
                     select: {
@@ -709,13 +861,48 @@ export class PurchaseService {
             }
         }
 
-        const normalizedInvoiceNo = payload.invoiceNo?.trim().toUpperCase();
+        const normalizedInvoiceNo =
+            payload.invoiceNo
+                ? payload.invoiceNo.trim().toUpperCase()
+                : existingPurchase.invoiceNo;
+
         /** Update purchase */
         const updatedPurchase = await prisma.$transaction(async (tx) => {
 
-            let subtotalAmount = 0;
+            const agency = await tx.agency.findUnique({
+                where: {
+                    id: payload.agencyId ?? existingPurchase.agencyId
+                }
+            });
+
+            if (!agency) {
+                throw new ApiError("Agency not found", 404);
+            }
+
+            const branch = await tx.branch.findUnique({
+                where: {
+                    id: payload.branchId ?? existingPurchase.branchId
+                }
+            });
+
+            if (!branch) {
+                throw new ApiError("Branch not found", 404);
+            }
+
+            let subTotalAmount = 0;
+
+            let totalCGSTAmount = 0;
+
+            let totalSGSTAmount = 0;
+
+            let totalIGSTAmount = 0;
+
             let totalGSTAmount = 0;
+
             let grandTotal = 0;
+
+            const roundOffAmount =
+                payload.roundOffAmount ?? 0;
 
             const itemsData = [];
 
@@ -758,8 +945,37 @@ export class PurchaseService {
                     /**
                      * GST Amount
                      */
+                    let cgstPercent = 0;
+
+                    let sgstPercent = 0;
+
+                    let igstPercent = 0;
+
+                    if (agency.stateCode === branch.stateCode) {
+
+                        cgstPercent = gstPercent / 2;
+
+                        sgstPercent = gstPercent / 2;
+
+                    } else {
+
+                        igstPercent = gstPercent;
+
+                    }
+
+                    const cgstAmount =
+                        (taxableAmount * cgstPercent) / 100;
+
+                    const sgstAmount =
+                        (taxableAmount * sgstPercent) / 100;
+
+                    const igstAmount =
+                        (taxableAmount * igstPercent) / 100;
+
                     const gstAmount =
-                        (taxableAmount * gstPercent) / 100;
+                        cgstAmount +
+                        sgstAmount +
+                        igstAmount;
 
                     /**
                      * Final Total
@@ -770,11 +986,20 @@ export class PurchaseService {
                     /**
                      * Invoice totals
                      */
-                    subtotalAmount += taxableAmount;
+                    subTotalAmount += taxableAmount;
+
+                    totalCGSTAmount += cgstAmount;
+
+                    totalSGSTAmount += sgstAmount;
+
+                    totalIGSTAmount += igstAmount;
+
                     totalGSTAmount += gstAmount;
+
                     grandTotal += totalAmount;
 
                     itemsData.push({
+
                         purchaseId,
 
                         productId: item.productId,
@@ -791,11 +1016,25 @@ export class PurchaseService {
 
                         gstPercent,
 
+                        cgstPercent,
+
+                        sgstPercent,
+
+                        igstPercent,
+
+                        cgstAmount,
+
+                        sgstAmount,
+
+                        igstAmount,
+
                         gstAmount,
 
                         totalAmount
+
                     });
                 }
+                grandTotal += roundOffAmount;
             }
 
 
@@ -805,15 +1044,180 @@ export class PurchaseService {
                     id: purchaseId
                 },
                 data: {
-                    agencyId: payload.agencyId,
-                    branchId: payload.branchId,
-                    invoiceNo: normalizedInvoiceNo,
-                    remarks: payload.remarks !== undefined ? payload.remarks?.trim() : undefined,
-                    subtotalAmount,
+
+                    agencyId:
+                        payload.agencyId,
+
+                    branchId:
+                        payload.branchId,
+
+                    invoiceNo:
+                        normalizedInvoiceNo,
+
+                    invoiceDate:
+                        payload.invoiceDate
+                            ? new Date(payload.invoiceDate)
+                            : undefined,
+
+                    supplierInvoiceDate:
+                        payload.supplierInvoiceDate
+                            ? new Date(payload.supplierInvoiceDate)
+                            : undefined,
+
+                    voucherType:
+                        "PURCHASE",
+
+                    otherReference:
+                        payload.otherReference,
+
+                    remarks:
+                        payload.remarks !== undefined
+                            ? payload.remarks.trim()
+                            : undefined,
+
+                    subtotalAmount:
+                        subTotalAmount,
+
+                    totalCGSTAmount,
+
+                    totalSGSTAmount,
+
+                    totalIGSTAmount,
+
                     totalGSTAmount,
+
+                    roundOffAmount,
+
                     grandTotal
+
                 }
             });
+
+            if (payload.transport) {
+
+                await tx.purchaseTransport.upsert({
+
+                    where: {
+
+                        purchaseId
+
+                    },
+
+                    create: {
+
+                        purchaseId,
+
+                        purchaseOrderNo:
+                            payload.transport.purchaseOrderNo,
+
+                        purchaseOrderDate:
+                            payload.transport.purchaseOrderDate
+                                ? new Date(payload.transport.purchaseOrderDate)
+                                : undefined,
+
+                        termsOfDelivery:
+                            payload.transport.termsOfDelivery,
+
+                        receiptNoteNo:
+                            payload.transport.receiptNoteNo,
+
+                        receiptNoteDate:
+                            payload.transport.receiptNoteDate
+                                ? new Date(payload.transport.receiptNoteDate)
+                                : undefined,
+
+                        lrNo:
+                            payload.transport.lrNo,
+
+                        dispatchThrough:
+                            payload.transport.dispatchThrough,
+
+                        destination:
+                            payload.transport.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport.vehicleOrFlightNo,
+
+                        portOfLoading:
+                            payload.transport.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport.portOfDischarge,
+
+                        countryTo:
+                            payload.transport.countryTo,
+
+                        billOfEntryNo:
+                            payload.transport.billOfEntryNo,
+
+                        billOfEntryDate:
+                            payload.transport.billOfEntryDate
+                                ? new Date(payload.transport.billOfEntryDate)
+                                : undefined,
+
+                        portCode:
+                            payload.transport.portCode
+
+                    },
+
+                    update: {
+
+                        purchaseOrderNo:
+                            payload.transport.purchaseOrderNo,
+
+                        purchaseOrderDate:
+                            payload.transport.purchaseOrderDate
+                                ? new Date(payload.transport.purchaseOrderDate)
+                                : undefined,
+
+                        termsOfDelivery:
+                            payload.transport.termsOfDelivery,
+
+                        receiptNoteNo:
+                            payload.transport.receiptNoteNo,
+
+                        receiptNoteDate:
+                            payload.transport.receiptNoteDate
+                                ? new Date(payload.transport.receiptNoteDate)
+                                : undefined,
+
+                        lrNo:
+                            payload.transport.lrNo,
+
+                        dispatchThrough:
+                            payload.transport.dispatchThrough,
+
+                        destination:
+                            payload.transport.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport.vehicleOrFlightNo,
+
+                        portOfLoading:
+                            payload.transport.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport.portOfDischarge,
+
+                        countryTo:
+                            payload.transport.countryTo,
+
+                        billOfEntryNo:
+                            payload.transport.billOfEntryNo,
+
+                        billOfEntryDate:
+                            payload.transport.billOfEntryDate
+                                ? new Date(payload.transport.billOfEntryDate)
+                                : undefined,
+
+                        portCode:
+                            payload.transport.portCode
+
+                    }
+
+                });
+
+            }
 
             if(payload.items){
                 // delete existing items
@@ -834,6 +1238,7 @@ export class PurchaseService {
                     id: purchaseId
                 },
                 include: {
+                    transport: true,
                     agency: {
                         select: {
                             id: true,

@@ -5,7 +5,6 @@ export interface ExcelReportHeader {
     title: string;
     subtitle?: string;
     period?: string;
-    companyName?: string;
 }
 export interface ExportColumn<T> {
   header: string;
@@ -27,6 +26,8 @@ export interface ExportRequest<T> {
   columns: ExportColumn<T>[];
 
   data: T[];
+  companyName?: string;
+  showCompanyName?: boolean;
 
   filters?: Record<string, any>;
 
@@ -102,91 +103,91 @@ export class ExcelService {
             };
         });
     }
-    private static addReportHeader(
-    worksheet: ExcelJS.Worksheet,
-    header: ExcelReportHeader,
-    totalColumns: number
-) {
+    // private static addReportHeader(
+    //     worksheet: ExcelJS.Worksheet,
+    //     header: ExcelReportHeader,
+    //     totalColumns: number
+    // ) {
 
-    worksheet.mergeCells(
-        1,
-        1,
-        1,
-        totalColumns
-    );
+    //     worksheet.mergeCells(
+    //         1,
+    //         1,
+    //         1,
+    //         totalColumns
+    //     );
 
-    const companyCell =
-        worksheet.getCell(1, 1);
+    //     const companyCell =
+    //         worksheet.getCell(1, 1);
 
-    companyCell.value =
-        header.companyName ||
-        "ASHTAVINAYAKA";
+    //     companyCell.value =
+    //         header.companyName ||
+    //         "ASHTAVINAYAKA";
 
-    companyCell.font = {
-        bold: true,
-        size: 18
-    };
+    //     companyCell.font = {
+    //         bold: true,
+    //         size: 18
+    //     };
 
-    companyCell.alignment = {
-        horizontal: "center"
-    };
+    //     companyCell.alignment = {
+    //         horizontal: "center"
+    //     };
 
-    worksheet.mergeCells(
-        2,
-        1,
-        2,
-        totalColumns
-    );
+    //     worksheet.mergeCells(
+    //         2,
+    //         1,
+    //         2,
+    //         totalColumns
+    //     );
 
-    const titleCell =
-        worksheet.getCell(2, 1);
+    //     const titleCell =
+    //         worksheet.getCell(2, 1);
 
-    titleCell.value =
-        header.title;
+    //     titleCell.value =
+    //         header.title;
 
-    titleCell.font = {
-        bold: true,
-        size: 14
-    };
+    //     titleCell.font = {
+    //         bold: true,
+    //         size: 14
+    //     };
 
-    titleCell.alignment = {
-        horizontal: "center"
-    };
+    //     titleCell.alignment = {
+    //         horizontal: "center"
+    //     };
 
-    if (header.subtitle) {
+    //     if (header.subtitle) {
 
-        worksheet.mergeCells(
-            3,
-            1,
-            3,
-            totalColumns
-        );
+    //         worksheet.mergeCells(
+    //             3,
+    //             1,
+    //             3,
+    //             totalColumns
+    //         );
 
-        worksheet.getCell(
-            3,
-            1
-        ).value =
-            header.subtitle;
-    }
+    //         worksheet.getCell(
+    //             3,
+    //             1
+    //         ).value =
+    //             header.subtitle;
+    //     }
 
-    if (header.period) {
+    //     if (header.period) {
 
-        worksheet.mergeCells(
-            4,
-            1,
-            4,
-            totalColumns
-        );
+    //         worksheet.mergeCells(
+    //             4,
+    //             1,
+    //             4,
+    //             totalColumns
+    //         );
 
-        worksheet.getCell(
-            4,
-            1
-        ).value =
-            `Period : ${header.period}`;
-    }
+    //         worksheet.getCell(
+    //             4,
+    //             1
+    //         ).value =
+    //             `Period : ${header.period}`;
+    //     }
 
-    return 6;
-}
+    //     return 6;
+    // }
     static async export<T>(
         res: Response,
         options: ExportRequest<T> & {
@@ -199,22 +200,49 @@ export class ExcelService {
             options.sheetName || "Sheet1"
         );
 
-        let headerRowNumber = 1;
+        let currentRow = 1;
+
+        if (options.showCompanyName && options.companyName) {
+
+            worksheet.mergeCells(
+                currentRow,
+                1,
+                currentRow,
+                options.columns.length
+            );
+
+            const companyCell =
+                worksheet.getCell(currentRow, 1);
+
+            companyCell.value =
+                options.companyName;
+
+            companyCell.font = {
+                bold: true,
+                size: 18
+            };
+
+            companyCell.alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
+
+            worksheet.getRow(currentRow).height = 28;
+
+            currentRow++;
+        }
 
         if (options.title) {
 
-            /**
-             * Report Title
-             */
             worksheet.mergeCells(
+                currentRow,
                 1,
-                1,
-                1,
+                currentRow,
                 options.columns.length
             );
 
             const titleCell =
-                worksheet.getCell(1, 1);
+                worksheet.getCell(currentRow, 1);
 
             titleCell.value =
                 options.title;
@@ -229,20 +257,19 @@ export class ExcelService {
                 vertical: "middle"
             };
 
-            worksheet.getRow(1).height = 28;
+            worksheet.getRow(currentRow).height = 28;
 
-            /**
-             * Date of Generation
-             */
+            currentRow++;
+
             worksheet.mergeCells(
-                2,
+                currentRow,
                 1,
-                2,
+                currentRow,
                 options.columns.length
             );
 
             const generatedCell =
-                worksheet.getCell(2, 1);
+                worksheet.getCell(currentRow, 1);
 
             generatedCell.value =
                 `Date of Generation : ${new Intl.DateTimeFormat(
@@ -263,8 +290,7 @@ export class ExcelService {
                 size: 12,
                 color: {
                     argb: "404040"
-                },
-                name: "Calibri"
+                }
             };
 
             generatedCell.alignment = {
@@ -272,10 +298,14 @@ export class ExcelService {
                 vertical: "middle"
             };
 
-            worksheet.getRow(2).height = 20;
+            worksheet.getRow(currentRow).height = 20;
 
-            headerRowNumber = 4;
+            currentRow++;
         }
+
+        const headerRowNumber = currentRow + 1;
+
+
 
 
         /**

@@ -11,17 +11,14 @@ router.use(authMiddleware);
  * @openapi
  * /api/sales/create:
  *   post:
- *     summary: Create sale
- *
+ *     summary: Create Sale
  *     tags:
  *       - Sales
- *
  *     security:
  *       - cookieAuth: []
  *
  *     requestBody:
  *       required: true
- *
  *       content:
  *         application/json:
  *           schema:
@@ -30,63 +27,101 @@ router.use(authMiddleware);
  *             required:
  *               - agencyId
  *               - branchId
+ *               - invoiceNo
+ *               - invoiceDate
  *               - items
  *
  *             properties:
  *
  *               agencyId:
  *                 type: string
- *                 example: clx_agency_001
+ *                 example: clx_customer_001
  *
  *               branchId:
  *                 type: string
  *                 example: clx_branch_001
  *
- *               remarks:
+ *               invoiceNo:
  *                 type: string
- *                 example: Urgent delivery
+ *                 example: SALE-2026-0001
  *
- *               deliveryNote:
+ *               invoiceDate:
  *                 type: string
- *                 example: Delivered via warehouse truck
- *
- *               suppliersRef:
- *                 type: string
- *                 example: SUP-REF-001
+ *                 format: date-time
+ *                 example: 2026-07-06T00:00:00.000Z
  *
  *               otherReference:
  *                 type: string
- *                 example: Internal Office Ref
+ *                 example: REF-001
  *
- *               buyerOrderNo:
+ *               remarks:
  *                 type: string
- *                 example: BO-2026-001
+ *                 example: Regular customer order
  *
- *               buyerOrderDate:
- *                 type: string
- *                 format: date
- *                 example: 2026-05-29
+ *               roundOffAmount:
+ *                 type: number
+ *                 example: -0.35
  *
- *               despatchDocNo:
- *                 type: string
- *                 example: DESP-4455
+ *               transport:
+ *                 type: object
  *
- *               despatchDocDate:
- *                 type: string
- *                 format: date
- *                 example: 2026-05-29
+ *                 properties:
  *
- *               despatchThrough:
- *                 type: string
- *                 example: Road Transport
+ *                   purchaseOrderNo:
+ *                     type: string
+ *                     example: PO-001
  *
- *               destination:
- *                 type: string
- *                 example: Kolkata Warehouse
- * 
- *               invoiceDate:
- *                 type: string
- *                 format: date
+ *                   purchaseOrderDate:
+ *                     type: string
+ *                     format: date-time
+ *
+ *                   receiptNoteNo:
+ *                     type: string
+ *                     example: RN-001
+ *
+ *                   receiptNoteDate:
+ *                     type: string
+ *                     format: date-time
+ *
+ *                   lrNo:
+ *                     type: string
+ *                     example: LR45879
+ *
+ *                   dispatchThrough:
+ *                     type: string
+ *                     example: Road Transport
+ *
+ *                   destination:
+ *                     type: string
+ *                     example: Pune Warehouse
+ *
+ *                   vehicleOrFlightNo:
+ *                     type: string
+ *                     example: MH12AB1234
+ *
+ *                   portOfLoading:
+ *                     type: string
+ *                     example: Mumbai
+ *
+ *                   portOfDischarge:
+ *                     type: string
+ *                     example: Chennai
+ *
+ *                   countryTo:
+ *                     type: string
+ *                     example: India
+ *
+ *                   billOfEntryNo:
+ *                     type: string
+ *                     example: BOE-001
+ *
+ *                   billOfEntryDate:
+ *                     type: string
+ *                     format: date-time
+ *
+ *                   portCode:
+ *                     type: string
+ *                     example: INMUM1
  *
  *               items:
  *                 type: array
@@ -96,19 +131,16 @@ router.use(authMiddleware);
  *
  *                   required:
  *                     - productId
- *                     - batchId
  *                     - quantity
  *                     - unit
+ *                     - salePrice
+ *                     - batches
  *
  *                   properties:
  *
  *                     productId:
  *                       type: string
  *                       example: clx_product_001
- *
- *                     batchId:
- *                       type: string
- *                       example: clx_batch_001
  *
  *                     quantity:
  *                       type: number
@@ -120,13 +152,54 @@ router.use(authMiddleware);
  *                         - KG
  *                         - LTR
  *                       example: KG
- * 
- *                     unitPrice:
+ *
+ *                     salePrice:
  *                       type: number
- *                       example: 100
+ *                       example: 125.50
+ *
+ *                     taxableAmount:
+ *                       type: number
+ *                       example: 62750
+ *
+ *                     cgst:
+ *                       type: number
+ *                       example: 5647.5
+ *
+ *                     sgst:
+ *                       type: number
+ *                       example: 5647.5
+ *
+ *                     igst:
+ *                       type: number
+ *                       example: 0
+ *
+ *                     total:
+ *                       type: number
+ *                       example: 74045
+ *
+ *                     batches:
+ *                       type: array
+ *
+ *                       description: FIFO batch allocations used for this sale item.
+ *
+ *                       items:
+ *                         type: object
+ *
+ *                         required:
+ *                           - batchId
+ *                           - quantity
+ *
+ *                         properties:
+ *
+ *                           batchId:
+ *                             type: string
+ *                             example: clx_batch_001
+ *
+ *                           quantity:
+ *                             type: number
+ *                             example: 250
  *
  *     responses:
- *
  *       201:
  *         description: Sale created successfully
  *
@@ -139,8 +212,11 @@ router.use(authMiddleware);
  *       403:
  *         description: Permission denied
  *
+ *       404:
+ *         description: Customer, Branch or Product not found
+ *
  *       409:
- *         description: Duplicate sale/batch conflict
+ *         description: Insufficient inventory or duplicate invoice
  */
 
 

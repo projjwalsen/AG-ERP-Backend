@@ -198,6 +198,9 @@ model Agency {
   amountReceivable Decimal @default(0.00) @db.Decimal(18, 2)
   amountPayable Decimal @default(0.00) @db.Decimal(18, 2)
 
+  panNo        String?
+  cstNo        String?
+
   ledger Ledger[]
   branches  AgencyBranch[]
   purchases Purchase[]
@@ -491,13 +494,32 @@ model Purchase {
 
   invoiceNo String @unique
 
+  /** ---------------- Purchase Document ---------------- */
+  invoiceDate DateTime?          // Vendor Invoice Date
+  supplierInvoiceDate DateTime?  // If supplier invoice differs
+  voucherType VoucherType?       // PURCHASE by default
+  otherReference String?
+
+  /** ---------------- GST Amounts ---------------- */
   subtotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalCGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalSGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalIGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
   totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  roundOffAmount Decimal @default(0.00) @db.Decimal(18,2)
+
   grandTotal Decimal @default(0.00) @db.Decimal(18,2)
 
+  /** ---------------- Status ---------------- */
   status   PurchaseStatus @default(PENDING)
   remarks String?
 
+  /** ---------------- Audit ---------------- */
   createdById  String?
   createdBy    User?  @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   
@@ -516,10 +538,66 @@ model Purchase {
 
   allocations TransactionAllocation[]
   transactions Transaction[]
+  transport PurchaseTransport[]
   
   @@index([agencyId])
   @@index([branchId])
   @@index([status])
+}
+
+model PurchaseTransport {
+  id String @id @default(uuid())
+
+  purchaseId String @unique
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  /** Purchase Order */
+
+  purchaseOrderNo String?
+
+  purchaseOrderDate DateTime?
+
+  /** Delivery */
+
+  termsOfDelivery String?
+
+  receiptNoteNo String?
+
+  receiptNoteDate DateTime?
+
+  /** Transport */
+
+  lrNo String?
+
+  dispatchThrough String?
+
+  destination String?
+
+  vehicleOrFlightNo String?
+
+  /** Import */
+
+  portOfLoading String?
+
+  portOfDischarge String?
+
+  countryTo String?
+
+  billOfEntryNo String?
+
+  billOfEntryDate DateTime?
+
+  portCode String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([purchaseOrderNo])
+
+  @@index([lrNo])
+
+  @@index([billOfEntryNo])
 }
 
 model PurchaseItem {
@@ -567,19 +645,12 @@ model Sale {
 
   /** Invoice Meta Fields **/
   invoiceDate DateTime @default(now())
-  deliveryNote String?
 
-  suppliersRef String?
+  voucherType VoucherType?
   otherReference String?
+  roundOffAmount Decimal @default(0.00) @db.Decimal(18,2)
 
-  buyerOrderNo String?
-  buyerOrderDate DateTime?
-
-  despatchDocNo String?
-  despatchDocDate DateTime?
-
-  despatchThrough String?
-  destination String?
+  voucherNo    String?
 
   status   SalesStatus @default(PENDING)
   remarks String?
@@ -611,10 +682,59 @@ model Sale {
 
   allocations TransactionAllocation[]
   transactions Transaction[]
+  transport SaleTransport[]
   
   @@index([agencyId])
   @@index([branchId])
   @@index([status])
+}
+
+model SaleTransport {
+  id String @id @default(uuid())
+
+  saleId String @unique
+
+  sale Sale @relation(fields:[saleId],references:[id],onDelete:Cascade)
+
+  deliveryNote String?
+
+  buyerOrderNo String?
+
+  buyerOrderDate DateTime?
+
+  termsOfDelivery String?
+
+  despatchDocNo String?
+
+  despatchDocDate DateTime?
+
+  despatchThrough String?
+
+  destination String?
+
+  vehicleOrFlightNo String?
+
+  portOfLoading String?
+
+  portOfDischarge String?
+
+  countryTo String?
+
+  shippingNo String?
+
+  shippingDate DateTime?
+
+  portCode String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerOrderNo])
+
+  @@index([despatchDocNo])
+
+  @@index([shippingNo])
 }
 
 
@@ -888,7 +1008,7 @@ model Ledger {
 enum VoucherType {
   SALE
   PURCHASE
-
+  RCM_PURCHASE
   RECEIPT
   PAYMENT
 
