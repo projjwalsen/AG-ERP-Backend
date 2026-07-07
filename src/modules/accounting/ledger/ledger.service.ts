@@ -6,6 +6,7 @@ import {
     PaymentMode,
     PaymentType,
     Prisma,
+    SettlementType,
     TransactionDirection,
     TransactionPaymentType,
     TransactionStatus,
@@ -4223,8 +4224,117 @@ export class LedgerService {
         ]
         .filter(Boolean)
         .join(" | ");
+        
+        
+        
+        if (
+            transaction.settlementType === SettlementType.LUMPSUM &&
+            transaction.thirdPartyAgencyId
+        ) {
 
+            if (transaction.direction === TransactionDirection.OUTWARD) {
 
+                const vendorLedger =
+                    await this.getOrCreateVendorLedger(
+                        tx,
+                        transaction.branchId,
+                        transaction.agencyId!
+                    );
+
+                const thirdPartyCustomerLedger =
+                    await this.getOrCreateCustomerLedger(
+                        tx,
+                        transaction.branchId,
+                        transaction.thirdPartyAgencyId
+                    );
+
+                return this.createVoucher({
+                    voucherType: VoucherType.CONTRA,
+                    sourceId: transaction.id,
+                    branchId: transaction.branchId,
+                    voucherDate: transaction.updatedAt ?? new Date(),
+
+                    narration:
+                        `CONTRA | ${narration} | Third Party Vendor Settlement`,
+
+                    entries: [
+
+                        {
+                            ledgerId: vendorLedger.id,
+                            entryType: EntryType.DEBIT,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration:
+                                allocationNarration ||
+                                "Vendor Settlement"
+                        },
+
+                        {
+                            ledgerId: thirdPartyCustomerLedger.id,
+                            entryType: EntryType.CREDIT,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration:
+                                "Third Party Customer"
+                        }
+
+                    ]
+                }, tx);
+            }
+
+            // INWARD
+
+            const customerLedger =
+                await this.getOrCreateCustomerLedger(
+                    tx,
+                    transaction.branchId,
+                    transaction.agencyId!
+                );
+
+            const thirdPartyVendorLedger =
+                await this.getOrCreateVendorLedger(
+                    tx,
+                    transaction.branchId,
+                    transaction.thirdPartyAgencyId
+                );
+
+            return this.createVoucher({
+
+                voucherType: VoucherType.CONTRA,
+
+                sourceId: transaction.id,
+
+                branchId: transaction.branchId,
+
+                voucherDate: transaction.updatedAt ?? new Date(),
+
+                narration:
+                    `CONTRA | ${narration} | Third Party Customer Settlement`,
+
+                entries: [
+
+                    {
+                        ledgerId: thirdPartyVendorLedger.id,
+                        entryType: EntryType.DEBIT,
+                        amount,
+                        branchId: transaction.branchId,
+                        narration:
+                            "Third Party Vendor"
+                    },
+
+                    {
+                        ledgerId: customerLedger.id,
+                        entryType: EntryType.CREDIT,
+                        amount,
+                        branchId: transaction.branchId,
+                        narration:
+                            allocationNarration ||
+                            "Customer Settlement"
+                    }
+
+                ]
+            }, tx);
+        }
 
         if (transaction.suspenseAccount || !transaction.agencyId) {
             const suspenseLedger = await this.getSuspenseLedger(tx, transaction.branchId);
