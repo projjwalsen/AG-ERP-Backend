@@ -30,6 +30,8 @@ export class ImportService {
                 worksheet
             );
 
+            console.log(rawRows[0]);
+
         const parsedRows =
             ExcelImportService.parseRows(
                 rawRows
@@ -45,9 +47,13 @@ export class ImportService {
 
             total: vouchers.length,
 
+            processed: 0,
+
             success: 0,
 
             failed: 0,
+
+            percentage: 0,
 
             errors: [] as any[]
 
@@ -67,9 +73,11 @@ export class ImportService {
                     i + BATCH_SIZE
                 );
 
-            await prisma.$transaction(async () => {
+            // await prisma.$transaction(async () => {
 
-                for (const voucher of batch) {
+            await Promise.allSettled(
+
+                batch.map(async voucher => {
 
                     try {
 
@@ -126,9 +134,30 @@ export class ImportService {
 
                     }
 
-                }
+                    summary.processed++;
 
-            });
+                    summary.percentage = Number(
+
+                        (
+                            summary.processed /
+                            summary.total *
+                            100
+                        ).toFixed(2)
+
+                    );
+
+                    console.log(
+
+                        `[${summary.processed}/${summary.total}] ${summary.percentage}% - ${voucher.voucherNo}`
+
+                    );
+
+                })
+
+            );
+
+
+            // });
 
         }
 

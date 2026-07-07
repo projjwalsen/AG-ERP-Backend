@@ -42,13 +42,31 @@ export class ExcelImportService {
 
     private static toNumber(value: any): number {
 
-        if (value === undefined || value === null)
+        if (value === undefined || value === null || value === "")
             return 0;
 
+        if (typeof value === "number")
+            return value;
+
         return Number(
+
             String(value)
+
+                .replace(/Dr/gi, "")
+                .replace(/Cr/gi, "")
+
+                .replace(/\/LTR\.?/gi, "")
+                .replace(/\/KG/gi, "")
+                .replace(/\/MT/gi, "")
+
+                .replace(/LTR/gi, "")
+                .replace(/KG/gi, "")
+                .replace(/MT/gi, "")
+
                 .replace(/,/g, "")
-                .replace(/[^\d.-]/g, "")
+
+                .trim()
+
         ) || 0;
 
     }
@@ -138,15 +156,16 @@ export class ExcelImportService {
     ): Record<string, any>[] {
 
         const rows =
-            XLSX.utils.sheet_to_json<
-                Record<string, any>
-            >(worksheet, {
+            XLSX.utils.sheet_to_json<Record<string, any>>(
+                worksheet,
+                {
+                    range: 7,          // <-- Start reading from Excel row 8
+                    defval: "",
+                    raw: false
+                }
+            );
 
-                defval: "",
-
-                raw: false
-
-            });
+            console.log(rows[0]);
 
         return rows.map(row =>
             this.normalizeHeaders(row)
@@ -170,15 +189,22 @@ export class ExcelImportService {
              */
             const productName =
                 particulars
-                    .replace(/\(\d+\)/g, "")
-                    .replace(/\s+/g, " ")
-                    .trim();
+
+                .replace(/\(\d+\)/g, "")
+
+                .replace(/\s*-\s*(KG|LTR|MT)$/i, "")
+
+                .replace(/\s+/g, " ")
+
+                .trim();
+
+            
 
             /**
              * HSN
              */
             const hsnNo =
-                particulars.match(/\((\d+)\)/)?.[1];
+                particulars.match(/\b\d{4,8}\b/)?.[0];
 
             /**
              * Quantity
@@ -193,6 +219,18 @@ export class ExcelImportService {
 
             let quantity =
                 this.toNumber(quantityText);
+
+            const isLedgerRow =
+                quantity === 0 &&
+                this.toNumber(
+                    this.getValue(row, "Value")
+                ) > 0;
+
+            if (isLedgerRow) {
+
+                return null as any;
+
+            }
 
             /**
              * Unit
@@ -253,6 +291,36 @@ export class ExcelImportService {
             if (/\/MT/i.test(rateText)) {
 
                 rate /= 1000;
+
+            }
+
+            /**
+             * Calculate rate if Excel leaves it blank.
+             * Tally Purchase/Sales Register often exports
+             * Quantity + Value but no Rate.
+             */
+            if (
+                rate === 0 &&
+                quantity > 0
+            ) {
+
+                const value =
+                    this.toNumber(
+                        this.getValue(
+                            row,
+                            "Value"
+                        )
+                    );
+
+                if (value > 0) {
+
+                    rate = Number(
+                        (
+                            value / quantity
+                        ).toFixed(2)
+                    );
+
+                }
 
             }
 
@@ -524,7 +592,8 @@ export class ExcelImportService {
 
             return dto;
 
-        });
+        })
+        .filter(Boolean)
 
     }
 
@@ -676,13 +745,18 @@ export class ExcelImportService {
 
                 if (!item.quantity) {
 
+                    console.log(item.raw);
+
                     throw new Error(
                         `Quantity missing in Voucher ${voucher.voucherNo}`
                     );
 
                 }
 
-                if (!item.rate) {
+                if (
+                    item.rate === undefined ||
+                    item.rate === null
+                ) {
 
                     throw new Error(
                         `Rate missing in Voucher ${voucher.voucherNo}`

@@ -72,19 +72,17 @@ export class ImportResolver {
 
                 if (Object.keys(updateData).length > 0) {
 
-                    return prisma.agency.update({
+                    const updated = await prisma.agency.update({
                         where: {
                             id: agency.id
                         },
                         data: updateData
                     });
 
-                }
+                    this.agencyCache.set(cacheKey!, updated);
 
-                this.agencyCache.set(
-                    cacheKey!,
-                    agency
-                );
+                    return updated;
+                }
 
                 return agency;
             }
@@ -140,60 +138,64 @@ export class ImportResolver {
 
                 if (Object.keys(updateData).length > 0) {
 
-                    return prisma.agency.update({
+                    const updated = await prisma.agency.update({
                         where: {
                             id: agency.id
                         },
                         data: updateData
                     });
 
-                }
+                    this.agencyCache.set(cacheKey!, updated);
 
-                this.agencyCache.set(
-                    cacheKey!,
-                    agency
-                );
+                    return updated;
+                }
 
                 return agency;
             }
         }
 
-        const created = await prisma.agency.create({
+        let created;
 
-            data: {
+        try {
 
-                name: dto.agencyName!,
+            created = await prisma.agency.create({
 
-                gstin: dto.agencyGSTIN,
+                data: {
 
-                panNo: dto.agencyPAN,
+                    name: dto.agencyName!,
 
-                addressLine1:
-                    address.addressLine1,
+                    gstin: dto.agencyGSTIN,
 
-                addressLine2:
-                    address.addressLine2,
+                    panNo: dto.agencyPAN,
 
-                city:
-                    address.city,
+                    addressLine1: address.addressLine1,
+                    addressLine2: address.addressLine2,
+                    city: address.city,
+                    state: address.state,
+                    stateCode: address.stateCode,
+                    pinCode: address.pinCode,
+                    email: address.email,
 
-                state:
-                    address.state,
+                    type
 
-                stateCode:
-                    address.stateCode,
+                }
 
-                pinCode:
-                    address.pinCode,
+            });
 
-                email:
-                    address.email,
+        }
+        catch {
 
-                type: type
+            created = await prisma.agency.findFirst({
 
-            }
+                where: {
 
-        });
+                    gstin: dto.agencyGSTIN
+
+                }
+
+            });
+
+        }
 
         this.agencyCache.set(
             cacheKey!,
@@ -270,7 +272,7 @@ export class ImportResolver {
 
             if (Object.keys(updateData).length > 0) {
 
-                return prisma.branch.update({
+                const updated = await prisma.branch.update({
 
                     where: {
                         id: existing.id
@@ -280,46 +282,57 @@ export class ImportResolver {
 
                 });
 
+                this.branchCache.set(cacheKey, updated);
+
+                return updated;
+
             }
-
-            this.branchCache.set(
-                cacheKey!,
-                existing
-            );
-
-            return existing;
         }
 
-        const created = await prisma.branch.create({
+        let created;
 
-            data: {
+        try {
 
-                name: dto.branchName,
+            created = await prisma.branch.create({
 
-                code:
-                    dto.branchName
+                data: {
+
+                    name: dto.branchName,
+
+                    code: dto.branchName
                         .replace(/\s+/g, "_")
                         .toUpperCase(),
 
-                addressLine1:
-                    address.addressLine1,
-                addressLine2:
-                    address.addressLine2,
-                city:
-                    address.city,
-                state:
-                    address.state,
-                stateCode:
-                    address.stateCode,
-                pinCode:
-                    address.pinCode
+                    addressLine1: address.addressLine1,
+                    addressLine2: address.addressLine2,
+                    city: address.city,
+                    state: address.state,
+                    stateCode: address.stateCode,
+                    pinCode: address.pinCode
 
-            }
+                }
 
-        });
+            });
 
-        this.productCache.set(
-            cacheKey!,
+        }
+        catch {
+
+            created = await prisma.branch.findFirst({
+
+                where: {
+
+                    code: dto.branchName
+                        .replace(/\s+/g, "_")
+                        .toUpperCase()
+
+                }
+
+            });
+
+        }
+
+        this.branchCache.set(
+            cacheKey,
             created
         );
 
@@ -417,7 +430,7 @@ export class ImportResolver {
 
             if (Object.keys(updateData).length > 0) {
 
-                return prisma.product.update({
+                const updated = await prisma.product.update({
 
                     where: {
                         id: product.id
@@ -427,14 +440,11 @@ export class ImportResolver {
 
                 });
 
+                this.productCache.set(cacheKey, updated);
+
+                return updated;
+
             }
-
-            this.productCache.set(
-                cacheKey!,
-                product
-            );
-
-            return product;
         }
 
         const created = await prisma.product.create({

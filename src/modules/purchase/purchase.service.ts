@@ -264,9 +264,9 @@ export class PurchaseService {
                 purchasePrice: item.purchasePrice,
                 taxableAmount,
                 gstPercent,
-                cgstAmount,
-                sgstAmount,
-                igstAmount,
+                // cgstAmount,
+                // sgstAmount,
+                // igstAmount,
                 gstAmount,
                 totalAmount
             })
