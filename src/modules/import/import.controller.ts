@@ -15,6 +15,10 @@ export const importWorkbook = async (
     try {
 
         const actor = (req as any).user;
+        // Set headers for Server-Sent Events (SSE)
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
 
         const file = req.file;
 
@@ -53,19 +57,25 @@ export const importWorkbook = async (
             await ImportService.importWorkbook(
                 actor,
                 file,
-                type
+                type,
+                (progress) => {
+                    res.write(
+                        `data: ${JSON.stringify(progress)}\n\n`
+                    );
+                }
             );
 
-        return res.status(200).json({
+        // final event streaming message to indicate completion
+        res.write(
+            `event: completed\n`
+            + `data: ${JSON.stringify({
+                success: true,
+                message: `${type} Register imported successfully.`,
+                data: result
+            })}\n\n`
+        );
 
-            success: true,
-
-            message:
-                `${type} Register imported successfully.`,
-
-            data: result
-
-        });
+        res.end();
 
     }
 

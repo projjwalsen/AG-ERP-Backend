@@ -260,7 +260,8 @@ export class LedgerService {
             SALES: "SALES",
             PURCHASE: "PURCHASE",
             PRODUCT: "ASSETS",
-            SUSPENSE: "SUSPENSE_ACCOUNT"
+            SUSPENSE: "SUSPENSE_ACCOUNT",
+            ROUND_OFF: "INDIRECT_EXPENSE",
         };
 
         return this.getOrCreateGroup(client, defaultGroupCodeByType[payload.category]);
@@ -3121,6 +3122,7 @@ export class LedgerService {
             }
 
             const lines = payload.entries.filter((entry) => money(entry.amount) > 0);
+
             const totalDebit = money(lines
                 .filter((entry) => entry.entryType === EntryType.DEBIT)
                 .reduce((sum, entry) => sum + money(entry.amount), 0));
@@ -3128,7 +3130,16 @@ export class LedgerService {
                 .filter((entry) => entry.entryType === EntryType.CREDIT)
                 .reduce((sum, entry) => sum + money(entry.amount), 0));
 
-            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || totalDebit !== totalCredit) {
+
+            console.log(
+                "Debit",
+                totalDebit,
+                "Credit",
+                totalCredit,
+                "Diff",
+                totalDebit - totalCredit
+            );
+            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 0.01) {
                 throw new ApiError(`Double entry validation failed. Debit ${totalDebit}, Credit ${totalCredit}`, 400);
             }
 
@@ -3166,7 +3177,8 @@ export class LedgerService {
                         narration: payload.narration,
                         totalDebit,
                         totalCredit,
-                        voucherDate: payload.voucherDate || new Date(),
+                        voucherDate: payload.voucherDate ?? new Date(),
+                        createdAt: payload.voucherDate ?? new Date(),
                         entries: {
                             create: lines.map((entry) => ({
                                 ledgerId: entry.ledgerId,
@@ -3174,7 +3186,8 @@ export class LedgerService {
                                 productId: entry.productId || null,
                                 entryType: entry.entryType,
                                 amount: money(entry.amount),
-                                narration: entry.narration || payload.narration
+                                narration: entry.narration || payload.narration,
+                                createdAt: payload.voucherDate ?? new Date()
                             }))
                         }
                     },
@@ -3966,6 +3979,34 @@ export class LedgerService {
         });
     }
 
+    static async getOrCreateRoundOffLedger(
+        tx: Prisma.TransactionClient,
+        branchId: string
+    ) {
+
+        const branchCode =
+            await this.getBranchCode(
+                tx,
+                branchId
+            );
+
+        return this.getOrCreateLedger(tx, {
+
+            code: `ROUND_OFF_${branchCode}`,
+
+            name: "Round Off",
+
+            category: LedgerType.ROUND_OFF,
+
+            groupCode: "INDIRECT_EXPENSE",
+
+            nature: LedgerNature.DEBIT,
+
+            branchId
+        });
+
+    }
+
     static async ensureAgencyLedgers(
         tx: Prisma.TransactionClient,
         agencyId: string,
@@ -4004,23 +4045,51 @@ export class LedgerService {
             throw new ApiError("Purchase not found", 404);
         }
 
-        const [purchaseLedger, vendorLedger] =
-            await Promise.all([
-                this.getPurchaseLedger(tx, purchase.branchId),
-                this.getOrCreateVendorLedger(
-                    tx,
-                    purchase.branchId,
-                    purchase.agencyId
-                )
-            ]);
+        const [
+            purchaseLedger,
+            vendorLedger,
+            roundOffLedger
+        ] = await Promise.all([
+            this.getPurchaseLedger(tx, purchase.branchId),
+
+            this.getOrCreateVendorLedger(
+                tx,
+                purchase.branchId,
+                purchase.agencyId
+            ),
+
+            this.getOrCreateRoundOffLedger(
+                tx,
+                purchase.branchId
+            )
+        ]);
+
+        const roundOff =
+            Number(purchase.roundOffAmount);
+
+        const vendorAmount =
+            Number(purchase.grandTotal);
 
         const gstEntries: VoucherEntryPayload[] = [];
 
-        for (const tax of this.gstSplit(
-            Number(purchase.totalGSTAmount),
-            purchase.branch.stateCode,
-            purchase.agency.stateCode
-        )) {
+        const taxes = [
+            {
+                taxKind: "CGST" as TaxKind,
+                amount: Number(purchase.totalCGSTAmount)
+            },
+            {
+                taxKind: "SGST" as TaxKind,
+                amount: Number(purchase.totalSGSTAmount)
+            },
+            {
+                taxKind: "IGST" as TaxKind,
+                amount: Number(purchase.totalIGSTAmount)
+            }
+        ];
+
+        for (const tax of taxes) {
+
+            if (money(tax.amount) <= 0) continue;
 
             const gstLedger =
                 await this.getInputGstLedger(
@@ -4032,12 +4101,41 @@ export class LedgerService {
             gstEntries.push({
                 ledgerId: gstLedger.id,
                 entryType: EntryType.DEBIT,
-                amount: tax.amount,
+                amount: money(tax.amount),
                 branchId: purchase.branchId,
                 narration:
                     `Invoice:${purchase.invoiceNo} GST:${tax.taxKind}`
             });
         }
+        
+
+        const debit =
+            money(
+                Number(purchase.subtotalAmount) +
+                gstEntries.reduce(
+                    (s, x) => s + Number(x.amount),
+                    0
+                ) +
+                (roundOff > 0 ? roundOff : 0)
+            );
+
+        const credit =
+            money(
+                Number(purchase.grandTotal) +
+                (roundOff < 0 ? Math.abs(roundOff) : 0)
+            );
+
+        console.table({
+            subtotal: Number(purchase.subtotalAmount),
+            cgst: Number(purchase.totalCGSTAmount),
+            sgst: Number(purchase.totalSGSTAmount),
+            igst: Number(purchase.totalIGSTAmount),
+            roundOff,
+            grandTotal: Number(purchase.grandTotal),
+            debit,
+            credit,
+            diff: money(debit - credit)
+        });
 
         return this.createVoucher({
             voucherType: VoucherType.PURCHASE,
@@ -4049,6 +4147,7 @@ export class LedgerService {
                 `PURCHASE|${purchase.invoiceNo}|${purchase.agency.name}`,
 
             entries: [
+
                 {
                     ledgerId: purchaseLedger.id,
                     entryType: EntryType.DEBIT,
@@ -4060,6 +4159,24 @@ export class LedgerService {
 
                 ...gstEntries,
 
+                ...(roundOff !== 0
+                    ? [{
+                        ledgerId: roundOffLedger.id,
+
+                        entryType:
+                            roundOff > 0
+                                ? EntryType.DEBIT
+                                : EntryType.CREDIT,
+
+                        amount: Math.abs(roundOff),
+
+                        branchId: purchase.branchId,
+
+                        narration:
+                            `Invoice:${purchase.invoiceNo} Round Off`
+                    }]
+                    : []),
+
                 {
                     ledgerId: vendorLedger.id,
                     entryType: EntryType.CREDIT,
@@ -4068,6 +4185,7 @@ export class LedgerService {
                     narration:
                         `Invoice:${purchase.invoiceNo} Vendor Payable`
                 }
+
             ]
         }, tx);
     }
@@ -4089,14 +4207,30 @@ export class LedgerService {
             throw new ApiError("Sale not found", 404);
         }
 
-        const [customerLedger, salesLedger] = await Promise.all([
+        const [
+            customerLedger,
+            salesLedger,
+            roundOffLedger
+        ] = await Promise.all([
             this.getOrCreateCustomerLedger(
                 tx,
                 sale.branchId,
                 sale.agencyId
             ),
-            this.getSalesLedger(tx, sale.branchId)
+
+            this.getSalesLedger(
+                tx,
+                sale.branchId
+            ),
+
+            this.getOrCreateRoundOffLedger(
+                tx,
+                sale.branchId
+            )
         ]);
+
+        const roundOff =
+            Number(sale.roundOffAmount);
 
         const gstLines: VoucherEntryPayload[] = [];
 
@@ -4137,6 +4271,7 @@ export class LedgerService {
                 `SALE|${sale.invoiceNo}|${sale.agency.name}`,
 
             entries: [
+
                 {
                     ledgerId: customerLedger.id,
                     entryType: EntryType.DEBIT,
@@ -4152,10 +4287,29 @@ export class LedgerService {
                     amount: Number(sale.subTotalAmount),
                     branchId: sale.branchId,
                     narration:
-                        `Invoice:${sale.invoiceNo} Sales Value`
+                        `Invoice:${sale.invoiceNo} Sales`
                 },
 
-                ...gstLines
+                ...gstLines,
+
+                ...(roundOff !== 0
+                    ? [{
+                        ledgerId: roundOffLedger.id,
+
+                        entryType:
+                            roundOff > 0
+                                ? EntryType.CREDIT
+                                : EntryType.DEBIT,
+
+                        amount: Math.abs(roundOff),
+
+                        branchId: sale.branchId,
+
+                        narration:
+                            `Invoice:${sale.invoiceNo} Round Off`
+                    }]
+                    : [])
+
             ]
         }, tx);
     }

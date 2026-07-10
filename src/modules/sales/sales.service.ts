@@ -16,7 +16,19 @@ type SalesItemPayload = {
     quantity: number;
     unit: ProductUnit;
 
-    unitPrice?: number; // Optional, will auto fetch from product if not provided
+    unitPrice?: number;
+
+    taxableAmount?: number;
+
+    gstPercent?: number;
+
+    cgstAmount?: number;
+    sgstAmount?: number;
+    igstAmount?: number;
+
+    gstAmount?: number;
+
+    totalAmount?: number;
 }
 
 type SaleTransportPayload = {
@@ -72,8 +84,19 @@ type CreateSalesPayload = {
 
     transport?: SaleTransportPayload;
     roundOffAmount?:number;
+    voucherDate?: string;
+    approvedAt?: string;
 
     items:SalesItemPayload[];
+    importedTotals?: {
+        subTotal: number;
+        totalCGST: number;
+        totalSGST: number;
+        totalIGST: number;
+        totalGST: number;
+        roundOff: number;
+        grandTotal: number;
+    };
 }
 
 export class SalesService {
@@ -304,16 +327,15 @@ export class SalesService {
                     ? Number(item.unitPrice)
                     : systemSellingPrice;
 
-            const taxableAmount =
-                item.quantity *
-                sellingPrice;
-            const gstPercent = Number(batch.product.applicableGST) || 0;
+            const gstPercent =
+                payload.importedTotals
+                    ? Number(item.gstPercent ?? 0)
+                    : Number(batch.product.applicableGST) || 0;
 
-            /** GST Type Check */
-            const isSameState = 
-                branch.stateCode &&
-                agency.stateCode &&
-                branch.stateCode === agency.stateCode;
+            const taxableAmount =
+                payload.importedTotals
+                    ? Number(item.taxableAmount ?? 0)
+                    : Number(item.quantity) * sellingPrice;
 
             let cgstPercent = 0;
             let sgstPercent = 0;
@@ -323,19 +345,67 @@ export class SalesService {
             let sgstAmount = 0;
             let igstAmount = 0;
 
-            if(isSameState) {
-                cgstPercent = gstPercent / 2;
-                sgstPercent = gstPercent / 2;
+            let gstAmount = 0;
+            let totalAmount = 0;
 
-                cgstAmount = (taxableAmount * cgstPercent) / 100;
-                sgstAmount = (taxableAmount * sgstPercent) / 100;
+            if (payload.importedTotals) {
+
+                cgstAmount = Number(item.cgstAmount ?? 0);
+
+                sgstAmount = Number(item.sgstAmount ?? 0);
+
+                igstAmount = Number(item.igstAmount ?? 0);
+
+                gstAmount = Number(item.gstAmount ?? 0);
+
+                totalAmount = Number(item.totalAmount ?? 0);
+
+                if (gstPercent > 0) {
+
+                    if (cgstAmount > 0 || sgstAmount > 0) {
+
+                        cgstPercent = gstPercent / 2;
+                        sgstPercent = gstPercent / 2;
+
+                    } else {
+
+                        igstPercent = gstPercent;
+
+                    }
+
+                }
+
             } else {
-                igstPercent = gstPercent;
-                igstAmount = (taxableAmount * igstPercent) / 100;
-            }
 
-            const gstAmount = cgstAmount + sgstAmount + igstAmount;
-            const totalAmount = taxableAmount + gstAmount;
+                if (agency.stateCode === branch.stateCode) {
+
+                    cgstPercent = gstPercent / 2;
+                    sgstPercent = gstPercent / 2;
+
+                    cgstAmount =
+                        (taxableAmount * cgstPercent) / 100;
+
+                    sgstAmount =
+                        (taxableAmount * sgstPercent) / 100;
+
+                } else {
+
+                    igstPercent = gstPercent;
+
+                    igstAmount =
+                        (taxableAmount * igstPercent) / 100;
+
+                }
+
+                gstAmount =
+                    cgstAmount +
+                    sgstAmount +
+                    igstAmount;
+
+                totalAmount =
+                    taxableAmount +
+                    gstAmount;
+            }
 
             validatedItems.push({
                 item,
@@ -392,7 +462,32 @@ export class SalesService {
             grandTotal += item.totalAmount;
         }
 
-        grandTotal += payload.roundOffAmount ?? 0;
+        if (payload.importedTotals) {
+
+            subtotalAmount =
+                payload.importedTotals.subTotal;
+
+            totalCGSTAmount =
+                payload.importedTotals.totalCGST;
+
+            totalSGSTAmount =
+                payload.importedTotals.totalSGST;
+
+            totalIGSTAmount =
+                payload.importedTotals.totalIGST;
+
+            totalGSTAmount =
+                payload.importedTotals.totalGST;
+
+            grandTotal =
+                payload.importedTotals.grandTotal;
+
+        } else {
+
+            grandTotal +=
+                payload.roundOffAmount ?? 0;
+
+        }
 
         /**
          * Create sales record
@@ -423,6 +518,9 @@ export class SalesService {
                     payload.remarks?.trim(),
 
                 createdById: actor.id,
+                createdAt: payload.voucherDate
+                    ? new Date(payload.voucherDate)
+                    : new Date(),
 
                 subTotalAmount: subtotalAmount,
 
@@ -655,11 +753,11 @@ export class SalesService {
      * APPROVE SALE
      * =========================================
     */
-   static async approveSale(
-    actor: any,
-    saleId: string
-   ) {
-        if(!actor?.id){
+    static async approveSale(
+        actor: any,
+        saleId: string
+    ) {
+        if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
 
@@ -667,7 +765,7 @@ export class SalesService {
             actor.id,
             "SALE:APPROVE"
         );
-        if(!canApprove) {
+        if (!canApprove) {
             throw new ApiError("Forbidden", 403);
         }
 
@@ -680,11 +778,11 @@ export class SalesService {
             }
         });
 
-        if(!sale) {
+        if (!sale) {
             throw new ApiError("Sale not found", 404);
         }
 
-        if(sale.status !== "PENDING") {
+        if (sale.status !== "PENDING") {
             throw new ApiError("Only pending sales can be approved", 400);
         }
 
@@ -706,7 +804,7 @@ export class SalesService {
                 data: {
                     status: "APPROVED",
                     approvedById: actor.id,
-                    approvedAt: new Date()
+                    approvedAt: sale.createdAt
                 }
             });
 
@@ -721,7 +819,7 @@ export class SalesService {
                 );
             }
 
-             const lockedSale = await tx.sale.findUnique({
+            const lockedSale = await tx.sale.findUnique({
                 where: {
                     id: saleId
                 },
@@ -749,7 +847,8 @@ export class SalesService {
                     productId: item.productId,
                     batchId: item.batchId,
                     quantity: Number(item.quantity),
-                    unit: item.unit
+                    unit: item.unit,
+                    transactionDate: lockedSale.createdAt
                 });
 
                 // ========================================================
@@ -786,52 +885,102 @@ export class SalesService {
             // ========================================================
             // A sale creates an asset/receivable that a customer owes us.
             // We register this by executing an atomic positional check relative to CREDIT.
-            const existing = await tx.agencyOutstanding.findUnique({
-                where: {
-                    agencyId_branchId: {
-                        agencyId: lockedSale.agencyId,
-                        branchId: lockedSale.branchId
-                    }
-                }
-            });
+            // ========================================================
+            // STEP 3: Update Agency Outstanding (Race Safe)
+            // ========================================================
 
             const invoiceTotal = Number(lockedSale.grandTotal);
 
-            if (existing) {
-                let newAmount = Number(existing.amount);
-                let currentType = existing.type;
-
-                // Net positional shift calculation relative to DEBIT target
-                if (currentType === OutstandingType.DEBIT) {
-                    newAmount += invoiceTotal;
-                } else {
-                    newAmount -= invoiceTotal;
-                }
-
-                // If balance drops below zero, invert financial position layout
-                if (newAmount < 0) {
-                    newAmount = Math.abs(newAmount);
-                    currentType = currentType === OutstandingType.DEBIT ? OutstandingType.CREDIT : OutstandingType.DEBIT;
-                }
-
-                await tx.agencyOutstanding.update({
-                    where: { id: existing.id },
-                    data: {
-                        amount: newAmount,
-                        type: currentType
+            let existing =
+                await tx.agencyOutstanding.findUnique({
+                    where: {
+                        agencyId_branchId: {
+                            agencyId: lockedSale.agencyId,
+                            branchId: lockedSale.branchId
+                        }
                     }
                 });
-            } else {
-                // If it's a brand new relationship for this branch, insert standard DEBIT baseline
-                await tx.agencyOutstanding.create({
-                    data: {
-                        agencyId: lockedSale.agencyId,
-                        branchId: lockedSale.branchId,
-                        type: OutstandingType.DEBIT,
-                        amount: invoiceTotal
+
+            if (!existing) {
+
+                try {
+
+                    existing =
+                        await tx.agencyOutstanding.create({
+                            data: {
+                                agencyId: lockedSale.agencyId,
+                                branchId: lockedSale.branchId,
+                                type: OutstandingType.DEBIT,
+                                amount: invoiceTotal,
+                                createdAt: lockedSale.createdAt
+                            }
+                        });
+
+                } catch (err: any) {
+
+                    if (err.code === "P2002") {
+
+                        existing =
+                            await tx.agencyOutstanding.findUnique({
+                                where: {
+                                    agencyId_branchId: {
+                                        agencyId: lockedSale.agencyId,
+                                        branchId: lockedSale.branchId
+                                    }
+                                }
+                            });
+
+                    } else {
+
+                        throw err;
+
                     }
-                });
+
+                }
+
             }
+
+            if (!existing) {
+                throw new ApiError(
+                    "Unable to create Agency Outstanding",
+                    500
+                );
+            }
+
+            let newAmount = Number(existing.amount);
+            let currentType = existing.type;
+
+            if (currentType === OutstandingType.DEBIT) {
+
+                newAmount += invoiceTotal;
+
+            } else {
+
+                newAmount -= invoiceTotal;
+
+            }
+
+            if (newAmount < 0) {
+
+                newAmount = Math.abs(newAmount);
+
+                currentType =
+                    currentType === OutstandingType.DEBIT
+                        ? OutstandingType.CREDIT
+                        : OutstandingType.DEBIT;
+
+            }
+
+            await tx.agencyOutstanding.update({
+                where: {
+                    id: existing.id
+                },
+                data: {
+                    amount: newAmount,
+                    type: currentType,
+                    updatedAt: lockedSale.createdAt
+                }
+            });
 
             await LedgerService.postSaleApproval(tx, lockedSale.id);
 

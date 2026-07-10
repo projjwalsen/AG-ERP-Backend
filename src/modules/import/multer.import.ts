@@ -4,16 +4,20 @@ import { SalesService } from "../sales/sales.service";
 import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import multer from "multer";
+import pLimit from "p-limit";
 
 export class ImportService {
+    
 
     static async importWorkbook(
         actor: any,
         file: Express.Multer.File,
-        type: "PURCHASE" | "SALE"
+        type: "PURCHASE" | "SALE",
+        onProgress?: (summary:any)=>void
     ) {
 
         ImportResolver.clearCache();
+        
 
         const workbook =
             ExcelImportService.readExcel(
@@ -30,19 +34,21 @@ export class ImportService {
                 worksheet
             );
 
+            console.log("RAW ROWS =", rawRows.length);
+
             console.log(rawRows[0]);
 
         const parsedRows =
             ExcelImportService.parseRows(
                 rawRows
             );
-
+        console.log("PARSED ROWS =", parsedRows.length);
         const vouchers =
             ExcelImportService
                 .groupAndValidateVouchers(
                     parsedRows
                 );
-
+        console.log("VOUCHERS =", vouchers.length);
         const summary = {
 
             total: vouchers.length,
@@ -59,107 +65,121 @@ export class ImportService {
 
         };
 
-        const BATCH_SIZE = 50;
 
-        for (
-            let i = 0;
-            i < vouchers.length;
-            i += BATCH_SIZE
-        ) {
+            const limit = pLimit(2); // trying 2
 
-            const batch =
-                vouchers.slice(
-                    i,
-                    i + BATCH_SIZE
-                );
+            await Promise.all(
 
-            // await prisma.$transaction(async () => {
+                vouchers.map(voucher =>
 
-            await Promise.allSettled(
+                    limit(async () => {
 
-                batch.map(async voucher => {
+                        try {
 
-                    try {
+                            if (type === "PURCHASE") {
 
-                        if (type === "PURCHASE") {
+                                const payload =
+                                    await ImportResolver.buildPurchasePayload(voucher);
 
-                            const payload =
-                                await ImportResolver
-                                    .buildPurchasePayload(
-                                        voucher
+                                const purchase =
+                                    await PurchaseService.createPurchase(
+                                        actor,
+                                        payload
                                     );
 
-                            await PurchaseService.createPurchase(
-                                actor,
-                                payload
-                            );
+                                await PurchaseService.approvePurchase(
+                                    actor,
+                                    purchase.id
+                                );
 
-                        }
+                            } else {
 
-                        else {
+                                const payload =
+                                    await ImportResolver.buildSalePayload(voucher);
 
-                            const payload =
-                                await ImportResolver
-                                    .buildSalePayload(
-                                        voucher
+                                const sale =
+                                    await SalesService.createSale(
+                                        actor,
+                                        payload
                                     );
 
-                            await SalesService.createSale(
-                                actor,
-                                payload
+                                await SalesService.approveSale(
+                                    actor,
+                                    sale.id
+                                );
+
+                            }
+
+                            summary.success++;
+
+                        } catch (error: any) {
+
+                            console.error("\n================ FAILED =================");
+
+                            console.error("Voucher :", voucher.voucherNo);
+
+                            console.error("Code    :", error.code);
+
+                            console.error("Message :", error.message);
+
+                            console.error("Meta    :", error.meta);
+
+                            console.error("Stack   :", error.stack);
+
+                            console.error("=========================================\n");
+
+                            summary.failed++;
+
+                            summary.errors.push({
+
+                                voucherNo: voucher.voucherNo,
+
+                                invoiceNo: voucher.invoiceNo,
+
+                                code: error.code,
+
+                                meta: error.meta,
+
+                                error: error.message
+
+                            });
+
+                        } finally {
+
+                            summary.processed++;
+
+                            summary.percentage = Number(
+
+                                (
+                                    summary.processed /
+                                    summary.total *
+                                    100
+                                ).toFixed(2)
+
                             );
 
+                            onProgress?.({
+                                processed: summary.processed,
+                                total: summary.total,
+                                success: summary.success,
+                                failed: summary.failed,
+                                percentage: summary.percentage,
+                                currentVoucher: voucher.voucherNo
+                            });
+
+                            console.log(
+
+                                `[${summary.processed}/${summary.total}] ${summary.percentage}% - ${voucher.voucherNo}`
+
+                            );
                         }
 
-                        summary.success++;
+                    })
 
-                    }
-
-                    catch (error: any) {
-
-                        summary.failed++;
-
-                        summary.errors.push({
-
-                            voucherNo:
-                                voucher.voucherNo,
-
-                            invoiceNo:
-                                voucher.invoiceNo,
-
-                            error:
-                                error.message
-
-                        });
-
-                    }
-
-                    summary.processed++;
-
-                    summary.percentage = Number(
-
-                        (
-                            summary.processed /
-                            summary.total *
-                            100
-                        ).toFixed(2)
-
-                    );
-
-                    console.log(
-
-                        `[${summary.processed}/${summary.total}] ${summary.percentage}% - ${voucher.voucherNo}`
-
-                    );
-
-                })
+                )
 
             );
 
-
-            // });
-
-        }
 
         return summary;
 

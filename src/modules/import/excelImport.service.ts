@@ -48,26 +48,46 @@ export class ExcelImportService {
         if (typeof value === "number")
             return value;
 
-        return Number(
+        const cleaned = String(value)
 
-            String(value)
+            .replace(/Dr/gi, "")
+            .replace(/Cr/gi, "")
 
-                .replace(/Dr/gi, "")
-                .replace(/Cr/gi, "")
+            // remove every unit variation
+            .replace(/\/?\s*KGS?\.?/gi, "")
+            .replace(/\/?\s*KG\.?/gi, "")
+            .replace(/\/?\s*LTRS?\.?/gi, "")
+            .replace(/\/?\s*LTR\.?/gi, "")
+            .replace(/\/?\s*LITRES?\.?/gi, "")
+            .replace(/\/?\s*MTS?\.?/gi, "")
+            .replace(/\/?\s*MT\.?/gi, "")
 
-                .replace(/\/LTR\.?/gi, "")
-                .replace(/\/KG/gi, "")
-                .replace(/\/MT/gi, "")
+            .replace(/,/g, "")
 
-                .replace(/LTR/gi, "")
-                .replace(/KG/gi, "")
-                .replace(/MT/gi, "")
+            .trim();
 
-                .replace(/,/g, "")
+        const number = Number(cleaned);
 
-                .trim()
+        return Number.isFinite(number)
+            ? number
+            : 0;
+    }
 
-        ) || 0;
+    private static parseRoundOff(value: any): number {
+
+        if (!value) return 0;
+
+        const text = String(value).trim();
+
+        const amount = this.toNumber(text);
+
+        if (/Cr/i.test(text)) {
+
+            return -amount;
+
+        }
+
+        return amount;
 
     }
 
@@ -184,27 +204,73 @@ export class ExcelImportService {
                     ) || ""
                 ).trim();
 
+            const voucherNo = String(
+                this.getValue(
+                    row,
+                    "Voucher No"
+                ) || ""
+            ).trim();
+
+            /**
+             * Skip rows having no Voucher No.
+             * These are usually blank/footer rows.
+             */
+            if (!voucherNo) {
+                return null as any;
+            }
+
             /**
              * Product Name
              */
+            const hsnNo =
+                particulars.match(/\((\d{4,8})\)/)?.[1];
+
+            const agencyName =
+                String(
+                    this.getValue(
+                        row,
+                        "Supplier",
+                        "Buyer"
+                    ) || ""
+                )
+                .trim()
+                .toUpperCase();
+
             const productName =
                 particulars
 
-                .replace(/\(\d+\)/g, "")
+                    .replace(/\(\d{4,8}\)/g, "")
 
-                .replace(/\s*-\s*(KG|LTR|MT)$/i, "")
+                    .replace(/\s*[-–]\s*(KG|KGS|LTR|LTRS|MT|MTS)\b/gi, "")
 
-                .replace(/\s+/g, " ")
+                    .replace(/\b(KG|KGS|LTR|LTRS|MT|MTS)\b/gi, "")
 
-                .trim();
+                    .replace(/\s+/g, " ")
 
-            
+                    .trim()
+
+                    + (hsnNo ? ` - ${hsnNo}` : "");
+
+            const normalizedProduct =
+                productName
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase();
 
             /**
-             * HSN
+             * Ignore party/header rows in Sales Register.
+             * Example:
+             * Buyer == Particulars
              */
-            const hsnNo =
-                particulars.match(/\b\d{4,8}\b/)?.[0];
+            if (
+                normalizedProduct &&
+                agencyName &&
+                normalizedProduct === agencyName
+            ) {
+                return null as any;
+            }
+
+        
 
             /**
              * Quantity
@@ -220,24 +286,37 @@ export class ExcelImportService {
             let quantity =
                 this.toNumber(quantityText);
 
-            const isLedgerRow =
-                quantity === 0 &&
+            const value =
                 this.toNumber(
-                    this.getValue(row, "Value")
-                ) > 0;
+                    this.getValue(
+                        row,
+                        "Value"
+                    )
+                );
 
-            if (isLedgerRow) {
+    
 
-                return null as any;
+        /**
+         * Skip only completely empty rows.
+         * Keep ledger/service rows because
+         * they belong to the voucher.
+         */
+        if (
+            quantity === 0 &&
+            value === 0 &&
+            !productName
+        ) {
 
-            }
+            return null as any;
+
+        }
 
             /**
              * Unit
              */
             let unit = "KG";
 
-            if (/MT/i.test(quantityText)) {
+            if (/MTS?|MT/i.test(quantityText)) {
 
                 quantity *= 1000;
 
@@ -245,13 +324,13 @@ export class ExcelImportService {
 
             }
 
-            else if (/LTR/i.test(quantityText)) {
+            else if (/LTR|LTRS|LITRE|LITRES/i.test(quantityText)) {
 
                 unit = "LTR";
 
             }
 
-            else if (/KG/i.test(quantityText)) {
+            else if (/KGS?/i.test(quantityText)) {
 
                 unit = "KG";
 
@@ -294,6 +373,15 @@ export class ExcelImportService {
 
             }
 
+            console.log({
+                voucher: this.getValue(row, "Voucher No"),
+                particulars: productName,
+                quantityText,
+                quantity,
+                rateText,
+                value
+            });
+
             /**
              * Calculate rate if Excel leaves it blank.
              * Tally Purchase/Sales Register often exports
@@ -332,7 +420,10 @@ export class ExcelImportService {
                 this.toNumber(
                     this.getValue(
                         row,
-                        "Input CGST 9%"
+                        "Input CGST 9%",
+                        "Output CGST 9%",
+                        "INPUT CGST",
+                        "OUTPUT CGST"
                     )
                 );
 
@@ -340,7 +431,10 @@ export class ExcelImportService {
                 this.toNumber(
                     this.getValue(
                         row,
-                        "Input SGST 9%"
+                        "Input SGST 9%",
+                        "Output SGST 9%",
+                        "INPUT SGST",
+                        "OUTPUT SGST"
                     )
                 );
 
@@ -348,10 +442,45 @@ export class ExcelImportService {
                 this.toNumber(
                     this.getValue(
                         row,
-                        "IGST Purchase",
-                        "Output IGST"
+                        "INPUT IGST 18%",
+                        "OUTPUT IGST 18%",
+                        "INPUT IGST",
+                        "OUTPUT IGST"
                     )
                 );
+
+            const taxableAmount =
+                this.toNumber(
+                    this.getValue(
+                        row,
+                        "Value"
+                    )
+                );
+
+            const gstAmount =
+                cgst + sgst + igst;
+
+            const gstPercent =
+                taxableAmount > 0
+                    ? Number(
+                        (
+                            gstAmount /
+                            taxableAmount *
+                            100
+                        ).toFixed(2)
+                    )
+                    : 0;
+
+                    console.log({
+                        particulars: productName,
+                        taxableAmount,
+                        cgst,
+                        sgst,
+                        igst,
+                        gstAmount,
+                        gstPercent
+                    });
+
 
             const dto: ExcelRowDTO = {
 
@@ -368,13 +497,7 @@ export class ExcelImportService {
                         ) || ""
                     ).trim(),
 
-                voucherNo:
-                    String(
-                        this.getValue(
-                            row,
-                            "Voucher No"
-                        ) || ""
-                    ).trim(),
+                voucherNo,
 
                 invoiceNo:
                     String(
@@ -403,12 +526,7 @@ export class ExcelImportService {
                         )
                     ),
 
-                agencyName:
-                    this.getValue(
-                        row,
-                        "Supplier",
-                        "Buyer"
-                    ),
+                agencyName:agencyName,
 
                 agencyAddress:
                     this.getValue(
@@ -453,13 +571,7 @@ export class ExcelImportService {
 
                 rate,
 
-                taxableAmount:
-                    this.toNumber(
-                        this.getValue(
-                            row,
-                            "Value"
-                        )
-                    ),
+                taxableAmount,
 
                 cgst,
 
@@ -467,11 +579,10 @@ export class ExcelImportService {
 
                 igst,
 
-                gstPercent:
-                    cgst + sgst + igst,
+                gstPercent,
 
                 roundOff:
-                    this.toNumber(
+                    this.parseRoundOff(
                         this.getValue(
                             row,
                             "R/OFF"
@@ -709,6 +820,89 @@ export class ExcelImportService {
 
         for (const voucher of vouchers) {
 
+            voucher.importedTotals = {
+
+                subTotal:
+
+                    Number(
+
+                        voucher.rows
+                            .reduce(
+                                (sum, row) =>
+                                    sum + (row.taxableAmount || 0),
+                                0
+                            )
+                            .toFixed(2)
+
+                    ),
+
+                totalCGST:
+
+                    Number(
+
+                        voucher.rows
+                            .reduce(
+                                (sum, row) =>
+                                    sum + (row.cgst || 0),
+                                0
+                            )
+                            .toFixed(2)
+
+                    ),
+
+                totalSGST:
+
+                    Number(
+
+                        voucher.rows
+                            .reduce(
+                                (sum, row) =>
+                                    sum + (row.sgst || 0),
+                                0
+                            )
+                            .toFixed(2)
+
+                    ),
+
+                totalIGST:
+
+                    Number(
+
+                        voucher.rows
+                            .reduce(
+                                (sum, row) =>
+                                    sum + (row.igst || 0),
+                                0
+                            )
+                            .toFixed(2)
+
+                    ),
+
+                totalGST:
+
+                    Number(
+
+                        voucher.rows
+                            .reduce(
+                                (sum, row) =>
+                                    sum +
+                                    (row.cgst || 0) +
+                                    (row.sgst || 0) +
+                                    (row.igst || 0),
+                                0
+                            )
+                            .toFixed(2)
+
+                    ),
+
+                roundOff:
+                    voucher.rows[0]?.roundOff || 0,
+
+                grandTotal:
+                    voucher.rows[0]?.grandTotal || 0
+
+            };
+
             if (!voucher.agencyName) {
 
                 throw new Error(
@@ -743,12 +937,19 @@ export class ExcelImportService {
 
                 }
 
-                if (!item.quantity) {
+                if (
+                    item.quantity <= 0 &&
+                    item.taxableAmount > 0
+                ) {
 
-                    console.log(item.raw);
+                    continue;
+
+                }
+
+                if (item.quantity < 0) {
 
                     throw new Error(
-                        `Quantity missing in Voucher ${voucher.voucherNo}`
+                        `Invalid Quantity in Voucher ${voucher.voucherNo}`
                     );
 
                 }

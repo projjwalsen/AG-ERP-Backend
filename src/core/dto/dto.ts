@@ -85,6 +85,23 @@ export interface ExcelRowDTO {
     raw: Record<string, any>;
 }
 
+export interface ImportedTotalsDTO {
+
+    subTotal: number;
+
+    totalCGST: number;
+
+    totalSGST: number;
+
+    totalIGST: number;
+
+    totalGST: number;
+
+    roundOff: number;
+
+    grandTotal: number;
+
+}
 
 export interface GroupedVoucherDTO {
 
@@ -115,6 +132,8 @@ export interface GroupedVoucherDTO {
     narration?: string;
 
     rows: ExcelRowDTO[];
+
+    importedTotals?: ImportedTotalsDTO;
 
 }
 

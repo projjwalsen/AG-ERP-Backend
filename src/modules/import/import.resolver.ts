@@ -4,6 +4,7 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { ExcelRowDTO, GroupedVoucherDTO, ParsedAddressDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
 import { LocationService } from "../meta/meta.loc.service";
+import { City, State } from "country-state-city";
 
 export class ImportResolver {
 
@@ -16,6 +17,9 @@ export class ImportResolver {
     private static productCache =
         new Map<string, any>();
 
+    private static productLocks =
+        new Map<string, Promise<any>>();
+
     static clearCache() {
 
         this.agencyCache.clear();
@@ -23,6 +27,37 @@ export class ImportResolver {
         this.branchCache.clear();
 
         this.productCache.clear();
+
+    }
+
+    private static normalizeProductName(name: string): string {
+
+        const hsn =
+            name.match(/\((\d{4,8})\)/)?.[1]
+            ?? name.match(/\b(\d{4,8})\b/)?.[1];
+
+        let normalized =
+            String(name ?? "")
+
+                .toUpperCase()
+
+                .replace(/\(\d{4,8}\)/g, "")
+
+                .replace(/\s*[-–]\s*(KG|KGS|LTR|LTRS|MT|MTS)\b/gi, "")
+
+                .replace(/\b(KG|KGS|LTR|LTRS|MT|MTS)\b/gi, "")
+
+                .replace(/\s+/g, " ")
+
+                .trim();
+
+        if (hsn && !normalized.endsWith(hsn)) {
+
+            normalized += ` - ${hsn}`;
+
+        }
+
+        return normalized;
 
     }
 
@@ -84,6 +119,8 @@ export class ImportResolver {
                     return updated;
                 }
 
+                this.agencyCache.set(cacheKey!, agency);
+
                 return agency;
             }
         }
@@ -91,6 +128,40 @@ export class ImportResolver {
             await this.parseAddress(
                 dto.agencyAddress
             );
+
+        if (
+            !address.stateCode &&
+            dto.agencyGSTIN?.length >= 2
+        ) {
+
+            address.stateCode =
+                dto.agencyGSTIN.substring(0,2);
+
+        }
+
+        if (
+            !address.state &&
+            address.stateCode
+        ) {
+
+            const states =
+                await LocationService.getIndianStates();
+
+            const state =
+                states.find(
+                    x =>
+                        x.stateCode ===
+                        address.stateCode
+                );
+
+            if(state){
+
+                address.state =
+                    state.name;
+
+            }
+
+        }
 
         if (dto.agencyName?.trim()) {
 
@@ -149,6 +220,8 @@ export class ImportResolver {
 
                     return updated;
                 }
+
+                this.agencyCache.set(cacheKey!, agency);
 
                 return agency;
             }
@@ -287,6 +360,10 @@ export class ImportResolver {
                 return updated;
 
             }
+            this.branchCache.set(cacheKey, existing);
+
+            return existing;
+
         }
 
         let created;
@@ -341,149 +418,314 @@ export class ImportResolver {
 
     }
 
-    static async resolveOrCreateProduct(
+    static async resolveProduct(
         dto: ExcelRowDTO
     ) {
 
+        const normalizedName =
+            this.normalizeProductName(dto.particulars!);
+
         const cacheKey =
             dto.hsnNo
-            || dto.particulars!
-                .trim()
-                .toLowerCase();
+                ? `${dto.hsnNo}_${normalizedName}`
+                : normalizedName;
 
-        if (
-            this.productCache.has(cacheKey)
-        ) {
+        if (this.productCache.has(cacheKey)) {
 
             return this.productCache.get(cacheKey);
 
         }
 
+        let product = null;
+
         if (dto.hsnNo) {
+
+            product =
+                await prisma.product.findFirst({
+
+                    where: {
+
+                        hsnNo: dto.hsnNo,
+
+                        name: {
+
+                            contains: normalizedName,
+
+                            mode: "insensitive"
+
+                        }
+
+                    }
+
+                });
+
+        }
+
+        if (!product) {
+
+            product =
+                await prisma.product.findFirst({
+
+                    where: {
+
+                        OR: [
+
+                            {
+
+                                name: {
+
+                                    equals: dto.particulars,
+
+                                    mode: "insensitive"
+
+                                }
+
+                            },
+
+                            {
+
+                                name: {
+
+                                    equals: normalizedName,
+
+                                    mode: "insensitive"
+
+                                }
+
+                            }
+
+                        ]
+
+                    }
+
+                });
+
+        }
+
+        if (!product) {
+
+            throw new ApiError(
+
+                `Product not found : ${dto.particulars}`,
+
+                404
+
+            );
+
+        }
+
+        this.productCache.set(
+            cacheKey,
+            product
+        );
+
+        return product;
+
+    }
+
+    static async resolveOrCreateProduct(
+        dto: ExcelRowDTO
+    ) {
+
+        const normalizedName =
+            this.normalizeProductName(dto.particulars!);
+
+        const cacheKey =
+            dto.hsnNo
+                ? `${dto.hsnNo}_${normalizedName}`
+                : normalizedName;
+
+        if (this.productLocks.has(cacheKey)) {
+           return await this.productLocks.get(cacheKey);
+        }
+
+        if (this.productCache.has(cacheKey)) {
+            return this.productCache.get(cacheKey);
+        }
+
+        const lock = (async () => {
+
+            if (dto.hsnNo) {
+
+                const product =
+                    await prisma.product.findFirst({
+
+                        where: {
+
+                            hsnNo: dto.hsnNo,
+
+                            name: {
+
+                                contains: normalizedName,
+
+                                mode: "insensitive"
+
+                            }
+
+                        }
+
+                    });
+
+                if (product) {
+
+                    this.productCache.set(
+                        cacheKey,
+                        product
+                    );
+
+                    return product;
+
+                }
+
+            }
 
             const product =
                 await prisma.product.findFirst({
 
                     where: {
 
-                        hsnNo: dto.hsnNo
+                        OR: [
+
+                            {
+
+                                name: {
+
+                                    equals: dto.particulars,
+
+                                    mode: "insensitive"
+
+                                }
+
+                            },
+
+                            {
+
+                                name: {
+
+                                    equals: normalizedName,
+
+                                    mode: "insensitive"
+
+                                }
+
+                            }
+
+                        ]
 
                     }
 
                 });
 
-            if (product)
-                return product;
+            if (product) {
 
-        }
+                const updateData: any = {};
 
-        const product =
-            await prisma.product.findFirst({
+                if (
+                    !product.hsnNo &&
+                    dto.hsnNo
+                ) {
 
-                where: {
-
-                    name: {
-
-                        equals: dto.particulars,
-
-                        mode: "insensitive"
-
-                    }
+                    updateData.hsnNo =
+                        dto.hsnNo;
 
                 }
 
-            });
+                if (
+                    !product.sellPricePerUnit &&
+                    dto.rate
+                ) {
 
-        if (product) {
+                    updateData.sellPricePerUnit =
+                        dto.rate;
 
-            const updateData: any = {};
+                }
 
-            if (
-                !product.hsnNo &&
-                dto.hsnNo
-            ) {
+                if (
+                    !product.applicableGST &&
+                    dto.gstPercent
+                ) {
 
-                updateData.hsnNo =
-                    dto.hsnNo;
+                    updateData.applicableGST =
+                        dto.gstPercent;
+
+                }
+
+                const finalProduct =
+                    Object.keys(updateData).length > 0
+
+                        ? await prisma.product.update({
+
+                            where: {
+
+                                id: product.id
+
+                            },
+
+                            data: updateData
+
+                        })
+
+                        : product;
+
+                this.productCache.set(
+                    cacheKey,
+                    finalProduct
+                );
+
+                return finalProduct;
 
             }
 
-            if (
-                !product.sellPricePerUnit &&
-                dto.rate
-            ) {
+            const created =
+                await prisma.product.create({
 
-                updateData.sellPricePerUnit =
-                    dto.rate;
+                    data: {
 
-            }
+                        sku: crypto.randomUUID(),
 
-            if (
-                !product.applicableGST &&
-                dto.gstPercent
-            ) {
+                        name: normalizedName,
 
-                updateData.applicableGST =
-                    dto.gstPercent;
+                        hsnNo: dto.hsnNo,
 
-            }
+                        applicableGST: dto.gstPercent,
 
-            if (Object.keys(updateData).length > 0) {
+                        baseUnit:
+                            dto.unit as ProductUnit,
 
-                const updated = await prisma.product.update({
+                        operationalUnit:
+                            dto.unit as ProductUnit,
 
-                    where: {
-                        id: product.id
-                    },
+                        sellPricePerUnit:
+                            dto.rate
 
-                    data: updateData
+                    }
 
                 });
 
-                this.productCache.set(cacheKey, updated);
+            this.productCache.set(
+                cacheKey,
+                created
+            );
 
-                return updated;
+            return created;
 
-            }
-        }
+        })();
 
-        const created = await prisma.product.create({
 
-            data: {
-
-                sku:
-                    crypto.randomUUID(),
-
-                name:
-                    dto.particulars!,
-
-                hsnNo:
-                    dto.hsnNo,
-
-                applicableGST:
-                    dto.gstPercent,
-
-                baseUnit:
-                    dto.unit as ProductUnit,
-
-                operationalUnit:
-                    dto.unit as ProductUnit,
-
-                sellPricePerUnit:
-                    dto.rate
-
-            }
-
-        });
-
-        this.productCache.set(
-            cacheKey!,
-            created
+        this.productLocks.set(
+            cacheKey,
+            lock
         );
 
-        return created;
+        try {
+            return await lock;
+        }
+        finally {
+            this.productLocks.delete(
+                cacheKey
+            );
 
-
+        }
     }
 
     private static async parseAddress(
@@ -630,6 +872,52 @@ export class ImportResolver {
 
         }
 
+        if (!result.state && result.stateCode) {
+
+            const states =
+                await LocationService.getIndianStates();
+
+            const state =
+                states.find(
+                    x => x.stateCode === result.stateCode
+                );
+
+            if (state) {
+
+                result.state = state.name;
+
+            }
+        }
+
+        if (!result.city && result.state) {
+
+            const states =
+                await State.getStatesOfCountry("IN");
+
+            const state =
+                states.find(
+                    s =>
+                        s.name.toUpperCase() ===
+                        result.state!.toUpperCase()
+                );
+
+            if (state) {
+
+                const cities =
+                    City.getCitiesOfState(
+                        "IN",
+                        state.isoCode
+                    );
+
+                if (cities.length) {
+
+                    result.city =
+                        cities[0].name;
+
+                }
+            }
+        }
+
         return result;
 
     }
@@ -748,19 +1036,64 @@ export class ImportResolver {
                 voucher
             );
 
+            const productRows = voucher.rows.filter(row =>
+                row.quantity > 0 &&
+                row.taxableAmount > 0
+            );
+
         const items = await Promise.all(
-            voucher.rows.map(async (row, index) => {
+            productRows.map(async (row, index) => {
                 const product = 
                     await this.resolveOrCreateProduct(
                         row
                     );
 
                 return {
+
                     productId: product.id,
-                    batchNo: `${voucher.invoiceNo || voucher.voucherNo}-${index + 1}`,
-                    quantity: row.quantity!,
-                    unit: row.unit as ProductUnit,
-                    purchasePrice: row.rate!,
+
+                    batchNo:
+                        `${voucher.invoiceNo || voucher.voucherNo}-${index + 1}`,
+
+                    quantity:
+                        row.quantity!,
+
+                    unit:
+                        row.unit as ProductUnit,
+
+                    purchasePrice:
+                        row.rate!,
+
+                    // ===== IMPORT ONLY =====
+
+                    taxableAmount:
+                        row.taxableAmount,
+
+                    cgstAmount:
+                        row.cgst,
+
+                    sgstAmount:
+                        row.sgst,
+
+                    igstAmount:
+                        row.igst,
+
+                    gstAmount:
+                        (row.cgst || 0) +
+                        (row.sgst || 0) +
+                        (row.igst || 0),
+
+                    gstPercent:
+                        row.gstPercent,
+
+                    totalAmount:
+                        row.grandTotal > 0
+                            ? row.taxableAmount +
+                            (row.cgst || 0) +
+                            (row.sgst || 0) +
+                            (row.igst || 0)
+                            : row.taxableAmount
+
                 }
             })
         );
@@ -839,6 +1172,12 @@ export class ImportResolver {
 
             },
 
+            importedTotals:
+                voucher.importedTotals,
+
+            voucherDate: voucher.rows[0]?.voucherDate,
+            approvedAt: voucher.rows[0]?.voucherDate,
+
             items
         }
     }
@@ -853,17 +1192,27 @@ export class ImportResolver {
                 AgencyType.CLIENT
             );
 
-        const branch =
-            await this.resolveOrCreateBranch(
-                voucher
-            );
+        const branch = await prisma.branch.findFirst({
+            where: {
+                isActive: true
+            }
+        });
+
+        if (!branch) {
+            throw new ApiError("No branch found", 400);
+        }
 
         const items: any[] = [];
 
-        for (const row of voucher.rows) {
+        const productRows = voucher.rows.filter(row =>
+            row.quantity > 0 &&
+            row.taxableAmount > 0
+        );
+
+        for (const row of productRows) {
 
             const product =
-                await this.resolveOrCreateProduct(
+                await this.resolveProduct(
                     row
                 );
 
@@ -906,19 +1255,43 @@ export class ImportResolver {
                     unit:
                         row.unit as ProductUnit,
 
-                    /**
-                     * Optional.
-                     * SalesService will automatically
-                     * use Product Selling Price if omitted.
-                     */
                     unitPrice:
-                        row.rate
+                        row.rate,
+
+                    // ===== IMPORT ONLY =====
+
+                    taxableAmount:
+                        row.taxableAmount,
+
+                    cgstAmount:
+                        row.cgst,
+
+                    sgstAmount:
+                        row.sgst,
+
+                    igstAmount:
+                        row.igst,
+
+                    gstAmount:
+                        (row.cgst || 0) +
+                        (row.sgst || 0) +
+                        (row.igst || 0),
+
+                    gstPercent:
+                        row.gstPercent,
+
+                    totalAmount:
+                        row.taxableAmount +
+                        (row.cgst || 0) +
+                        (row.sgst || 0) +
+                        (row.igst || 0)
 
                 });
-
             }
 
         }
+
+        
 
         return {
 
@@ -996,6 +1369,12 @@ export class ImportResolver {
                     voucher.rows[0].transport?.portCode
 
             },
+
+            voucherDate: voucher.rows[0]?.voucherDate,
+            approvedAt: voucher.rows[0]?.voucherDate,
+
+            importedTotals:
+                voucher.importedTotals,
 
             items
 

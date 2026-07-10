@@ -919,6 +919,7 @@ enum LedgerType {
   PURCHASE
   PRODUCT
   SUSPENSE
+  ROUND_OFF
 }
 
 enum LedgerNature {
