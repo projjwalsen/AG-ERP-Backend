@@ -12,6 +12,7 @@ type AddStockPayload = {
     unit: ProductUnit;
 
     purchasePrice: number;
+    transactionDate?:Date;
 };
 
 type RemoveStockPayload = {
@@ -22,6 +23,7 @@ type RemoveStockPayload = {
 
     quantity: number;
     unit: ProductUnit;
+    transactionDate?:Date;
 };
 
 export class InventoryService {
@@ -66,61 +68,86 @@ export class InventoryService {
             });
 
             // Quantity conversion
-        let quantityKG = 0;
-        let quantityLTR = 0;
+            let quantityKG = 0;
+            let quantityLTR = 0;
 
-        if(payload.unit === ProductUnit.KG) {
-            quantityKG = payload.quantity;
+            const density = Number(product.density ?? 1);
 
-            quantityLTR = product.density ? payload.quantity / Number(product.density) : 0;
+            if (payload.unit === ProductUnit.KG) {
+
+                quantityKG = payload.quantity;
+
+                quantityLTR = Number(
+                    (payload.quantity / density).toFixed(3)
+                );
+
+            } else {
+
+                // Excel quantity remains LTR
+                quantityLTR = payload.quantity;
+
+                // Default density = 1 when missing
+                quantityKG = Number(
+                    (payload.quantity * density).toFixed(3)
+                );
+
+            }
+
+        /** Create / Update Batch */
+        if (!inventoryBatch) {
+
+            inventoryBatch = await tx.inventoryBatch.create({
+                data: {
+                    branchId: payload.branchId,
+                    productId: payload.productId,
+                    batchNo: payload.batchNo,
+                    purchasePrice: payload.purchasePrice,
+
+                    availableQtyKG: quantityKG,
+                    availableQtyLTR: quantityLTR,
+                    createdAt: payload.transactionDate ?? new Date(),
+
+                    isActive: true
+                }
+            });
+
         } else {
-            quantityLTR = payload.quantity;
 
-            quantityKG = product.density ? payload.quantity * Number(product.density) : 0;
-        }
-
-        /** Create new Batch */
-        if(!inventoryBatch) {
-            inventoryBatch = 
-                await tx.inventoryBatch.create({
-                    data: {
-                        branchId: payload.branchId,
-                        productId: payload.productId,
-                        batchNo: payload.batchNo,
-                        purchasePrice: payload.purchasePrice,
-                        availableQtyKG: quantityKG,
-                        availableQtyLTR: quantityLTR,
-                        isActive: true
-                    }
-                })
-        } else {
-            /** Update existing Batch */
-            inventoryBatch = 
-                await tx.inventoryBatch.update({
-                    where: {
-                        id: inventoryBatch.id
+            inventoryBatch = await tx.inventoryBatch.update({
+                where: {
+                    id: inventoryBatch.id
+                },
+                data: {
+                    availableQtyKG: {
+                        increment: quantityKG
                     },
-                    data: {
-                        availableQtyKG: {
-                            increment: quantityKG
-                        },
-                        availableQtyLTR: {
-                            increment: quantityLTR
-                        },
-                        purchasePrice: payload.purchasePrice,
-                        isActive: true
-                    }
-                })
+                    availableQtyLTR: {
+                        increment: quantityLTR
+                    },
+                    purchasePrice: payload.purchasePrice,
+                    isActive: true
+                }
+            });
+
         }
 
-        /** Update inventory Summary */
+        /** Safety check */
+        if (!inventoryBatch) {
+            throw new ApiError(
+                `Failed to create inventory batch for Product ${payload.productId}`,
+                500
+            );
+        }
+
+        /** Update Inventory Summary */
         await this.updateInventorySummary(tx, {
             branchId: payload.branchId,
             productId: payload.productId,
-            quantityKG: quantityKG,
-            quantityLTR: quantityLTR,
+            quantityKG,
+            quantityLTR,
             operation: "ADD"
-        })
+        });
+
         return inventoryBatch;
     }
 
@@ -165,22 +192,50 @@ export class InventoryService {
 
         const settings = await tx.setting.findFirst();
 
-        const allowNegativeStock = settings?.allowNegativeInventory ?? false;
+        const allowNegativeStock =
+            settings?.allowNegativeInventory ?? false;
 
-        if(payload.unit === ProductUnit.KG) {
+        const density =
+            Number(product.density ?? 1);
+
+        if (payload.unit === ProductUnit.KG) {
+
             quantityKG = payload.quantity;
-            quantityLTR = product.density ? Number((payload.quantity / Number(product.density)).toFixed(3)) : 0;
 
-            if(!allowNegativeStock && Number(inventoryBatch.availableQtyKG) < quantityKG) {
-                throw new ApiError("Insufficient stock in KG. Allow negativeInventory in settings..", 400);
+            quantityLTR = Number(
+                (payload.quantity / density).toFixed(3)
+            );
+
+            if (
+                !allowNegativeStock &&
+                Number(inventoryBatch.availableQtyKG) < quantityKG
+            ) {
+                throw new ApiError(
+                    "Insufficient stock in KG. Allow negativeInventory in settings.",
+                    400
+                );
             }
+
         } else {
-            quantityLTR = payload.quantity;
-            quantityKG = product.density ? Number((payload.quantity * Number(product.density)).toFixed(3)) : 0;
 
-            if(!allowNegativeStock && Number(inventoryBatch.availableQtyLTR) < quantityLTR) {
-                throw new ApiError("Insufficient stock in LTR. Allow negativeInventory in settings..", 400);
+            // Sale quantity remains in LTR
+            quantityLTR = payload.quantity;
+
+            // Default density = 1
+            quantityKG = Number(
+                (payload.quantity * density).toFixed(3)
+            );
+
+            if (
+                !allowNegativeStock &&
+                Number(inventoryBatch.availableQtyLTR) < quantityLTR
+            ) {
+                throw new ApiError(
+                    "Insufficient stock in LTR. Allow negativeInventory in settings.",
+                    400
+                );
             }
+
         }
 
         /** Update Batch */
@@ -276,122 +331,184 @@ export class InventoryService {
         }
     ) {
 
-        const existingInventory = await tx.inventory.findUnique({
-            where: {
-                branchId_productId: {
-                    branchId: payload.branchId,
-                    productId: payload.productId
-                }
-            }
-        });
-
         const settings = await tx.setting.findFirst();
 
-        const allowNegativeStock = settings?.allowNegativeInventory ?? false;
-        
-        if (!existingInventory) {
+        const allowNegativeStock =
+            settings?.allowNegativeInventory ?? false;
 
-            if (payload.operation === "REMOVE") {
+        let inventory =
+            await tx.inventory.findUnique({
+                where: {
+                    branchId_productId: {
+                        branchId: payload.branchId,
+                        productId: payload.productId
+                    }
+                }
+            });
 
-                if (!allowNegativeStock) {
-                    throw new ApiError(
-                        "Inventory record not found",
-                        400
-                    );
+        /**
+         * First stock for this product
+         */
+        if (!inventory) {
+
+            try {
+
+                inventory = await tx.inventory.create({
+
+                    data: {
+
+                        branchId: payload.branchId,
+
+                        productId: payload.productId,
+
+                        currentStockKG:
+                            payload.operation === "ADD"
+                                ? payload.quantityKG
+                                : -payload.quantityKG,
+
+                        currentStockLTR:
+                            payload.operation === "ADD"
+                                ? payload.quantityLTR
+                                : -payload.quantityLTR
+
+                    }
+
+                });
+
+                return inventory;
+
+            } catch (err: any) {
+
+                if (
+                    err.code === "P2002"
+                ) {
+
+                    inventory =
+                        await tx.inventory.findUnique({
+
+                            where: {
+
+                                branchId_productId: {
+
+                                    branchId: payload.branchId,
+
+                                    productId: payload.productId
+
+                                }
+
+                            }
+
+                        });
+
+                } else {
+
+                    throw err;
+
                 }
 
-                return await tx.inventory.create({
-                    data: {
-                        branchId: payload.branchId,
-                        productId: payload.productId,
-                        currentStockKG: -payload.quantityKG,
-                        currentStockLTR: -payload.quantityLTR
-                    }
-                });
             }
 
-            return await tx.inventory.create({
-                data: {
-                    branchId: payload.branchId,
-                    productId: payload.productId,
-                    currentStockKG: payload.quantityKG,
-                    currentStockLTR: payload.quantityLTR
-                }
-            });
         }
 
+        /**
+         * REMOVE
+         */
         if (payload.operation === "REMOVE") {
-            console.log("Inventory Summary Before Remove", {
-                inventoryId: existingInventory.id,
-                currentStockKG: Number(existingInventory.currentStockKG),
-                currentStockLTR: Number(existingInventory.currentStockLTR),
-                removeKG: payload.quantityKG,
-                removeLTR: payload.quantityLTR,
-            });
-            if(allowNegativeStock) {
-                await tx.inventory.update({
+
+            if (allowNegativeStock) {
+
+                return await tx.inventory.update({
+
                     where: {
-                        id: existingInventory.id
+                        id: inventory.id
                     },
+
                     data: {
+
                         currentStockKG: {
                             decrement: payload.quantityKG
                         },
+
                         currentStockLTR: {
                             decrement: payload.quantityLTR
                         }
+
                     }
+
                 });
 
-                return;
             }
-            // Else Negative stock not allowed - perform check before update
-            const updated = await tx.inventory.updateMany({
-                where: {
-                    id: existingInventory.id,
-                    ...(payload.quantityKG > 0 && {
-                        currentStockKG: {
-                            gte: payload.quantityKG
-                        }
-                    }),
 
-                    ...(payload.quantityLTR > 0 && {
-                        currentStockLTR: {
-                            gte: payload.quantityLTR
-                        }
-                    })
-                },
-                data: {
-                    currentStockKG: {
-                        decrement: payload.quantityKG
+            const updated =
+                await tx.inventory.updateMany({
+
+                    where: {
+
+                        id: inventory.id,
+
+                        ...(payload.quantityKG > 0 && {
+                            currentStockKG: {
+                                gte: payload.quantityKG
+                            }
+                        }),
+
+                        ...(payload.quantityLTR > 0 && {
+                            currentStockLTR: {
+                                gte: payload.quantityLTR
+                            }
+                        })
+
                     },
-                    currentStockLTR: {
-                        decrement: payload.quantityLTR
-                    }
-                }
-            });
 
-            if(updated.count === 0) {
-                throw new ApiError("Stock may have been modified by another transaction | NegativeInventory not allowed in settings", 409);
+                    data: {
+
+                        currentStockKG: {
+                            decrement: payload.quantityKG
+                        },
+
+                        currentStockLTR: {
+                            decrement: payload.quantityLTR
+                        }
+
+                    }
+
+                });
+
+            if (!updated.count) {
+
+                throw new ApiError(
+                    "Stock may have been modified by another transaction | NegativeInventory not allowed in settings",
+                    409
+                );
+
             }
 
             return;
         }
 
-        /** Update Inventory */
+        /**
+         * ADD
+         */
         return await tx.inventory.update({
+
             where: {
-                id: existingInventory.id
+                id: inventory.id
             },
+
             data: {
+
                 currentStockKG: {
                     increment: payload.quantityKG
                 },
+
                 currentStockLTR: {
                     increment: payload.quantityLTR
                 }
+
             }
+
         });
+
     }
 
     /**

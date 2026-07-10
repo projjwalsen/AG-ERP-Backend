@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { ReportingService } from "./reporting.service";
 import { ExcelService } from "../../core/utils/export.service";
-import { branchDayBookColumns, gstr1Columns, gstSuspenseColumns, outstandingColumns, stockInventoryColumns } from "../exports/branch.export";
+import { branchDayBookColumns, gstr1Columns, gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns } from "../exports/branch.export";
 import { formatISTDate } from "../../core/utils/loc.utils";
 
 
@@ -245,7 +245,8 @@ export const getOutstandingReport = async (
                 | "PAYABLE"
         };
 
-        const isExport = (req.query.export as string) === "true" || false;
+        const exportType =
+            String(req.query.export || "").toUpperCase();
 
         const report =
             await ReportingService.getOutstandingReport(
@@ -253,22 +254,87 @@ export const getOutstandingReport = async (
                 query
             );
 
-        if (isExport) {
+        switch (exportType) {
 
-            return ExcelService.export(
-                res,
-                {
-                    filename: "AP / AR Reports",
+            case "DETAILS":
 
-                    sheetName: "Outstanding",
+                return ExcelService.export(
+                    res,
+                    {
+                        filename:
+                            query.type === "PAYABLE"
+                                ? "AP Details"
+                                : "AR Details",
 
-                    title: `AP / AR Reports`,
+                        sheetName:
+                            query.type === "PAYABLE"
+                                ? "AP Details"
+                                : "AR Details",
 
-                    columns: outstandingColumns,
+                        title:
+                            query.type === "PAYABLE"
+                                ? "Accounts Payable Details Report"
+                                : "Accounts Receivable Details Report",
 
-                    data: report.rows
-                }
-            );
+                        columns:
+                            outstandingDetailColumns,
+
+                        companyName: "ASHTAVINAYAKA",
+                        showCompanyName: true,
+
+                        data:
+                            report.detailRows
+                    }
+                );
+
+            case "AGING":
+
+                return ExcelService.export(
+                    res,
+                    {
+                        filename:
+                            query.type === "PAYABLE"
+                                ? "AP Aging"
+                                : "AR Aging",
+
+                        sheetName:
+                            "Aging",
+
+                        title:
+                            query.type === "PAYABLE"
+                                ? "Accounts Payable Aging Report"
+                                : "Accounts Receivable Aging Report",
+
+                        columns:
+                            outstandingAgingColumns(query.type),
+
+                        companyName: "ASHTAVINAYAKA",
+                        showCompanyName: true,
+
+                        data:
+                            report.rows
+                    }
+                );
+
+            case "TRUE":
+
+                return ExcelService.export(
+                    res,
+                    {
+                        filename: "AP / AR Reports",
+
+                        sheetName: "Outstanding",
+
+                        title: "AP / AR Reports",
+
+                        columns: outstandingColumns,
+
+                        companyName: "ASHTAVINAYAKA",
+                        showCompanyName: true,
+
+                        data: report.rows
+                    }
+                );
         }
 
         return res.status(200).json({

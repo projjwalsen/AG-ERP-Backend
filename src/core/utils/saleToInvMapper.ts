@@ -60,7 +60,7 @@ export class SalesToInvMapper {
 
 
         /** ================== HSN TAX SUMMARY =========================== */
-
+        const transport = sale.transport ?? {};
         const hsnMap = new Map();
 
         for (const item of sale.items) {
@@ -163,21 +163,47 @@ export class SalesToInvMapper {
             /**
              * Invoice Metadata
             */
-            deliveryNote: sale.deliveryNote || "",
-            suppliersRef: sale.suppliersRef || "",
-            otherReference: sale.otherReference || "",
-            buyerOrderNo: sale.buyerOrderNo || "",
-            buyerOrderDate: sale.buyerOrderDate
-                ? new Date(sale.buyerOrderDate).toLocaleDateString("en-IN")
+            deliveryNote: transport.deliveryNote || "",
+            suppliersRef: transport.suppliersRef || "",
+            otherReference: transport.otherReference || "",
+            buyerOrderNo: transport.buyerOrderNo || "",
+            buyerOrderDate: transport.buyerOrderDate
+                ? new Date(transport.buyerOrderDate).toLocaleDateString("en-IN")
                 : "",
 
-            despatchDocNo: sale.despatchDocNo || "",
-            despatchDocDate: sale.despatchDocDate
-                ? new Date(sale.despatchDocDate).toLocaleDateString("en-IN")
+            despatchDocNo: transport.despatchDocNo || "",
+            despatchDocDate: transport.despatchDocDate
+                ? new Date(transport.despatchDocDate).toLocaleDateString("en-IN")
                 : "",
 
-            despatchThrough: sale.despatchThrough || "",
-            destination: sale.destination || "",
+            despatchThrough: transport.despatchThrough || "",
+            destination: transport.destination || "",
+            termsOfDelivery:
+                transport.termsOfDelivery || "",
+
+            vehicleOrFlightNo:
+                transport.vehicleOrFlightNo || "",
+
+            portOfLoading:
+                transport.portOfLoading || "",
+
+            portOfDischarge:
+                transport.portOfDischarge || "",
+
+            countryTo:
+                transport.countryTo || "",
+
+            shippingNo:
+                transport.shippingNo || "",
+
+            shippingDate:
+                transport.shippingDate
+                    ? new Date(transport.shippingDate)
+                        .toLocaleDateString("en-IN")
+                    : "",
+
+            portCode:
+                transport.portCode || "",
 
             // Amounts
             subtotal: Number(sale.subTotalAmount).toFixed(2),

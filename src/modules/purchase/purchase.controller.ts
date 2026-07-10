@@ -8,7 +8,18 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
             agencyId,
             branchId,
             invoiceNo,
+
+            invoiceDate,
+            supplierInvoiceDate,
+
+            otherReference,
+
+            roundOffAmount,
+
             remarks,
+
+            transport,
+
             items,
         } = req.body;
 
@@ -16,7 +27,12 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
             agencyId,
             branchId,
             invoiceNo,
+            invoiceDate,
+            supplierInvoiceDate,
+            otherReference,
+            roundOffAmount,
             remarks,
+            transport,
             items,
         });
 
@@ -117,7 +133,12 @@ export const updatePurchase = async (req: Request, res: Response, next: NextFunc
             agencyId,
             branchId,
             invoiceNo,
+            invoiceDate,
+            supplierInvoiceDate,
+            otherReference,
+            roundOffAmount,
             remarks,
+            transport,
             items,
         } = req.body;
 
@@ -125,7 +146,12 @@ export const updatePurchase = async (req: Request, res: Response, next: NextFunc
             agencyId,
             branchId,
             invoiceNo,
+            invoiceDate,
+            supplierInvoiceDate,
+            otherReference,
+            roundOffAmount,
             remarks,
+            transport,
             items,
         });
 

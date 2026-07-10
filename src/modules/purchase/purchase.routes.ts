@@ -11,8 +11,9 @@ router.use(authMiddleware);
  * @openapi
  * /api/purchases/create:
  *   post:
- *     summary: Create purchase
- *     tags: [Purchases]
+ *     summary: Create Purchase
+ *     tags:
+ *       - Purchases
  *     security:
  *       - cookieAuth: []
  *
@@ -27,6 +28,7 @@ router.use(authMiddleware);
  *               - agencyId
  *               - branchId
  *               - invoiceNo
+ *               - invoiceDate
  *               - items
  *
  *             properties:
@@ -41,11 +43,90 @@ router.use(authMiddleware);
  *
  *               invoiceNo:
  *                 type: string
- *                 example: INV-2026-001
+ *                 example: PUR-2026-0001
+ *
+ *               invoiceDate:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2026-07-06T00:00:00.000Z
+ *
+ *               supplierInvoiceDate:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2026-07-05T00:00:00.000Z
+ *
+ *               otherReference:
+ *                 type: string
+ *                 example: REF-001
  *
  *               remarks:
  *                 type: string
- *                 example: Fresh stock received
+ *                 example: Fresh stock received from supplier.
+ *
+ *               roundOffAmount:
+ *                 type: number
+ *                 example: -0.25
+ *
+ *               transport:
+ *                 type: object
+ *
+ *                 properties:
+ *
+ *                   purchaseOrderNo:
+ *                     type: string
+ *                     example: PO-2026-001
+ *
+ *                   purchaseOrderDate:
+ *                     type: string
+ *                     format: date-time
+ *
+ *                   receiptNoteNo:
+ *                     type: string
+ *                     example: RN-001
+ *
+ *                   receiptNoteDate:
+ *                     type: string
+ *                     format: date-time
+ *
+ *                   lrNo:
+ *                     type: string
+ *                     example: LR45879
+ *
+ *                   dispatchThrough:
+ *                     type: string
+ *                     example: Blue Dart
+ *
+ *                   destination:
+ *                     type: string
+ *                     example: Kolkata Warehouse
+ *
+ *                   vehicleOrFlightNo:
+ *                     type: string
+ *                     example: WB12AB1234
+ *
+ *                   portOfLoading:
+ *                     type: string
+ *                     example: Mumbai
+ *
+ *                   portOfDischarge:
+ *                     type: string
+ *                     example: Kolkata
+ *
+ *                   countryTo:
+ *                     type: string
+ *                     example: India
+ *
+ *                   billOfEntryNo:
+ *                     type: string
+ *                     example: BOE-001
+ *
+ *                   billOfEntryDate:
+ *                     type: string
+ *                     format: date-time
+ *
+ *                   portCode:
+ *                     type: string
+ *                     example: INMUM1
  *
  *               items:
  *                 type: array
@@ -68,7 +149,8 @@ router.use(authMiddleware);
  *
  *                     batchNo:
  *                       type: string
- *                       example: BATCH-2026-001
+ *                       description: Unique inventory batch number generated or provided during purchase.
+ *                       example: PUR-2026-0001-1
  *
  *                     quantity:
  *                       type: number
@@ -76,12 +158,14 @@ router.use(authMiddleware);
  *
  *                     unit:
  *                       type: string
- *                       enum: [KG, LTR]
- *                       example: LTR
+ *                       enum:
+ *                         - KG
+ *                         - LTR
+ *                       example: KG
  *
  *                     purchasePrice:
  *                       type: number
- *                       example: 89.5
+ *                       example: 89.50
  *
  *     responses:
  *       201:
@@ -96,8 +180,11 @@ router.use(authMiddleware);
  *       403:
  *         description: Permission denied
  *
+ *       404:
+ *         description: Vendor, Branch or Product not found
+ *
  *       409:
- *         description: Duplicate invoice or batch conflict
+ *         description: Duplicate invoice number or inventory batch already exists
  */
 router.post(
     "/create",

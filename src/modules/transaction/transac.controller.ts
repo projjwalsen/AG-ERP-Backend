@@ -10,30 +10,45 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
         const {
             branchId,
             direction,
+            settlementType,
+
             suspense,
+
             agencyId,
-            paymentType,
             thirdPartyAgencyId,
+
+            saleId,
+            purchaseId,
+
             amount,
-            paymentMode,
+
             paymentThrough,
             transactionRefNo,
             referenceNo,
+
             remarks
         } = req.body;
 
         const transaction = await TransactionService.createTransaction(actor, {
             branchId,
             direction,
+
+            settlementType,
+
             suspense,
+
             agencyId,
-            paymentType,
             thirdPartyAgencyId,
+
+            saleId,
+            purchaseId,
+
             amount,
-            paymentMode,
+
             paymentThrough,
             transactionRefNo,
             referenceNo,
+
             remarks
         });
 
@@ -57,7 +72,7 @@ export const getAllTransactions = async (req: Request, res: Response, next: Next
             agencyId,
             status,
             direction,
-            paymentType,
+            settlementType,
             search,
             suspenseAccount,
         } = (req as any).query;
@@ -70,7 +85,7 @@ export const getAllTransactions = async (req: Request, res: Response, next: Next
             agencyId,
             status,
             direction,
-            paymentType,
+            settlementType,
             search,
             suspenseAccount,
             export: isExport
@@ -192,30 +207,46 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
         const {
             branchId,
             direction,
+
+            settlementType,
+
             suspense,
+
             agencyId,
-            paymentType,
             thirdPartyAgencyId,
+
+            saleId,
+            purchaseId,
+
             amount,
-            paymentMode,
-            transactionRefNo,
+
             paymentThrough,
+            transactionRefNo,
             referenceNo,
+
             remarks
         } = req.body;
 
         const transaction = await TransactionService.updateTransaction(actor, transactionId, {
             branchId,
             direction,
+
+            settlementType,
+
             suspense,
+
             agencyId,
-            paymentType,
             thirdPartyAgencyId,
+
+            saleId,
+            purchaseId,
+
             amount,
-            paymentMode,
+
             paymentThrough,
             transactionRefNo,
             referenceNo,
+
             remarks
         });
 
@@ -223,6 +254,86 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
             success: true,
             message: "Transaction updated successfully",
             data: transaction
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+
+export const getOutstandingInvoices = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+
+    try {
+
+        const actor = (req as any).user;
+
+        const {
+            branchId,
+            agencyId,
+            direction,
+            search
+        } = req.query as any;
+
+        const invoices =
+            await TransactionService.getOutstandingInvoices(
+                actor,
+                {
+                    branchId,
+                    agencyId,
+                    direction,
+                    search
+                }
+            );
+
+        return res.status(200).json({
+
+            success: true,
+
+            message: "Outstanding invoices fetched successfully",
+
+            data: invoices
+
+        });
+
+    } catch (err) {
+        next(err);
+    }
+
+};
+
+
+export const previewFIFOAllocation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const actor = (req as any).user;
+
+        const {
+            primaryAgencyId,
+            thirdPartyAgencyId,
+            branchId,
+            direction,
+            amount,
+        } = (req as any).body;
+
+        const preview = 
+            await TransactionService.previewFIFOAllocation(
+                actor,
+                {
+                    primaryAgencyId,
+                    thirdPartyAgencyId,
+                    branchId,
+                    direction,
+                    amount,
+                }
+            );
+
+        return res.status(200).json({
+            success: true,
+            message: "FIFO allocation preview generated successfully",
+            data: preview
         });
     } catch (error) {
         next(error);

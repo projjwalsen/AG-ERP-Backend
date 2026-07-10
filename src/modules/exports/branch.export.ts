@@ -242,6 +242,137 @@ export const outstandingColumns = [
     }
 ];
 
+export const outstandingDetailColumns = [
+
+    {
+        header: "Vendor / Customer",
+        key: "vendorName",
+        width: 35
+    },
+
+    {
+        header: "Bill No.",
+        key: "billNo",
+        width: 20
+    },
+
+    {
+        header: "Bill Date",
+        key: "billDate",
+        width: 18
+    },
+
+    {
+        header: "Due Date",
+        key: "dueDate",
+        width: 18
+    },
+
+    {
+        header: "Bill Amount",
+        key: "billAmount",
+        width: 18
+    },
+
+    {
+        header: "GST Amount",
+        key: "gstAmount",
+        width: 18
+    },
+
+    {
+        header: "TDS",
+        value: row => row.tds ?? 0,
+        width: 15
+    },
+
+    {
+        header: "Paid Amount",
+        key: "paidAmount",
+        width: 18
+    },
+
+    {
+        header: "Balance Amount",
+        key: "balanceAmount",
+        width: 18
+    },
+
+    {
+        header: "Aging Days",
+        key: "agingDays",
+        width: 15
+    },
+
+    {
+        header: "Aging Bucket",
+        key: "agingBucket",
+        width: 18
+    },
+
+    {
+        header: "Payment Status",
+        key: "paymentStatus",
+        width: 18
+    },
+
+    {
+        header: "Remarks",
+        key: "remarks",
+        width: 30
+    }
+
+];
+
+export const outstandingAgingColumns = (
+    type: "PAYABLE" | "RECEIVABLE"
+) => [
+    {
+        header: "Vendor Code",
+        key: "vendorCode",
+        width: 15
+    },
+
+    {
+        header: "Vendor / Customer",
+        key: "agencyName",
+        width: 35
+    },
+
+    {
+        header:
+            type === "PAYABLE"
+                ? "Total Payable"
+                : "Total Receivable",
+        key: "totalOutstanding",
+        width: 20
+    },
+
+    {
+        header: "0-30 Days",
+        value: row => row.bucket_0_30_days?.amount ?? 0,
+        width: 18
+    },
+
+    {
+        header: "31-60 Days",
+        value: row => row.bucket_31_60_days?.amount ?? 0,
+        width: 18
+    },
+
+    {
+        header: "61-90 Days",
+        value: row => row.bucket_61_90_days?.amount ?? 0,
+        width: 18
+    },
+
+    {
+        header: "Above 90 Days",
+        value: row => row.bucket_91_plus_days?.amount ?? 0,
+        width: 18
+    },
+];
+
 export const accountingLedgerColumns = [
     { header: "Date", key: "date" },
     { header: "Voucher No", key: "voucherNo" },

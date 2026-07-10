@@ -1,4 +1,4 @@
-import { LedgerType, OutstandingType, Prisma, SalesStatus, TransactionDirection } from "@prisma/client";
+import { LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
@@ -683,6 +683,7 @@ export class ReportingService {
         actor: any,
         query?: {
             branchId?: string;
+            agencyId?: string;
             type?: "RECEIVABLE" | "PAYABLE";
         }
     ) {
@@ -696,121 +697,520 @@ export class ReportingService {
                 ? query?.branchId
                 : actor.branchId;
 
-        const ledgerWhere: Prisma.LedgerWhereInput = {
+        const today = new Date();
+        const detailRows: any[] = [];
 
-            ...(branchId && {
-                branchId
-            }),
+        const agencyMap = new Map<
+            string,
+            {
+                agencyId: string;
+                agencyName: string;
 
-            ...(query?.type === "RECEIVABLE" && {
-                category: LedgerType.CUSTOMER
-            }),
+                vendorCode: string;
 
-            ...(query?.type === "PAYABLE" && {
-                category: LedgerType.VENDOR
-            }),
+                totalOutstanding: number;
 
-            agencyId: {
-                not: null
-            },
+                bucket_0_30_days: {
+                    amount: number;
+                    invoices: any[];
+                };
+                bucket_31_60_days: {
+                    amount: number;
+                    invoices: any[];
+                };
+                bucket_61_90_days: {
+                    amount: number;
+                    invoices: any[];
+                };
+                bucket_91_plus_days: {
+                    amount: number;
+                    invoices: any[];
+                };
+            }
+        >();
 
-            isActive: true
-        };
+        if(query.type === "RECEIVABLE") {
+            const sales = await prisma.sale.findMany({
+                where: {
+                    status: SalesStatus.APPROVED,
 
-        const ledgers =
-            await prisma.ledger.findMany({
+                    ...(branchId && {
+                        branchId
+                    }),
 
-                where: ledgerWhere,
-
+                    ...(query.agencyId && {
+                        agencyId: query.agencyId
+                    })
+                },
                 include: {
                     agency: true,
-                    branch: true,
-                    group: true
+                    allocations: true
                 },
-
                 orderBy: {
-                    name: "asc"
+                    invoiceDate: "asc"
                 }
             });
 
+            for(const sale of sales) {
+                const allocated =
+                    sale.allocations.reduce(
+                        (sum, a) =>
+                            sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                const outstanding = Number(sale.grandTotal) - allocated;
+
+                if(outstanding <= 0) continue;
+
+                const ageDays = 
+                    Math.floor(
+                        (
+                            today.getTime() -
+                            sale.invoiceDate.getTime()
+                        ) / 86400000
+                    );
+                detailRows.push({
+
+                    vendorCode:
+                        sale.agency.id, // change to agency.code later if added
+
+                    vendorName:
+                        sale.agency.name,
+
+                    billNo:
+                        sale.invoiceNo,
+
+                    billDate:
+                        sale.invoiceDate,
+
+                    dueDate:
+                        sale.invoiceDate, // replace when dueDate exists
+
+                    billAmount:
+                        Number(sale.subTotalAmount),
+
+                    gstAmount:
+                        Number(sale.totalGSTAmount),
+
+                    tds: 0,
+
+                    paidAmount:
+                        allocated,
+
+                    balanceAmount:
+                        outstanding,
+
+                    agingDays:
+                        ageDays,
+
+                    agingBucket:
+                        ageDays <= 30
+                            ? "0-30 Days"
+                            : ageDays <= 60
+                                ? "31-60 Days"
+                                : ageDays <= 90
+                                    ? "61-90 Days"
+                                    : "Above 90 Days",
+
+                    branch:
+                        sale.branchId,
+
+                    remarks:
+                        sale.remarks ?? ""
+                });
+
+                const invoice = {
+
+                    invoiceId:
+                        sale.id,
+
+                    invoiceType:
+                        "SALE",
+
+                    invoiceNo:
+                        sale.invoiceNo,
+
+                    invoiceDate:
+                        sale.invoiceDate,
+
+                    invoiceAgeDays:
+                        ageDays,
+
+                    grandTotal:
+                        Number(sale.grandTotal),
+
+                    allocatedAmount:
+                        allocated,
+
+                    outstandingAmount:
+                        outstanding,
+
+                    settlementStatus:
+                        allocated === 0
+                            ? "UNPAID"
+                            : outstanding === 0
+                                ? "FULLY_SETTLED"
+                                : "PARTIALLY_SETTLED",
+
+                    invoice:
+                        sale
+
+                };
+
+                if(!agencyMap.has(sale.agencyId)) {
+                    agencyMap.set(sale.agencyId, {
+                        agencyId: sale.agencyId,
+                        agencyName: sale.agency?.name || null,
+                        vendorCode: "",
+                        totalOutstanding: 0,
+                        bucket_0_30_days: {
+                            amount: 0,
+                            invoices: []
+                        },
+                        bucket_31_60_days: {
+                            amount: 0,
+                            invoices: []
+                        },
+                        bucket_61_90_days: {
+                            amount: 0,
+                            invoices: []
+                        },
+                        bucket_91_plus_days: {
+                            amount: 0,
+                            invoices: []
+                        }
+                    })
+                }
+
+                const agency = agencyMap.get(sale.agencyId)!;
+
+                agency.totalOutstanding += outstanding;
+
+                let bucket;
+
+                if(ageDays <= 30){
+
+                    bucket =
+                        agency.bucket_0_30_days;
+
+                }
+                else if(ageDays <= 60){
+
+                    bucket =
+                        agency.bucket_31_60_days;
+
+                }
+                else if(ageDays <= 90){
+
+                    bucket =
+                        agency.bucket_61_90_days;
+
+                }
+                else{
+
+                    bucket =
+                        agency.bucket_91_plus_days;
+
+                }
+
+                bucket.amount += outstanding;
+
+                bucket.invoices.push(invoice);
+            }
+        } else {
+            const purchases = await prisma.purchase.findMany({
+                where: {
+                    status: PurchaseStatus.APPROVED,
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(query.agencyId && {
+                        agencyId: query.agencyId
+                    })
+                },
+                include: {
+                    agency: true,
+                    allocations: true
+                },
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+            for(const purchase of purchases) {
+                const allocated =
+                    purchase.allocations.reduce(
+                        (sum, a) =>
+                            sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                const outstanding =
+                    Number(purchase.grandTotal) - allocated;
+
+                if(outstanding <= 0) continue;
+                
+
+                const ageDays =
+                    Math.floor(
+                        (
+                            today.getTime() -
+                            purchase.createdAt.getTime()
+                        ) / 86400000
+                    );
+
+                detailRows.push({
+
+                    vendorCode:
+                        purchase.agency.id, // or agency.code later if you add one
+
+                    vendorName:
+                        purchase.agency.name,
+
+                    billNo:
+                        purchase.invoiceNo,
+
+                    billDate:
+                        purchase.createdAt,
+
+                    dueDate:
+                        purchase.createdAt, // replace with purchase.dueDate once added
+
+                    billAmount:
+                        Number(purchase.subtotalAmount),
+
+                    gstAmount:
+                        Number(purchase.totalGSTAmount),
+
+                    tds: 0,
+
+                    paidAmount:
+                        allocated,
+
+                    balanceAmount:
+                        outstanding,
+
+                    agingDays:
+                        ageDays,
+
+                    agingBucket:
+                        ageDays <= 30
+                            ? "0-30 Days"
+                            : ageDays <= 60
+                                ? "31-60 Days"
+                                : ageDays <= 90
+                                    ? "61-90 Days"
+                                    : "Above 90 Days",
+
+                    branch:
+                        purchase.branchId,
+
+                    remarks:
+                        purchase.remarks ?? ""
+                });    
+
+                const invoice = {
+                    invoiceId:
+                        purchase.id,
+
+                    invoiceType:
+                        "PURCHASE",
+
+                    invoiceNo:
+                        purchase.invoiceNo,
+
+                    invoiceDate:
+                        purchase.createdAt,
+
+                    invoiceAgeDays:
+                        ageDays,
+
+                    grandTotal:
+                        Number(purchase.grandTotal),
+
+                    allocatedAmount:
+                        allocated,
+
+                    outstandingAmount:
+                        outstanding,
+
+                    settlementStatus:
+                        allocated === 0
+                            ? "UNPAID"
+                            : outstanding === 0
+                                ? "FULLY_SETTLED"
+                                : "PARTIALLY_SETTLED",
+
+                    invoice:
+                        purchase
+                };
+
+                if(!agencyMap.has(purchase.agencyId)) {
+                    agencyMap.set(purchase.agencyId, {
+                        agencyId: purchase.agencyId,
+                        agencyName: purchase.agency?.name || null,
+                        vendorCode: "",
+                        totalOutstanding: 0,
+                        bucket_0_30_days: {
+                            amount: 0,
+                            invoices: []
+                        },
+                        bucket_31_60_days: {
+                            amount: 0,
+                            invoices: []
+                        },
+                        bucket_61_90_days: {
+                            amount: 0,
+                            invoices: []
+                        },
+                        bucket_91_plus_days: {
+                            amount: 0,
+                            invoices: []
+                        }
+                    })
+                }
+
+                const agency = agencyMap.get(purchase.agencyId)!;
+
+                agency.totalOutstanding += outstanding;
+
+                let bucket;
+
+                if (ageDays <= 30) {
+
+                    bucket =
+                        agency.bucket_0_30_days;
+
+                }
+                else if (ageDays <= 60) {
+
+                    bucket =
+                        agency.bucket_31_60_days;
+
+                }
+                else if (ageDays <= 90) {
+
+                    bucket =
+                        agency.bucket_61_90_days;
+
+                }
+                else {
+
+                    bucket =
+                        agency.bucket_91_plus_days;
+
+                }
+
+                bucket.amount +=
+                    outstanding;
+
+                bucket.invoices.push(
+                    invoice
+                );
+
+            }
+        }
+
         const rows =
-            await Promise.all(
-
-                ledgers.map(async ledger => {
-
-                    const balance =
-                        await LedgerService.calculateLedgerBalance(
-                            ledger.id
-                        );
-
-                    return {
-                        agency_id:
-                            ledger.agency?.id,
-
-                        agency_name:
-                            ledger.agency?.name,
-
-                        branch:
-                            ledger.branch
-                                ? {
-                                    id: ledger.branch.id,
-                                    code: ledger.branch.code,
-                                    name: ledger.branch.name
-                                }
-                                : null,
-
-                        total_outstanding:
-                            Math.abs(
-                                balance.closingBalance
-                            ),
-
-                        balanceType:
-                            resolveBalanceType(
-                                balance.closingBalance,
-                                ledger.nature
-                            ),
-
-                        gstin:
-                            ledger.agency?.gstin,
-
-                        createdAt:
-                            ledger.createdAt
-                    };
-                })
+        [...agencyMap.values()]
+            .sort(
+                (a, b) =>
+                    a.agencyName.localeCompare(
+                        b.agencyName
+                    )
             );
 
-        const filteredRows =
-            rows.filter(
-                row => row.total_outstanding > 0
-            );
+        rows.forEach((row, index) => {
+
+            row.vendorCode =
+                `V${String(index + 1).padStart(3, "0")}`;
+
+        });
+        
+
+        const summary = {
+
+            totalAgencies:
+                rows.length,
+
+            totalInvoices:
+                rows.reduce(
+                    (sum, row) =>
+                        sum +
+                        row.bucket_0_30_days.invoices.length +
+                        row.bucket_31_60_days.invoices.length +
+                        row.bucket_61_90_days.invoices.length +
+                        row.bucket_91_plus_days.invoices.length,
+                    0
+                ),
+
+            totalOutstanding:
+                rows.reduce(
+                    (sum, row) =>
+                        sum +
+                        row.totalOutstanding,
+                    0
+                ),
+
+            bucket_0_30_days:
+                rows.reduce(
+                    (sum, row) =>
+                        sum +
+                        (row.bucket_0_30_days?.amount ?? 0),
+                    0
+                ),
+
+            bucket_31_60_days:
+                rows.reduce(
+                    (sum, row) =>
+                        sum +
+                        (row.bucket_31_60_days?.amount ?? 0),
+                    0
+                ),
+
+            bucket_61_90_days:
+                rows.reduce(
+                    (sum, row) =>
+                        sum +
+                        (row.bucket_61_90_days?.amount ?? 0),
+                    0
+                ),
+
+            bucket_91_plus_days:
+                rows.reduce(
+                    (sum, row) =>
+                        sum +
+                        (row.bucket_91_plus_days?.amount ?? 0),
+                    0
+                )
+
+        };
+        
 
         return {
 
             reportName:
-                query?.type === "PAYABLE"
-                    ? "Accounts Payable Report"
-                    : query?.type === "RECEIVABLE"
-                        ? "Accounts Receivable Report"
-                        : "Outstanding Report",
+                query.type === "RECEIVABLE"
+                    ? "Accounts Receivable Aging Report"
+                    : "Accounts Payable Aging Report",
 
             generatedAt:
                 new Date(),
 
-            summary: {
+            branchId,
 
-                totalAgencies:
-                    filteredRows.length,
+            agencyId:
+                query.agencyId,
 
-                totalOutstanding:
-                    filteredRows.reduce(
-                        (sum, row) =>
-                            sum + row.total_outstanding,
-                        0
-                    )
-            },
+            summary,
 
-            rows:
-                filteredRows
+            rows,
+
+            detailRows
+
         };
     }
 }

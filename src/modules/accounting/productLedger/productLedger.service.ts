@@ -159,7 +159,7 @@ export class ProductLedgerService {
             batchNo: payload.batchNo,
             invoiceNo: purchase.invoiceNo,
             unitCost: Number(purchaseItem.purchasePrice),
-            entryDate: new Date(),
+            entryDate: purchase.createdAt || new Date(),
             remarks: `Purchase from invoice ${purchase.invoiceNo}`,
             createdById: purchase.createdById,
         });
@@ -208,7 +208,7 @@ export class ProductLedgerService {
             batchNo: payload.batchNo,
             invoiceNo: sale.invoiceNo,
             unitCost: undefined,
-            entryDate: sale.invoiceDate || new Date(),
+            entryDate: sale.createdAt || new Date(),
             remarks: `Sale to invoice ${sale.invoiceNo}`,
             createdById: sale.createdById,
         });

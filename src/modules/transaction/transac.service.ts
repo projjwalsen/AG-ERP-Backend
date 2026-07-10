@@ -1,4 +1,4 @@
-import { TransactionDirection, TransactionPaymentType, PaymentMode, TransactionStatus, PaymentType, OutstandingType } from "@prisma/client";
+import { TransactionDirection, TransactionStatus, PaymentType, OutstandingType, SettlementType, Prisma, SalesStatus, PurchaseStatus, Transaction } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { randomUUID } from "crypto";
@@ -8,17 +8,78 @@ import { LedgerService } from "../accounting/ledger/ledger.service";
 type TransactionPayload = {
     branchId: string;
     direction: TransactionDirection;
+    settlementType: SettlementType;
     suspense: boolean;
     agencyId?: string;
-    paymentType: TransactionPaymentType;
     thirdPartyAgencyId?: string;
+    saleId?: string;
+    purchaseId?: string;
     amount: number;
-    paymentMode: PaymentMode;
     paymentThrough?: PaymentType;
     transactionRefNo?: string;
     referenceNo?: string;
     remarks?: string;
 }
+
+type FIFOAllocation = {
+    invoiceId: string;
+    invoiceNo: string;
+    sourceType: "SALE" | "PURCHASE";
+
+    total: number;
+
+    outstanding: number;
+
+    allocatedAmount: number;
+
+    remainingOutstanding: number;
+
+    fullySettled: boolean;
+
+    partiallySettled: boolean;
+}
+
+type InvoicePreview = {
+    invoiceId: string;
+    invoiceNo: string;
+
+    invoiceType: "SALE" | "PURCHASE";
+
+    invoiceDate: Date;
+
+    fifoOrder: number;
+
+    totalAmount: number;
+
+    outstandingAmount: number;
+
+    payingAmount: number;
+
+    remainingOutstanding: number;
+
+    settlementStatus:
+        | "FULLY_SETTLED"
+        | "PARTIALLY_SETTLED";
+
+    invoice: any;
+};
+
+type AgencyFIFOPreview = {
+    agency: {
+        id: string;
+        name: string;
+    };
+
+    requestedAmount: number;
+
+    allocatedAmount: number;
+
+    unallocatedAmount: number;
+
+    canProceed: boolean;
+
+    invoices: InvoicePreview[];
+};
 
 export class TransactionService {
 
@@ -50,8 +111,908 @@ export class TransactionService {
         return setting;
     }
 
+    private static async getInvoiceOutstanding(
+        tx: Prisma.TransactionClient,
+        payload: Pick<
+            TransactionPayload,
+            "direction" | "saleId" | "purchaseId"
+        >
+    ) {
+        if(payload.direction === TransactionDirection.INWARD) {
+            const sale = await tx.sale.findUnique({
+                where: {
+                    id: payload.saleId
+                },
+                include: {
+                    allocations: true
+                }
+            });
+
+            if(!sale) {
+                throw new ApiError("Invalid Sale ID", 400);
+            }
+
+            const allocated = sale.allocations.reduce(
+                (sum, a) => 
+                    sum + Number(a.allocatedAmount),
+                0
+            );
+
+            return {
+                type: "SALE",
+                id: sale.id,
+                agencyId: sale.agencyId,
+                branchId: sale.branchId,
+                status: sale.status,
+                grandTotal: Number(sale.grandTotal),
+                allocated,
+                outstandings: Number(sale.grandTotal) - allocated
+            }
+        }
+
+        const purchase = await tx.purchase.findUnique({
+            where: {
+                id: payload.purchaseId
+            },
+            include: {
+                allocations: true
+            }
+        });
+
+        if(!purchase) {
+            throw new ApiError("Purchase Invoice not found", 400);
+        }
+
+        const allocated = purchase.allocations.reduce(
+            (sum, a) => sum + Number(a.allocatedAmount),
+            0
+        );
+
+        return {
+            type: "PURCHASE",
+            id: purchase.id,
+            agencyId: purchase.agencyId,
+            branchId: purchase.branchId,
+            status: purchase.status,
+            grandTotal: Number(purchase.grandTotal),
+            allocated,
+            outstandings: Number(purchase.grandTotal) - allocated
+        };
+    }
+
+    private static async validateInvoiceSettlement(
+        tx: Prisma.TransactionClient,
+        payload: TransactionPayload
+    ) {
+        if(payload.thirdPartyAgencyId) {
+            throw new ApiError("Third Party not allowed -- Invoice to Invoice Settlement", 400);
+        }
+
+        if(
+            !payload.saleId &&
+            !payload.purchaseId
+        ) {
+            throw new ApiError("Either SaleId or PurchaseId is required for Invoice Settlement", 400);
+        }
+
+        if(payload.saleId && payload.purchaseId) {
+            throw new ApiError("Only one of SaleId or PurchaseId is allowed for Invoice Settlement", 400);
+        }
+
+        if(payload.direction ===
+            TransactionDirection.INWARD &&
+            !payload.saleId
+        ) {
+            throw new ApiError(
+                "Sale Invoice is required !", 
+                400
+            );
+        }
+
+        if(payload.direction ===
+            TransactionDirection.OUTWARD &&
+            !payload.purchaseId
+        ) {
+            throw new ApiError(
+                "Purchase Invoice is required !",
+                400
+            );
+        }
+
+        const invoice = await this.getInvoiceOutstanding(
+            tx,
+            payload
+        );
+
+        if(
+            invoice.branchId !==
+            payload.branchId
+        ) {
+            throw new ApiError(
+                "Invoice belong to another branch",
+                400
+            )
+        }
+
+        if (
+            invoice.agencyId !==
+            payload.agencyId
+        ) {
+            throw new ApiError(
+                "Invoice belong to another agency",
+                400
+            );
+        }
+
+        if(
+            invoice.outstandings <= 0
+        ) {
+            throw new ApiError(
+                "Invoice is already fully settled",
+                400
+            )
+        }
+
+        if (
+            invoice.outstandings !==
+            payload.amount
+        ) {
+            throw new ApiError(
+                `Outstanding amount is ${invoice.outstandings}. Invoice settlement must be full.`,
+                400
+            )
+        }
+
+        if(
+            payload.direction ===
+            TransactionDirection.INWARD &&
+            invoice.status !== SalesStatus.APPROVED
+        ) {
+            throw new ApiError(
+                "Sale Invoice is not approved yet",
+                400
+            )
+        }
+
+        if (
+            payload.direction ===
+            TransactionDirection.OUTWARD &&
+            invoice.status !== PurchaseStatus.APPROVED
+        ) {
+            throw new ApiError(
+                "Purchase Invoice is not approved yet",
+                400
+            );
+        }
+    }
+
+    private static async validateLumpsumSettlement(
+        tx: Prisma.TransactionClient,
+        actor: any,
+        payload: TransactionPayload
+    ) {
+        if(!payload.agencyId) {
+            throw new ApiError(
+                "Primary Agency is required",
+                400
+            );
+        }
+
+        if(!payload.thirdPartyAgencyId) {
+            throw new ApiError(
+                "Third Party Agency is required",
+                400
+            );
+        }
+
+        if(
+            payload.saleId ||
+            payload.purchaseId
+        ) {
+            throw new ApiError(
+                "Invoice selection is not allowed in Lumpsum Settlement",
+                400
+            );
+        }
+
+        if(
+            payload.agencyId ===
+            payload.thirdPartyAgencyId
+        ) {
+            throw new ApiError(
+                "Primary and Third Party Agencies cannot be the same",
+                400
+            );
+        }
+
+        if (
+            payload.amount <= 0
+        ) {
+            throw new ApiError(
+                "Amount should be greater than zero",
+                400
+            );
+        }
+
+        const settings = await this.getSettings();
+
+        if(settings.allowNegativeTransaction) {
+            return;
+        }
+
+        const primaryOutstanding = await this.getAgencyOutstanding(
+            actor,
+            payload.agencyId,
+            payload.branchId,
+            tx
+        );
+
+        const thirdPartyOutstanding = await this.getAgencyOutstanding(
+            actor,
+            payload.thirdPartyAgencyId,
+            payload.branchId,
+            tx
+        );
+
+        if(payload.direction ===
+            TransactionDirection.INWARD
+        ) {
+            /**
+             * Inward clears what they owe us (amountDue)
+             */
+            if(
+                payload.amount >
+                primaryOutstanding.amountDue
+            ) {
+                throw new ApiError(
+                    `Primary agency outstanding is only ${primaryOutstanding.amountDue}`,
+                    400
+                )
+            }
+
+            /**
+             * Third Party
+             */
+            if(
+                payload.amount >
+                thirdPartyOutstanding.amountReceivable
+            ) {
+                throw new ApiError(
+                    `Third Party agency outstanding is only ${thirdPartyOutstanding.amountReceivable}`,
+                    400
+                )
+            }
+        } else {
+            /**
+             * Primary Vendor
+             */
+
+            if (
+                payload.amount >
+                primaryOutstanding.amountReceivable
+            ) {
+
+                throw new ApiError(
+                    `Primary Agency outstanding is only ${primaryOutstanding.amountReceivable}`,
+                    400
+                );
+
+            }
+
+            /**
+             * Third Party Customer
+             */
+
+            if (
+                payload.amount >
+                thirdPartyOutstanding.amountDue
+            ) {
+
+                throw new ApiError(
+                    `Third Party outstanding is only ${thirdPartyOutstanding.amountDue}`,
+                    400
+                );
+
+            }
+        }
+    }
+
+    private static async allocateInvoice(
+        tx: Prisma.TransactionClient,
+        transaction: Transaction
+    ) {
+        const invoice = await this.getInvoiceOutstanding(
+            tx,
+            {
+                direction: transaction.direction,
+                saleId: transaction.saleId,
+                purchaseId: transaction.purchaseId
+            }
+        );
+
+        if (invoice.outstandings !== Number(transaction.amount)) {
+            throw new ApiError(
+                "Invoice outstanding has changed. Please refresh.",
+                409
+            );
+        }
+
+        await tx.transactionAllocation.create({
+            data: {
+                transactionId: transaction.id,
+                sourceType:
+                    transaction.direction ===
+                    TransactionDirection.INWARD
+                    ? "SALE"
+                    : "PURCHASE",
+
+                saleId:
+                    transaction.direction ===
+                    TransactionDirection.INWARD
+                    ? transaction.saleId
+                    : undefined,
+
+                purchaseId:
+                    transaction.direction ===
+                    TransactionDirection.OUTWARD
+                    ? transaction.purchaseId
+                    : undefined,
+
+                allocatedAmount: transaction.amount
+            }
+        })
+    }
+
+    private static async settleInvToInvPayment(
+        tx: Prisma.TransactionClient,
+        transaction: Transaction
+    ) {
+        const amount = Number(transaction.amount);
+
+        await this.updatePersistentOutstanding(
+            tx,
+            transaction.agencyId!,
+            transaction.branchId,
+            amount,
+            transaction.direction === TransactionDirection.INWARD
+                ? OutstandingType.CREDIT
+                : OutstandingType.DEBIT,
+            "ADD"
+        );
+
+        await this.allocateInvoice(
+            tx,
+            transaction
+        )
+
+
+    }
+
+
+    private static async allocateFIFO(
+        tx: Prisma.TransactionClient,
+        params: {
+            transactionId: string;
+            agencyId: string;
+            branchId: string;
+            direction: TransactionDirection;
+            amount: number;
+        }
+    ) {
+
+        let remaining = params.amount;
+
+        if (params.direction === TransactionDirection.INWARD) {
+
+            const sales = await tx.sale.findMany({
+                where: {
+                    agencyId: params.agencyId,
+                    branchId: params.branchId,
+                    status: SalesStatus.APPROVED
+                },
+                include: {
+                    allocations: true
+                },
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+            for (const sale of sales) {
+
+                if (remaining <= 0)
+                    break;
+
+                const allocated =
+                    sale.allocations.reduce(
+                        (sum, a) =>
+                            sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                const outstanding =
+                    Number(sale.grandTotal) -
+                    allocated;
+
+                if (outstanding <= 0)
+                    continue;
+
+                const allocation =
+                    Math.min(
+                        outstanding,
+                        remaining
+                    );
+
+                await tx.transactionAllocation.create({
+                    data: {
+                        transactionId: params.transactionId,
+                        saleId: sale.id,
+                        sourceType: "SALE",
+                        allocatedAmount: allocation
+                    }
+                });
+
+                remaining -= allocation;
+            }
+
+        } else {
+
+            const purchases = await tx.purchase.findMany({
+                where: {
+                    agencyId: params.agencyId,
+                    branchId: params.branchId,
+                    status: PurchaseStatus.APPROVED
+                },
+                include: {
+                    allocations: true
+                },
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+            for (const purchase of purchases) {
+
+                if (remaining <= 0)
+                    break;
+
+                const allocated =
+                    purchase.allocations.reduce(
+                        (sum, a) =>
+                            sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                const outstanding =
+                    Number(purchase.grandTotal) -
+                    allocated;
+
+                if (outstanding <= 0)
+                    continue;
+
+                const allocation =
+                    Math.min(
+                        outstanding,
+                        remaining
+                    );
+
+                await tx.transactionAllocation.create({
+                    data: {
+                        transactionId: params.transactionId,
+                        purchaseId: purchase.id,
+                        sourceType: "PURCHASE",
+                        allocatedAmount: allocation
+                    }
+                });
+
+                remaining -= allocation;
+            }
+        }
+
+        if (remaining > 0) {
+            throw new ApiError(
+                "Outstanding changed while allocating invoices.",
+                409
+            );
+        }
+    }
+
+    private static async settleLumpsumPayment(
+        tx: Prisma.TransactionClient,
+        transaction: Transaction
+    ) {
+        const amount = Number(transaction.amount);
+
+        if(!transaction.thirdPartyAgencyId) {
+            throw new ApiError(
+                "Third Party Agency is required for Lumpsum Settlement",
+                400
+            );
+        }
+
+        if(transaction.direction === TransactionDirection.INWARD) {
+            /**
+             * Primary Customer
+             */
+            await this.updatePersistentOutstanding(
+                tx,
+                transaction.agencyId!,
+                transaction.branchId,
+                amount,
+                OutstandingType.CREDIT,
+                "ADD"
+            );
+
+            /**
+             * Third Party Vendor
+             */
+            await this.updatePersistentOutstanding(
+                tx,
+                transaction.thirdPartyAgencyId,
+                transaction.branchId,
+                amount,
+                OutstandingType.DEBIT,
+                "ADD"
+            );
+
+            /**
+             * allocate FIFO for primary agency sales invoices
+             */
+            await this.allocateFIFO(
+                tx,
+                {
+                    transactionId: transaction.id,
+                    agencyId: transaction.agencyId!,
+                    branchId: transaction.branchId,
+                    direction: TransactionDirection.INWARD,
+                    amount
+                }
+            );
+
+            /**
+             * allocate FIFO for third party agency purchase invoices
+             */
+            await this.allocateFIFO(
+                tx,
+                {
+                    transactionId: transaction.id,
+                    agencyId: transaction.thirdPartyAgencyId,
+                    branchId: transaction.branchId,
+                    direction: TransactionDirection.OUTWARD,
+                    amount
+                }
+            );
+        } else {
+            /**
+             * Primary Vendor
+             */
+            await this.updatePersistentOutstanding(
+                tx,
+                transaction.agencyId!,
+                transaction.branchId,
+                amount,
+                OutstandingType.DEBIT,
+                "ADD"
+            );
+
+            /**
+             * Third Party Customer
+             */
+            await this.updatePersistentOutstanding(
+                tx,
+                transaction.thirdPartyAgencyId,
+                transaction.branchId,
+                amount,
+                OutstandingType.CREDIT,
+                "ADD"
+            );
+
+            /**
+             * Allocate Vendor Purchase
+             */
+            await this.allocateFIFO(
+                tx,
+                {
+                    transactionId: transaction.id,
+                    agencyId: transaction.agencyId!,
+                    branchId: transaction.branchId,
+                    direction: TransactionDirection.OUTWARD,
+                    amount
+                }
+            );
+
+            /**
+             * Allocate Customer Sales
+             */
+            await this.allocateFIFO(
+                tx,
+                {
+                    transactionId: transaction.id,
+                    agencyId: transaction.thirdPartyAgencyId,
+                    branchId: transaction.branchId,
+                    direction: TransactionDirection.INWARD,
+                    amount
+                }
+            );
+        }
+    };
+
+    private static async calculateFIFOAllocation(
+        tx: Prisma.TransactionClient,
+        params: {
+            primaryAgencyId: string;
+            thirdPartyAgencyId: string;
+            branchId: string;
+            direction: TransactionDirection;
+            amount: number;
+        }
+    ) {
+
+        const buildInvoices = async (
+            agencyId: string,
+            direction: TransactionDirection
+        ): Promise<AgencyFIFOPreview> => {
+
+            let remaining = params.amount;
+
+            const invoices: InvoicePreview[] = [];
+
+            const agency = await tx.agency.findUnique({
+                where: {
+                    id: agencyId
+                },
+                select: {
+                    id: true,
+                    name: true,
+                }
+            });
+
+            if (!agency) {
+                throw new ApiError(
+                    "Agency not found",
+                    404
+                );
+            }
+
+            if (direction === TransactionDirection.INWARD) {
+
+                const sales = await tx.sale.findMany({
+                    where: {
+                        agencyId,
+                        branchId: params.branchId,
+                        status: SalesStatus.APPROVED
+                    },
+                    include: {
+                        allocations: true,
+                        items: {
+                            include: {
+                                product: true,
+                                batch: true
+                            }
+                        }
+                    },
+                    orderBy: [
+                        {
+                            createdAt: "asc"
+                        }
+                    ]
+                });
+
+                let fifo = 1;
+
+                for (const sale of sales) {
+
+                    if (remaining <= 0)
+                        break;
+
+                    const alreadyAllocated =
+                        sale.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                    const outstanding =
+                        Number(sale.grandTotal) -
+                        alreadyAllocated;
+
+                    if (outstanding <= 0)
+                        continue;
+
+                    const paying =
+                        Math.min(outstanding, remaining);
+
+                    invoices.push({
+
+                        invoiceId: sale.id,
+
+                        invoiceNo: sale.invoiceNo,
+
+                        invoiceType: "SALE",
+
+                        invoiceDate: sale.invoiceDate,
+
+                        fifoOrder: fifo++,
+
+                        totalAmount: Number(sale.grandTotal),
+
+                        outstandingAmount: outstanding,
+
+                        payingAmount: paying,
+
+                        remainingOutstanding:
+                            outstanding - paying,
+
+                        settlementStatus:
+                            paying === outstanding
+                                ? "FULLY_SETTLED"
+                                : "PARTIALLY_SETTLED",
+
+                        invoice: sale
+
+                    });
+
+                    remaining -= paying;
+                }
+
+            } else {
+
+                const purchases = await tx.purchase.findMany({
+                    where: {
+                        agencyId,
+                        branchId: params.branchId,
+                        status: PurchaseStatus.APPROVED
+                    },
+                    include: {
+                        allocations: true,
+                        items: {
+                            include: {
+                                product: true,
+                                batch: true
+                            }
+                        }
+                    },
+                    orderBy: [
+                        {
+                            createdAt: "asc"
+                        }
+                    ]
+                });
+
+                let fifo = 1;
+
+                for (const purchase of purchases) {
+
+                    if (remaining <= 0)
+                        break;
+
+                    const alreadyAllocated =
+                        purchase.allocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount),
+                            0
+                        );
+
+                    const outstanding =
+                        Number(purchase.grandTotal) -
+                        alreadyAllocated;
+
+                    if (outstanding <= 0)
+                        continue;
+
+                    const paying =
+                        Math.min(outstanding, remaining);
+
+                    invoices.push({
+
+                        invoiceId: purchase.id,
+
+                        invoiceNo: purchase.invoiceNo,
+
+                        invoiceType: "PURCHASE",
+
+                        invoiceDate: purchase.createdAt,
+
+                        fifoOrder: fifo++,
+
+                        totalAmount: Number(purchase.grandTotal),
+
+                        outstandingAmount: outstanding,
+
+                        payingAmount: paying,
+
+                        remainingOutstanding:
+                            outstanding - paying,
+
+                        settlementStatus:
+                            paying === outstanding
+                                ? "FULLY_SETTLED"
+                                : "PARTIALLY_SETTLED",
+
+                        invoice: purchase
+
+                    });
+
+                    remaining -= paying;
+                }
+
+            }
+
+            return {
+
+                agency,
+
+                requestedAmount:
+                    params.amount,
+
+                allocatedAmount:
+                    params.amount -
+                    remaining,
+
+                unallocatedAmount:
+                    remaining,
+
+                canProceed:
+                    remaining === 0,
+
+                invoices
+
+            };
+        };
+
+        let primaryAgency: AgencyFIFOPreview;
+        let thirdPartyAgency: AgencyFIFOPreview;
+
+        if (params.direction === TransactionDirection.INWARD) {
+            primaryAgency = await buildInvoices(
+                params.primaryAgencyId,
+                TransactionDirection.INWARD
+            );
+
+            thirdPartyAgency = await buildInvoices(
+                params.thirdPartyAgencyId,
+                TransactionDirection.OUTWARD
+            );
+
+        } else {
+            primaryAgency = await buildInvoices(
+                params.primaryAgencyId,
+                TransactionDirection.OUTWARD
+            );
+
+            thirdPartyAgency = await buildInvoices(
+                params.thirdPartyAgencyId,
+                TransactionDirection.INWARD
+            );
+        }
+
+        const canProceed =
+            primaryAgency.canProceed &&
+            thirdPartyAgency.canProceed;
+
+        return {
+
+            settlementType: SettlementType.LUMPSUM,
+
+            direction: params.direction,
+
+            requestedAmount: params.amount,
+
+            canProceed,
+
+            reason:
+                !primaryAgency.canProceed
+                    ? `Primary agency has ₹${primaryAgency.unallocatedAmount} insufficient outstanding`
+                    : !thirdPartyAgency.canProceed
+                    ? `Third party agency has ₹${thirdPartyAgency.unallocatedAmount} insufficient outstanding`
+                    : null,
+
+            primaryAgency,
+
+            thirdPartyAgency
+
+        };
+    }
+
     private static validatePaymentDetails(
-        paymentMode: PaymentMode,
         paymentThrough: PaymentType,
         transactionRefNo?: string,
         referenceNo?: string
@@ -68,37 +1029,52 @@ export class TransactionService {
             PaymentType.DD
         ];
 
-        if (paymentMode === PaymentMode.ONLINE && !onlineTypes.includes(paymentThrough)) {
-            throw new ApiError("Invalid payment type for ONLINE mode", 400);
+        if (onlineTypes.includes(paymentThrough)) {
+
+            if (!transactionRefNo?.trim()) {
+                throw new ApiError(
+                    `${paymentThrough} requires Transaction Reference Number`,
+                    400
+                );
+            }
+
+            if (referenceNo) {
+                throw new ApiError(
+                    `${paymentThrough} should not contain Reference Number`,
+                    400
+                );
+            }
         }
 
-        if (paymentMode === PaymentMode.OFFLINE && !["CASH", "CHEQUE", "DD"].includes(paymentThrough)) {
-            throw new ApiError("Invalid payment type for OFFLINE mode", 400);
+        if (offlineRefTypes.includes(paymentThrough)) {
+
+            if (!referenceNo?.trim()) {
+                throw new ApiError(
+                    `${paymentThrough} requires Reference Number`,
+                    400
+                );
+            }
+
+            if (transactionRefNo) {
+                throw new ApiError(
+                    `${paymentThrough} should not contain Transaction Reference Number`,
+                    400
+                );
+            }
         }
 
-        if (onlineTypes.includes(paymentThrough) && !transactionRefNo?.trim()) {
-            throw new ApiError(`${paymentThrough} mode requires Transaction Reference Number`, 400);
+        if (paymentThrough === PaymentType.CASH) {
+
+            if (referenceNo || transactionRefNo) {
+
+                throw new ApiError(
+                    "Cash payment should not contain any reference",
+                    400
+                );
+            }
+
         }
 
-        if (onlineTypes.includes(paymentThrough) && referenceNo?.trim()) {
-            throw new ApiError(`${paymentThrough} mode should not contain Reference Number`, 400);
-        }
-
-        if (offlineRefTypes.includes(paymentThrough) && !referenceNo?.trim()) {
-            throw new ApiError(`${paymentThrough} requires Reference Number`, 400);
-        }
-
-        if (offlineRefTypes.includes(paymentThrough) && transactionRefNo?.trim()) {
-            throw new ApiError(`${paymentThrough} should not contain Transaction Reference Number`, 400);
-        }
-
-        if (paymentThrough === PaymentType.CASH && referenceNo) {
-            throw new ApiError("Cash transaction should not contain reference number", 400);
-        }
-
-        if (paymentThrough === PaymentType.CASH && transactionRefNo) {
-            throw new ApiError("Cash transaction should not contain transaction reference number", 400);
-        }
     }
 
     static async createTransaction(actor: any, payload: TransactionPayload) {
@@ -121,89 +1097,88 @@ export class TransactionService {
         if (!payload.suspense && !payload.agencyId) {
             throw new ApiError("Agency ID is required for non-suspense transactions", 400);
         }
-
-        if (payload.paymentType === "THIRD_PARTY" && !payload.thirdPartyAgencyId) {
-            throw new ApiError("Third party agency ID is required for third party transactions", 400);
-        }
-
-        if (payload.amount <= 0) {
-            throw new ApiError("Amount must be greater than zero", 400);
-        }
-
-        if (!payload.paymentThrough) {
-            throw new ApiError("Payment type is required", 400);
-        }
         
+        if (payload.amount <= 0) {
+            throw new ApiError("Transaction amount must be greater than zero", 400);
+        }
+
+        if(!payload.paymentThrough) {
+            throw new ApiError("Payment Through is required", 400);
+        }
+
         const transactionNo = await this.generateTransactionNo(payload.branchId);
 
-        if (!payload.suspense && payload.agencyId) {
-            const settings = await this.getSettings();
+        /** Settlement Validation */
+        if(!payload.suspense) {
+            await prisma.$transaction(async (tx) => {
+                switch (payload.settlementType) {
+                    case SettlementType.INVOICE_TO_INVOICE:
+                        await this.validateInvoiceSettlement(
+                            tx,
+                            payload
+                        );
+                        break;
 
-            if (!settings.allowNegativeTransaction) {
-                if (payload.paymentType === TransactionPaymentType.NORMAL) {
-                    const outstanding = await this.getAgencyOutstanding(actor, payload.agencyId, payload.branchId);
-
-                    // FIXED: Inward clears what they owe us (amountDue)
-                    if (payload.direction === TransactionDirection.INWARD && payload.amount > outstanding.amountDue) {
-                        throw new ApiError(`Payment exceeds sales outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`, 400);
-                    }
-            
-                    // FIXED: Outward clears what we owe them (amountReceivable)
-                    if (payload.direction === TransactionDirection.OUTWARD && payload.amount > outstanding.amountReceivable) {
-                        throw new ApiError(`Payment exceeds purchase outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`, 400);
-                    }
-                } else if (payload.paymentType === TransactionPaymentType.THIRD_PARTY && payload.thirdPartyAgencyId) {
-                    const primaryOutstanding = await this.getAgencyOutstanding(actor, payload.agencyId, payload.branchId);
-                    const thirdPartyOutstanding = await this.getAgencyOutstanding(actor, payload.thirdPartyAgencyId, payload.branchId);
-
-                    if (payload.direction === TransactionDirection.INWARD) {
-                        if (payload.amount > primaryOutstanding.amountDue) {
-                            throw new ApiError(`Payment exceeds primary agency sales outstanding: ${primaryOutstanding.amountDue}. Allow negativeTransaction in settings`, 400);
-                        }
-                        if (payload.amount > thirdPartyOutstanding.amountReceivable) {
-                            throw new ApiError(`Payment exceeds third-party agency purchase outstanding: ${thirdPartyOutstanding.amountReceivable}. Allow negativeTransaction in settings`, 400);
-                        }
-                    } else if (payload.direction === TransactionDirection.OUTWARD) {
-                        if (payload.amount > primaryOutstanding.amountReceivable) {
-                            throw new ApiError(`Payment exceeds primary agency purchase outstanding: ${primaryOutstanding.amountReceivable}. Allow negativeTransaction in settings`, 400);
-                        }
-                        if (payload.amount > thirdPartyOutstanding.amountDue) {
-                            throw new ApiError(`Payment exceeds third-party agency sales outstanding: ${thirdPartyOutstanding.amountDue}. Allow negativeTransaction in settings`, 400);
-                        }
-                    }
+                    case SettlementType.LUMPSUM:
+                        await this.validateLumpsumSettlement(
+                            tx,
+                            actor,
+                            payload
+                        );
+                        break;
+                    default:
+                        throw new ApiError("Invalid Settlement Type", 400);
                 }
-            }
+            })
         }
-        
-        const paymentMode = payload.paymentType === TransactionPaymentType.THIRD_PARTY ? PaymentMode.OFFLINE : payload.paymentMode;
-        const paymentThrough = payload.paymentType === TransactionPaymentType.THIRD_PARTY ? PaymentType.CASH : payload.paymentThrough;
 
-        this.validatePaymentDetails(paymentMode, paymentThrough, payload.transactionRefNo, payload.referenceNo);
+        /**
+         * Payment Instrument Validation
+        */
+        this.validatePaymentDetails(
+            payload.paymentThrough,
+            payload.transactionRefNo,
+            payload.referenceNo
+        );
 
-        const isOnlinePayment = paymentThrough === PaymentType.NEFT || paymentThrough === PaymentType.RTGS || paymentThrough === PaymentType.UPI || paymentThrough === PaymentType.BANK_DEPOSIT;
-        const isOfflineRefPayment = paymentThrough === PaymentType.CHEQUE || paymentThrough === PaymentType.DD;
-        
-        const transaction = await prisma.transaction.create({
+        /**
+         * Create Pending Transaction
+        */
+        return prisma.transaction.create({
             data: {
                 transactionNo,
-                status: "PENDING",
-                branchId: payload.branchId,
-                direction: payload.direction,
-                suspenseAccount: payload.suspense,
-                agencyId: payload.agencyId || null,
-                paymentType: payload.paymentType,
-                thirdPartyAgencyId: payload.thirdPartyAgencyId,
-                amount: payload.amount,
-                paymentMode,
-                paymentThrough,
-                transactionRefNo: isOnlinePayment ? payload.transactionRefNo : null,
-                referenceNo: isOfflineRefPayment ? payload.referenceNo : null,
-                remarks: payload.remarks,
-                createdById: actor.id,
-            }
-        });
 
-        return transaction;
+                status: TransactionStatus.PENDING,
+
+                settlementType: payload.settlementType,
+
+                branchId: payload.branchId,
+
+                direction: payload.direction,
+
+                suspenseAccount: payload.suspense,
+
+                agencyId: payload.agencyId,
+
+                thirdPartyAgencyId: payload.thirdPartyAgencyId,
+
+                saleId: payload.saleId,
+
+                purchaseId: payload.purchaseId,
+
+                amount: payload.amount,
+
+                paymentThrough: payload.paymentThrough,
+
+                transactionRefNo: payload.transactionRefNo,
+
+                referenceNo: payload.referenceNo,
+
+                remarks: payload.remarks,
+
+                createdById: actor.id
+            }
+        })
     }
 
     static async getAgencyOutstanding(actor: any, agencyId?: string, branchId?: string, tx?: any) {
@@ -309,7 +1284,7 @@ export class TransactionService {
             agencyId?: string;
             status?: TransactionStatus;
             direction?: TransactionDirection;
-            paymentType?: TransactionPaymentType;
+            settlementType?: SettlementType;
             search?: string;
             export?: boolean;
             suspenseAccount?: boolean;
@@ -341,11 +1316,8 @@ export class TransactionService {
             where.direction = query.direction;
         }
 
-        if (query?.paymentType) {
-            if (query.paymentType !== TransactionPaymentType.NORMAL && query.paymentType !== TransactionPaymentType.THIRD_PARTY) {
-                throw new ApiError("Invalid Transaction payment type ", 400);
-            }
-            where.paymentType = query.paymentType;
+        if(query?.settlementType){
+            where.settlementType = query.settlementType;
         }
 
         if (query?.status) {
@@ -466,211 +1438,42 @@ export class TransactionService {
                 });
             }
 
-            const outstanding = await this.getAgencyOutstanding(actor, transaction.agencyId, transaction.branchId, tx);
-            const settings = await this.getSettings();
+            /** Settlement Type */
+            switch (transaction.settlementType) {
+                case SettlementType.INVOICE_TO_INVOICE:
+                    await this.settleInvToInvPayment(
+                        tx, 
+                        transaction
+                    );
+                    break;
 
-            if (!settings.allowNegativeTransaction) {
-                if (transaction.paymentType === TransactionPaymentType.NORMAL) {
-                    // FIXED: Inward payments validate against amountDue, Outward against amountReceivable
-                    if (
-                        transaction.direction === TransactionDirection.INWARD &&
-                        Number(transaction.amount) > outstanding.amountDue
-                    ) {
-                        throw new ApiError(`Outstanding changed. Available sales outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`, 409);
-                    }
-        
-                    if (
-                        transaction.direction === TransactionDirection.OUTWARD &&
-                        Number(transaction.amount) > outstanding.amountReceivable
-                    ) {
-                        throw new ApiError(`Outstanding changed. Available purchase outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`, 409);
-                    }
-                } else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
-                    const thirdPartyOutstanding = await this.getAgencyOutstanding(actor, transaction.thirdPartyAgencyId, transaction.branchId, tx);
+                case SettlementType.LUMPSUM:
+                    await this.settleLumpsumPayment(
+                        tx,
+                        transaction
+                    );
+                    break;
 
-                    if (transaction.direction === TransactionDirection.INWARD) {
-                        if (Number(transaction.amount) > outstanding.amountDue) {
-                            throw new ApiError(`Outstanding changed. Available primary sales outstanding: ${outstanding.amountDue}. Allow negativeTransaction in settings`, 409);
-                        }
-                        if (Number(transaction.amount) > thirdPartyOutstanding.amountReceivable) {
-                            throw new ApiError(`Outstanding changed. Available third-party purchase outstanding: ${thirdPartyOutstanding.amountReceivable}. Allow negativeTransaction in settings`, 409);
-                        }
-                    } else if (transaction.direction === TransactionDirection.OUTWARD) {
-                        if (Number(transaction.amount) > outstanding.amountReceivable) {
-                            throw new ApiError(`Outstanding changed. Available primary purchase outstanding: ${outstanding.amountReceivable}. Allow negativeTransaction in settings`, 409);
-                        }
-                        if (Number(transaction.amount) > thirdPartyOutstanding.amountDue) {
-                            throw new ApiError(`Outstanding changed. Available third-party sales outstanding: ${thirdPartyOutstanding.amountDue}. Allow negativeTransaction in settings`, 409);
-                        }
-                    }
-                }
-            }
-
-            const amt = Number(transaction.amount);
-
-            // =================================================================
-            // ACCOUNTING PERSISTENT TRACKING (FIXED AND VERIFIED DIRECTION SIGNS)
-            // =================================================================
-            if (transaction.paymentType === TransactionPaymentType.NORMAL) {
-                if (transaction.direction === TransactionDirection.INWARD) {
-                    // Normal Inward: Customer pays us -> Log a CREDIT entry to clear their active DEBIT row
-                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "CREDIT", 'ADD');
-                } else {
-                    // Normal Outward: We pay a vendor -> Log a DEBIT entry to clear our active CREDIT row
-                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "DEBIT", 'ADD');
-                }
-            } 
-            // =================================================================
-            // THIRD PARTY LEDGER PERSISTENCE CONFIGURATION (DEDUCTION FIX)
-            // =================================================================
-            else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
-                if (transaction.direction === TransactionDirection.INWARD) {
-                    // Primary Customer (Amit) clears liability balance via incoming payment -> ADD CREDIT
-                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "CREDIT", 'ADD');
-                    
-                    // Third-Party Agency B (Bappa) -> DEDUCT the transaction amount from their pool
-                    // Changed from 'ADD' to 'DECREMENT' to draw down their DEBIT balance position
-                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "DEBIT", 'ADD');
-                } 
-                else if (transaction.direction === TransactionDirection.OUTWARD) {
-                    // Primary Vendor gets clear -> ADD DEBIT
-                    await this.updatePersistentOutstanding(tx, transaction.agencyId, transaction.branchId, amt, "DEBIT", 'ADD');
-                    
-                    // Third-Party Agency -> DEDUCT the transaction amount from their pool
-                    // Changed from 'ADD' to 'DECREMENT' to draw down their DEBIT balance position
-                    await this.updatePersistentOutstanding(tx, transaction.thirdPartyAgencyId, transaction.branchId, amt, "CREDIT", 'ADD');
-                }
-            }
-
-            let remainingAmount = amt;
-
-            if (transaction.paymentType === TransactionPaymentType.NORMAL) {
-                if (transaction.direction === TransactionDirection.INWARD) {
-                    const sales = await tx.sale.findMany({
-                        where: { agencyId: transaction.agencyId, branchId: transaction.branchId, status: "APPROVED" },
-                        include: { allocations: true },
-                        orderBy: { createdAt: "asc" }
-                    });
-
-                    for (const sale of sales) {
-                        if (remainingAmount <= 0) break;
-                        const allocated = sale.allocations.reduce((sum, a) => sum + Number(a.allocatedAmount), 0);
-                        const outstandingAmt = Number(sale.grandTotal) - allocated;
-                        if (outstandingAmt <= 0) continue;
-
-                        const allocationAmount = Math.min(outstandingAmt, remainingAmount);
-                        await tx.transactionAllocation.create({
-                            data: { transactionId: transaction.id, saleId: sale.id, allocatedAmount: allocationAmount, sourceType: "SALE" }
-                        });
-                        remainingAmount -= allocationAmount;
-                    }
-                } else {
-                    const purchases = await tx.purchase.findMany({
-                        where: { agencyId: transaction.agencyId, branchId: transaction.branchId, status: "APPROVED" },
-                        include: { allocations: true },
-                        orderBy: { createdAt: "asc" }
-                    });
-
-                    for (const purchase of purchases) {
-                        if (remainingAmount <= 0) break;
-                        const allocated = purchase.allocations.reduce((sum, a) => sum + Number(a.allocatedAmount), 0);
-                        const outstandingAmt = Number(purchase.grandTotal) - allocated;
-                        if (outstandingAmt <= 0) continue;
-
-                        const allocationAmount = Math.min(outstandingAmt, remainingAmount);
-                        await tx.transactionAllocation.create({
-                            data: { transactionId: transaction.id, purchaseId: purchase.id, allocatedAmount: allocationAmount, sourceType: "PURCHASE" }
-                        });
-                        remainingAmount -= allocationAmount;
-                    }
-                }
-            } else if (transaction.paymentType === TransactionPaymentType.THIRD_PARTY && transaction.thirdPartyAgencyId) {
-                if (transaction.direction === TransactionDirection.OUTWARD) {
-                    let primaryRemainingAmount = remainingAmount;
-                    let thirdPartyRemainingAmount = remainingAmount;
-
-                    const primaryPurchases = await tx.purchase.findMany({
-                        where: { agencyId: transaction.agencyId, branchId: transaction.branchId, status: "APPROVED" },
-                        include: { allocations: true }, orderBy: { createdAt: "asc" }
-                    });
-
-                    for (const purchase of primaryPurchases) {
-                        if (primaryRemainingAmount <= 0) break;
-                        const allocated = purchase.allocations.reduce((sum, a) => sum + Number(a.allocatedAmount), 0);
-                        const outstandingAmt = Number(purchase.grandTotal) - allocated;
-                        if (outstandingAmt <= 0) continue;
-
-                        const allocationAmount = Math.min(outstandingAmt, primaryRemainingAmount);
-                        await tx.transactionAllocation.create({
-                            data: { transactionId: transaction.id, purchaseId: purchase.id, allocatedAmount: allocationAmount, sourceType: "PURCHASE" }
-                        });
-                        primaryRemainingAmount -= allocationAmount;
-                    }
-
-                    const thirdPartySales = await tx.sale.findMany({
-                        where: { agencyId: transaction.thirdPartyAgencyId, branchId: transaction.branchId, status: "APPROVED" },
-                        include: { allocations: true }, orderBy: { createdAt: "asc" }
-                    });
-
-                    for (const sale of thirdPartySales) {
-                        if (thirdPartyRemainingAmount <= 0) break;
-                        const allocated = sale.allocations.reduce((sum, a) => sum + Number(a.allocatedAmount), 0);
-                        const outstandingAmt = Number(sale.grandTotal) - allocated;
-                        if (outstandingAmt <= 0) continue;
-
-                        const allocationAmount = Math.min(outstandingAmt, thirdPartyRemainingAmount);
-                        await tx.transactionAllocation.create({
-                            data: { transactionId: transaction.id, saleId: sale.id, allocatedAmount: allocationAmount, sourceType: "SALE" }
-                        });
-                        thirdPartyRemainingAmount -= allocationAmount;
-                    }
-                } else {
-                    let primaryRemainingAmount = remainingAmount;
-                    let thirdPartyRemainingAmount = remainingAmount;
-
-                    const primarySales = await tx.sale.findMany({
-                        where: { agencyId: transaction.agencyId, branchId: transaction.branchId, status: "APPROVED" },
-                        include: { allocations: true }, orderBy: { createdAt: "asc" }
-                    });
-
-                    for (const sale of primarySales) {
-                        if (primaryRemainingAmount <= 0) break;
-                        const allocated = sale.allocations.reduce((sum, a) => sum + Number(a.allocatedAmount), 0);
-                        const outstandingAmt = Number(sale.grandTotal) - allocated;
-                        if (outstandingAmt <= 0) continue;
-
-                        const allocationAmount = Math.min(outstandingAmt, primaryRemainingAmount);
-                        await tx.transactionAllocation.create({
-                            data: { transactionId: transaction.id, saleId: sale.id, allocatedAmount: allocationAmount, sourceType: "SALE" }
-                        });
-                        primaryRemainingAmount -= allocationAmount;
-                    }
-
-                    const thirdPartyPurchases = await tx.purchase.findMany({
-                        where: { agencyId: transaction.thirdPartyAgencyId, branchId: transaction.branchId, status: "APPROVED" },
-                        include: { allocations: true }, orderBy: { createdAt: "asc" }
-                    });
-
-                    for (const purchase of thirdPartyPurchases) {
-                        if (thirdPartyRemainingAmount <= 0) break;
-                        const allocated = purchase.allocations.reduce((sum, a) => sum + Number(a.allocatedAmount), 0);
-                        const outstandingAmt = Number(purchase.grandTotal) - allocated;
-                        if (outstandingAmt <= 0) continue;
-
-                        const allocationAmount = Math.min(outstandingAmt, thirdPartyRemainingAmount);
-                        await tx.transactionAllocation.create({
-                            data: { transactionId: transaction.id, purchaseId: purchase.id, allocatedAmount: allocationAmount, sourceType: "PURCHASE" }
-                        });
-                        thirdPartyRemainingAmount -= allocationAmount;
-                    }
-                }
+                default:
+                    throw new ApiError(
+                        "Invalid settlement type", 
+                        400
+                    );
             }
 
             await LedgerService.postTransactionApproval(tx, transaction.id);
 
             return tx.transaction.findUnique({
-                where: { id: transactionId },
-                include: { allocations: true, branch: true, agency: true, thirdPartyAgency: true, createdBy: true }
+                where: { 
+                    id: transactionId 
+                },
+                include: { 
+                    allocations: true, 
+                    branch: true, 
+                    agency: true, 
+                    thirdPartyAgency: true, 
+                    createdBy: true 
+                }
             });
         });
     }
@@ -706,93 +1509,383 @@ export class TransactionService {
         });
     }
 
-    static async updateTransaction(actor: any, transactionId: string, payload: Partial<TransactionPayload>) {
-        if (!actor?.id) throw new ApiError("Unauthorized", 401);
-        if (!transactionId) throw new ApiError("Transaction ID is required", 400);
-
-        const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
-        if (!transaction) throw new ApiError("Transaction not found", 404);
-        if (transaction.status !== TransactionStatus.PENDING) throw new ApiError("Only pending transactions can be updated", 400);
-
-        const finalBranchId = payload.branchId ?? transaction.branchId;
-        const finalDirection = payload.direction ?? transaction.direction;
-        const finalSuspense = payload.suspense ?? transaction.suspenseAccount;
-        const finalAgencyId = payload.agencyId ?? transaction.agencyId;
-        const finalPaymentType = payload.paymentType ?? transaction.paymentType;
-        const finalThirdPartyAgencyId = payload.thirdPartyAgencyId ?? transaction.thirdPartyAgencyId;
-        const finalAmount = payload.amount ?? Number(transaction.amount);
-        let finalPaymentMode = payload.paymentMode ?? transaction.paymentMode;
-        let finalPaymentThrough = payload.paymentThrough ?? transaction.paymentThrough;
-        const finalTransactionRefNo = payload.transactionRefNo ?? transaction.transactionRefNo;
-        const finalReferenceNo = payload.referenceNo ?? transaction.referenceNo;
-
-        if (actor.branchAccessType !== "ALL" && finalBranchId !== actor.branchId) {
-            throw new ApiError("Cannot move transaction to another branch", 403);
+    static async updateTransaction(
+        actor: any,
+        transactionId: string,
+        payload: Partial<TransactionPayload>
+    ) {
+        if(!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
         }
 
-        if (finalAmount <= 0) throw new ApiError("Amount must be greater than zero", 400);
-        if (!finalSuspense && !finalAgencyId) throw new ApiError("Agency ID is required for non-suspense transactions", 400);
-
-        if (finalPaymentType === TransactionPaymentType.THIRD_PARTY && !finalThirdPartyAgencyId) {
-            throw new ApiError("Third party agency ID is required", 400);
+        if(!transactionId) {
+            throw new ApiError("Transaction ID is required", 400);
         }
 
-        if (finalPaymentType === TransactionPaymentType.THIRD_PARTY) {
-            finalPaymentMode = PaymentMode.OFFLINE;
-            finalPaymentThrough = PaymentType.CASH;
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: transactionId }
+        });
+
+        if(!transaction) {
+            throw new ApiError("Transaction not found", 404);
         }
 
-        this.validatePaymentDetails(finalPaymentMode, finalPaymentThrough, finalTransactionRefNo, finalReferenceNo);
+        if(transaction.status !== TransactionStatus.PENDING) {
+            throw new ApiError("Only pending transactions can be updated", 400);
+        }
 
-        if (!finalSuspense && finalAgencyId) {
-            const outstanding = await this.getAgencyOutstanding(actor, finalAgencyId, finalBranchId);
-            const settings = await this.getSettings();
+        const finalPayload: TransactionPayload = {
+            branchId:
+                payload.branchId ?? transaction.branchId,
 
-            if (!settings.allowNegativeTransaction) {
-                if (finalPaymentType === TransactionPaymentType.NORMAL) {
-                    // FIXED: Inward validates against amountDue, Outward against amountReceivable
-                    const effectiveOutstanding = finalDirection === TransactionDirection.INWARD ? outstanding.amountDue : outstanding.amountReceivable;
+            direction:
+                payload.direction ?? transaction.direction,
+            
+            settlementType:
+                payload.settlementType ?? transaction.settlementType,
 
-                    if (finalAmount > effectiveOutstanding) {
-                        throw new ApiError(`Amount exceeds available outstanding. Allow negativeTransaction in settings`, 400);
-                    }
-                } else if (finalPaymentType === TransactionPaymentType.THIRD_PARTY && finalThirdPartyAgencyId) {
-                    const thirdPartyOutstanding = await this.getAgencyOutstanding(actor, finalThirdPartyAgencyId, finalBranchId);
+            suspense:
+                payload.suspense ?? transaction.suspenseAccount,
 
-                    if (finalDirection === TransactionDirection.INWARD) {
-                        if (finalAmount > outstanding.amountDue) throw new ApiError(`Amount exceeds primary agency sales outstanding. Allow negativeTransaction in settings`, 400);
-                        if (finalAmount > thirdPartyOutstanding.amountReceivable) throw new ApiError(`Amount exceeds third-party agency purchase outstanding. Allow negativeTransaction in settings`, 400);
-                    } else if (finalDirection === TransactionDirection.OUTWARD) {
-                        if (finalAmount > outstanding.amountReceivable) throw new ApiError(`Amount exceeds primary agency purchase outstanding. Allow negativeTransaction in settings`, 400);
-                        if (finalAmount > thirdPartyOutstanding.amountDue) throw new ApiError(`Amount exceeds third-party agency sales outstanding. Allow negativeTransaction in settings`, 400);
-                    }
+            agencyId:
+                payload.agencyId ?? transaction.agencyId ?? undefined,
+
+            thirdPartyAgencyId:
+                payload.thirdPartyAgencyId ?? transaction.thirdPartyAgencyId ?? undefined,
+
+            saleId:
+                payload.saleId ?? transaction.saleId ?? undefined,
+
+            purchaseId:
+                payload.purchaseId ?? transaction.purchaseId ?? undefined,
+
+            amount:
+                payload.amount ?? Number(transaction.amount),
+
+            paymentThrough:
+                payload.paymentThrough ?? transaction.paymentThrough ?? undefined,
+
+            transactionRefNo:
+                payload.transactionRefNo ?? transaction.transactionRefNo ?? undefined,
+
+            referenceNo:
+                payload.referenceNo ?? transaction.referenceNo ?? undefined,
+
+            remarks:
+                payload.remarks ?? transaction.remarks ?? undefined
+        };
+
+        if(
+            actor.branchAccessType !== "ALL" &&
+            finalPayload.branchId !== actor.branchId
+        ) {
+            throw new ApiError(
+                "Cannot update transaction for another branch",
+                403
+            )
+        }
+
+        if(
+            finalPayload.amount <= 0
+        ) {
+            throw new ApiError(
+                "Transaction amount must be greater than zero",
+                400
+            )
+        }
+
+        if(
+            !finalPayload.suspense &&
+            !finalPayload.agencyId
+        ) {
+            throw new ApiError(
+                "Agency ID is required",
+                400
+            )
+        }
+
+        if(!finalPayload.paymentThrough) {
+            throw new ApiError(
+                "Payment Through is required",
+                400
+            )
+        }
+
+        /**
+         * Validate payment instrument
+         */
+        this.validatePaymentDetails(
+            finalPayload.paymentThrough,
+            finalPayload.transactionRefNo,
+            finalPayload.referenceNo
+        );
+
+        /**
+         * Settlement validation
+         */
+        if (!finalPayload.suspense) {
+
+            await prisma.$transaction(async (tx) => {
+
+                switch (finalPayload.settlementType) {
+
+                    case SettlementType.INVOICE_TO_INVOICE:
+
+                        await this.validateInvoiceSettlement(
+                            tx,
+                            finalPayload
+                        );
+
+                        break;
+
+                    case SettlementType.LUMPSUM:
+
+                        await this.validateLumpsumSettlement(
+                            tx,
+                            actor,
+                            finalPayload
+                        );
+
+                        break;
+
+                    default:
+
+                        throw new ApiError(
+                            "Invalid Settlement Type",
+                            400
+                        );
+
                 }
-            }
+
+            });
+
         }
 
         const updated = await prisma.transaction.updateMany({
-            where: { id: transactionId, status: TransactionStatus.PENDING },
-            data: {
-                branchId: finalBranchId,
-                direction: finalDirection,
-                suspenseAccount: finalSuspense,
-                agencyId: finalAgencyId,
-                paymentType: finalPaymentType,
-                thirdPartyAgencyId: finalThirdPartyAgencyId,
-                amount: finalAmount,
-                paymentMode: finalPaymentMode,
-                paymentThrough: finalPaymentThrough,
-                transactionRefNo: finalPaymentThrough === PaymentType.NEFT || finalPaymentThrough === PaymentType.RTGS || finalPaymentThrough === PaymentType.UPI || finalPaymentThrough === PaymentType.BANK_DEPOSIT ? finalTransactionRefNo : null,
-                referenceNo: finalPaymentThrough === PaymentType.CHEQUE || finalPaymentThrough === PaymentType.DD ? finalReferenceNo : null,
-                remarks: payload.remarks ?? transaction.remarks,
+
+            where: {
+                id: transactionId,
+                status: TransactionStatus.PENDING
             },
+
+            data: {
+
+                branchId:
+                    finalPayload.branchId,
+
+                direction:
+                    finalPayload.direction,
+
+                settlementType:
+                    finalPayload.settlementType,
+
+                suspenseAccount:
+                    finalPayload.suspense,
+
+                agencyId:
+                    finalPayload.agencyId,
+
+                thirdPartyAgencyId:
+                    finalPayload.thirdPartyAgencyId,
+
+                saleId:
+                    finalPayload.saleId,
+
+                purchaseId:
+                    finalPayload.purchaseId,
+
+                amount:
+                    finalPayload.amount,
+
+                paymentThrough:
+                    finalPayload.paymentThrough,
+
+                transactionRefNo:
+                    finalPayload.transactionRefNo,
+
+                referenceNo:
+                    finalPayload.referenceNo,
+
+                remarks:
+                    finalPayload.remarks
+            }
+
         });
 
-        if (updated.count === 0) throw new ApiError("Transaction was modified by another user", 409);
+        if (updated.count === 0) {
+            throw new ApiError(
+                "Transaction already modified",
+                409
+            );
+        }
 
         return prisma.transaction.findUnique({
-            where: { id: transactionId },
-            include: { branch: true, agency: true, thirdPartyAgency: true, createdBy: true },
+
+            where: {
+                id: transactionId
+            },
+
+            include: {
+
+                branch: true,
+
+                agency: true,
+
+                thirdPartyAgency: true,
+
+                createdBy: true
+
+            }
+
         });
+
+    }
+
+    static async previewFIFOAllocation(
+        actor: any,
+        payload: {
+            primaryAgencyId: string;
+            thirdPartyAgencyId: string;
+            branchId: string;
+            direction: TransactionDirection;
+            amount: number;
+        }
+    ) {
+
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        return prisma.$transaction(async (tx) => {
+
+            return this.calculateFIFOAllocation(
+                tx,
+                payload
+            );
+
+        });
+
+    }
+
+    static async getOutstandingInvoices(
+        actor: any,
+        query: {
+            branchId?: string;
+            agencyId?: string;
+            direction: TransactionDirection;
+            search?: string
+        }
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if (!query.agencyId) {
+            throw new ApiError("Agency ID is required", 400);
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query.branchId
+                : actor.branchId;
+
+        if(!branchId) {
+            throw new ApiError(
+                "Branch ID is required",
+                400
+            );
+        }
+
+        if (query.direction === TransactionDirection.INWARD ) {
+            const sales = await prisma.sale.findMany({
+                where: {
+                    agencyId: query.agencyId,
+                    branchId: branchId,
+                    status: SalesStatus.APPROVED,
+                    ...(query.search ? {
+                        invoiceNo: {
+                            contains: query.search,
+                            mode: "insensitive"
+                        }
+                    } : {})
+                },
+                include: {
+                    allocations: true,
+                },
+                orderBy: {
+                    createdAt: "desc"
+                }
+            });
+
+            return sales.map((sale) => {
+                const allocated = 
+                    sale.allocations.reduce(
+                        (sum, a) => sum + Number(a.allocatedAmount),
+                        0
+                    );
+
+                const outstanding =
+                    Number(sale.grandTotal) - allocated;
+
+                return {
+                    ...sale,
+                    allocatedAmount: allocated,
+                    outstandingAmount: outstanding,
+                    fullySettled: outstanding === 0,
+                    partiallySettled: 
+                        outstanding > 0 && 
+                        allocated > 0,
+                };
+            })
+            .filter(sale => sale.outstandingAmount > 0);
+        }
+
+        const purchases = await prisma.purchase.findMany({
+            where: {
+                agencyId: query.agencyId,
+
+                branchId: branchId,
+
+                status: PurchaseStatus.APPROVED,
+
+                ...(query.search ? {
+                    invoiceNo: {
+                        contains: query.search,
+                        mode: "insensitive"
+                    }
+                } : {})
+            },
+            include: {
+                allocations: true,
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        });
+
+        return purchases.map((purchase) => {
+            const allocated = 
+                purchase.allocations.reduce(
+                    (sum, a) => sum + Number(a.allocatedAmount),
+                    0
+                );
+
+
+            const outstanding =
+                Number(purchase.grandTotal) - allocated;
+
+            return {
+
+                ...purchase,
+                allocatedAmount: allocated,
+                outstandingAmount: outstanding,
+                fullySettled: outstanding === 0,
+                partiallySettled:
+                    outstanding > 0 &&
+                    allocated > 0
+
+            };
+        })
+        .filter(purchase => purchase.outstandingAmount > 0);
     }
 }
