@@ -9,6 +9,7 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
         const actor = (req as any).user;
         const {
             branchId,
+            bankAccountId,
             direction,
             settlementType,
 
@@ -31,6 +32,7 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
 
         const transaction = await TransactionService.createTransaction(actor, {
             branchId,
+            bankAccountId,
             direction,
 
             settlementType,
@@ -206,6 +208,7 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
         const { transactionId } = (req as any).params;
         const {
             branchId,
+            bankAccountId,
             direction,
 
             settlementType,
@@ -229,6 +232,7 @@ export const updateTransaction = async (req: Request, res: Response, next: NextF
 
         const transaction = await TransactionService.updateTransaction(actor, transactionId, {
             branchId,
+            bankAccountId,
             direction,
 
             settlementType,

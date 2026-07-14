@@ -16,6 +16,7 @@ import financialLedgerRoute from "../modules/accounting/ledger/ledger.routes";
 import reportingRoute from "../modules/reports/reporting.routes";
 import dashboardRoute from "../modules/dashboard/kpi.routes";
 import importRoute from "../modules/import/import.routes";
+import bankRoute from "../modules/bank/bank.routes";
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.use("/meta", metaRoute);
 router.use("/rbac", rbacRoute);
 router.use("/branches", branchRoute);
 router.use("/agencies", agencyRoute);
+router.use("/bank", bankRoute);
 router.use("/products", productRoute);
 router.use("/inventory", inventoryRoute);
 router.use("/sales", salesRoute);

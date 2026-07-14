@@ -20,6 +20,8 @@ export const getBranchDayBook = async (
             endDate: (req as any).query.endDate as string
         };
 
+        const bankAccountId = (req as any).query.bankAccountId as string;
+
         console.log((req as any).query.export as string);
         const isExport =
             String(req.query.export).toLowerCase() === "true";
@@ -27,7 +29,7 @@ export const getBranchDayBook = async (
         const result = await ReportingService.getBranchDayBook(
             actor,
             branchId,
-            query
+            { ...query, bankAccountId }
         );
         console.log("result", result.entries.length);
         if (isExport) {
@@ -237,16 +239,22 @@ export const getOutstandingReport = async (
     try {
 
         const actor = (req as any).user;
-
-        const query = {
-            branchId: req.query.branchId as string,
-            type: req.query.type as
-                | "RECEIVABLE"
-                | "PAYABLE"
-        };
-
         const exportType =
-            String(req.query.export || "").toUpperCase();
+            String(req.query.export || "")
+                .toUpperCase();
+        
+        const query = {
+            branchId:
+                req.query.branchId as string,
+            agencyId:
+                req.query.agencyId as string,
+            type:
+                req.query.type as
+                    | "RECEIVABLE"
+                    | "PAYABLE",
+            export:
+                exportType === "DETAILS"
+        };
 
         const report =
             await ReportingService.getOutstandingReport(
@@ -283,7 +291,7 @@ export const getOutstandingReport = async (
                         showCompanyName: true,
 
                         data:
-                            report.detailRows
+                            report.exportData
                     }
                 );
 
@@ -341,6 +349,74 @@ export const getOutstandingReport = async (
             success: true,
             data: report
         });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const exportAgencyOutstandingReport = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const actor =
+            (req as any).user;
+
+        const query = {
+            branchId:
+                req.query.branchId as string,
+            agencyId:
+                req.query.agencyId as string,
+            type:
+                req.query.type as
+                    | "PAYABLE"
+                    | "RECEIVABLE",
+
+            export: true
+        };
+
+        const report =
+            await ReportingService.getOutstandingReport(
+                actor,
+                query
+            );
+
+        return ExcelService.export(
+            res,
+            {
+
+                filename:
+                    query.type === "PAYABLE"
+                        ? `AP_Outstanding_${report.agency?.name ?? "Agency"}`
+                        : `AR_Outstanding_${report.agency?.name ?? "Agency"}`,
+
+                sheetName:
+                    query.type === "PAYABLE"
+                        ? "Accounts Payable"
+                        : "Accounts Receivable",
+
+                title:
+                    query.type === "PAYABLE"
+                        ? `Accounts Payable Outstanding Report${report.agency ? ` - ${report.agency?.name}` : ""}`
+                        : `Accounts Receivable Outstanding Report${report.agency ? ` - ${report.agency?.name}` : ""}`,
+
+                columns:
+                    outstandingDetailColumns,
+
+                companyName:
+                    "ASHTAVINAYAKA",
+
+                showCompanyName:
+                    true,
+
+                data:
+                    report.exportData
+
+            }
+        );
 
     } catch (error) {
         next(error);

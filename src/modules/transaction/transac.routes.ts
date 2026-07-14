@@ -107,6 +107,8 @@ router.get(
  *             properties:
  *               branchId:
  *                 type: string
+ *               bankAccountId:
+ *                 type: string
  *               direction:
  *                 type: string
  *                 enum:
@@ -323,6 +325,9 @@ router.get(
  *             properties:
  *               branchId:
  *                 type: string
+ *               bankAccountId:
+ *                 type: string
+ *                 example: 1548c22a-8751-4de9-8161-df6baad75d95
  *               direction:
  *                 type: string
  *                 enum:

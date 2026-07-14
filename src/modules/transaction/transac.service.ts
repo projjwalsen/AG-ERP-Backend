@@ -7,6 +7,7 @@ import { LedgerService } from "../accounting/ledger/ledger.service";
 
 type TransactionPayload = {
     branchId: string;
+    bankAccountId?: string;
     direction: TransactionDirection;
     settlementType: SettlementType;
     suspense: boolean;
@@ -1090,6 +1091,30 @@ export class TransactionService {
             throw new ApiError("Branch ID is required", 400);
         }
 
+        if (!payload.bankAccountId) {
+            throw new ApiError(
+                "Bank Account is required",
+                400
+            );
+        }
+
+        const bankAccount =
+            await prisma.bankAccount.findFirst({
+                where: {
+                    id: payload.bankAccountId,
+                    branchId: payload.branchId,
+                    isActive: true
+                }
+
+            });
+
+        if (!bankAccount) {
+            throw new ApiError(
+                "Invalid Bank Account for selected branch",
+                400
+            );
+        }
+
         if (actor.branchAccessType !== "ALL" && payload.branchId !== actor.branchId) {
             throw new ApiError("Cannot create transaction for another branch", 403);
         }
@@ -1153,6 +1178,8 @@ export class TransactionService {
                 settlementType: payload.settlementType,
 
                 branchId: payload.branchId,
+
+                bankAccountId: payload.bankAccountId,
 
                 direction: payload.direction,
 
@@ -1538,6 +1565,10 @@ export class TransactionService {
             branchId:
                 payload.branchId ?? transaction.branchId,
 
+            bankAccountId:
+                payload.bankAccountId ??
+                transaction.bankAccountId,
+
             direction:
                 payload.direction ?? transaction.direction,
             
@@ -1673,6 +1704,9 @@ export class TransactionService {
                 branchId:
                     finalPayload.branchId,
 
+                bankAccountId:
+                    finalPayload.bankAccountId,
+
                 direction:
                     finalPayload.direction,
 
@@ -1728,7 +1762,7 @@ export class TransactionService {
             include: {
 
                 branch: true,
-
+                bankAccount: true,
                 agency: true,
 
                 thirdPartyAgency: true,

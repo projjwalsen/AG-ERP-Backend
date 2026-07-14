@@ -54,6 +54,11 @@ router.use(authMiddleware)
  *         example: 2026-06-30
  * 
  *       - in: query
+ *         name: bankAccountId
+ *         required: false
+ *         example: 1548c22a-8751-4de9-8161-df6baad75d95
+ * 
+ *       - in: query
  *         name: export
  *         required: false
  *         schema:
@@ -368,6 +373,101 @@ router.get(
 
 router.get(
     "/outstanding-report",
+    ReportingController.getOutstandingReport
+);
+
+/**
+ * @openapi
+ *  /api/reports/outstanding-report/agency/export:
+ *   get:
+ *     tags:
+ *       - Reports
+ *     summary: Export Agency Outstanding Report
+ *     description: |
+ *       Exports the outstanding invoice report for a single agency in Excel format.
+ *
+ *       The report supports both:
+ *       - **PAYABLE** → Purchase Outstanding (Accounts Payable)
+ *       - **RECEIVABLE** → Sales Outstanding (Accounts Receivable)
+ *
+ *       The generated Excel contains invoice-level details including:
+ *       - Agency Name
+ *       - Invoice Number
+ *       - Invoice Date
+ *       - Due Date
+ *       - Invoice Amount
+ *       - GST Amount
+ *       - Paid Amount
+ *       - Outstanding Amount
+ *       - Aging Days
+ *       - Aging Bucket
+ *       - Remarks
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: agencyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Agency ID whose outstanding invoices are to be exported.
+ *
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: |
+ *           Branch ID. Required only for users having access to multiple branches.
+ *
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - PAYABLE
+ *             - RECEIVABLE
+ *         description: |
+ *           Report type.
+ *           - PAYABLE → Purchase Outstanding
+ *           - RECEIVABLE → Sales Outstanding
+ * 
+ *       - in: query
+ *         name: export
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: DETAILS
+ *
+ *     responses:
+ *       200:
+ *         description: Excel file generated successfully.
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *
+ *       400:
+ *         description: Invalid request parameters.
+ *
+ *       401:
+ *         description: Unauthorized.
+ *
+ *       403:
+ *         description: Branch access denied.
+ *
+ *       404:
+ *         description: Agency not found.
+ */
+
+router.get(
+    "/outstanding-report/agency/export",
     ReportingController.getOutstandingReport
 );
 
