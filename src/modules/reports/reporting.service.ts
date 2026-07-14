@@ -1246,30 +1246,38 @@ export class ReportingService {
         };
         
 
-        return {
+        const agencyDetails =
+            query?.agencyId
+                ? rows.find(
+                    row =>
+                        row.agencyId === query.agencyId
+                ) ?? null
+                : null;
 
+        return {
             reportName:
                 query.type === "RECEIVABLE"
                     ? "Accounts Receivable Aging Report"
                     : "Accounts Payable Aging Report",
-
             generatedAt:
                 new Date(),
-
             branchId,
-
             agency,
-
             agencyId:
                 query.agencyId,
-
             summary,
-
-            rows,
-
-            exportData: 
-                detailRows
-
+            rows:
+                query?.agencyId && !query?.export
+                    ? undefined
+                    : rows,
+            agencyDetails:
+                query?.agencyId && !query?.export
+                    ? agencyDetails
+                    : undefined,
+            exportData:
+                query?.export
+                    ? detailRows
+                    : undefined
         };
     }
 }
