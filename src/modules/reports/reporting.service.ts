@@ -12,6 +12,7 @@ export class ReportingService {
         query?: {
             startDate?: string;
             endDate?: string;
+            bankAccountId?: string;
         }
     ) {
         // 1. Validate branch access
@@ -36,6 +37,25 @@ export class ReportingService {
             throw new ApiError("Branch not found", 404);
         }
 
+        let bankAccount = null;
+
+        if (query?.bankAccountId) {
+            bankAccount =
+                await prisma.bankAccount.findFirst({
+                    where: {
+                        id: query.bankAccountId,
+                        branchId
+                    }
+                });
+
+            if (!bankAccount) {
+                throw new ApiError(
+                    "Bank Account not found for selected branch",
+                    404
+                );
+            }
+        }
+
         // 2. Validate date range
         const startDate = query?.startDate ? parseDate(query.startDate, "startDate") : undefined;
         const endDate = query?.endDate ? parseDate(query.endDate, "endDate") : new Date();
@@ -53,6 +73,9 @@ export class ReportingService {
                 where: {
                     branchId,
                     status: "APPROVED",
+                    ...(query?.bankAccountId && {
+                        bankAccountId: query.bankAccountId
+                    }),
 
                     ...(startDate || endDate
                         ? {
@@ -66,6 +89,7 @@ export class ReportingService {
                 include: {
                     agency: true,
                     thirdPartyAgency: true,
+                    bankAccount: true,
                     allocations: {
                         include: {
                             sale: true,
@@ -134,6 +158,15 @@ export class ReportingService {
 
                     remarks:
                         txn.remarks,
+
+                    bankAccount: txn.bankAccount
+                        ? {
+                            id: txn.bankAccount.id,
+                            bankName: txn.bankAccount.bankName,
+                            accountNumber: txn.bankAccount.accountNumber,
+                            ifscCode: txn.bankAccount.ifscCode
+                        }
+                        : null,
 
                     allocations:
                         txn.allocations.map(a => ({
@@ -685,6 +718,7 @@ export class ReportingService {
             branchId?: string;
             agencyId?: string;
             type?: "RECEIVABLE" | "PAYABLE";
+            export?: boolean;
         }
     ) {
 
@@ -696,6 +730,28 @@ export class ReportingService {
             actor.branchAccessType === "ALL"
                 ? query?.branchId
                 : actor.branchId;
+
+                let agency = null;
+
+        if (query?.agencyId) {
+            agency =
+                await prisma.agency.findUnique({
+                    where: {
+                        id: query.agencyId
+                    },
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                });
+
+            if (!agency) {
+                throw new ApiError(
+                    "Agency not found",
+                    404
+                );
+            }
+        }
 
         const today = new Date();
         const detailRows: any[] = [];
@@ -1190,27 +1246,38 @@ export class ReportingService {
         };
         
 
-        return {
+        const agencyDetails =
+            query?.agencyId
+                ? rows.find(
+                    row =>
+                        row.agencyId === query.agencyId
+                ) ?? null
+                : null;
 
+        return {
             reportName:
                 query.type === "RECEIVABLE"
                     ? "Accounts Receivable Aging Report"
                     : "Accounts Payable Aging Report",
-
             generatedAt:
                 new Date(),
-
             branchId,
-
+            agency,
             agencyId:
                 query.agencyId,
-
             summary,
-
-            rows,
-
-            detailRows
-
+            rows:
+                query?.agencyId && !query?.export
+                    ? undefined
+                    : rows,
+            agencyDetails:
+                query?.agencyId && !query?.export
+                    ? agencyDetails
+                    : undefined,
+            exportData:
+                query?.export
+                    ? detailRows
+                    : undefined
         };
     }
 }

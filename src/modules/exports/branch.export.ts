@@ -245,61 +245,39 @@ export const outstandingColumns = [
 export const outstandingDetailColumns = [
 
     {
-        header: "Vendor / Customer",
+        header: "Agency Name",
         key: "vendorName",
         width: 35
     },
 
     {
-        header: "Bill No.",
+        header: "Invoice No",
         key: "billNo",
-        width: 20
+        width: 22
     },
 
     {
-        header: "Bill Date",
-        key: "billDate",
+        header: "Invoice Date",
+        value: row =>
+            row.billDate
+                ? new Date(row.billDate)
+                    .toLocaleDateString("en-IN")
+                : "",
         width: 18
     },
 
     {
         header: "Due Date",
-        key: "dueDate",
+        value: row =>
+            row.dueDate
+                ? new Date(row.dueDate)
+                    .toLocaleDateString("en-IN")
+                : "",
         width: 18
     },
 
     {
-        header: "Bill Amount",
-        key: "billAmount",
-        width: 18
-    },
-
-    {
-        header: "GST Amount",
-        key: "gstAmount",
-        width: 18
-    },
-
-    {
-        header: "TDS",
-        value: row => row.tds ?? 0,
-        width: 15
-    },
-
-    {
-        header: "Paid Amount",
-        key: "paidAmount",
-        width: 18
-    },
-
-    {
-        header: "Balance Amount",
-        key: "balanceAmount",
-        width: 18
-    },
-
-    {
-        header: "Aging Days",
+        header: "Age (Days)",
         key: "agingDays",
         width: 15
     },
@@ -311,15 +289,33 @@ export const outstandingDetailColumns = [
     },
 
     {
-        header: "Payment Status",
-        key: "paymentStatus",
+        header: "Invoice Amount",
+        key: "billAmount",
         width: 18
+    },
+
+    {
+        header: "GST Amount",
+        key: "gstAmount",
+        width: 18
+    },
+
+    {
+        header: "Paid Amount",
+        key: "paidAmount",
+        width: 18
+    },
+
+    {
+        header: "Outstanding Amount",
+        key: "balanceAmount",
+        width: 20
     },
 
     {
         header: "Remarks",
         key: "remarks",
-        width: 30
+        width: 35
     }
 
 ];
