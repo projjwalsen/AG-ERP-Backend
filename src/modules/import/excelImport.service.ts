@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
-import { ExcelRowDTO, GroupedVoucherDTO } from "../../core/dto/dto";
+import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, ProductImportDTO } from "../../core/dto/dto";
+import { AgencyType } from "@prisma/client";
 export class ExcelImportService {
 
     /**
@@ -971,5 +972,185 @@ export class ExcelImportService {
 
         return vouchers;
 
+    }
+
+    static parseAgencyRows(
+        rows: Record<string, any>[]
+    ): AgencyImportDTO[] {
+
+        const agencies =
+            new Map<string, AgencyImportDTO>();
+
+        for (const row of rows) {
+
+            const agencyName =
+                String(
+                    this.getValue(
+                        row,
+                        "Agency Name",
+                        "Name"
+                    ) || ""
+                ).trim();
+
+            if (!agencyName) {
+                continue;
+            }
+
+            const gstin =
+                String(
+                    this.getValue(
+                        row,
+                        "GSTIN",
+                        "GSTIN/UIN"
+                    ) || ""
+                ).trim();
+
+            const key =
+                gstin ||
+                agencyName.toUpperCase();
+
+            if (agencies.has(key)) {
+                continue;
+            }
+
+            const typeText =
+                String(
+                    this.getValue(
+                        row,
+                        "Type"
+                    ) || "BOTH"
+                )
+                .trim()
+                .toUpperCase();
+
+            let type: AgencyType;
+
+            switch (typeText) {
+                case "CLIENT":
+
+                    type = AgencyType.CLIENT;
+                    break;
+
+                case "VENDOR":
+
+                    type = AgencyType.VENDOR;
+                    break;
+
+                case "BOTH":
+
+                    type = AgencyType.BOTH;
+                    break;
+
+                default:
+
+                    throw new Error(
+                        `Invalid Agency Type '${typeText}' for ${agencyName}`
+                    );
+            }
+
+
+            agencies.set(key, {
+
+                agencyName,
+
+                agencyAddress:
+                    String(
+                        this.getValue(
+                            row,
+                            "Address"
+                        ) || ""
+                    ).trim(),
+
+                agencyGSTIN:
+                    gstin,
+
+                agencyPAN:
+                    String(
+                        this.getValue(
+                            row,
+                            "PAN"
+                        ) || ""
+                    ).trim(),
+
+                openingBalance:
+                    this.toNumber(
+                        this.getValue(
+                            row,
+                            "OpeningBalance",
+                            "Opening Balance",
+                            "Opening Balance (Dr)",
+                            "Opening Balance (Cr)",
+                            "Opening"
+                        )
+                    ),
+
+                type
+
+            });
+
+        }
+
+        return [...agencies.values()];
+
+    }
+
+    static parseProductRows(
+        rows: Record<string, any>[]
+    ): ProductImportDTO[] {
+
+        const products =
+            new Map<string, ProductImportDTO>();
+
+        for (const row of rows) {
+
+            const productName =
+                String(
+                    this.getValue(
+                        row,
+                        "Product Name"
+                    ) || ""
+                ).trim();
+
+            if (!productName)
+                continue;
+
+            const key =
+                productName.toUpperCase();
+
+            if (products.has(key))
+                continue;
+
+            products.set(key, {
+
+                productName,
+
+                openingStockKG:
+
+                    this.toNumber(
+
+                        this.getValue(
+                            row,
+                            "Opening Stock KG",
+                            "Opening Stock"
+                        )
+
+                    ),
+
+                density:
+
+                    this.toNumber(
+
+                        this.getValue(
+                            row,
+                            "Density"
+                        )
+
+                    ) || 1
+
+            });
+
+        }
+
+        return [...products.values()];
     }
 }

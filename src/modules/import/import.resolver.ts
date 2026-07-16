@@ -1,7 +1,7 @@
 import { ProductUnit, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
-import { ExcelRowDTO, GroupedVoucherDTO, ParsedAddressDTO } from "../../core/dto/dto";
+import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
 import { LocationService } from "../meta/meta.loc.service";
 import { City, State } from "country-state-city";
@@ -58,6 +58,223 @@ export class ImportResolver {
         }
 
         return normalized;
+
+    }
+
+    // for agency master import only 
+    static async resolveOrCreateAgencyMaster(
+        dto: AgencyImportDTO
+    ) {
+
+        const cacheKey =
+            dto.agencyGSTIN?.trim() ||
+            dto.agencyName.trim().toLowerCase();
+
+        if (
+            cacheKey &&
+            this.agencyCache.has(cacheKey)
+        ) {
+            return this.agencyCache.get(cacheKey);
+        }
+
+        const address =
+            await this.parseAddress(
+                dto.agencyAddress
+            );
+
+        if (
+            !address.stateCode &&
+            dto.agencyGSTIN?.length >= 2
+        ) {
+
+            address.stateCode =
+                dto.agencyGSTIN.substring(0, 2);
+
+        }
+
+        if (
+            !address.state &&
+            address.stateCode
+        ) {
+
+            const states =
+                await LocationService.getIndianStates();
+
+            const state =
+                states.find(
+                    x =>
+                        x.stateCode ===
+                        address.stateCode
+                );
+
+            if (state) {
+
+                address.state =
+                    state.name;
+
+            }
+
+        }
+
+        let agency =
+            null;
+
+        if (dto.agencyGSTIN) {
+
+            agency =
+                await prisma.agency.findFirst({
+
+                    where: {
+
+                        gstin:
+                            dto.agencyGSTIN
+
+                    }
+
+                });
+
+        }
+
+        if (
+            !agency &&
+            dto.agencyName
+        ) {
+
+            agency =
+                await prisma.agency.findFirst({
+
+                    where: {
+
+                        name: {
+
+                            equals:
+                                dto.agencyName,
+
+                            mode:
+                                "insensitive"
+
+                        }
+
+                    }
+
+                });
+
+        }
+
+        if (agency) {
+
+            const updated =
+                await prisma.agency.update({
+
+                    where: {
+
+                        id:
+                            agency.id
+
+                    },
+
+                    data: {
+
+                        name:
+                            dto.agencyName,
+
+                        gstin:
+                            dto.agencyGSTIN,
+
+                        panNo:
+                            dto.agencyPAN,
+
+                        type:
+                            dto.type,
+
+                        openingBalance:
+                            dto.openingBalance ?? 0,
+
+                        addressLine1:
+                            address.addressLine1,
+
+                        addressLine2:
+                            address.addressLine2,
+
+                        city:
+                            address.city,
+
+                        state:
+                            address.state,
+
+                        stateCode:
+                            address.stateCode,
+
+                        pinCode:
+                            address.pinCode,
+
+                        email:
+                            address.email
+
+                    }
+
+                });
+
+            this.agencyCache.set(
+                cacheKey,
+                updated
+            );
+
+            return updated;
+
+        }
+
+        const created =
+            await prisma.agency.create({
+
+                data: {
+
+                    name:
+                        dto.agencyName,
+
+                    gstin:
+                        dto.agencyGSTIN,
+
+                    panNo:
+                        dto.agencyPAN,
+
+                    type:
+                        dto.type,
+
+                    openingBalance:
+                        dto.openingBalance ?? 0,
+
+                    addressLine1:
+                        address.addressLine1,
+
+                    addressLine2:
+                        address.addressLine2,
+
+                    city:
+                        address.city,
+
+                    state:
+                        address.state,
+
+                    stateCode:
+                        address.stateCode,
+
+                    pinCode:
+                        address.pinCode,
+
+                    email:
+                        address.email
+
+                }
+
+            });
+
+        this.agencyCache.set(
+            cacheKey,
+            created
+        );
+
+        return created;
 
     }
 
@@ -520,6 +737,388 @@ export class ImportResolver {
         );
 
         return product;
+
+    }
+
+    // for product master import entry only
+    static async resolveOrCreateProductMaster(
+        branchId: string,
+        dto: ProductImportDTO
+    ) {
+
+        const normalizedName =
+            this.normalizeProductName(
+                dto.productName
+            );
+
+        const cacheKey = normalizedName;
+
+        if (this.productCache.has(cacheKey)) {
+            return this.productCache.get(cacheKey);
+        }
+
+        const density = dto.density || 1;
+
+        const openingKG = dto.openingStockKG || 0;
+
+        const openingLTR = openingKG / density;
+
+        return await prisma.$transaction(async tx => {
+
+            /*
+            ==========================================
+            PRODUCT
+            ==========================================
+            */
+
+            let product =
+                await tx.product.findFirst({
+
+                    where: {
+
+                        OR: [
+
+                            {
+                                name: {
+                                    equals: dto.productName,
+                                    mode: "insensitive"
+                                }
+                            },
+
+                            {
+                                name: {
+                                    equals: normalizedName,
+                                    mode: "insensitive"
+                                }
+                            }
+
+                        ]
+
+                    }
+
+                });
+
+            if (!product) {
+
+                product =
+                    await tx.product.create({
+
+                        data: {
+
+                            sku: crypto.randomUUID(),
+
+                            name: normalizedName,
+
+                            density,
+
+                            openingStockKG: openingKG,
+
+                            baseUnit: ProductUnit.KG,
+
+                            operationalUnit: ProductUnit.KG,
+
+                            sellPricePerUnit: 0,
+
+                            purchasePricePerUnit: 0,
+
+                            applicableGST: 0
+
+                        }
+
+                    });
+
+            }
+            else {
+
+                product =
+                    await tx.product.update({
+
+                        where: {
+                            id: product.id
+                        },
+
+                        data: {
+
+                            name: normalizedName,
+
+                            density,
+
+                            openingStockKG: openingKG
+
+                        }
+
+                    });
+
+            }
+
+            /*
+            ==========================================
+            INVENTORY
+            ==========================================
+            */
+
+            const inventory =
+                await tx.inventory.findUnique({
+
+                    where: {
+
+                        branchId_productId: {
+
+                            branchId,
+
+                            productId: product.id
+
+                        }
+
+                    }
+
+                });
+
+            if (!inventory) {
+
+                await tx.inventory.create({
+
+                    data: {
+
+                        branchId,
+
+                        productId: product.id,
+
+                        currentStockKG: openingKG,
+
+                        currentStockLTR: openingLTR
+
+                    }
+
+                });
+
+            }
+            else {
+
+                await tx.inventory.update({
+
+                    where: {
+                        id: inventory.id
+                    },
+
+                    data: {
+
+                        currentStockKG: openingKG,
+
+                        currentStockLTR: openingLTR
+
+                    }
+
+                });
+
+            }
+
+            /*
+            ==========================================
+            OPENING BATCH
+            ==========================================
+            */
+
+            const batchNo =
+                `OPENING-${product.id}`;
+
+            let batch =
+                await tx.inventoryBatch.findFirst({
+
+                    where: {
+
+                        branchId,
+
+                        productId: product.id,
+
+                        batchNo
+
+                    }
+
+                });
+
+            if (!batch) {
+
+                batch =
+                    await tx.inventoryBatch.create({
+
+                        data: {
+
+                            branchId,
+
+                            productId: product.id,
+
+                            batchNo,
+
+                            purchasePrice: 0,
+
+                            availableQtyKG: openingKG,
+
+                            availableQtyLTR: openingLTR,
+
+                            isActive: true
+
+                        }
+
+                    });
+
+            }
+            else {
+
+                batch =
+                    await tx.inventoryBatch.update({
+
+                        where: {
+                            id: batch.id
+                        },
+
+                        data: {
+
+                            availableQtyKG: openingKG,
+
+                            availableQtyLTR: openingLTR
+
+                        }
+
+                    });
+
+            }
+
+            /*
+            ==========================================
+            PRODUCT LEDGER
+            ==========================================
+            */
+
+            let ledger =
+                await tx.productLedger.findUnique({
+
+                    where: {
+
+                        productId: product.id
+
+                    }
+
+                });
+
+            if (!ledger) {
+
+                ledger =
+                    await tx.productLedger.create({
+
+                        data: {
+
+                            code: `PROD-${product.sku.substring(0, 8)}`,
+
+                            product: {
+
+                                connect: {
+
+                                    id: product.id
+
+                                }
+
+                            }
+
+                        }
+
+                    });
+
+            }
+
+            /*
+            ==========================================
+            OPENING ENTRY
+            ==========================================
+            */
+
+            const openingEntry =
+                await tx.productLedgerEntry.findFirst({
+
+                    where: {
+
+                        productLedgerId: ledger.id,
+
+                        movementType: "OPENING_BALANCE",
+
+                        batchId: batch.id
+
+                    }
+
+                });
+
+            if (!openingEntry) {
+
+                await tx.productLedgerEntry.create({
+
+                    data: {
+
+                        productLedger: {
+
+                            connect: {
+
+                                id: ledger.id
+
+                            }
+
+                        },
+
+                        movementType: "OPENING_BALANCE",
+
+                        direction: "CREDIT",
+
+                        quantityKG: openingKG,
+
+                        quantityLTR: openingLTR,
+
+                        unit: ProductUnit.KG,
+
+                        branch: {
+
+                            connect: {
+
+                                id: branchId
+
+                            }
+
+                        },
+
+                        batch: {
+
+                            connect: {
+
+                                id: batch.id
+
+                            }
+
+                        },
+
+                        batchNo: batch.batchNo,
+
+                        invoiceNo: "OPENING STOCK",
+
+                        unitCost: 0,
+
+                        totalCost: 0,
+
+                        entryDate: new Date(),
+
+                        remarks: "Opening Stock Import"
+
+                    }
+
+                });
+
+            }
+
+            this.productCache.set(
+                cacheKey,
+                product
+            );
+
+            return product;
+
+        });
 
     }
 
