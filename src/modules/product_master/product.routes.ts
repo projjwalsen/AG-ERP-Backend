@@ -43,6 +43,8 @@ router.use(authMiddleware);
  *                 type: string
  *               description:
  *                 type: string
+ *               disclaimer:
+ *                 type: string
  *               hsnNo:
  *                 type: string
  *               applicableGST:

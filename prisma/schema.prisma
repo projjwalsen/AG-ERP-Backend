@@ -332,6 +332,7 @@ model Product {
   name  String
   category String?
   description String?
+  disclaimer String?
 
   hsnNo String?
   applicableGST Decimal? @db.Decimal(5, 2)

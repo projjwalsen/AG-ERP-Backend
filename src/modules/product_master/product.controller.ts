@@ -7,13 +7,13 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
     try {
         const actor = (req as any).user;
         const {
-            name, sku, category, description,
+            name, sku, category, description, disclaimer,
             hsnNo, applicableGST, baseUnit, density, 
             operationalUnit, minimumStockKG, sellPricePerUnit
         } = req.body;
 
         const product = await ProductService.createProduct(actor, {
-            name, sku, category, description,
+            name, sku, category, description, disclaimer,
             hsnNo, applicableGST, baseUnit, density, 
             operationalUnit, minimumStockKG, sellPricePerUnit
         });
@@ -102,13 +102,13 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
         const { productId } = (req as any).params;
 
         const {
-            name, sku, category, description,
+            name, sku, category, description, disclaimer,
             hsnNo, applicableGST, baseUnit, density, 
             operationalUnit, minimumStockKG, sellPricePerUnit
         } = req.body;
 
         const product = await ProductService.updateProduct(actor, productId, {
-            name, sku, category, description,
+            name, sku, category, description, disclaimer,
             hsnNo, applicableGST, baseUnit, density, 
             operationalUnit, minimumStockKG, sellPricePerUnit
         });
