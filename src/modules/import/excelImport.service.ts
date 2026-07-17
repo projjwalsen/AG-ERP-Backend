@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, ProductImportDTO } from "../../core/dto/dto";
+import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ProductImportDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
 export class ExcelImportService {
 
@@ -92,7 +92,7 @@ export class ExcelImportService {
 
     }
 
-    private static toDate(value: any): Date | undefined {
+    public static toDate(value: any): Date | undefined {
 
         if (!value)
             return undefined;
@@ -173,24 +173,41 @@ export class ExcelImportService {
      * Reading worksheet as JSON
     **/
     static readRows(
-        worksheet: XLSX.WorkSheet
+        worksheet: XLSX.WorkSheet,
+        options?: {
+
+            headerRow?: number;
+
+        }
     ): Record<string, any>[] {
+
+        const {
+
+            headerRow = 8
+
+        } = options ?? {};
 
         const rows =
             XLSX.utils.sheet_to_json<Record<string, any>>(
-                worksheet,
-                {
-                    range: 7,          // <-- Start reading from Excel row 8
-                    defval: "",
-                    raw: false
-                }
-            );
 
-            console.log(rows[0]);
+                worksheet,
+
+                {
+
+                    range: headerRow - 1,
+
+                    defval: "",
+
+                    raw: false
+
+                }
+
+            );
 
         return rows.map(row =>
             this.normalizeHeaders(row)
         );
+
     }
 
     static parseRows(rows: Record<string, any>[]): ExcelRowDTO[] {
@@ -1152,5 +1169,92 @@ export class ExcelImportService {
         }
 
         return [...products.values()];
+    }
+
+    static parseJournalRows(
+        rows: Record<string, any>[]
+    ): JournalImportDTO[] {
+
+        return rows
+
+            .map(row => {
+
+                const voucherType =
+                    String(
+                        this.getValue(
+                            row,
+                            "Vch Type",
+                            "Voucher Type"
+                        ) || ""
+                    ).trim();
+
+                // Skip Purchase & Tax Invoice
+                if (
+                    ["PURCHASE", "TAX INVOICE"]
+                        .includes(voucherType.toUpperCase())
+                ) {
+                    return null;
+                }
+
+                const voucherNo =
+                    String(
+                        this.getValue(
+                            row,
+                            "Vch No",
+                            "Voucher No"
+                        ) || ""
+                    ).trim();
+
+                if (!voucherNo)
+                    return null;
+
+                return {
+
+                    date:
+                        this.toDate(
+                            this.getValue(
+                                row,
+                                "Date"
+                            )
+                        ),
+
+                    voucherNo,
+
+                    voucherType,
+
+                    particulars:
+                        String(
+                            this.getValue(
+                                row,
+                                "Particulars"
+                            ) || ""
+                        ).trim(),
+
+                    debitAmount:
+                        this.toNumber(
+                            this.getValue(
+                                row,
+                                "Debit Amount",
+                                "Debit"
+                            )
+                        ),
+
+                    creditAmount:
+                        this.toNumber(
+                            this.getValue(
+                                row,
+                                "Credit Amount",
+                                "Credit"
+                            )
+                        ),
+
+                    raw: row
+
+                };
+
+            })
+
+            .filter(Boolean);
+
     }
 }

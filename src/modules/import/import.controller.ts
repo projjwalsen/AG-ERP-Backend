@@ -4,6 +4,7 @@ import {
     NextFunction
 } from "express";
 import { ImportService } from "./multer.import";
+import { JournalImportService } from "./journalImport.service";
 
 
 export const importWorkbook = async (
@@ -83,6 +84,73 @@ export const importWorkbook = async (
 
         next(error);
 
+    }
+
+};
+
+
+export const importJournalWorkbook = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+
+    try {
+        const actor =
+            (req as any).user;
+
+        res.setHeader(
+            "Content-Type",
+            "text/event-stream"
+        );
+
+        res.setHeader(
+            "Cache-Control",
+            "no-cache"
+        );
+
+        res.setHeader(
+            "Connection",
+            "keep-alive"
+        );
+
+        const file =
+            req.file;
+
+        if (!file) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Excel file is required."
+            });
+        }
+
+        const result =
+            await JournalImportService.importWorkbook(
+                actor,
+                file,
+                summary => {
+                    res.write(
+                        `data: ${JSON.stringify(summary)}\n\n`
+                    );
+                }
+            );
+
+        res.write(
+            `event: completed\n` +
+            `data: ${JSON.stringify({
+                success: true,
+                message:
+                    "Journal imported successfully.",
+                data: result
+            })}\n\n`
+        );
+
+        res.end();
+    }
+
+    catch (error) {
+        next(error);
     }
 
 };

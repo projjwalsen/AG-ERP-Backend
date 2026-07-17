@@ -21,7 +21,6 @@ export const createJournalHead = async (
         const {
             name,
             type,
-            ledgerId
         } = req.body;
 
         const journalHead =
@@ -29,8 +28,7 @@ export const createJournalHead = async (
                 actor,
                 {
                     name,
-                    type,
-                    ledgerId
+                    type
                 }
             );
 
@@ -78,7 +76,6 @@ export const updateJournalHead = async (
                 {
                     name,
                     type,
-                    ledgerId,
                     isActive
                 }
 

@@ -32,7 +32,9 @@ export class ImportService {
 
         const rawRows =
             ExcelImportService.readRows(
-                worksheet
+                worksheet, {
+                    headerRow: 8
+                }
             );
 
             console.log("RAW ROWS =", rawRows.length);

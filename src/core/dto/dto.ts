@@ -171,6 +171,12 @@ export interface AgencyImportDTO {
 
     type?: AgencyType;
 
+    city?: string;
+
+    state?: string;
+
+    pinCode?: string;
+
 }
 
 export interface ProductImportDTO {
@@ -180,5 +186,33 @@ export interface ProductImportDTO {
     openingStockKG?: number;
 
     density?: number;
+
+    branchName?: string;
+
+    date?: Date;
+
+    batchNo?: string;
+
+    sellPrice?: number;
+
+    hsn?: string;
+
+}
+
+export interface JournalImportDTO {
+
+    date?: Date;
+
+    voucherNo: string;
+
+    voucherType: string;
+
+    particulars: string;
+
+    debitAmount: number;
+
+    creditAmount: number;
+
+    raw?: any;
 
 }

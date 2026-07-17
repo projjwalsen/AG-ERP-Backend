@@ -1,10 +1,12 @@
-import { ProductUnit, VoucherType } from "@prisma/client";
+import { PaymentMode, PaymentType, ProductUnit, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
-import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
+import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
 import { LocationService } from "../meta/meta.loc.service";
 import { City, State } from "country-state-city";
+import { ExcelImportService } from "./excelImport.service";
+import { JournalService } from "../journal/journal.service";
 
 export class ImportResolver {
 
@@ -17,6 +19,9 @@ export class ImportResolver {
     private static productCache =
         new Map<string, any>();
 
+    private static journalHeadCache =
+        new Map<string, any>();
+
     private static productLocks =
         new Map<string, Promise<any>>();
 
@@ -27,6 +32,8 @@ export class ImportResolver {
         this.branchCache.clear();
 
         this.productCache.clear();
+
+        this.journalHeadCache.clear();
 
     }
 
@@ -116,6 +123,18 @@ export class ImportResolver {
 
         }
 
+        address.city =
+            dto.city?.trim() ||
+            address.city;
+
+        address.state =
+            dto.state?.trim() ||
+            address.state;
+
+        address.pinCode =
+            dto.pinCode?.trim() ||
+            address.pinCode;
+
         let agency =
             null;
 
@@ -187,9 +206,6 @@ export class ImportResolver {
                         type:
                             dto.type,
 
-                        openingBalance:
-                            dto.openingBalance ?? 0,
-
                         addressLine1:
                             address.addressLine1,
 
@@ -214,6 +230,28 @@ export class ImportResolver {
                     }
 
                 });
+
+            const ledger =
+                await prisma.ledger.findFirst({
+                    where: {
+                        agencyId: updated.id
+                    }
+                });
+
+            if (
+                ledger &&
+                dto.openingBalance != null
+            ) {
+                await prisma.ledger.update({
+                    where: {
+                        id: ledger.id
+                    },
+                    data: {
+                        openingBalance:
+                            dto.openingBalance,
+                    }
+                });
+            }
 
             this.agencyCache.set(
                 cacheKey,
@@ -241,8 +279,6 @@ export class ImportResolver {
                     type:
                         dto.type,
 
-                    openingBalance:
-                        dto.openingBalance ?? 0,
 
                     addressLine1:
                         address.addressLine1,
@@ -268,6 +304,44 @@ export class ImportResolver {
                 }
 
             });
+
+        const ledger =
+            await prisma.ledger.findFirst({
+
+                where: {
+
+                    agencyId: created.id
+
+                }
+
+            });
+
+        if (
+            ledger &&
+            dto.openingBalance != null
+        ) {
+
+            await prisma.ledger.update({
+
+                where: {
+
+                    id: ledger.id
+
+                },
+
+                data: {
+
+                    openingBalance:
+                        dto.openingBalance,
+
+                    currentBalance:
+                        dto.openingBalance
+
+                }
+
+            });
+
+        }
 
         this.agencyCache.set(
             cacheKey,
@@ -817,9 +891,23 @@ export class ImportResolver {
 
                             operationalUnit: ProductUnit.KG,
 
-                            sellPricePerUnit: 0,
+                            sellPricePerUnit:
+                                dto.sellPrice ?? 0,
 
-                            purchasePricePerUnit: 0,
+                            sellPriceLTR:
+                                dto.sellPrice && density
+                                    ? Number(
+                                        (
+                                            dto.sellPrice *
+                                            density
+                                        ).toFixed(2)
+                                    )
+                                    : null,
+
+                            minimumStockKG: openingKG,
+
+                            hsnNo:
+                                dto.hsn?.trim(),
 
                             applicableGST: 0
 
@@ -832,23 +920,36 @@ export class ImportResolver {
 
                 product =
                     await tx.product.update({
-
                         where: {
                             id: product.id
                         },
 
                         data: {
-
                             name: normalizedName,
-
                             density,
+                            openingStockKG: openingKG,
 
-                            openingStockKG: openingKG
+                            sellPricePerUnit:
+                                dto.sellPrice ??
+                                product.sellPricePerUnit,
 
+                            sellPriceLTR:
+                                dto.sellPrice
+                                    ? Number(
+                                        (
+                                            dto.sellPrice *
+                                            density
+                                        ).toFixed(2)
+                                    )
+                                    : product.sellPriceLTR,
+
+                            hsnNo:
+                                dto.hsn ??
+                                product.hsnNo,
+
+                            minimumStockKG: openingKG
                         }
-
                     });
-
             }
 
             /*
@@ -920,7 +1021,8 @@ export class ImportResolver {
             */
 
             const batchNo =
-                `OPENING-${product.id}`;
+                dto.batchNo?.trim()
+                || `OPENING-${product.id}`;
 
             let batch =
                 await tx.inventoryBatch.findFirst({
@@ -1049,18 +1151,12 @@ export class ImportResolver {
 
             if (!openingEntry) {
 
-                await tx.productLedgerEntry.create({
-
+               await tx.productLedgerEntry.create({
                     data: {
-
                         productLedger: {
-
                             connect: {
-
                                 id: ledger.id
-
                             }
-
                         },
 
                         movementType: "OPENING_BALANCE",
@@ -1074,23 +1170,15 @@ export class ImportResolver {
                         unit: ProductUnit.KG,
 
                         branch: {
-
                             connect: {
-
                                 id: branchId
-
                             }
-
                         },
 
                         batch: {
-
                             connect: {
-
                                 id: batch.id
-
                             }
-
                         },
 
                         batchNo: batch.batchNo,
@@ -1101,12 +1189,15 @@ export class ImportResolver {
 
                         totalCost: 0,
 
-                        entryDate: new Date(),
+                        entryDate:
+                            typeof dto.date === "string"
+                                ? ExcelImportService.toDate(dto.date) ?? new Date()
+                                : dto.date ?? new Date(),
 
-                        remarks: "Opening Stock Import"
+                        remarks:
+                            `Opening Stock Import - ${batch.batchNo}`
 
                     }
-
                 });
 
             }
@@ -1978,6 +2069,137 @@ export class ImportResolver {
             items
 
         };
+
+    }
+
+    static async buildJournalPayload(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const branch =
+            await prisma.branch.findFirst({
+                where: {
+                    isActive: true
+                }
+            });
+
+        if (!branch) {
+            throw new ApiError(
+                "No active branch found.",
+                400
+            );
+        }
+
+        const journalHead =
+            await this.resolveOrCreateJournalHead(
+                actor,
+                dto
+            );
+
+        let paymentMode: PaymentMode;
+        let paymentThrough: PaymentType | undefined;
+
+        switch (dto.voucherType.trim().toUpperCase()) {
+
+            case "CASH PAYMENT":
+            case "CASH RECEIPT":
+
+                paymentMode = PaymentMode.OFFLINE;
+                paymentThrough = PaymentType.CASH;
+                break;
+
+            default:
+
+                paymentMode = PaymentMode.ONLINE;
+                paymentThrough = PaymentType.BANK_DEPOSIT;
+        }
+
+        return {
+
+            branchId: branch.id,
+
+            journalHeadId: journalHead.id,
+
+            amount:
+                dto.debitAmount > 0
+                    ? dto.debitAmount
+                    : dto.creditAmount,
+
+            paymentMode,
+
+            paymentThrough,
+
+            remarks: dto.particulars,
+
+            journalDate: dto.date
+
+        };
+
+    }
+
+    public static async resolveOrCreateJournalHead(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const type =
+            dto.debitAmount > 0
+                ? "INWARD"
+                : "OUTWARD";
+
+        const voucherType = dto.voucherType.trim().toUpperCase();
+
+        const cacheKey =
+            `${voucherType}_${type}`;
+
+        const cached =
+            this.journalHeadCache.get(cacheKey);
+
+        if (cached)
+            return cached;
+
+        let journalHead =
+            await prisma.journalHead.findFirst({
+
+                where: {
+
+                    name: {
+
+                        equals: voucherType,
+
+                        mode: "insensitive"
+
+                    },
+
+                    type
+
+                }
+
+            });
+
+        if (!journalHead) {
+
+            journalHead =
+                await JournalService.createJournalHead(
+                    actor,
+                    {
+
+                        name: voucherType,
+
+                        type
+
+                    }
+                );
+
+        }
+
+        this.journalHeadCache.set(
+            cacheKey,
+            journalHead
+        );
+
+        return journalHead;
 
     }
 }

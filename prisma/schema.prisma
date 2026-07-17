@@ -960,6 +960,7 @@ enum LedgerType {
   PRODUCT
   SUSPENSE
   ROUND_OFF
+  JOURNAL
 }
 
 enum LedgerNature {
@@ -1135,8 +1136,8 @@ enum JournalStatus {
 }
 
 enum JournalHeadType {
-    INCOME
-    EXPENSE
+    INWARD
+    OUTWARD
 }
 
 model JournalHead {

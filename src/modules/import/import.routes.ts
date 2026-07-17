@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
 import { importExcel } from "./multer.import";
-import { importWorkbook } from "./import.controller";
+import { importJournalWorkbook, importWorkbook } from "./import.controller";
 
 const router = Router();
 
@@ -72,5 +72,65 @@ router.post(
     importExcel.single("file"),
     importWorkbook
 )
+
+
+/**
+ * @openapi
+ * /api/migration/import/journal:
+ *   post:
+ *     summary: Import Journal Register
+ *     description: |
+ *       Upload a Journal Register Excel file exported from Tally.
+ *
+ *       The importer automatically:
+ *
+ *       - Reads the Journal Register worksheet
+ *       - Skips Purchase and Tax Invoice vouchers
+ *       - Creates Journal Heads if they do not exist
+ *       - Creates Journal entries
+ *       - Automatically approves imported Journals
+ *       - Generates Accounting Vouchers and Ledger Entries
+ *       - Reports import progress through Server-Sent Events (SSE)
+ *
+ *     tags:
+ *       - Import
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Journal Register Excel (.xlsx/.xls)
+ *
+ *     responses:
+ *       200:
+ *         description: Journal import completed successfully.
+ *
+ *       400:
+ *         description: Invalid Excel file or unsupported format.
+ *
+ *       401:
+ *         description: Unauthorized.
+ *
+ *       500:
+ *         description: Internal server error.
+ */
+
+router.post(
+    "/import/journal",
+    authMiddleware,
+    importExcel.single("file"),
+    importJournalWorkbook
+);
 
 export default router;

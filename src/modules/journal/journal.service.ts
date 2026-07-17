@@ -2,9 +2,7 @@ export interface CreateJournalHeadDto {
 
     name: string;
 
-    type: "INCOME" | "EXPENSE";
-
-    ledgerId: string;
+    type: "INWARD" | "OUTWARD";
 
 }
 
@@ -12,9 +10,7 @@ export interface UpdateJournalHeadDto {
 
     name?: string;
 
-    type?: "INCOME" | "EXPENSE";
-
-    ledgerId?: string;
+    type?: "INWARD" | "OUTWARD";
 
     isActive?: boolean;
 
@@ -112,31 +108,17 @@ export class JournalService {
         dto: CreateJournalHeadDto
     ) {
 
-        const ledger =
-            await prisma.ledger.findUnique({
-
-                where: {
-                    id: dto.ledgerId
-                }
-
-            });
-
-        if (!ledger) {
-
-            throw new Error(
-                "Ledger not found."
-            );
-
-        }
-
         const exists =
             await prisma.journalHead.findFirst({
 
                 where: {
 
                     name: {
+
                         equals: dto.name.trim(),
+
                         mode: "insensitive"
+
                     }
 
                 }
@@ -151,6 +133,15 @@ export class JournalService {
 
         }
 
+        const ledger =
+            await LedgerService.createLedgerMaster(actor, {
+
+                name: dto.name.trim(),
+
+                category: LedgerType.JOURNAL
+
+            });
+
         return prisma.journalHead.create({
 
             data: {
@@ -159,7 +150,7 @@ export class JournalService {
 
                 type: dto.type,
 
-                ledgerId: dto.ledgerId
+                ledgerId: ledger.id
 
             },
 
@@ -198,27 +189,6 @@ export class JournalService {
 
         }
 
-        if (dto.ledgerId) {
-
-            const ledger =
-                await prisma.ledger.findUnique({
-
-                    where: {
-                        id: dto.ledgerId
-                    }
-
-                });
-
-            if (!ledger) {
-
-                throw new Error(
-                    "Ledger not found."
-                );
-
-            }
-
-        }
-
         if (dto.name) {
 
             const duplicate =
@@ -253,21 +223,15 @@ export class JournalService {
         }
 
         return prisma.journalHead.update({
-
-            where: {
-
-                id
-
+            where: { id },
+            data: {
+                name: dto.name,
+                type: dto.type,
+                isActive: dto.isActive
             },
-
-            data: dto,
-
             include: {
-
                 ledger: true
-
             }
-
         });
 
     }
@@ -347,7 +311,7 @@ export class JournalService {
 
             search?: string;
 
-            type?: "INCOME" | "EXPENSE";
+            type?: "INWARD" | "OUTWARD";
 
             isActive?: boolean;
 
@@ -1039,7 +1003,7 @@ export class JournalService {
                         entries:
 
                             journal.journalHead.type ===
-                                JournalHeadType.EXPENSE
+                                JournalHeadType.OUTWARD
 
                                 ?
 

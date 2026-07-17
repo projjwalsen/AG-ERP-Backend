@@ -21,7 +21,6 @@ router.use(authMiddleware);
  *             required:
  *               - name
  *               - type
- *               - ledgerId
  *             properties:
  *               name:
  *                 type: string
@@ -29,8 +28,8 @@ router.use(authMiddleware);
  *               type:
  *                 type: string
  *                 enum:
- *                   - INCOME
- *                   - EXPENSE
+ *                   - INWARD
+ *                   - OUTWARD
  *               ledgerId:
  *                 type: string
  *                 format: uuid
@@ -66,10 +65,8 @@ router.post("/head/create", JournalController.createJournalHead);
  *               type:
  *                 type: string
  *                 enum:
- *                   - INCOME
- *                   - EXPENSE
- *               ledgerId:
- *                 type: string
+ *                   - INWARD
+ *                   - OUTWARD
  *               isActive:
  *                 type: boolean
  *     responses:
@@ -139,8 +136,8 @@ router.get("/head/:journalHeadId", JournalController.getJournalHeadById);
  *         schema:
  *           type: string
  *           enum:
- *             - INCOME
- *             - EXPENSE
+ *             - INWARD
+ *             - OUTWARD
  *       - in: query
  *         name: isActive
  *         schema:
