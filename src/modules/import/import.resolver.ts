@@ -2132,7 +2132,7 @@ export class ImportResolver {
 
             remarks: dto.particulars,
 
-            journalDate: dto.date
+            journalDate: ExcelImportService.toDate(dto.date) || new Date(),
 
         };
 
