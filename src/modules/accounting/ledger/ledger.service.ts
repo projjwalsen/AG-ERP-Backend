@@ -158,7 +158,7 @@ export class LedgerService {
         return agency;
     }
 
-    private static async getOrCreateGroup(client: DbClient, code: string) {
+    public static async getOrCreateGroup(client: DbClient, code: string) {
         const existing = await client.ledgerGroup.findUnique({
             where: { code }
         });
@@ -287,7 +287,7 @@ export class LedgerService {
         return balance;
     }
 
-    private static async getOrCreateLedger(client: DbClient, seed: LedgerSeed) {
+    public static async getOrCreateLedger(client: DbClient, seed: LedgerSeed) {
         const existing = await client.ledger.findUnique({
             where: { code: seed.code }
         });
@@ -331,7 +331,7 @@ export class LedgerService {
         }
     }
 
-    static async createLedgerMaster(actor: any, payload: LedgerMasterPayload) {
+    static async createLedgerMaster(actor: any, payload: LedgerMasterPayload, groupCode?: string) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }

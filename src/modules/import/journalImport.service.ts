@@ -46,7 +46,7 @@ export class JournalImportService {
 
         };
 
-        const limit = pLimit(5);
+        const limit = pLimit(1);
 
         await Promise.all(
 
@@ -79,19 +79,25 @@ export class JournalImportService {
 
                     catch (error: any) {
 
+                        console.log({
+                            message: error.message,
+                            name: error.name,
+                            status: error.status,
+                            statusCode: error.statusCode
+                        });
+
+                        if (error.message === "SKIP_ALREADY_IMPORTED") {
+                            console.log(">>> SKIPPED");
+                            summary.success++;
+                            return;
+                        }
+
                         summary.failed++;
 
                         summary.errors.push({
-
-                            voucherNo:
-                                dto.voucherNo,
-
-                            voucherType:
-                                dto.voucherType,
-
-                            error:
-                                error.message
-
+                            voucherNo: dto.voucherNo,
+                            voucherType: dto.voucherType,
+                            error: error.message
                         });
 
                     }

@@ -4,6 +4,8 @@ export interface CreateJournalHeadDto {
 
     type: "INWARD" | "OUTWARD";
 
+    groupCode?: string;
+
 }
 
 export interface UpdateJournalHeadDto {
@@ -20,6 +22,7 @@ import {
     EntryType,
     JournalHeadType,
     JournalStatus,
+    LedgerNature,
     LedgerType,
     PaymentMode,
     PaymentType,
@@ -75,18 +78,30 @@ export class JournalService {
 
         if (paymentThrough === PaymentType.CASH) {
 
-            return tx.ledger.findFirst({
-
+            let ledger = await tx.ledger.findFirst({
                 where: {
-
                     category: LedgerType.CASH,
-
                     isActive: true
-
                 }
-
             });
 
+            if (!ledger) {
+
+                try {
+                    ledger = await LedgerService.getOrCreateLedger(tx, {
+                        code: "CASH_GLOBAL",
+                        name: "CASH",
+                        category: LedgerType.CASH,
+                        groupCode: "CASH_IN_HAND",
+                        nature: LedgerNature.DEBIT
+                    });
+                    
+                } catch (error) {
+                    console.error("Error creating CASH ledger:", error);
+                }
+            }
+
+            return ledger;
         }
 
         return tx.ledger.findFirst({
@@ -138,7 +153,13 @@ export class JournalService {
 
                 name: dto.name.trim(),
 
-                category: LedgerType.JOURNAL
+                category: LedgerType.JOURNAL,
+
+                groupCode:
+                    dto.groupCode ??
+                    (dto.type === "INWARD"
+                        ? "INDIRECT_INCOME"
+                        : "INDIRECT_EXPENSE")
 
             });
 

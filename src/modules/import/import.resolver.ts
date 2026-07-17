@@ -2077,17 +2077,39 @@ export class ImportResolver {
         dto: JournalImportDTO
     ) {
 
-        const branch =
-            await prisma.branch.findFirst({
-                where: {
-                    isActive: true
-                }
-            });
+        const branch = await prisma.branch.findFirst({
+            where: {
+                isActive: true
+            }
+        });
 
         if (!branch) {
             throw new ApiError(
                 "No active branch found.",
                 400
+            );
+        }
+
+        // Skip already imported journals
+        const existing = await prisma.journal.findFirst({
+            where: {
+                branchId: branch.id,
+                remarks: dto.particulars,
+                amount:
+                    dto.debitAmount > 0
+                        ? dto.debitAmount
+                        : dto.creditAmount,
+                journalDate:
+                    ExcelImportService.toDate(dto.date)
+            }
+        });
+
+        console.log("Checking existing journal for import:", existing);
+
+        if (existing) {
+            throw new ApiError(
+                "SKIP_ALREADY_IMPORTED",
+                409
             );
         }
 
@@ -2132,7 +2154,8 @@ export class ImportResolver {
 
             remarks: dto.particulars,
 
-            journalDate: ExcelImportService.toDate(dto.date) || new Date(),
+            journalDate:
+                ExcelImportService.toDate(dto.date) || new Date()
 
         };
 
@@ -2180,15 +2203,19 @@ export class ImportResolver {
 
         if (!journalHead) {
 
+            const groupCode =
+                dto.debitAmount > 0
+                    ? "INDIRECT_EXPENSE"
+                    : "INDIRECT_INCOME";
+
             journalHead =
                 await JournalService.createJournalHead(
                     actor,
                     {
 
                         name: voucherType,
-
-                        type
-
+                        type,
+                        groupCode,
                     }
                 );
 
