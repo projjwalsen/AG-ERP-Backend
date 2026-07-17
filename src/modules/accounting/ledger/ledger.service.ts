@@ -262,6 +262,7 @@ export class LedgerService {
             PRODUCT: "ASSETS",
             SUSPENSE: "SUSPENSE_ACCOUNT",
             ROUND_OFF: "INDIRECT_EXPENSE",
+            JOURNAL: "JOURNAL",
         };
 
         return this.getOrCreateGroup(client, defaultGroupCodeByType[payload.category]);
