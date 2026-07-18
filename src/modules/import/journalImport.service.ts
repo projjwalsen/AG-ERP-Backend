@@ -23,7 +23,7 @@ export class JournalImportService {
             ExcelImportService.readRows(
                 worksheet,
                 {
-                    headerRow: 3
+                    headerRow: 8
                 }
             );
 
@@ -56,6 +56,14 @@ export class JournalImportService {
 
                     try {
 
+                        console.log(
+                            dto.voucherType,
+                            dto.voucherNo,
+                            dto.particulars,
+                            dto.debitAmount,
+                            dto.creditAmount
+                        );
+
                         const payload =
                             await ImportResolver.buildJournalPayload(
                                 actor,
@@ -80,6 +88,7 @@ export class JournalImportService {
                     catch (error: any) {
 
                         console.log({
+                            error: error,
                             message: error.message,
                             name: error.name,
                             status: error.status,

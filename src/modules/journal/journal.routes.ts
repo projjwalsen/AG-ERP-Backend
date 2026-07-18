@@ -153,6 +153,8 @@ router.get("/heads", JournalController.listJournalHeads);
 
 /** ------------------- CREATE JOURNAL --------------------- */
 
+
+
 /**
  * @openapi
  * /api/journal/create:
@@ -207,6 +209,59 @@ router.get("/heads", JournalController.listJournalHeads);
  */
 
 router.post("/create", JournalController.createJournal);
+
+/**
+ * @openapi
+ * /api/journal/all:
+ *   get:
+ *     tags:
+ *       - Journal
+ *     summary: List Journals
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - PENDING
+ *             - APPROVED
+ *             - REJECTED
+ *       - in: query
+ *         name: journalHeadId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Journal List
+ */
+
+router.get("/all", JournalController.listJournals);
 
 
 /**
@@ -273,58 +328,7 @@ router.put("/:journalId", JournalController.updateJournal);
 router.get("/:journalId", JournalController.getJournalById);
 
 
-/**
- * @openapi
- * /api/journal/all:
- *   get:
- *     tags:
- *       - Journal
- *     summary: List Journals
- *     parameters:
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *       - in: query
- *         name: branchId
- *         schema:
- *           type: string
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum:
- *             - PENDING
- *             - APPROVED
- *             - REJECTED
- *       - in: query
- *         name: journalHeadId
- *         schema:
- *           type: string
- *       - in: query
- *         name: fromDate
- *         schema:
- *           type: string
- *           format: date
- *       - in: query
- *         name: toDate
- *         schema:
- *           type: string
- *           format: date
- *     responses:
- *       200:
- *         description: Journal List
- */
 
-router.get("/all", JournalController.listJournals);
 
 
 /**

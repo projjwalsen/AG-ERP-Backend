@@ -37,6 +37,8 @@ export interface CreateJournalDto {
 
     amount: number;
 
+    importKey?: string;
+
     paymentMode: PaymentMode;
 
     paymentThrough?: PaymentType;
@@ -481,6 +483,9 @@ export class JournalService {
 
                 paymentThrough:
                     dto.paymentThrough,
+
+                importKey:
+                    dto.importKey ?? null,
 
                 amount:
                     dto.amount,

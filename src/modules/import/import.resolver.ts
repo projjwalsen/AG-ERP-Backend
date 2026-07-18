@@ -2091,26 +2091,30 @@ export class ImportResolver {
         }
 
         // Skip already imported journals
-        const existing = await prisma.journal.findFirst({
-            where: {
-                branchId: branch.id,
-                remarks: dto.particulars,
-                amount:
-                    dto.debitAmount > 0
-                        ? dto.debitAmount
-                        : dto.creditAmount,
-                journalDate:
-                    ExcelImportService.toDate(dto.date)
-            }
-        });
+        const importKey =
+            `${dto.voucherType.trim().toUpperCase()}_${dto.voucherNo}`;
 
-        console.log("Checking existing journal for import:", existing);
+        const existing =
+            await prisma.journal.findUnique({
+
+                where: {
+
+                    importKey
+
+                }
+
+            });
+
+        console.log("Checking importKey:", importKey);
+        console.log("Existing:", existing);
 
         if (existing) {
+
             throw new ApiError(
                 "SKIP_ALREADY_IMPORTED",
                 409
             );
+
         }
 
         const journalHead =
@@ -2142,6 +2146,8 @@ export class ImportResolver {
             branchId: branch.id,
 
             journalHeadId: journalHead.id,
+
+            importKey,
 
             amount:
                 dto.debitAmount > 0

@@ -1172,6 +1172,8 @@ model Journal {
 
     journalHead JournalHead@relation(fields:[journalHeadId],references:[id])
 
+    importKey String? @unique
+
     amount Decimal @db.Decimal(18,2)
 
     paymentMode PaymentMode
