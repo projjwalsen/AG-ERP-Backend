@@ -149,8 +149,10 @@ export const getCompanyLedger = async (
                 Number(req.query.page || 1),
 
             limit:
-                Number(req.query.limit || 50)
+                Number(req.query.limit || 10)
         };
+
+        console.log("getCompanyLedger query :", query);
 
         const isExport =
             String(req.query.export)
