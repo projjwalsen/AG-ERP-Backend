@@ -125,10 +125,16 @@ export const importJournalWorkbook = async (
             });
         }
 
+        const type =
+            String(req.query.type || "JOURNAL")
+                .toUpperCase() as
+                    "JOURNAL" | "TRANSACTION";
+
         const result =
             await JournalImportService.importWorkbook(
                 actor,
                 file,
+                type,
                 summary => {
                     res.write(
                         `data: ${JSON.stringify(summary)}\n\n`

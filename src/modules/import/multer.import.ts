@@ -33,7 +33,7 @@ export class ImportService {
         const rawRows =
             ExcelImportService.readRows(
                 worksheet, {
-                    headerRow: 8
+                    headerRow: 3
                 }
             );
 
@@ -69,7 +69,7 @@ export class ImportService {
         };
 
 
-            const limit = pLimit(2); // trying 2
+            const limit = pLimit(1); // trying 2
 
             await Promise.all(
 

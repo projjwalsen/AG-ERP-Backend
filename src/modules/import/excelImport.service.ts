@@ -216,11 +216,16 @@ export class ExcelImportService {
 
             const particulars =
                 String(
-                    this.getValue(
-                        row,
-                        "Particulars"
-                    ) || ""
-                ).trim();
+                    this.getValue(row, "Particulars") || ""
+                );
+
+            const lines = particulars
+                .split(/\r?\n/)
+                .map(x => x.trim())
+                .filter(Boolean);
+
+
+            const disclaimer = lines[1] ?? "";
 
             const voucherNo = String(
                 this.getValue(
@@ -580,6 +585,8 @@ export class ExcelImportService {
                     ),
 
                 particulars: productName,
+
+                disclaimer,
 
                 hsnNo,
 
@@ -1189,12 +1196,6 @@ export class ExcelImportService {
                     ).trim();
 
                 // Skip Purchase & Tax Invoice
-                if (
-                    ["PURCHASE", "TAX INVOICE"]
-                        .includes(voucherType.toUpperCase())
-                ) {
-                    return null;
-                }
 
                 const voucherNo =
                     String(

@@ -8,6 +8,7 @@ export class JournalImportService {
     static async importWorkbook(
         actor: any,
         file: Express.Multer.File,
+        type: "JOURNAL" | "TRANSACTION",
         onProgress?: (summary: any) => void
     ) {
 
@@ -27,12 +28,40 @@ export class JournalImportService {
                 }
             );
 
-        const journals =
+        const limit = pLimit(1);
+
+        
+        const vouchers =
             ExcelImportService.parseJournalRows(rows);
+
+        const types = [...new Set(vouchers.map(x => x.voucherType))];
+        console.log(types);
+
+        const data =
+            vouchers.filter(dto => {
+
+                const voucherType =
+                    dto.voucherType
+                        ?.trim()
+                        .toUpperCase();
+
+                if (type === "JOURNAL") {
+
+                    return ![
+                        "PURCHASE",
+                        "TAX INVOICE"
+                    ].includes(voucherType);
+
+                }
+
+                // TRANSACTION: Import only Purchase vouchers.
+                return voucherType === "PURCHASE";
+
+            });
 
         const summary = {
 
-            total: journals.length,
+            total: data.length,
 
             processed: 0,
 
@@ -46,40 +75,43 @@ export class JournalImportService {
 
         };
 
-        const limit = pLimit(1);
-
         await Promise.all(
 
-            journals.map(dto =>
+            data.map(dto =>
 
                 limit(async () => {
 
                     try {
 
-                        console.log(
-                            dto.voucherType,
-                            dto.voucherNo,
-                            dto.particulars,
-                            dto.debitAmount,
-                            dto.creditAmount
-                        );
+                        if (type === "JOURNAL") {
 
-                        const payload =
-                            await ImportResolver.buildJournalPayload(
+                            const payload =
+                                await ImportResolver.buildJournalPayload(
+                                    actor,
+                                    dto
+                                );
+
+                            const journal =
+                                await JournalService.createJournal(
+                                    actor,
+                                    payload
+                                );
+
+                            await JournalService.approveJournal(
+                                actor,
+                                journal.id
+                            );
+
+                        }
+
+                        else {
+
+                            await ImportResolver.importInvoiceTransaction(
                                 actor,
                                 dto
                             );
 
-                        const journal =
-                            await JournalService.createJournal(
-                                actor,
-                                payload
-                            );
-
-                        await JournalService.approveJournal(
-                            actor,
-                            journal.id
-                        );
+                        }
 
                         summary.success++;
 
@@ -87,26 +119,30 @@ export class JournalImportService {
 
                     catch (error: any) {
 
-                        console.log({
-                            error: error,
-                            message: error.message,
-                            name: error.name,
-                            status: error.status,
-                            statusCode: error.statusCode
-                        });
+                        if (
+                            error.message ===
+                            "SKIP_ALREADY_IMPORTED"
+                        ) {
 
-                        if (error.message === "SKIP_ALREADY_IMPORTED") {
-                            console.log(">>> SKIPPED");
                             summary.success++;
+
                             return;
+
                         }
 
                         summary.failed++;
 
                         summary.errors.push({
-                            voucherNo: dto.voucherNo,
-                            voucherType: dto.voucherType,
-                            error: error.message
+
+                            voucherNo:
+                                dto.voucherNo,
+
+                            voucherType:
+                                dto.voucherType,
+
+                            error:
+                                error.message
+
                         });
 
                     }
@@ -116,19 +152,12 @@ export class JournalImportService {
                         summary.processed++;
 
                         summary.percentage =
-
                             Number(
-
                                 (
-
                                     summary.processed /
-
                                     summary.total *
-
                                     100
-
                                 ).toFixed(2)
-
                             );
 
                         onProgress?.(summary);
@@ -140,8 +169,6 @@ export class JournalImportService {
             )
 
         );
-
-        return summary;
 
     }
 

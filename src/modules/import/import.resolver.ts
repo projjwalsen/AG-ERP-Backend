@@ -1,4 +1,4 @@
-import { PaymentMode, PaymentType, ProductUnit, VoucherType } from "@prisma/client";
+import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -7,6 +7,7 @@ import { LocationService } from "../meta/meta.loc.service";
 import { City, State } from "country-state-city";
 import { ExcelImportService } from "./excelImport.service";
 import { JournalService } from "../journal/journal.service";
+import { TransactionService } from "../transaction/transac.service";
 
 export class ImportResolver {
 
@@ -1340,6 +1341,11 @@ export class ImportResolver {
 
                 }
 
+                if(dto?.disclaimer) {
+                    updateData.disclaimer =
+                        dto.disclaimer;
+                }
+
                 const finalProduct =
                     Object.keys(updateData).length > 0
 
@@ -1374,6 +1380,8 @@ export class ImportResolver {
                         sku: crypto.randomUUID(),
 
                         name: normalizedName,
+
+                        disclaimer: dto.disclaimer,
 
                         hsnNo: dto.hsnNo,
 
@@ -2233,6 +2241,273 @@ export class ImportResolver {
         );
 
         return journalHead;
+
+    }
+
+        static async importInvoiceTransaction(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const voucherType =
+            dto.voucherType
+                ?.trim()
+                .toUpperCase();
+
+        if (voucherType === "TAX INVOICE") {
+
+            const payload =
+                await this.buildSaleTransactionPayload(
+                    actor,
+                    dto
+                );
+
+            const transaction =
+                await TransactionService.createTransaction(
+                    actor,
+                    payload
+                );
+
+            await TransactionService.approveTransaction(
+                actor,
+                transaction.id
+            );
+
+            return;
+        }
+
+        if (voucherType === "PURCHASE") {
+
+            const payload =
+                await this.buildPurchaseTransactionPayload(
+                    actor,
+                    dto
+                );
+
+            const transaction =
+                await TransactionService.createTransaction(
+                    actor,
+                    payload
+                );
+
+            await TransactionService.approveTransaction(
+                actor,
+                transaction.id
+            );
+
+            return;
+        }
+
+        throw new Error("Unsupported Voucher Type");
+    }
+
+    static async buildSaleTransactionPayload(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const sale =
+            await prisma.sale.findFirst({
+
+                where: {
+
+                    invoiceNo: dto.voucherNo,
+
+                    status: SalesStatus.APPROVED
+
+                }
+
+            });
+
+        if (!sale) {
+
+            throw new Error(
+                `Sale not found : ${dto.voucherNo}`
+            );
+
+        }
+
+        const alreadyImported =
+            await prisma.transaction.findFirst({
+
+                where: {
+
+                    saleId: sale.id,
+
+                    settlementType:
+                        SettlementType.INVOICE_TO_INVOICE
+
+                }
+
+            });
+
+        if (alreadyImported) {
+
+            throw new Error(
+                "SKIP_ALREADY_IMPORTED"
+            );
+
+        }
+
+        const agency =
+            await prisma.agency.findUnique({
+
+                where: {
+
+                    id: sale.agencyId
+
+                },
+
+                include: {
+
+                    bankAccount: true
+
+                }
+
+            });
+
+        if (!agency?.bankAccountId) {
+
+            throw new Error(
+                `Bank Account not mapped for ${agency?.name}`
+            );
+
+        }
+
+        return {
+
+            branchId:
+                sale.branchId,
+
+            bankAccountId:
+                agency.bankAccountId,
+
+            direction:
+                TransactionDirection.INWARD,
+
+            settlementType:
+                SettlementType.INVOICE_TO_INVOICE,
+
+            suspense:
+                false,
+
+            agencyId:
+                sale.agencyId,
+
+            saleId:
+                sale.id,
+
+            amount:
+                Number(
+                    sale.grandTotal
+                ),
+
+            paymentThrough:
+                PaymentType.CASH,
+
+            remarks:
+                `Imported Day Book ${dto.voucherNo}`
+
+        };
+
+    }
+
+    static async buildPurchaseTransactionPayload(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const purchase =
+            await prisma.purchase.findFirst({
+
+                where: {
+
+                    invoiceNo: dto.voucherNo,
+
+                    status: PurchaseStatus.APPROVED
+
+                }
+
+            });
+
+        if (!purchase) {
+
+            throw new Error(
+                `Purchase not found : ${dto.voucherNo}`
+            );
+
+        }
+
+        const alreadyImported =
+            await prisma.transaction.findFirst({
+
+                where: {
+
+                    purchaseId: purchase.id,
+
+                    settlementType:
+                        SettlementType.INVOICE_TO_INVOICE
+
+                }
+
+            });
+
+        if (alreadyImported) {
+
+            throw new Error(
+                "SKIP_ALREADY_IMPORTED"
+            );
+
+        }
+
+       const agency =
+    await prisma.agency.findUnique({
+
+        where: {
+            id: purchase.agencyId
+        },
+
+        include: {
+            bankAccount: true
+        }
+
+    });
+
+const paymentThrough =
+    agency?.bankAccountId
+        ? PaymentType.BANK_DEPOSIT
+        : PaymentType.CASH;
+
+        return {
+
+    branchId: purchase.branchId,
+
+    bankAccountId:
+        agency?.bankAccountId ?? undefined,
+
+    direction:
+        TransactionDirection.OUTWARD,
+
+    settlementType:
+        SettlementType.INVOICE_TO_INVOICE,
+
+    suspense: false,
+
+    agencyId:
+        purchase.agencyId,
+
+    purchaseId:
+        purchase.id,
+
+    amount:
+        Number(purchase.grandTotal),
+
+    paymentThrough,
+
+    remarks:
+        `Imported Day Book ${dto.voucherNo}`
+
+};
 
     }
 }

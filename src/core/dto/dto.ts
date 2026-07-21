@@ -28,6 +28,8 @@ export interface ExcelRowDTO {
 
     particulars?: string;
 
+    disclaimer?: string;
+
     hsnNo?: string;
 
     quantity?: number;

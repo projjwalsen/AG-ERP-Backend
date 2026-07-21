@@ -98,6 +98,17 @@ router.post(
  *     security:
  *       - bearerAuth: []
  *
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - JOURNAL
+ *             - TRANSACTION
+ *         description: Type of journal being imported.
+ *
  *     requestBody:
  *       required: true
  *       content:
