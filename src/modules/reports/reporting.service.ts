@@ -13,6 +13,8 @@ export class ReportingService {
             startDate?: string;
             endDate?: string;
             bankAccountId?: string;
+            page?: number;
+            limit?: number;
         }
     ) {
         // 1. Validate branch access
@@ -196,18 +198,41 @@ export class ReportingService {
                 0
             );
 
+        // Summary must reflect the full unfiltered set so totals stay
+        // stable across pages. runningBalance above was already computed
+        // against every transaction in date order.
+        const totalEntries = entries.length;
+
+        // Page slice — applied AFTER runningBalance so each row keeps
+        // its true running balance, not a per-page reset.
+        const page = Number(query?.page || 1);
+        const limit = Number(query?.limit || 25);
+        const safePage = page < 1 ? 1 : page;
+        const safeLimit = limit < 1 ? 25 : limit;
+        const start = (safePage - 1) * safeLimit;
+        const paginatedEntries = entries.slice(start, start + safeLimit);
+
         return {
             branch,
             dateRange: {
                 startDate, endDate
             },
             summary: {
-                totalTransactions: entries.length,
+                totalTransactions: totalEntries,
                 totalReceipts: totalReceipts,
                 totalPayments: totalPayments,
                 netCashFlow: totalReceipts - totalPayments
             },
-            entries
+            pagination: {
+                page: safePage,
+                limit: safeLimit,
+                totalEntries,
+                totalPages: Math.max(
+                    1,
+                    Math.ceil(totalEntries / safeLimit)
+                )
+            },
+            entries: paginatedEntries
         };
     }
 

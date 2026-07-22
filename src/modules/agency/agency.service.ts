@@ -214,7 +214,7 @@ export class AgencyService {
         const branch = query?.branch?.trim();
         const type = query?.type;
         const page = query?.page || 1;
-        const limit = query?.limit || 10;
+        const limit = query?.limit || 100;
         const skip = (page - 1) * limit;
 
         const where = {
