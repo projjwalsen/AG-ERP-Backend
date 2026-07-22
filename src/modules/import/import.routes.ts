@@ -180,6 +180,16 @@ router.post(
  *                 type: string
  *                 format: binary
  *                 description: Journal Register Excel (.xlsx/.xls)
+ * 
+ *               fromDate:
+ *                type: date
+ *                format: date
+ *                description: Start date for filtering journal vouchers.
+ *
+ *               toDate:
+ *                type: date
+ *                format: date
+ *                description: End date for filtering journal vouchers.
  *
  *     responses:
  *       200:

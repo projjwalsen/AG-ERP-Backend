@@ -9,6 +9,8 @@ export class JournalImportService {
         actor: any,
         file: Express.Multer.File,
         type: "JOURNAL" | "TRANSACTION",
+        fromDate?: Date,
+        toDate?: Date,
         onProgress?: (summary: any) => void
     ) {
 
@@ -34,11 +36,62 @@ export class JournalImportService {
         const vouchers =
             ExcelImportService.parseJournalRows(rows);
 
-        const types = [...new Set(vouchers.map(x => x.voucherType))];
+        const types =
+            [...new Set(vouchers.map(x => x.voucherType))];
+
         console.log(types);
 
+        let rowsToImport = vouchers;
+
+        /**
+         * ----------------------------------------
+         * Optional Date Filter
+         * ----------------------------------------
+         */
+        if (fromDate || toDate) {
+
+            const from =
+                fromDate
+                    ? fromDate.toISOString().slice(0, 10)
+                    : undefined;
+
+            const to =
+                toDate
+                    ? toDate.toISOString().slice(0, 10)
+                    : undefined;
+
+            rowsToImport = vouchers.filter(dto => {
+
+                if (!dto.date) {
+                    return false;
+                }
+
+                const current =
+                    dto.date
+                        .toISOString()
+                        .slice(0, 10);
+
+                if (from && current < from) {
+                    return false;
+                }
+
+                if (to && current > to) {
+                    return false;
+                }
+
+                return true;
+
+            });
+
+        }
+
+        console.log(
+            "Rows To Import:",
+            rowsToImport.length
+        );
+
         const data =
-            vouchers.filter(dto => {
+            rowsToImport.filter(dto => {
 
                 const voucherType =
                     dto.voucherType
@@ -54,7 +107,6 @@ export class JournalImportService {
 
                 }
 
-                // TRANSACTION: Import only Purchase vouchers.
                 return voucherType === "PURCHASE";
 
             });

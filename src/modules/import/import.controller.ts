@@ -233,11 +233,23 @@ export const importJournalWorkbook = async (
                 .toUpperCase() as
                     "JOURNAL" | "TRANSACTION";
 
+        const fromDate =
+            typeof req.body.fromDate === "string"
+                ? req.body.fromDate.trim()
+                : "";
+
+        const toDate =
+            typeof req.body.toDate === "string"
+                ? req.body.toDate.trim()
+                : "";
+
         const result =
             await JournalImportService.importWorkbook(
                 actor,
                 file,
                 type,
+                fromDate ? new Date(fromDate) : undefined,
+                toDate ? new Date(toDate) : undefined,
                 summary => {
                     res.write(
                         `data: ${JSON.stringify(summary)}\n\n`
