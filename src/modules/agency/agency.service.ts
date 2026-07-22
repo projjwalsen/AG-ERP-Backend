@@ -214,7 +214,7 @@ export class AgencyService {
         const branch = query?.branch?.trim();
         const type = query?.type;
         const page = query?.page || 1;
-        const limit = query?.limit || 10;
+        const limit = query?.limit || 100;
         const skip = (page - 1) * limit;
 
         const where = {
@@ -267,6 +267,7 @@ export class AgencyService {
                     branches: {
                         select: {
                             id: true,
+                            branchId: true,
                             openingBalance: true,
                             isActive: true,
                             branch: {
@@ -289,11 +290,14 @@ export class AgencyService {
             prisma.agency.count({ where })
         ]);
 
+        console.log("Total Agencies:", agencies);
+
         return {
             data: agencies.map((agency) => ({
                 ...agency,
                 branches: agency.branches.map((ab) => ({
                     agencyBranchId: ab.id,
+                    branchId: ab.branchId,
                     openingBalance: ab.openingBalance,
                     isActive: ab.isActive,
                     branch: ab.branch,

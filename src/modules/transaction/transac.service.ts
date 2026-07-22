@@ -99,7 +99,7 @@ export class TransactionService {
             .substring(0, 8)
             .toUpperCase();
 
-        return `TRX-${branch.code}-${unique}`;
+        return `TRX-${unique}`;
     }
 
     private static async getSettings() {

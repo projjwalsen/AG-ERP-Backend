@@ -79,17 +79,66 @@ export class ReportingService {
 
                     ...(startDate || endDate
                         ? {
-                            createdAt: {
-                                ...(startDate && { gte: startDate }),
-                                ...(endDate && { lte: endDate })
-                            }
+                            OR: [
+                                {
+                                    sale: {
+                                        ...(startDate && endDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate,
+                                                    lte: endDate
+                                                }
+                                            }
+                                            : startDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate
+                                                }
+                                            }
+                                            : {
+                                                invoiceDate: {
+                                                    lte: endDate
+                                                }
+                                            })
+                                    }
+                                },
+                                {
+                                    purchase: {
+                                        ...(startDate && endDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate,
+                                                    lte: endDate
+                                                }
+                                            }
+                                            : startDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate
+                                                }
+                                            }
+                                            : {
+                                                invoiceDate: {
+                                                    lte: endDate
+                                                }
+                                            })
+                                    }
+                                }
+                            ]
                         }
-                    : {})
+                        : {})
                 },
                 include: {
                     agency: true,
                     thirdPartyAgency: true,
                     bankAccount: true,
+
+                    sale: true,
+
+                    purchase: true,
+
+                    voucher: true,
+
                     allocations: {
                         include: {
                             sale: true,
@@ -97,9 +146,18 @@ export class ReportingService {
                         }
                     }
                 },
-                orderBy: {
-                    createdAt: "asc"
-                }
+                orderBy: [
+                    {
+                        sale: {
+                            invoiceDate: "asc"
+                        }
+                    },
+                    {
+                        purchase: {
+                            invoiceDate: "asc"
+                        }
+                    }
+                ]
             });
 
         let runningBalance = 0;
@@ -120,6 +178,29 @@ export class ReportingService {
                 runningBalance =
                     runningBalance + credit - debit;
 
+                    console.log("transaction ", txn);
+
+                    const transactionDate =
+                        txn.sale?.invoiceDate ??
+                        txn.purchase?.invoiceDate ??
+                        txn.sale?.createdAt ??
+                        txn.purchase?.createdAt ??
+                        txn.createdAt;
+
+                    const voucher = txn.voucher[0];
+
+                    const voucherNo =
+                        voucher?.voucherNo ??
+                        txn.sale?.invoiceNo ??
+                        txn.purchase?.invoiceNo ??
+                        txn.transactionNo;
+
+                    const voucherType =
+                        voucher?.voucherType ??
+                        txn.sale?.voucherType ??
+                        txn.purchase?.voucherType ??
+                        "";
+
                 return {
 
                     serialNo: index + 1,
@@ -128,7 +209,7 @@ export class ReportingService {
 
                     transactionId: txn.id,
 
-                    transactionDate: txn.createdAt,
+                    transactionDate,
 
                     primaryAgencyName:
                         txn.agency?.name || null,
@@ -178,9 +259,23 @@ export class ReportingService {
 
                             allocatedAmount:
                                 Number(a.allocatedAmount)
-                        }))
+                        })),
+                        particulars:
+                            txn.agency?.name ?? "",
+
+                        voucherType,
+
+                        voucherNo,
+
+                        debitAmount:
+                            debit,
+
+                        creditAmount:
+                            credit,
+
+                        date: transactionDate
                 };
-            });
+            })
 
         const totalReceipts =
             entries.reduce(

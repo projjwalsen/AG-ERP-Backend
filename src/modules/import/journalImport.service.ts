@@ -107,7 +107,10 @@ export class JournalImportService {
 
                 }
 
-                return voucherType === "PURCHASE";
+                return [
+                    "PURCHASE",
+                    "TAX INVOICE"
+                ].includes(voucherType);
 
             });
 
