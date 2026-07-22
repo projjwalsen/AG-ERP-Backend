@@ -17,27 +17,32 @@ export class ExcelImportService {
         });
 
     }
-    
+
 
     private static getValue(
         row: Record<string, any>,
         ...headers: string[]
     ) {
 
-        for (const header of headers) {
-
-            const value = row[this.normalizeHeader(header)];
-
-            if (
-                value !== undefined &&
-                value !== null &&
-                String(value).trim() !== ""
-            ) {
-                return value;
-            }
-        }
-
+         if (!row) {
         return undefined;
+    }
+
+    for (const header of headers) {
+
+        const value =
+            row[this.normalizeHeader(header)];
+
+        if (
+            value !== undefined &&
+            value !== null &&
+            String(value).trim() !== ""
+        ) {
+            return value;
+        }
+    }
+
+    return undefined;
 
     }
 
@@ -119,7 +124,7 @@ export class ExcelImportService {
 
         const sheet = workbook.Sheets[name];
 
-        if(!sheet) {
+        if (!sheet) {
             throw new Error(
                 `Sheet not found: ${name}`
             )
@@ -210,22 +215,126 @@ export class ExcelImportService {
 
     }
 
-    static parseRows(rows: Record<string, any>[]): ExcelRowDTO[] {
+    static readProductRows(
+        worksheet: XLSX.WorkSheet
+    ): Record<string, any>[] {
 
-        return rows.map(row => {
+        const rows = XLSX.utils.sheet_to_json<any>(
+            worksheet,
+            {
+                header: 1,
+                defval: ""
+            }
+        );
 
-            const particulars =
-                String(
-                    this.getValue(row, "Particulars") || ""
-                );
+        const result: Record<string, any>[] = [];
 
-            const lines = particulars
-                .split(/\r?\n/)
-                .map(x => x.trim())
-                .filter(Boolean);
+        // Row index 4 -> Opening Balance/Inwards...
+        const groupHeaders = rows[4] ?? [];
 
+        // Row index 5 -> Quantity/Rate/Value...
+        const subHeaders = rows[5] ?? [];
 
-            const disclaimer = lines[1] ?? "";
+        for (let r = 6; r < rows.length; r++) {
+
+            const row = rows[r];
+
+            result.push({
+
+                particulars: row[0],
+
+                openingBalanceQuantity: row[1],
+
+                openingBalanceRate: row[2],
+
+                openingBalanceValue: row[3]
+
+            });
+
+        }
+
+        return result;
+    }
+
+    static parseRows(
+        rows: Record<string, any>[],
+        type: "PURCHASE" | "SALE" = "PURCHASE"
+    ): ExcelRowDTO[] {
+
+        return rows.map((row, index) => {
+
+            let effectiveRow = row;
+
+            let particulars = String(
+                this.getValue(row, "Particulars") || ""
+            );
+
+            let disclaimer = "";
+
+            if (type === "SALE") {
+
+                const nextRow = rows[index + 1];
+
+                if (nextRow) {
+
+                    const nextVoucher = String(
+                        this.getValue(nextRow, "Voucher No") || ""
+                    ).trim();
+
+                    const nextProduct = String(
+                        this.getValue(nextRow, "Particulars") || ""
+                    ).trim();
+
+                    const nextRate = this.toNumber(
+                        this.getValue(nextRow, "Rate")
+                    );
+
+                    if (
+                        !nextVoucher &&
+                        nextProduct &&
+                        (nextRate > 0 || nextProduct)
+                    ) {
+
+                        effectiveRow = nextRow;
+
+                        particulars = nextProduct;
+
+                        const disclaimerLines: string[] = [];
+
+                        let i = index + 2;
+
+                        while (i < rows.length) {
+
+                            const currentRow = rows[i];
+
+                            if (!currentRow) {
+                                break;
+                            }
+
+                            const voucher = String(
+                                this.getValue(currentRow, "Voucher No") || ""
+                            ).trim();
+
+                            if (voucher) {
+                                break;
+                            }
+
+                            const text = String(
+                                this.getValue(currentRow, "Particulars") || ""
+                            ).trim();
+
+                            if (text) {
+                                disclaimerLines.push(text);
+                            }
+
+                            i++;
+                        }
+
+                        disclaimer = disclaimerLines.join("\n");
+                    }
+                }
+            }
+
 
             const voucherNo = String(
                 this.getValue(
@@ -256,8 +365,8 @@ export class ExcelImportService {
                         "Buyer"
                     ) || ""
                 )
-                .trim()
-                .toUpperCase();
+                    .trim()
+                    .toUpperCase();
 
             const productName =
                 particulars
@@ -272,7 +381,7 @@ export class ExcelImportService {
 
                     .trim()
 
-                    + (hsnNo ? ` - ${hsnNo}` : "");
+                + (hsnNo ? ` - ${hsnNo}` : "");
 
             const normalizedProduct =
                 productName
@@ -293,7 +402,7 @@ export class ExcelImportService {
                 return null as any;
             }
 
-        
+
 
             /**
              * Quantity
@@ -317,22 +426,22 @@ export class ExcelImportService {
                     )
                 );
 
-    
 
-        /**
-         * Skip only completely empty rows.
-         * Keep ledger/service rows because
-         * they belong to the voucher.
-         */
-        if (
-            quantity === 0 &&
-            value === 0 &&
-            !productName
-        ) {
 
-            return null as any;
+            /**
+             * Skip only completely empty rows.
+             * Keep ledger/service rows because
+             * they belong to the voucher.
+             */
+            if (
+                quantity === 0 &&
+                value === 0 &&
+                !productName
+            ) {
 
-        }
+                return null as any;
+
+            }
 
             /**
              * Unit
@@ -382,7 +491,7 @@ export class ExcelImportService {
             const rateText =
                 String(
                     this.getValue(
-                        row,
+                        effectiveRow,
                         "Rate"
                     ) || ""
                 );
@@ -494,15 +603,15 @@ export class ExcelImportService {
                     )
                     : 0;
 
-                    console.log({
-                        particulars: productName,
-                        taxableAmount,
-                        cgst,
-                        sgst,
-                        igst,
-                        gstAmount,
-                        gstPercent
-                    });
+            console.log({
+                particulars: productName,
+                taxableAmount,
+                cgst,
+                sgst,
+                igst,
+                gstAmount,
+                gstPercent
+            });
 
 
             const dto: ExcelRowDTO = {
@@ -549,7 +658,7 @@ export class ExcelImportService {
                         )
                     ),
 
-                agencyName:agencyName,
+                agencyName: agencyName,
 
                 agencyAddress:
                     this.getValue(
@@ -729,12 +838,13 @@ export class ExcelImportService {
             return dto;
 
         })
-        .filter(Boolean)
+            .filter(Boolean)
 
     }
 
     static groupAndValidateVouchers(
-        rows: ExcelRowDTO[]
+        rows: ExcelRowDTO[],
+        type: "PURCHASE" | "SALE" = "PURCHASE"
     ): GroupedVoucherDTO[] {
 
         const voucherMap =
@@ -748,6 +858,12 @@ export class ExcelImportService {
             if (
                 !row.voucherNo ||
                 !row.voucherType
+            ) {
+                continue;
+            }
+            if (
+                type === "SALE" &&
+                !row.agencyName
             ) {
                 continue;
             }
@@ -928,19 +1044,20 @@ export class ExcelImportService {
 
             };
 
+
             if (!voucher.agencyName) {
 
-                throw new Error(
-                    `Agency missing in Voucher ${voucher.voucherNo}`
-                );
+                if (type === "SALE") {
+                    continue;
+                }
 
             }
 
             if (!voucher.branchName) {
 
-                throw new Error(
-                    `Branch missing in Voucher ${voucher.voucherNo}`
-                );
+                if (type === "SALE") {
+                    continue;
+                }
 
             }
 
@@ -1044,8 +1161,8 @@ export class ExcelImportService {
                         "Type"
                     ) || "BOTH"
                 )
-                .trim()
-                .toUpperCase();
+                    .trim()
+                    .toUpperCase();
 
             let type: AgencyType;
 
@@ -1122,54 +1239,34 @@ export class ExcelImportService {
         rows: Record<string, any>[]
     ): ProductImportDTO[] {
 
-        const products =
-            new Map<string, ProductImportDTO>();
+        const products = new Map<string, ProductImportDTO>();
 
         for (const row of rows) {
 
             const productName =
-                String(
-                    this.getValue(
-                        row,
-                        "Product Name"
-                    ) || ""
-                ).trim();
+                String(row.particulars || "").trim();
 
             if (!productName)
                 continue;
 
-            const key =
-                productName.toUpperCase();
+            const openingQty =
+                this.toNumber(row.openingBalanceQuantity);
 
-            if (products.has(key))
+            const openingRate =
+                this.toNumber(row.openingBalanceRate);
+
+            if (openingQty <= 0 && openingRate <= 0)
                 continue;
 
-            products.set(key, {
+            products.set(productName.toUpperCase(), {
 
                 productName,
 
-                openingStockKG:
+                openingStockKG: openingQty,
 
-                    this.toNumber(
+                sellPrice: openingRate,
 
-                        this.getValue(
-                            row,
-                            "Opening Stock KG",
-                            "Opening Stock"
-                        )
-
-                    ),
-
-                density:
-
-                    this.toNumber(
-
-                        this.getValue(
-                            row,
-                            "Density"
-                        )
-
-                    ) || 1
+                density: 1
 
             });
 

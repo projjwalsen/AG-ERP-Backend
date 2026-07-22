@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
 import { importExcel } from "./multer.import";
-import { importJournalWorkbook, importWorkbook } from "./import.controller";
+import { importJournalWorkbook, importProductWorkbook, importWorkbook } from "./import.controller";
 
 const router = Router();
 
@@ -51,6 +51,16 @@ const router = Router();
  *                   - PURCHASE
  *                   - SALE
  *                 description: Type of register being imported.
+ * 
+ *               fromDate:
+ *                type: date
+ *                format: date
+ *                description: Start date for filtering vouchers.
+ *
+ *               toDate:
+ *                type: date
+ *                format: date
+ *                description: End date for filtering vouchers.
  *
  *     responses:
  *       200:
@@ -72,6 +82,54 @@ router.post(
     importExcel.single("file"),
     importWorkbook
 )
+
+
+/**
+ * @openapi
+ * /api/migration/product:
+ *   post:
+ *     tags:
+ *       - Import
+ *     summary: Import Product Master Excel
+ *     description: Imports Product Master opening stock from an Excel file.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Product Master imported successfully.
+ *       400:
+ *         description: Invalid request.
+ *       401:
+ *         description: Unauthorized.
+ *       500:
+ *         description: Internal server error.
+ */
+
+
+
+router.post(
+
+    "/product",
+
+    authMiddleware,
+
+    importExcel.single("file"),
+
+    importProductWorkbook
+
+);
 
 
 /**

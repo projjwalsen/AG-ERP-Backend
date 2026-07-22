@@ -106,7 +106,7 @@ export class JournalService {
             return ledger;
         }
 
-        return tx.ledger.findFirst({
+        let ledger = await tx.ledger.findFirst({
 
             where: {
 
@@ -117,6 +117,34 @@ export class JournalService {
             }
 
         });
+
+        if (!ledger) {
+
+            try {
+
+                ledger = await LedgerService.getOrCreateLedger(tx, {
+
+                    code: "BANK_GLOBAL",
+
+                    name: "BANK",
+
+                    category: LedgerType.BANK,
+
+                    groupCode: "BANK_ACCOUNTS",
+
+                    nature: LedgerNature.DEBIT
+
+                });
+
+            } catch (error) {
+
+                console.error("Error creating BANK ledger:", error);
+
+            }
+
+        }
+
+        return ledger;
 
     }
 

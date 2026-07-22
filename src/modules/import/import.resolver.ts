@@ -717,6 +717,8 @@ export class ImportResolver {
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
 
+        dto.particulars = normalizedName;
+
         const cacheKey =
             dto.hsnNo
                 ? `${dto.hsnNo}_${normalizedName}`
@@ -1053,7 +1055,7 @@ export class ImportResolver {
 
                             batchNo,
 
-                            purchasePrice: 0,
+                            purchasePrice: dto.sellPrice || 0,
 
                             availableQtyKG: openingKG,
 
@@ -1186,9 +1188,11 @@ export class ImportResolver {
 
                         invoiceNo: "OPENING STOCK",
 
-                        unitCost: 0,
+                        unitCost:
+                            dto.sellPrice ?? 0,
 
-                        totalCost: 0,
+                        totalCost:
+                            openingKG * (dto.sellPrice ?? 0),
 
                         entryDate:
                             typeof dto.date === "string"
@@ -2460,54 +2464,66 @@ export class ImportResolver {
 
         }
 
-       const agency =
-    await prisma.agency.findUnique({
+        const agency =
+            await prisma.agency.findUnique({
 
-        where: {
-            id: purchase.agencyId
-        },
+                where: {
 
-        include: {
-            bankAccount: true
+                    id: purchase.agencyId
+
+                },
+
+                include: {
+
+                    bankAccount: true
+
+                }
+
+            });
+
+        if (!agency?.bankAccountId) {
+
+            throw new Error(
+                `Bank Account not mapped for ${agency?.name}`
+            );
+
         }
-
-    });
-
-const paymentThrough =
-    agency?.bankAccountId
-        ? PaymentType.BANK_DEPOSIT
-        : PaymentType.CASH;
 
         return {
 
-    branchId: purchase.branchId,
+            branchId:
+                purchase.branchId,
 
-    bankAccountId:
-        agency?.bankAccountId ?? undefined,
+            bankAccountId:
+                agency.bankAccountId,
 
-    direction:
-        TransactionDirection.OUTWARD,
+            direction:
+                TransactionDirection.OUTWARD,
 
-    settlementType:
-        SettlementType.INVOICE_TO_INVOICE,
+            settlementType:
+                SettlementType.INVOICE_TO_INVOICE,
 
-    suspense: false,
+            suspense:
+                false,
 
-    agencyId:
-        purchase.agencyId,
+            agencyId:
+                purchase.agencyId,
 
-    purchaseId:
-        purchase.id,
+            purchaseId:
+                purchase.id,
 
-    amount:
-        Number(purchase.grandTotal),
+            amount:
+                Number(
+                    purchase.grandTotal
+                ),
 
-    paymentThrough,
+            paymentThrough:
+                PaymentType.CASH,
 
-    remarks:
-        `Imported Day Book ${dto.voucherNo}`
+            remarks:
+                `Imported Day Book ${dto.voucherNo}`
 
-};
+        };
 
     }
 }

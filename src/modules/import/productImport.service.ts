@@ -27,7 +27,7 @@ export class ProductMasterImportService {
             );
 
         const rows =
-            ExcelImportService.readRows(
+            ExcelImportService.readProductRows(
                 worksheet
             );
 
@@ -79,7 +79,7 @@ export class ProductMasterImportService {
         };
 
         const limit =
-            pLimit(5);
+            pLimit(1);
 
         await Promise.all(
 
