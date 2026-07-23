@@ -591,7 +591,7 @@ export class ExcelService {
          * ===================================================
          */
 
-        worksheet.mergeCells("A1:E1");
+        worksheet.mergeCells("A1:F1");
 
         const title =
             worksheet.getCell("A1");
@@ -612,7 +612,7 @@ export class ExcelService {
          * Group Summary
          */
 
-        worksheet.mergeCells("A2:E2");
+        worksheet.mergeCells("A2:F2");
 
         worksheet.getCell("A2").value =
             "Group Summary";
@@ -630,13 +630,18 @@ export class ExcelService {
          * Period
          */
 
-        worksheet.mergeCells("A3:E3");
+        worksheet.mergeCells("A3:F3");
 
         worksheet.getCell("A3").value =
             options.period;
 
         worksheet.getCell("A3").alignment = {
-            horizontal: "center"
+            horizontal: "center",
+        };
+
+        worksheet.getCell("A3").font = {
+            bold: true,
+            size: 12
         };
 
         /**
@@ -663,26 +668,34 @@ export class ExcelService {
         worksheet.getCell("B6").value =
             options.companyName;
 
+        worksheet.getCell("B6").font = {
+            bold: true
+        };
+
+
         /**
          * Period
          */
 
-        worksheet.getCell("B7").value =
-            options.period;
 
         /**
          * Transactions / Closing
          */
 
-        worksheet.getCell("C8").value =
-            "Transactions";
+        worksheet.mergeCells("D8:E8");
 
-        worksheet.getCell("C8").font = {
+        const transactions =
+            worksheet.getCell("D8");
+
+        transactions.value = "Transactions";
+
+        transactions.font = {
             bold: true
         };
 
-        worksheet.getCell("E8").font = {
-            bold: true
+        transactions.alignment = {
+            horizontal: "center",
+            vertical: "middle"
         };
 
         /**
@@ -695,6 +708,7 @@ export class ExcelService {
             worksheet.getRow(10);
 
         header.values = [
+            "Date",
 
             "Particulars",
 
@@ -747,27 +761,43 @@ export class ExcelService {
          * ===================================================
          */
 
+
+
         options.data.forEach(row => {
 
-            const excelRow =
-                worksheet.addRow([
+            const excelRow = worksheet.addRow([
+                row.date,
+                row.particulars,
+                (row.openingBalance),
+                (row.debit),
+                (row.credit),
+                (row.balance)
+            ]);
 
-                    row.particulars,
+            excelRow.getCell(3).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
-                    row.openingBalance,
+            excelRow.getCell(4).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
-                    row.debit,
+            excelRow.getCell(5).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
-                    row.credit,
-
-                    row.balance
-
-                ]);
-
-            excelRow.getCell(3).numFmt =
-                "#,##0.00";
+            excelRow.getCell(6).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
             excelRow.getCell(4).numFmt =
+                "#,##0.00";
+
+            excelRow.getCell(5).numFmt =
                 "#,##0.00";
 
 
@@ -804,27 +834,12 @@ export class ExcelService {
          */
 
         worksheet.columns = [
-
-            {
-                width: 55
-            },
-
-            {
-                width: 20
-            },
-
-            {
-                width: 20
-            },
-
-            {
-                width: 20
-            },
-
-            {
-                width: 20
-            }
-
+            { width: 20 }, // Date
+            { width: 55 }, // Particulars
+            { width: 23 }, // Opening
+            { width: 23 }, // Debit
+            { width: 23 }, // Credit
+            { width: 23 }  // Closing
         ];
 
         /**

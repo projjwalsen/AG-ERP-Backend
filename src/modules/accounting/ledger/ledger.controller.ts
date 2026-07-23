@@ -4,6 +4,7 @@ import { LedgerType } from "@prisma/client";
 import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
 import { ExcelService } from "../../../core/utils/export.service";
 import { accountingLedgerColumns, bankAccCashColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
+import { formatISTDate } from "../../../core/utils/loc.utils";
 
 /**
  * @route   POST /api/ledgers
@@ -310,24 +311,60 @@ export const getLedgerByBranchId = async (
                 case "DEBTORS": {
 
                     const rows =
-                        result.data.map((block: any) => ({
+                        result.data
+                            .flatMap((block: any) =>
+                                block.entries.map((entry: any) => ({
 
-                            particulars:
-                                block.ledger.name,
+                                    date:
+                                        formatISTDate(entry.date),
 
-                            openingBalance:
-                                `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
+                                    rawDate:
+                                        entry.date,
 
-                            debit:
-                                block.summary.totalDebit,
+                                    particulars:
+                                        block.ledger.name,
 
-                            credit:
-                                block.summary.totalCredit,
+                                    openingBalance:
+                                        `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
 
-                            balance:
-                                `${block.summary.closingBalance.toFixed(2)} ${block.summary.closingBalanceType}`
+                                    debit:
+                                        entry.debit,
 
-                        }));
+                                    credit:
+                                        entry.credit,
+
+                                    balance:
+                                        `${entry.runningBalance.toFixed(2)} ${entry.balanceType}`
+
+                                }))
+                            )
+                            .sort(
+                                (a, b) =>
+                                    new Date(a.rawDate).getTime() -
+                                    new Date(b.rawDate).getTime()
+                            );
+
+                    let exportPeriod = "";
+
+                    if (req.query.startDate || req.query.endDate) {
+
+                        exportPeriod =
+                            `${req.query.startDate || ""} - ${req.query.endDate || ""}`;
+
+                    } else {
+
+                        const dates =
+                            rows
+                                .map(r => new Date(r.rawDate))
+                                .filter(d => !isNaN(d.getTime()));
+
+                        exportPeriod =
+                            dates.length
+                                ? `${formatISTDate(dates[0])} - ${formatISTDate(dates[dates.length - 1])}`
+                                : "";
+                    }
+
+                    rows.forEach(r => delete r.rawDate);
 
                     return ExcelService.exportSundryLedger(
                         res,
@@ -344,8 +381,7 @@ export const getLedgerByBranchId = async (
                             companyName:
                                 result.branch.name,
 
-                            period:
-                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
+                            period: exportPeriod,
 
                             data:
                                 rows
@@ -356,24 +392,61 @@ export const getLedgerByBranchId = async (
                 case "CREDITORS": {
 
                     const rows =
-                        result.data.map((block: any) => ({
+                        result.data
+                            .flatMap((block: any) =>
+                                block.entries.map((entry: any) => ({
 
-                            particulars:
-                                block.ledger.name,
+                                    date:
+                                        formatISTDate(entry.date),
 
-                            openingBalance:
-                                `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
+                                    rawDate:
+                                        entry.date,
 
-                            debit:
-                                block.summary.totalDebit,
+                                    particulars:
+                                        block.ledger.name,
 
-                            credit:
-                                block.summary.totalCredit,
+                                    openingBalance:
+                                        `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
 
-                            balance:
-                                `${block.summary.closingBalance.toFixed(2)} ${block.summary.closingBalanceType}`
+                                    debit:
+                                        entry.debit,
 
-                        }));
+                                    credit:
+                                        entry.credit,
+
+                                    balance:
+                                        `${entry.runningBalance.toFixed(2)} ${entry.balanceType}`
+
+                                }))
+                            )
+                            .sort(
+                                (a, b) =>
+                                    new Date(a.rawDate).getTime() -
+                                    new Date(b.rawDate).getTime()
+                            );
+
+                    let exportPeriod = "";
+
+                    if (req.query.startDate || req.query.endDate) {
+
+                        exportPeriod =
+                            `${req.query.startDate || ""} - ${req.query.endDate || ""}`;
+
+                    } else {
+
+                        const dates =
+                            rows
+                                .map(r => new Date(r.rawDate))
+                                .filter(d => !isNaN(d.getTime()));
+
+                        exportPeriod =
+                            dates.length
+                                ? `${formatISTDate(dates[0])} - ${formatISTDate(dates[dates.length - 1])}`
+                                : "";
+                    }
+
+                    rows.forEach(r => delete r.rawDate);
+
 
                     return ExcelService.exportSundryLedger(
                         res,
@@ -390,8 +463,7 @@ export const getLedgerByBranchId = async (
                             companyName:
                                 result.branch.name,
 
-                            period:
-                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
+                            period: exportPeriod,
 
                             data:
                                 rows
