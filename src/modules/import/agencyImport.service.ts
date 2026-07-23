@@ -2,6 +2,8 @@ import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import pLimit from "p-limit";
 import { ImportModule } from "./importRegistry";
+import { Express } from "express";
+
 
 export class AgencyImportService {
 
