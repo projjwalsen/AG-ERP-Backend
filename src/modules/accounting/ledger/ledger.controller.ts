@@ -309,60 +309,43 @@ export const getLedgerByBranchId = async (
 
                 case "DEBTORS": {
 
-                    const rows:any[] = [];
+                    const rows =
+                        result.data.map((block: any) => ({
 
-                    result.data.forEach((block:any) => {
+                            particulars:
+                                block.ledger.name,
 
-                        block.entries.forEach((entry:any) => {
+                            openingBalance:
+                                `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
 
-                            rows.push({
+                            debit:
+                                block.summary.totalDebit,
 
-                                ledgerCode:
-                                    block.ledger.code,
+                            credit:
+                                block.summary.totalCredit,
 
-                                ledgerName:
-                                    block.ledger.name,
+                            balance:
+                                `${block.summary.closingBalance.toFixed(2)} ${block.summary.closingBalanceType}`
 
-                                date:
-                                    entry.date,
+                        }));
 
-                                voucherNo:
-                                    entry.voucherNo,
-
-                                voucherType:
-                                    entry.voucherType,
-
-                                debit:
-                                    entry.debit,
-
-                                credit:
-                                    entry.credit,
-
-                                runningBalance:
-                                    entry.runningBalance,
-
-                                balanceType:
-                                    entry.balanceType,
-
-                                narration:
-                                    entry.narration
-                            });
-                        });
-                    });
-
-                    return ExcelService.export(
+                    return ExcelService.exportSundryLedger(
                         res,
                         {
                             filename:
                                 "debtors-ledger",
 
-                            title: `${result.branch.name} DEBTORS LEDGER`,
-
                             sheetName:
-                                "Debtors",
+                                "Sundry Debtors",
 
-                            columns:
-                                debtorLedgerColumns,
+                            title:
+                                "Sundry Debtors",
+
+                            companyName:
+                                result.branch.name,
+
+                            period:
+                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
 
                             data:
                                 rows
@@ -372,58 +355,43 @@ export const getLedgerByBranchId = async (
 
                 case "CREDITORS": {
 
-                    const rows:any[] = [];
+                    const rows =
+                        result.data.map((block: any) => ({
 
-                    result.data.forEach((block:any) => {
+                            particulars:
+                                block.ledger.name,
 
-                        block.entries.forEach((entry:any) => {
+                            openingBalance:
+                                `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
 
-                            rows.push({
+                            debit:
+                                block.summary.totalDebit,
 
-                                ledgerCode:
-                                    block.ledger.code,
+                            credit:
+                                block.summary.totalCredit,
 
-                                ledgerName:
-                                    block.ledger.name,
+                            balance:
+                                `${block.summary.closingBalance.toFixed(2)} ${block.summary.closingBalanceType}`
 
-                                date:
-                                    entry.date,
+                        }));
 
-                                voucherNo:
-                                    entry.voucherNo,
-
-                                voucherType:
-                                    entry.voucherType,
-
-                                debit:
-                                    entry.debit,
-
-                                credit:
-                                    entry.credit,
-
-                                runningBalance:
-                                    entry.runningBalance,
-
-                                balanceType:
-                                    entry.balanceType,
-
-                                narration:
-                                    entry.narration
-                            });
-                        });
-                    });
-
-                    return ExcelService.export(
+                    return ExcelService.exportSundryLedger(
                         res,
                         {
                             filename:
                                 "creditors-ledger",
-                            title: `${result.branch.name} CREDITORS LEDGER`,
-                            sheetName:
-                                "Creditors",
 
-                            columns:
-                                creditorLedgerColumns,
+                            sheetName:
+                                "Sundry Creditors",
+
+                            title:
+                                "Sundry Creditors",
+
+                            companyName:
+                                result.branch.name,
+
+                            period:
+                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
 
                             data:
                                 rows

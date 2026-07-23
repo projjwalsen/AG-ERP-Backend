@@ -20,10 +20,18 @@ export class AgencyImportService {
             ExcelImportService.getWorkSheet(workbook);
 
         const rows =
-            ExcelImportService.readRows(worksheet, { headerRow: 1 });
+            ExcelImportService.readRows(worksheet, { headerRow: 8 });
 
         const agencies =
             ExcelImportService.parseAgencyRows(rows);
+
+            console.table(
+    agencies.map(x => ({
+        agency: x.agencyName,
+        gstin: x.agencyGSTIN,
+        opening: x.openingBalance
+    }))
+);
 
         const summary = {
             total: agencies.length,
@@ -34,7 +42,7 @@ export class AgencyImportService {
             errors:[]
         };
 
-        const limit = pLimit(5);
+        const limit = pLimit(1);
 
         await Promise.all(
 

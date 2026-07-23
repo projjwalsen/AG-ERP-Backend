@@ -148,19 +148,20 @@ export class ReportingService {
                         }
                     }
                 },
-                orderBy: [
-                    {
-                        sale: {
-                            invoiceDate: "asc"
-                        }
-                    },
-                    {
-                        purchase: {
-                            invoiceDate: "asc"
-                        }
-                    }
-                ]
             });
+
+        const getTransactionDate = (txn: typeof transactions[number]) =>
+            txn.sale?.invoiceDate ??
+            txn.purchase?.invoiceDate ??
+            txn.sale?.createdAt ??
+            txn.purchase?.createdAt ??
+            txn.createdAt;
+
+        transactions.sort(
+            (a, b) =>
+                getTransactionDate(a).getTime() -
+                getTransactionDate(b).getTime()
+        );
 
         let runningBalance = 0;
 
@@ -182,12 +183,7 @@ export class ReportingService {
 
                     console.log("transaction ", txn);
 
-                    const transactionDate =
-                        txn.sale?.invoiceDate ??
-                        txn.purchase?.invoiceDate ??
-                        txn.sale?.createdAt ??
-                        txn.purchase?.createdAt ??
-                        txn.createdAt;
+                    const transactionDate = getTransactionDate(txn);
 
                     const voucher = txn.voucher[0];
 

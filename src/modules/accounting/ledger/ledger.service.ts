@@ -1752,7 +1752,13 @@ export class LedgerService {
                                 const statement =
                                     await this.getLedgerStatement(
                                         actor,
-                                        ledger.id
+                                        ledger.id,
+                                        {
+                                            startDate: query?.startDate,
+                                            endDate: query?.endDate,
+                                            page: 1,
+                                            limit: 100000
+                                        }
                                     );
 
                                 return {
@@ -1798,7 +1804,13 @@ export class LedgerService {
                                 const statement =
                                     await this.getLedgerStatement(
                                         actor,
-                                        ledger.id
+                                        ledger.id,
+                                        {
+                                            startDate: query?.startDate,
+                                            endDate: query?.endDate,
+                                            page: 1,
+                                            limit: 100000
+                                        }
                                     );
 
                                 return {
@@ -3335,7 +3347,7 @@ export class LedgerService {
         }
 
         const page = query?.page || 1;
-        const limit = query?.limit || 50;
+        const limit = query?.limit || 1000;
         const skip = (page - 1) * limit;
 
         const startDate = query?.startDate
