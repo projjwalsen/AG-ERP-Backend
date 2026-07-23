@@ -565,6 +565,294 @@ export class ExcelService {
         return output;
     }
 
+    static async exportSundryLedger(
+        res: Response,
+        options: {
+            filename: string;
+            sheetName?: string;
+            title: string;
+            companyName: string;
+            period: string;
+            data: any[];
+        }
+    ) {
+
+        const workbook =
+            new ExcelJS.Workbook();
+
+        const worksheet =
+            workbook.addWorksheet(
+                options.sheetName || options.title
+            );
+
+        /**
+         * ===================================================
+         * TITLE
+         * ===================================================
+         */
+
+        worksheet.mergeCells("A1:E1");
+
+        const title =
+            worksheet.getCell("A1");
+
+        title.value =
+            options.title;
+
+        title.font = {
+            bold: true,
+            size: 18
+        };
+
+        title.alignment = {
+            horizontal: "center"
+        };
+
+        /**
+         * Group Summary
+         */
+
+        worksheet.mergeCells("A2:E2");
+
+        worksheet.getCell("A2").value =
+            "Group Summary";
+
+        worksheet.getCell("A2").font = {
+            bold: true,
+            size: 13
+        };
+
+        worksheet.getCell("A2").alignment = {
+            horizontal: "center"
+        };
+
+        /**
+         * Period
+         */
+
+        worksheet.mergeCells("A3:E3");
+
+        worksheet.getCell("A3").value =
+            options.period;
+
+        worksheet.getCell("A3").alignment = {
+            horizontal: "center"
+        };
+
+        /**
+         * Blank Row
+         */
+
+        worksheet.addRow([]);
+
+        /**
+         * Group Name
+         */
+
+        // worksheet.getCell("B5").value =
+        //     options.title;
+
+        worksheet.getCell("B5").font = {
+            bold: true
+        };
+
+        /**
+         * Company
+         */
+
+        worksheet.getCell("B6").value =
+            options.companyName;
+
+        /**
+         * Period
+         */
+
+        worksheet.getCell("B7").value =
+            options.period;
+
+        /**
+         * Transactions / Closing
+         */
+
+        worksheet.getCell("C8").value =
+            "Transactions";
+
+        worksheet.getCell("C8").font = {
+            bold: true
+        };
+
+        worksheet.getCell("E8").font = {
+            bold: true
+        };
+
+        /**
+         * ===================================================
+         * HEADER
+         * ===================================================
+         */
+
+        const header =
+            worksheet.getRow(10);
+
+        header.values = [
+
+            "Particulars",
+
+            "Opening Balance",
+
+            "Debit",
+
+            "Credit",
+
+            "Closing Balance"
+
+        ];
+
+        header.font = {
+            bold: true
+        };
+
+        header.alignment = {
+            horizontal: "center",
+            vertical: "middle"
+        };
+
+        header.eachCell(cell => {
+
+            cell.border = {
+
+                top: {
+                    style: "thin"
+                },
+
+                left: {
+                    style: "thin"
+                },
+
+                right: {
+                    style: "thin"
+                },
+
+                bottom: {
+                    style: "thin"
+                }
+
+            };
+
+        });
+
+        /**
+         * ===================================================
+         * DATA
+         * ===================================================
+         */
+
+        options.data.forEach(row => {
+
+            const excelRow =
+                worksheet.addRow([
+
+                    row.particulars,
+
+                    row.openingBalance,
+
+                    row.debit,
+
+                    row.credit,
+
+                    row.balance
+
+                ]);
+
+            excelRow.getCell(3).numFmt =
+                "#,##0.00";
+
+            excelRow.getCell(4).numFmt =
+                "#,##0.00";
+
+
+            excelRow.eachCell(cell => {
+
+                cell.border = {
+
+                    top: {
+                        style: "thin"
+                    },
+
+                    left: {
+                        style: "thin"
+                    },
+
+                    right: {
+                        style: "thin"
+                    },
+
+                    bottom: {
+                        style: "thin"
+                    }
+
+                };
+
+            });
+
+        });
+
+        /**
+         * ===================================================
+         * COLUMN WIDTHS
+         * ===================================================
+         */
+
+        worksheet.columns = [
+
+            {
+                width: 55
+            },
+
+            {
+                width: 20
+            },
+
+            {
+                width: 20
+            },
+
+            {
+                width: 20
+            },
+
+            {
+                width: 20
+            }
+
+        ];
+
+        /**
+         * ===================================================
+         * RESPONSE
+         * ===================================================
+         */
+
+        res.status(200);
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${options.filename}.xlsx"`
+        );
+
+        await workbook.xlsx.write(
+            res as any
+        );
+
+        res.end();
+
+    }
+
     static async exportAccountingLedger(
         res: Response,
         options: {

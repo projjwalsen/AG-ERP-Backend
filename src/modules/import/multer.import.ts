@@ -14,8 +14,6 @@ export class ImportService {
         actor: any,
         file: Express.Multer.File,
         type: "PURCHASE" | "SALE",
-        fromDate?: Date,
-        toDate?: Date,
         onProgress?: (summary:any)=>void
     ) {
 
@@ -59,47 +57,9 @@ console.log(
     }))
 );
 
-console.log({
-    fromDate,
-    toDate,
-    fromISO: fromDate?.toISOString(),
-    toISO: toDate?.toISOString()
-});
 
         let rowsToImport = parsedRows;
 
-if (fromDate || toDate) {
-
-    const from =
-        fromDate
-            ? fromDate.toISOString().slice(0, 10)
-            : undefined;
-
-    const to =
-        toDate
-            ? toDate.toISOString().slice(0, 10)
-            : undefined;
-
-    rowsToImport = parsedRows.filter(row => {
-
-        if (!row.voucherDate) {
-            return false;
-        }
-
-        const current =
-            row.voucherDate.toISOString().slice(0, 10);
-
-        if (from && current < from) {
-            return false;
-        }
-
-        if (to && current > to) {
-            return false;
-        }
-
-        return true;
-    });
-}
 
 console.log("Rows To Import:", rowsToImport.length);
 

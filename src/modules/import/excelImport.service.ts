@@ -1125,15 +1125,23 @@ export class ExcelImportService {
         for (const row of rows) {
 
             const agencyName =
-                String(
-                    this.getValue(
-                        row,
-                        "Agency Name",
-                        "Name"
-                    ) || ""
-                ).trim();
+                this.getValue(
+                    row,
+                    "Agency Name",
+                    "Name",
+                    "Particulars"
+                );
+
 
             if (!agencyName) {
+                continue;
+            }
+
+            if (
+                agencyName
+                    .trim()
+                    .toUpperCase() === "GRAND TOTAL"
+            ) {
                 continue;
             }
 
@@ -1145,6 +1153,23 @@ export class ExcelImportService {
                         "GSTIN/UIN"
                     ) || ""
                 ).trim();
+
+            const openingBalance =
+                this.toNumber(
+                    this.getValue(
+                        row,
+                        "OpeningBalance",
+                        "Opening Balance",
+                        "Opening Balance (Dr)",
+                        "Opening Balance (Cr)",
+                        "Opening"
+                    )
+                );
+
+            // Skip agencies having no opening balance
+            if (openingBalance <= 0) {
+                continue;
+            }
 
             const key =
                 gstin ||
@@ -1213,17 +1238,7 @@ export class ExcelImportService {
                         ) || ""
                     ).trim(),
 
-                openingBalance:
-                    this.toNumber(
-                        this.getValue(
-                            row,
-                            "OpeningBalance",
-                            "Opening Balance",
-                            "Opening Balance (Dr)",
-                            "Opening Balance (Cr)",
-                            "Opening"
-                        )
-                    ),
+                openingBalance,
 
                 type
 

@@ -75,236 +75,62 @@ export class ImportResolver {
     ) {
 
         const cacheKey =
-            dto.agencyGSTIN?.trim() ||
-            dto.agencyName.trim().toLowerCase();
-
-        if (
-            cacheKey &&
-            this.agencyCache.has(cacheKey)
-        ) {
-            return this.agencyCache.get(cacheKey);
-        }
-
-        const address =
-            await this.parseAddress(
-                dto.agencyAddress
-            );
-
-        if (
-            !address.stateCode &&
-            dto.agencyGSTIN?.length >= 2
-        ) {
-
-            address.stateCode =
-                dto.agencyGSTIN.substring(0, 2);
-
-        }
-
-        if (
-            !address.state &&
-            address.stateCode
-        ) {
-
-            const states =
-                await LocationService.getIndianStates();
-
-            const state =
-                states.find(
-                    x =>
-                        x.stateCode ===
-                        address.stateCode
-                );
-
-            if (state) {
-
-                address.state =
-                    state.name;
-
-            }
-
-        }
-
-        address.city =
-            dto.city?.trim() ||
-            address.city;
-
-        address.state =
-            dto.state?.trim() ||
-            address.state;
-
-        address.pinCode =
-            dto.pinCode?.trim() ||
-            address.pinCode;
-
-        let agency =
-            null;
-
-        if (dto.agencyGSTIN) {
-
-            agency =
-                await prisma.agency.findFirst({
-
-                    where: {
-
-                        gstin:
-                            dto.agencyGSTIN
-
-                    }
-
-                });
-
-        }
-
-        if (
-            !agency &&
             dto.agencyName
-        ) {
+                .trim()
+                .toLowerCase();
 
-            agency =
-                await prisma.agency.findFirst({
+        if (this.agencyCache.has(cacheKey)) {
 
-                    where: {
+            return this.agencyCache.get(cacheKey);
 
-                        name: {
+        }
 
-                            equals:
-                                dto.agencyName,
+        const agency =
+            await prisma.agency.findFirst({
 
-                            mode:
-                                "insensitive"
+                where: {
 
-                        }
+                    name: {
+
+                        equals: dto.agencyName.trim(),
+
+                        mode: "insensitive"
 
                     }
 
-                });
+                }
 
-        }
+            });
+
+        // Already exists -> Skip
 
         if (agency) {
 
-            const updated =
-                await prisma.agency.update({
-
-                    where: {
-
-                        id:
-                            agency.id
-
-                    },
-
-                    data: {
-
-                        name:
-                            dto.agencyName,
-
-                        gstin:
-                            dto.agencyGSTIN,
-
-                        panNo:
-                            dto.agencyPAN,
-
-                        type:
-                            dto.type,
-
-                        addressLine1:
-                            address.addressLine1,
-
-                        addressLine2:
-                            address.addressLine2,
-
-                        city:
-                            address.city,
-
-                        state:
-                            address.state,
-
-                        stateCode:
-                            address.stateCode,
-
-                        pinCode:
-                            address.pinCode,
-
-                        email:
-                            address.email
-
-                    }
-
-                });
-
-            const ledger =
-                await prisma.ledger.findFirst({
-                    where: {
-                        agencyId: updated.id
-                    }
-                });
-
-            if (
-                ledger &&
-                dto.openingBalance != null
-            ) {
-                await prisma.ledger.update({
-                    where: {
-                        id: ledger.id
-                    },
-                    data: {
-                        openingBalance:
-                            dto.openingBalance,
-                    }
-                });
-            }
-
             this.agencyCache.set(
                 cacheKey,
-                updated
+                agency
             );
 
-            return updated;
+            return agency;
 
         }
+
+        // Create only with available data
 
         const created =
             await prisma.agency.create({
 
                 data: {
 
-                    name:
-                        dto.agencyName,
+                    name: dto.agencyName.trim(),
 
-                    gstin:
-                        dto.agencyGSTIN,
-
-                    panNo:
-                        dto.agencyPAN,
-
-                    type:
-                        dto.type,
-
-
-                    addressLine1:
-                        address.addressLine1,
-
-                    addressLine2:
-                        address.addressLine2,
-
-                    city:
-                        address.city,
-
-                    state:
-                        address.state,
-
-                    stateCode:
-                        address.stateCode,
-
-                    pinCode:
-                        address.pinCode,
-
-                    email:
-                        address.email
+                    type: dto.type
 
                 }
 
             });
+
+        // Existing ledger flow remains unchanged
 
         const ledger =
             await prisma.ledger.findFirst({
@@ -318,8 +144,11 @@ export class ImportResolver {
             });
 
         if (
+
             ledger &&
+
             dto.openingBalance != null
+
         ) {
 
             await prisma.ledger.update({

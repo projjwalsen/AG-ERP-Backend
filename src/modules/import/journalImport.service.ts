@@ -8,7 +8,7 @@ export class JournalImportService {
     static async importWorkbook(
         actor: any,
         file: Express.Multer.File,
-        type: "JOURNAL" | "TRANSACTION",
+        type: "JOURNAL" | "TRANSACTION" | "BOTH",
         fromDate?: Date,
         toDate?: Date,
         onProgress?: (summary: any) => void
@@ -94,23 +94,31 @@ export class JournalImportService {
             rowsToImport.filter(dto => {
 
                 const voucherType =
-                    dto.voucherType
-                        ?.trim()
+                    (dto.voucherType ?? "")
+                        .trim()
                         .toUpperCase();
 
-                if (type === "JOURNAL") {
-
-                    return ![
+                const isTransaction =
+                    [
                         "PURCHASE",
                         "TAX INVOICE"
                     ].includes(voucherType);
 
-                }
+                switch (type) {
 
-                return [
-                    "PURCHASE",
-                    "TAX INVOICE"
-                ].includes(voucherType);
+                    case "JOURNAL":
+                        return !isTransaction;
+
+                    case "TRANSACTION":
+                        return isTransaction;
+
+                    case "BOTH":
+                        return true;
+
+                    default:
+                        return false;
+
+                }
 
             });
 
@@ -138,7 +146,28 @@ export class JournalImportService {
 
                     try {
 
-                        if (type === "JOURNAL") {
+                       const voucherType =
+                            (dto.voucherType ?? "")
+                                .trim()
+                                .toUpperCase();
+
+                        const isTransaction =
+                            [
+                                "PURCHASE",
+                                "TAX INVOICE"
+                            ].includes(voucherType);
+
+                        const isJournal =
+                            !isTransaction;
+
+                        // -----------------------------
+                        // Journal Import
+                        // -----------------------------
+                        if (
+                            (type === "JOURNAL" || type === "BOTH")
+                            &&
+                            isJournal
+                        ) {
 
                             const payload =
                                 await ImportResolver.buildJournalPayload(
@@ -159,7 +188,14 @@ export class JournalImportService {
 
                         }
 
-                        else {
+                        // -----------------------------
+                        // Invoice Transaction Import
+                        // -----------------------------
+                        if (
+                            (type === "TRANSACTION" || type === "BOTH")
+                            &&
+                            isTransaction
+                        ) {
 
                             await ImportResolver.importInvoiceTransaction(
                                 actor,
