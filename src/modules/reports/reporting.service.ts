@@ -13,6 +13,8 @@ export class ReportingService {
             startDate?: string;
             endDate?: string;
             bankAccountId?: string;
+            page?: number;
+            limit?: number;
         }
     ) {
         // 1. Validate branch access
@@ -79,17 +81,66 @@ export class ReportingService {
 
                     ...(startDate || endDate
                         ? {
-                            createdAt: {
-                                ...(startDate && { gte: startDate }),
-                                ...(endDate && { lte: endDate })
-                            }
+                            OR: [
+                                {
+                                    sale: {
+                                        ...(startDate && endDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate,
+                                                    lte: endDate
+                                                }
+                                            }
+                                            : startDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate
+                                                }
+                                            }
+                                            : {
+                                                invoiceDate: {
+                                                    lte: endDate
+                                                }
+                                            })
+                                    }
+                                },
+                                {
+                                    purchase: {
+                                        ...(startDate && endDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate,
+                                                    lte: endDate
+                                                }
+                                            }
+                                            : startDate
+                                            ? {
+                                                invoiceDate: {
+                                                    gte: startDate
+                                                }
+                                            }
+                                            : {
+                                                invoiceDate: {
+                                                    lte: endDate
+                                                }
+                                            })
+                                    }
+                                }
+                            ]
                         }
-                    : {})
+                        : {})
                 },
                 include: {
                     agency: true,
                     thirdPartyAgency: true,
                     bankAccount: true,
+
+                    sale: true,
+
+                    purchase: true,
+
+                    voucher: true,
+
                     allocations: {
                         include: {
                             sale: true,
@@ -97,10 +148,20 @@ export class ReportingService {
                         }
                     }
                 },
-                orderBy: {
-                    createdAt: "asc"
-                }
             });
+
+        const getTransactionDate = (txn: typeof transactions[number]) =>
+            txn.sale?.invoiceDate ??
+            txn.purchase?.invoiceDate ??
+            txn.sale?.createdAt ??
+            txn.purchase?.createdAt ??
+            txn.createdAt;
+
+        transactions.sort(
+            (a, b) =>
+                getTransactionDate(a).getTime() -
+                getTransactionDate(b).getTime()
+        );
 
         let runningBalance = 0;
 
@@ -120,6 +181,24 @@ export class ReportingService {
                 runningBalance =
                     runningBalance + credit - debit;
 
+                    console.log("transaction ", txn);
+
+                    const transactionDate = getTransactionDate(txn);
+
+                    const voucher = txn.voucher[0];
+
+                    const voucherNo =
+                        voucher?.voucherNo ??
+                        txn.sale?.invoiceNo ??
+                        txn.purchase?.invoiceNo ??
+                        txn.transactionNo;
+
+                    const voucherType =
+                        voucher?.voucherType ??
+                        txn.sale?.voucherType ??
+                        txn.purchase?.voucherType ??
+                        "";
+
                 return {
 
                     serialNo: index + 1,
@@ -128,7 +207,7 @@ export class ReportingService {
 
                     transactionId: txn.id,
 
-                    transactionDate: txn.createdAt,
+                    transactionDate,
 
                     primaryAgencyName:
                         txn.agency?.name || null,
@@ -178,9 +257,23 @@ export class ReportingService {
 
                             allocatedAmount:
                                 Number(a.allocatedAmount)
-                        }))
+                        })),
+                        particulars:
+                            txn.agency?.name ?? "",
+
+                        voucherType,
+
+                        voucherNo,
+
+                        debitAmount:
+                            debit,
+
+                        creditAmount:
+                            credit,
+
+                        date: transactionDate
                 };
-            });
+            })
 
         const totalReceipts =
             entries.reduce(
@@ -196,18 +289,41 @@ export class ReportingService {
                 0
             );
 
+        // Summary must reflect the full unfiltered set so totals stay
+        // stable across pages. runningBalance above was already computed
+        // against every transaction in date order.
+        const totalEntries = entries.length;
+
+        // Page slice — applied AFTER runningBalance so each row keeps
+        // its true running balance, not a per-page reset.
+        const page = Number(query?.page || 1);
+        const limit = Number(query?.limit || 25);
+        const safePage = page < 1 ? 1 : page;
+        const safeLimit = limit < 1 ? 25 : limit;
+        const start = (safePage - 1) * safeLimit;
+        const paginatedEntries = entries.slice(start, start + safeLimit);
+
         return {
             branch,
             dateRange: {
                 startDate, endDate
             },
             summary: {
-                totalTransactions: entries.length,
+                totalTransactions: totalEntries,
                 totalReceipts: totalReceipts,
                 totalPayments: totalPayments,
                 netCashFlow: totalReceipts - totalPayments
             },
-            entries
+            pagination: {
+                page: safePage,
+                limit: safeLimit,
+                totalEntries,
+                totalPages: Math.max(
+                    1,
+                    Math.ceil(totalEntries / safeLimit)
+                )
+            },
+            entries: paginatedEntries
         };
     }
 

@@ -57,10 +57,10 @@ router.post(
  *             properties:
  *               email:
  *                 type: string
- *                 example: manager@example.com
+ *                 example: admin@ashtavinayaka.com
  *               password:
  *                 type: string
- *                 example: Password@123
+ *                 example: AGERP@2026
  *     responses:
  *       200:
  *         description: Login successful and cookie set

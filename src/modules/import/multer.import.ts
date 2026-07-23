@@ -32,7 +32,9 @@ export class ImportService {
 
         const rawRows =
             ExcelImportService.readRows(
-                worksheet
+                worksheet, {
+                    headerRow: 3
+                }
             );
 
             console.log("RAW ROWS =", rawRows.length);
@@ -41,18 +43,54 @@ export class ImportService {
 
         const parsedRows =
             ExcelImportService.parseRows(
-                rawRows
+                rawRows,
+                type
             );
-        console.log("PARSED ROWS =", parsedRows.length);
+
+            console.log("Parsed Rows:", parsedRows.length);
+
+console.log(
+    parsedRows.slice(0, 10).map(r => ({
+        voucher: r.voucherNo,
+        voucherDate: r.voucherDate,
+        iso: r.voucherDate?.toISOString()
+    }))
+);
+
+
+        let rowsToImport = parsedRows;
+
+
+console.log("Rows To Import:", rowsToImport.length);
+
+
         const vouchers =
             ExcelImportService
                 .groupAndValidateVouchers(
-                    parsedRows
+                    rowsToImport,
+                    type
                 );
-        console.log("VOUCHERS =", vouchers.length);
+
+                const seen = new Set<string>();
+
+                const uniqueVouchers =
+                    vouchers.filter(v => {
+
+                        const key =
+                            `${v.invoiceNo}|${v.voucherNo}`;
+
+                        if (seen.has(key)) {
+                            console.log("Duplicate voucher skipped", key);
+                            return false;
+                        }
+
+                        seen.add(key);
+                        return true;
+                    });
+        console.log("VOUCHERS =", uniqueVouchers.length);
         const summary = {
 
-            total: vouchers.length,
+            total: uniqueVouchers.length,
 
             processed: 0,
 
@@ -67,11 +105,11 @@ export class ImportService {
         };
 
 
-            const limit = pLimit(2); // trying 2
+            const limit = pLimit(1); // trying 2
 
             await Promise.all(
 
-                vouchers.map(voucher =>
+                uniqueVouchers.map(voucher =>
 
                     limit(async () => {
 
@@ -97,6 +135,41 @@ export class ImportService {
 
                                 const payload =
                                     await ImportResolver.buildSalePayload(voucher);
+
+                                const exists =
+                                    await prisma.sale.findUnique({
+                                        where: {
+                                            invoiceNo: payload.invoiceNo
+                                        }
+                                    });
+
+                                if (exists) {
+
+                                    console.log(
+                                        "Skipping existing invoice",
+                                        payload.invoiceNo
+                                    );
+
+                                    summary.success++;
+
+                                    return;
+                                }
+
+                                const existingSale =
+                                    await prisma.sale.findFirst({
+                                        where: {
+                                            invoiceNo: payload.invoiceNo
+                                        }
+                                    });
+
+                                if (existingSale) {
+
+                                    console.log(
+                                        `Skipping duplicate invoice ${payload.invoiceNo}`
+                                    );
+
+                                    return;
+                                }
 
                                 const sale =
                                     await SalesService.createSale(

@@ -17,6 +17,7 @@ import reportingRoute from "../modules/reports/reporting.routes";
 import dashboardRoute from "../modules/dashboard/kpi.routes";
 import importRoute from "../modules/import/import.routes";
 import bankRoute from "../modules/bank/bank.routes";
+import journalRoute from "../modules/journal/journal.routes";
 
 const router = Router();
 
@@ -38,6 +39,7 @@ router.use("/ledgers", financialLedgerRoute);
 router.use("/reports", reportingRoute);
 router.use("/dashboard", dashboardRoute);
 router.use("/migration", importRoute);
+router.use("/journal", journalRoute);
 
 
 

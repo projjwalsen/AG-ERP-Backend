@@ -1,3 +1,5 @@
+import { AgencyType } from "@prisma/client";
+
 export interface ExcelRowDTO {
 
     voucherDate?: Date;
@@ -25,6 +27,8 @@ export interface ExcelRowDTO {
     branchAddress?: string;
 
     particulars?: string;
+
+    disclaimer?: string;
 
     hsnNo?: string;
 
@@ -152,5 +156,65 @@ export interface ParsedAddressDTO {
     pinCode?: string;
 
     email?: string;
+
+}
+
+export interface AgencyImportDTO {
+
+    agencyName: string;
+
+    agencyAddress?: string;
+
+    agencyGSTIN?: string;
+
+    agencyPAN?: string;
+
+    openingBalance?: number;
+
+    type?: AgencyType;
+
+    city?: string;
+
+    state?: string;
+
+    pinCode?: string;
+
+}
+
+export interface ProductImportDTO {
+
+    productName: string;
+
+    openingStockKG?: number;
+
+    density?: number;
+
+    branchName?: string;
+
+    date?: Date;
+
+    batchNo?: string;
+
+    sellPrice?: number;
+
+    hsn?: string;
+
+}
+
+export interface JournalImportDTO {
+
+    date?: Date;
+
+    voucherNo: string;
+
+    voucherType: string;
+
+    particulars: string;
+
+    debitAmount: number;
+
+    creditAmount: number;
+
+    raw?: any;
 
 }

@@ -20,11 +20,24 @@ export const getSettings = async (req: Request, res: Response, next: NextFunctio
 export const updateSettings = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { allowNegativeInventory, allowNegativeTransaction } = (req as any).body;
+        const {
+            allowNegativeInventory,
+            allowNegativeTransaction,
+            sellerLogo,
+            sellerCIN,
+            companyPAN,
+            signatureImage,
+            jurisdictionText
+        } = (req as any).body;
 
         const updatedSettings = await SettingService.updateSettings(actor, {
             allowNegativeInventory,
-            allowNegativeTransaction
+            allowNegativeTransaction,
+            sellerLogo,
+            sellerCIN,
+            companyPAN,
+            signatureImage,
+            jurisdictionText
         });
 
         return res.status(200).json({

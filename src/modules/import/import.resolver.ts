@@ -1,10 +1,13 @@
-import { ProductUnit, VoucherType } from "@prisma/client";
+import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
-import { ExcelRowDTO, GroupedVoucherDTO, ParsedAddressDTO } from "../../core/dto/dto";
+import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
 import { LocationService } from "../meta/meta.loc.service";
 import { City, State } from "country-state-city";
+import { ExcelImportService } from "./excelImport.service";
+import { JournalService } from "../journal/journal.service";
+import { TransactionService } from "../transaction/transac.service";
 
 export class ImportResolver {
 
@@ -17,6 +20,9 @@ export class ImportResolver {
     private static productCache =
         new Map<string, any>();
 
+    private static journalHeadCache =
+        new Map<string, any>();
+
     private static productLocks =
         new Map<string, Promise<any>>();
 
@@ -27,6 +33,8 @@ export class ImportResolver {
         this.branchCache.clear();
 
         this.productCache.clear();
+
+        this.journalHeadCache.clear();
 
     }
 
@@ -58,6 +66,119 @@ export class ImportResolver {
         }
 
         return normalized;
+
+    }
+
+    // for agency master import only 
+    static async resolveOrCreateAgencyMaster(
+        dto: AgencyImportDTO
+    ) {
+
+        const cacheKey =
+            dto.agencyName
+                .trim()
+                .toLowerCase();
+
+        if (this.agencyCache.has(cacheKey)) {
+
+            return this.agencyCache.get(cacheKey);
+
+        }
+
+        const agency =
+            await prisma.agency.findFirst({
+
+                where: {
+
+                    name: {
+
+                        equals: dto.agencyName.trim(),
+
+                        mode: "insensitive"
+
+                    }
+
+                }
+
+            });
+
+        // Already exists -> Skip
+
+        if (agency) {
+
+            this.agencyCache.set(
+                cacheKey,
+                agency
+            );
+
+            return agency;
+
+        }
+
+        // Create only with available data
+
+        const created =
+            await prisma.agency.create({
+
+                data: {
+
+                    name: dto.agencyName.trim(),
+
+                    type: dto.type
+
+                }
+
+            });
+
+        // Existing ledger flow remains unchanged
+
+        const ledger =
+            await prisma.ledger.findFirst({
+
+                where: {
+
+                    agencyId: created.id
+
+                }
+
+            });
+
+        if (
+
+            ledger &&
+
+            dto.openingBalance != null
+
+        ) {
+
+            await prisma.ledger.update({
+
+                where: {
+
+                    id: ledger.id
+
+                },
+
+                data: {
+
+                    openingBalance:
+                        dto.openingBalance,
+
+                    currentBalance:
+                        dto.openingBalance
+
+                }
+
+            });
+
+        }
+
+        this.agencyCache.set(
+            cacheKey,
+            created
+        );
+
+        return created;
 
     }
 
@@ -523,6 +644,405 @@ export class ImportResolver {
 
     }
 
+    // for product master import entry only
+    static async resolveOrCreateProductMaster(
+        branchId: string,
+        dto: ProductImportDTO
+    ) {
+
+        const normalizedName =
+            this.normalizeProductName(
+                dto.productName
+            );
+
+        const cacheKey = normalizedName;
+
+        if (this.productCache.has(cacheKey)) {
+            return this.productCache.get(cacheKey);
+        }
+
+        const density = dto.density || 1;
+
+        const openingKG = dto.openingStockKG || 0;
+
+        const openingLTR = openingKG / density;
+
+        return await prisma.$transaction(async tx => {
+
+            /*
+            ==========================================
+            PRODUCT
+            ==========================================
+            */
+
+            let product =
+                await tx.product.findFirst({
+
+                    where: {
+
+                        OR: [
+
+                            {
+                                name: {
+                                    equals: dto.productName,
+                                    mode: "insensitive"
+                                }
+                            },
+
+                            {
+                                name: {
+                                    equals: normalizedName,
+                                    mode: "insensitive"
+                                }
+                            }
+
+                        ]
+
+                    }
+
+                });
+
+            if (!product) {
+
+                product =
+                    await tx.product.create({
+
+                        data: {
+
+                            sku: crypto.randomUUID(),
+
+                            name: normalizedName,
+
+                            density,
+
+                            openingStockKG: openingKG,
+
+                            baseUnit: ProductUnit.KG,
+
+                            operationalUnit: ProductUnit.KG,
+
+                            sellPricePerUnit:
+                                dto.sellPrice ?? 0,
+
+                            sellPriceLTR:
+                                dto.sellPrice && density
+                                    ? Number(
+                                        (
+                                            dto.sellPrice *
+                                            density
+                                        ).toFixed(2)
+                                    )
+                                    : null,
+
+                            minimumStockKG: openingKG,
+
+                            hsnNo:
+                                dto.hsn?.trim(),
+
+                            applicableGST: 0
+
+                        }
+
+                    });
+
+            }
+            else {
+
+                product =
+                    await tx.product.update({
+                        where: {
+                            id: product.id
+                        },
+
+                        data: {
+                            name: normalizedName,
+                            density,
+                            openingStockKG: openingKG,
+
+                            sellPricePerUnit:
+                                dto.sellPrice ??
+                                product.sellPricePerUnit,
+
+                            sellPriceLTR:
+                                dto.sellPrice
+                                    ? Number(
+                                        (
+                                            dto.sellPrice *
+                                            density
+                                        ).toFixed(2)
+                                    )
+                                    : product.sellPriceLTR,
+
+                            hsnNo:
+                                dto.hsn ??
+                                product.hsnNo,
+
+                            minimumStockKG: openingKG
+                        }
+                    });
+            }
+
+            /*
+            ==========================================
+            INVENTORY
+            ==========================================
+            */
+
+            const inventory =
+                await tx.inventory.findUnique({
+
+                    where: {
+
+                        branchId_productId: {
+
+                            branchId,
+
+                            productId: product.id
+
+                        }
+
+                    }
+
+                });
+
+            if (!inventory) {
+
+                await tx.inventory.create({
+
+                    data: {
+
+                        branchId,
+
+                        productId: product.id,
+
+                        currentStockKG: openingKG,
+
+                        currentStockLTR: openingLTR
+
+                    }
+
+                });
+
+            }
+            else {
+
+                await tx.inventory.update({
+
+                    where: {
+                        id: inventory.id
+                    },
+
+                    data: {
+
+                        currentStockKG: openingKG,
+
+                        currentStockLTR: openingLTR
+
+                    }
+
+                });
+
+            }
+
+            /*
+            ==========================================
+            OPENING BATCH
+            ==========================================
+            */
+
+            const batchNo =
+                dto.batchNo?.trim()
+                || `OPENING-${product.id}`;
+
+            let batch =
+                await tx.inventoryBatch.findFirst({
+
+                    where: {
+
+                        branchId,
+
+                        productId: product.id,
+
+                        batchNo
+
+                    }
+
+                });
+
+            if (!batch) {
+
+                batch =
+                    await tx.inventoryBatch.create({
+
+                        data: {
+
+                            branchId,
+
+                            productId: product.id,
+
+                            batchNo,
+
+                            purchasePrice: 0,
+
+                            availableQtyKG: openingKG,
+
+                            availableQtyLTR: openingLTR,
+
+                            isActive: true
+
+                        }
+
+                    });
+
+            }
+            else {
+
+                batch =
+                    await tx.inventoryBatch.update({
+
+                        where: {
+                            id: batch.id
+                        },
+
+                        data: {
+
+                            availableQtyKG: openingKG,
+
+                            availableQtyLTR: openingLTR
+
+                        }
+
+                    });
+
+            }
+
+            /*
+            ==========================================
+            PRODUCT LEDGER
+            ==========================================
+            */
+
+            let ledger =
+                await tx.productLedger.findUnique({
+
+                    where: {
+
+                        productId: product.id
+
+                    }
+
+                });
+
+            if (!ledger) {
+
+                ledger =
+                    await tx.productLedger.create({
+
+                        data: {
+
+                            code: `PROD-${product.sku.substring(0, 8)}`,
+
+                            product: {
+
+                                connect: {
+
+                                    id: product.id
+
+                                }
+
+                            }
+
+                        }
+
+                    });
+
+            }
+
+            /*
+            ==========================================
+            OPENING ENTRY
+            ==========================================
+            */
+
+            const openingEntry =
+                await tx.productLedgerEntry.findFirst({
+
+                    where: {
+
+                        productLedgerId: ledger.id,
+
+                        movementType: "OPENING_BALANCE",
+
+                        batchId: batch.id
+
+                    }
+
+                });
+
+            if (!openingEntry) {
+
+               await tx.productLedgerEntry.create({
+                    data: {
+                        productLedger: {
+                            connect: {
+                                id: ledger.id
+                            }
+                        },
+
+                        movementType: "OPENING_BALANCE",
+
+                        direction: "CREDIT",
+
+                        quantityKG: openingKG,
+
+                        quantityLTR: openingLTR,
+
+                        unit: ProductUnit.KG,
+
+                        branch: {
+                            connect: {
+                                id: branchId
+                            }
+                        },
+
+                        batch: {
+                            connect: {
+                                id: batch.id
+                            }
+                        },
+
+                        batchNo: batch.batchNo,
+
+                        invoiceNo: "OPENING STOCK",
+
+                        unitCost: 0,
+
+                        totalCost: 0,
+
+                        entryDate:
+                            typeof dto.date === "string"
+                                ? ExcelImportService.toDate(dto.date) ?? new Date()
+                                : dto.date ?? new Date(),
+
+                        remarks:
+                            `Opening Stock Import - ${batch.batchNo}`
+
+                    }
+                });
+
+            }
+
+            this.productCache.set(
+                cacheKey,
+                product
+            );
+
+            return product;
+
+        });
+
+    }
+
     static async resolveOrCreateProduct(
         dto: ExcelRowDTO
     ) {
@@ -650,6 +1170,11 @@ export class ImportResolver {
 
                 }
 
+                if(dto?.disclaimer) {
+                    updateData.disclaimer =
+                        dto.disclaimer;
+                }
+
                 const finalProduct =
                     Object.keys(updateData).length > 0
 
@@ -684,6 +1209,8 @@ export class ImportResolver {
                         sku: crypto.randomUUID(),
 
                         name: normalizedName,
+
+                        disclaimer: dto.disclaimer,
 
                         hsnNo: dto.hsnNo,
 
@@ -1377,6 +1904,436 @@ export class ImportResolver {
                 voucher.importedTotals,
 
             items
+
+        };
+
+    }
+
+    static async buildJournalPayload(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const branch = await prisma.branch.findFirst({
+            where: {
+                isActive: true
+            }
+        });
+
+        if (!branch) {
+            throw new ApiError(
+                "No active branch found.",
+                400
+            );
+        }
+
+        // Skip already imported journals
+        const importKey =
+            `${dto.voucherType.trim().toUpperCase()}_${dto.voucherNo}`;
+
+        const existing =
+            await prisma.journal.findUnique({
+
+                where: {
+
+                    importKey
+
+                }
+
+            });
+
+        console.log("Checking importKey:", importKey);
+        console.log("Existing:", existing);
+
+        if (existing) {
+
+            throw new ApiError(
+                "SKIP_ALREADY_IMPORTED",
+                409
+            );
+
+        }
+
+        const journalHead =
+            await this.resolveOrCreateJournalHead(
+                actor,
+                dto
+            );
+
+        let paymentMode: PaymentMode;
+        let paymentThrough: PaymentType | undefined;
+
+        switch (dto.voucherType.trim().toUpperCase()) {
+
+            case "CASH PAYMENT":
+            case "CASH RECEIPT":
+
+                paymentMode = PaymentMode.OFFLINE;
+                paymentThrough = PaymentType.CASH;
+                break;
+
+            default:
+
+                paymentMode = PaymentMode.ONLINE;
+                paymentThrough = PaymentType.BANK_DEPOSIT;
+        }
+
+        return {
+
+            branchId: branch.id,
+
+            journalHeadId: journalHead.id,
+
+            importKey,
+
+            amount:
+                dto.debitAmount > 0
+                    ? dto.debitAmount
+                    : dto.creditAmount,
+
+            paymentMode,
+
+            paymentThrough,
+
+            remarks: dto.particulars,
+
+            journalDate:
+                ExcelImportService.toDate(dto.date) || new Date()
+
+        };
+
+    }
+
+    public static async resolveOrCreateJournalHead(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const type =
+            dto.debitAmount > 0
+                ? "INWARD"
+                : "OUTWARD";
+
+        const voucherType = dto.voucherType.trim().toUpperCase();
+
+        const cacheKey =
+            `${voucherType}_${type}`;
+
+        const cached =
+            this.journalHeadCache.get(cacheKey);
+
+        if (cached)
+            return cached;
+
+        let journalHead =
+            await prisma.journalHead.findFirst({
+
+                where: {
+
+                    name: {
+
+                        equals: voucherType,
+
+                        mode: "insensitive"
+
+                    },
+
+                    type
+
+                }
+
+            });
+
+        if (!journalHead) {
+
+            const groupCode =
+                dto.debitAmount > 0
+                    ? "INDIRECT_EXPENSE"
+                    : "INDIRECT_INCOME";
+
+            journalHead =
+                await JournalService.createJournalHead(
+                    actor,
+                    {
+
+                        name: voucherType,
+                        type,
+                        groupCode,
+                    }
+                );
+
+        }
+
+        this.journalHeadCache.set(
+            cacheKey,
+            journalHead
+        );
+
+        return journalHead;
+
+    }
+
+        static async importInvoiceTransaction(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const voucherType =
+            dto.voucherType
+                ?.trim()
+                .toUpperCase();
+
+        if (voucherType === "TAX INVOICE") {
+
+            const payload =
+                await this.buildSaleTransactionPayload(
+                    actor,
+                    dto
+                );
+
+            const transaction =
+                await TransactionService.createTransaction(
+                    actor,
+                    payload
+                );
+
+            await TransactionService.approveTransaction(
+                actor,
+                transaction.id
+            );
+
+            return;
+        }
+
+        if (voucherType === "PURCHASE") {
+
+            const payload =
+                await this.buildPurchaseTransactionPayload(
+                    actor,
+                    dto
+                );
+
+            const transaction =
+                await TransactionService.createTransaction(
+                    actor,
+                    payload
+                );
+
+            await TransactionService.approveTransaction(
+                actor,
+                transaction.id
+            );
+
+            return;
+        }
+
+        throw new Error("Unsupported Voucher Type");
+    }
+
+    static async buildSaleTransactionPayload(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const sale =
+            await prisma.sale.findFirst({
+
+                where: {
+
+                    invoiceNo: dto.voucherNo,
+
+                    status: SalesStatus.APPROVED
+
+                }
+
+            });
+
+        if (!sale) {
+
+            throw new Error(
+                `Sale not found : ${dto.voucherNo}`
+            );
+
+        }
+
+        const alreadyImported =
+            await prisma.transaction.findFirst({
+
+                where: {
+
+                    saleId: sale.id,
+
+                    settlementType:
+                        SettlementType.INVOICE_TO_INVOICE
+
+                }
+
+            });
+
+        if (alreadyImported) {
+
+            throw new Error(
+                "SKIP_ALREADY_IMPORTED"
+            );
+
+        }
+
+        const agency =
+            await prisma.agency.findUnique({
+
+                where: {
+
+                    id: sale.agencyId
+
+                },
+
+                include: {
+
+                    bankAccount: true
+
+                }
+
+            });
+
+        const hasBankAccount =
+            !!agency.bankAccountId;
+
+        return {
+
+            branchId:
+                sale.branchId,
+
+            bankAccountId:
+                hasBankAccount
+            ? agency.bankAccountId
+            : undefined,
+
+            direction:
+                TransactionDirection.INWARD,
+
+            settlementType:
+                SettlementType.INVOICE_TO_INVOICE,
+
+            suspense:
+                false,
+
+            agencyId:
+                sale.agencyId,
+
+            saleId:
+                sale.id,
+
+            amount:
+                Number(
+                    sale.grandTotal
+                ),
+
+            paymentThrough:
+                hasBankAccount
+            ? PaymentType.BANK_DEPOSIT
+            : PaymentType.CASH,
+
+            remarks:
+                `Imported Day Book ${dto.voucherNo}`
+
+        };
+
+    }
+
+    static async buildPurchaseTransactionPayload(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+
+        const purchase =
+            await prisma.purchase.findFirst({
+
+                where: {
+
+                    invoiceNo: dto.voucherNo,
+
+                    status: PurchaseStatus.APPROVED
+
+                }
+
+            });
+
+        if (!purchase) {
+
+            throw new Error(
+                `Purchase not found : ${dto.voucherNo}`
+            );
+
+        }
+
+        const alreadyImported =
+            await prisma.transaction.findFirst({
+
+                where: {
+
+                    purchaseId: purchase.id,
+
+                    settlementType:
+                        SettlementType.INVOICE_TO_INVOICE
+
+                }
+
+            });
+
+        if (alreadyImported) {
+
+            throw new Error(
+                "SKIP_ALREADY_IMPORTED"
+            );
+
+        }
+
+       const agency =
+            await prisma.agency.findUnique({
+
+                where: {
+                    id: purchase.agencyId
+                },
+
+                include: {
+                    bankAccount: true
+                }
+
+            });
+
+        const paymentThrough =
+            agency?.bankAccountId
+                ? PaymentType.BANK_DEPOSIT
+                : PaymentType.CASH;
+
+                return {
+
+            branchId: purchase.branchId,
+
+            bankAccountId:
+                agency?.bankAccountId ?? undefined,
+
+            direction:
+                TransactionDirection.OUTWARD,
+
+            settlementType:
+                SettlementType.INVOICE_TO_INVOICE,
+
+            suspense: false,
+
+            agencyId:
+                purchase.agencyId,
+
+            purchaseId:
+                purchase.id,
+
+            amount:
+                Number(purchase.grandTotal),
+
+            paymentThrough,
+
+            remarks:
+                `Imported Day Book ${dto.voucherNo}`
 
         };
 

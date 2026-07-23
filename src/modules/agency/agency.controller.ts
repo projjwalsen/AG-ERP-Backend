@@ -34,7 +34,7 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
         const actor = (req as any).user;
 
         const page  = parseInt(req.query.page as string)  || 1;
-        const limit = parseInt(req.query.limit as string) || 10;
+        const limit = parseInt(req.query.limit as string) || 100;
         const isExport = (req.query.export as string) === "true" || false;
         const result = await AgencyService.getAllAgencies(actor, {
             search: req.query.search as string | undefined,

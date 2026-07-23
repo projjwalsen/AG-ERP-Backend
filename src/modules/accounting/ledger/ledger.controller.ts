@@ -4,6 +4,84 @@ import { LedgerType } from "@prisma/client";
 import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
 import { ExcelService } from "../../../core/utils/export.service";
 import { accountingLedgerColumns, bankAccCashColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
+import { formatISTDate } from "../../../core/utils/loc.utils";
+
+const buildSundryLedgerRows = (blocks: any[]) => {
+    return blocks
+        .map((block: any) => {
+            const dates = block.entries
+                .map((entry: any) => new Date(entry.date))
+                .filter((date: Date) => !isNaN(date.getTime()))
+                .sort(
+                    (a: Date, b: Date) =>
+                        a.getTime() - b.getTime()
+                );
+
+            const firstDate = dates[0];
+            const lastDate = dates[dates.length - 1];
+
+            const rowDate = firstDate
+                ? firstDate.getTime() === lastDate.getTime()
+                    ? formatISTDate(firstDate)
+                    : `${formatISTDate(firstDate)} - ${formatISTDate(lastDate)}`
+                : "";
+
+            return {
+                date: rowDate,
+                rawStartDate: firstDate,
+                rawEndDate: lastDate,
+                particulars: block.ledger.name,
+                openingBalance:
+                    `${block.summary.openingBalance.toFixed(2)} ${block.summary.openingBalanceType}`,
+                debit: Number(block.summary.totalDebit || 0),
+                credit: Number(block.summary.totalCredit || 0),
+                balance:
+                    `${block.summary.closingBalance.toFixed(2)} ${block.summary.closingBalanceType}`
+            };
+        })
+        .sort(
+            (a: any, b: any) =>
+                a.particulars.localeCompare(b.particulars)
+        );
+};
+
+const getSundryLedgerPeriod = (
+    rows: any[],
+    startDate?: string,
+    endDate?: string
+) => {
+    if (startDate || endDate) {
+        return `${startDate || ""} - ${endDate || ""}`;
+    }
+
+    const startDates = rows
+        .map(row => row.rawStartDate)
+        .filter(Boolean);
+
+    const endDates = rows
+        .map(row => row.rawEndDate)
+        .filter(Boolean);
+
+    if (!startDates.length || !endDates.length) {
+        return "";
+    }
+
+    const firstDate = startDates.reduce(
+        (earliest, date) =>
+            date.getTime() < earliest.getTime()
+                ? date
+                : earliest
+    );
+
+    const lastDate = endDates.reduce(
+        (latest, date) =>
+            date.getTime() > latest.getTime()
+                ? date
+                : latest
+    );
+
+    return `${formatISTDate(firstDate)} - ${formatISTDate(lastDate)}`;
+};
 
 /**
  * @route   POST /api/ledgers
@@ -149,8 +227,10 @@ export const getCompanyLedger = async (
                 Number(req.query.page || 1),
 
             limit:
-                Number(req.query.limit || 50)
+                Number(req.query.limit || 10)
         };
+
+        console.log("getCompanyLedger query :", query);
 
         const isExport =
             String(req.query.export)
@@ -307,124 +387,89 @@ export const getLedgerByBranchId = async (
 
                 case "DEBTORS": {
 
-                    const rows:any[] = [];
+                    const rows =
+                        buildSundryLedgerRows(
+                            result.data
+                        );
 
-                    result.data.forEach((block:any) => {
+                    const exportPeriod =
+                        getSundryLedgerPeriod(
+                            rows,
+                            query.startDate,
+                            query.endDate
+                        );
 
-                        block.entries.forEach((entry:any) => {
+                    const exportRows =
+                        rows.map(({
+                            rawStartDate,
+                            rawEndDate,
+                            ...row
+                        }) => row);
 
-                            rows.push({
-
-                                ledgerCode:
-                                    block.ledger.code,
-
-                                ledgerName:
-                                    block.ledger.name,
-
-                                date:
-                                    entry.date,
-
-                                voucherNo:
-                                    entry.voucherNo,
-
-                                voucherType:
-                                    entry.voucherType,
-
-                                debit:
-                                    entry.debit,
-
-                                credit:
-                                    entry.credit,
-
-                                runningBalance:
-                                    entry.runningBalance,
-
-                                balanceType:
-                                    entry.balanceType,
-
-                                narration:
-                                    entry.narration
-                            });
-                        });
-                    });
-
-                    return ExcelService.export(
+                    return ExcelService.exportSundryLedger(
                         res,
                         {
                             filename:
                                 "debtors-ledger",
 
-                            title: `${result.branch.name} DEBTORS LEDGER`,
-
                             sheetName:
-                                "Debtors",
+                                "Sundry Debtors",
 
-                            columns:
-                                debtorLedgerColumns,
+                            title:
+                                "Sundry Debtors",
+
+                            companyName:
+                                result.branch.name,
+
+                            period: exportPeriod,
 
                             data:
-                                rows
+                                exportRows
                         }
                     );
                 }
 
                 case "CREDITORS": {
 
-                    const rows:any[] = [];
+                    const rows =
+                        buildSundryLedgerRows(
+                            result.data
+                        );
 
-                    result.data.forEach((block:any) => {
+                    const exportPeriod =
+                        getSundryLedgerPeriod(
+                            rows,
+                            query.startDate,
+                            query.endDate
+                        );
 
-                        block.entries.forEach((entry:any) => {
+                    const exportRows =
+                        rows.map(({
+                            rawStartDate,
+                            rawEndDate,
+                            ...row
+                        }) => row);
 
-                            rows.push({
 
-                                ledgerCode:
-                                    block.ledger.code,
-
-                                ledgerName:
-                                    block.ledger.name,
-
-                                date:
-                                    entry.date,
-
-                                voucherNo:
-                                    entry.voucherNo,
-
-                                voucherType:
-                                    entry.voucherType,
-
-                                debit:
-                                    entry.debit,
-
-                                credit:
-                                    entry.credit,
-
-                                runningBalance:
-                                    entry.runningBalance,
-
-                                balanceType:
-                                    entry.balanceType,
-
-                                narration:
-                                    entry.narration
-                            });
-                        });
-                    });
-
-                    return ExcelService.export(
+                    return ExcelService.exportSundryLedger(
                         res,
                         {
                             filename:
                                 "creditors-ledger",
-                            title: `${result.branch.name} CREDITORS LEDGER`,
-                            sheetName:
-                                "Creditors",
 
-                            columns:
-                                creditorLedgerColumns,
+                            sheetName:
+                                "Sundry Creditors",
+
+                            title:
+                                "Sundry Creditors",
+
+                            companyName:
+                                result.branch.name,
+
+                            period: exportPeriod,
 
                             data:
-                                rows
+                                exportRows
                         }
                     );
                 }

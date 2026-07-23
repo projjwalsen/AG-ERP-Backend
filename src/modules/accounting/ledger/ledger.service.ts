@@ -158,7 +158,7 @@ export class LedgerService {
         return agency;
     }
 
-    private static async getOrCreateGroup(client: DbClient, code: string) {
+    public static async getOrCreateGroup(client: DbClient, code: string) {
         const existing = await client.ledgerGroup.findUnique({
             where: { code }
         });
@@ -262,6 +262,7 @@ export class LedgerService {
             PRODUCT: "ASSETS",
             SUSPENSE: "SUSPENSE_ACCOUNT",
             ROUND_OFF: "INDIRECT_EXPENSE",
+            JOURNAL: "JOURNAL",
         };
 
         return this.getOrCreateGroup(client, defaultGroupCodeByType[payload.category]);
@@ -286,7 +287,7 @@ export class LedgerService {
         return balance;
     }
 
-    private static async getOrCreateLedger(client: DbClient, seed: LedgerSeed) {
+    public static async getOrCreateLedger(client: DbClient, seed: LedgerSeed) {
         const existing = await client.ledger.findUnique({
             where: { code: seed.code }
         });
@@ -330,7 +331,7 @@ export class LedgerService {
         }
     }
 
-    static async createLedgerMaster(actor: any, payload: LedgerMasterPayload) {
+    static async createLedgerMaster(actor: any, payload: LedgerMasterPayload, groupCode?: string) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
@@ -1751,7 +1752,13 @@ export class LedgerService {
                                 const statement =
                                     await this.getLedgerStatement(
                                         actor,
-                                        ledger.id
+                                        ledger.id,
+                                        {
+                                            startDate: query?.startDate,
+                                            endDate: query?.endDate,
+                                            page: 1,
+                                            limit: 100000
+                                        }
                                     );
 
                                 return {
@@ -1797,7 +1804,13 @@ export class LedgerService {
                                 const statement =
                                     await this.getLedgerStatement(
                                         actor,
-                                        ledger.id
+                                        ledger.id,
+                                        {
+                                            startDate: query?.startDate,
+                                            endDate: query?.endDate,
+                                            page: 1,
+                                            limit: 100000
+                                        }
                                     );
 
                                 return {
@@ -2582,8 +2595,12 @@ export class LedgerService {
 
                 if (startDate) {
 
-                    const previousTransactions =
-                        await prisma.transaction.findMany({
+                    const [
+                        previousTransactions,
+                        previousJournals
+                    ] = await Promise.all([
+
+                        prisma.transaction.findMany({
 
                             where: {
 
@@ -2598,7 +2615,30 @@ export class LedgerService {
                                     lt: startDate
                                 }
                             }
-                        });
+                        }),
+
+                        prisma.journal.findMany({
+
+                            where: {
+
+                                status: "APPROVED",
+
+                                ...(branchId && {
+                                    branchId
+                                }),
+
+                                journalDate: {
+                                    lt: startDate
+                                }
+                            },
+
+                            include: {
+                                journalHead: true
+                            }
+
+                        })
+
+                    ]);
 
                     openingBalance =
                         previousTransactions.reduce(
@@ -2615,10 +2655,30 @@ export class LedgerService {
                             },
                             0
                         );
+
+                    for (const journal of previousJournals) {
+
+                        const amount =
+                            Number(journal.amount);
+
+                        if (journal.journalHead.type === "INWARD") {
+
+                            openingBalance += amount;
+
+                        } else {
+
+                            openingBalance -= amount;
+
+                        }
+                    }
                 }
 
-        const transactions =
-            await prisma.transaction.findMany({
+        const [
+            transactions,
+            journals
+        ] = await Promise.all([
+
+            prisma.transaction.findMany({
 
                 where: {
 
@@ -2647,17 +2707,49 @@ export class LedgerService {
                     agency: true,
                     thirdPartyAgency: true,
                     branch: true
+                }
+
+            }),
+
+            prisma.journal.findMany({
+
+                where: {
+
+                    status: "APPROVED",
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(startDate || endDate
+                        ? {
+                            journalDate: {
+                                ...(startDate && {
+                                    gte: startDate
+                                }),
+                                ...(endDate && {
+                                    lte: endDate
+                                })
+                            }
+                        }
+                        : {})
                 },
 
-                orderBy: {
-                    createdAt: "asc"
+                include: {
+                    branch: true,
+                    journalHead: true
                 }
-            });
+
+            })
+
+        ]);
 
 
         let runningBalance = openingBalance;
 
         let serialNo = 1;
+
+        const ledgerRows: any[] = [];
 
         const rows: any[] = [];
 
@@ -2685,56 +2777,34 @@ export class LedgerService {
 
         for (const txn of transactions) {
 
-            const amount =
-                Number(txn.amount);
+            const amount = Number(txn.amount);
 
             /**
              * NORMAL TRANSACTION
              */
             if (!txn.thirdPartyAgencyId) {
 
-                const income =
-                    txn.direction ===
-                        TransactionDirection.INWARD
-                        ? amount
-                        : 0;
+                ledgerRows.push({
 
-                const expense =
-                    txn.direction ===
-                        TransactionDirection.OUTWARD
-                        ? amount
-                        : 0;
+                    date: txn.createdAt,
 
-                runningBalance =
-                    runningBalance +
-                    income -
-                    expense;
-
-                rows.push({
-
-                    serialNo:
-                        serialNo++,
-
-                    date:
-                        formatISTDate(
-                            txn.createdAt
-                        ),
-
-                    branch:
-                        txn.branch?.name,
+                    branch: txn.branch?.name,
 
                     description:
-                        txn.direction ===
-                            TransactionDirection.INWARD
+                        txn.direction === TransactionDirection.INWARD
                             ? `Amount received from ${txn.agency?.name}`
                             : `Amount paid to ${txn.agency?.name}`,
 
-                    income,
+                    income:
+                        txn.direction === TransactionDirection.INWARD
+                            ? amount
+                            : 0,
 
-                    expense,
+                    expense:
+                        txn.direction === TransactionDirection.OUTWARD
+                            ? amount
+                            : 0
 
-                    balance:
-                        runningBalance
                 });
 
                 continue;
@@ -2742,66 +2812,37 @@ export class LedgerService {
 
             /**
              * THIRD PARTY INWARD
-             *
-             * Tata Steel owes us
-             * Apex pays us
              */
+            if (txn.direction === TransactionDirection.INWARD) {
 
-            if (
-                txn.direction ===
-                TransactionDirection.INWARD
-            ) {
+                ledgerRows.push({
 
-                rows.push({
+                    date: txn.createdAt,
 
-                    serialNo:
-                        serialNo++,
-
-                    date:
-                        formatISTDate(
-                            txn.createdAt
-                        ),
-
-                    branch:
-                        txn.branch?.name,
+                    branch: txn.branch?.name,
 
                     description:
                         `Amount received from ${txn.agency?.name}`,
 
-                    income:
-                        amount,
+                    income: amount,
 
-                    expense:
-                        0,
+                    expense: 0
 
-                    balance:
-                        runningBalance += amount
                 });
 
-                rows.push({
+                ledgerRows.push({
 
-                    serialNo:
-                        serialNo++,
+                    date: txn.createdAt,
 
-                    date:
-                        formatISTDate(
-                            txn.createdAt
-                        ),
-
-                    branch:
-                        txn.branch?.name,
+                    branch: txn.branch?.name,
 
                     description:
                         `Amount paid by ${txn.thirdPartyAgency?.name} on behalf of ${txn.agency?.name}`,
 
-                    income:
-                        0,
+                    income: 0,
 
-                    expense:
-                        amount,
+                    expense: amount
 
-                    balance:
-                        runningBalance -= amount
                 });
 
                 continue;
@@ -2809,36 +2850,78 @@ export class LedgerService {
 
             /**
              * THIRD PARTY OUTWARD
-             *
-             * We owe Tata
-             * Paid through Apex
              */
 
-            rows.push({
+            ledgerRows.push({
 
-                serialNo:
-                    serialNo++,
+                date: txn.createdAt,
 
-                date:
-                    formatISTDate(
-                        txn.createdAt
-                    ),
-
-                branch:
-                    txn.branch?.name,
+                branch: txn.branch?.name,
 
                 description:
                     `Amount paid to ${txn.agency?.name}`,
 
+                income: 0,
+
+                expense: amount
+
+            });
+
+            ledgerRows.push({
+
+                date: txn.createdAt,
+
+                branch: txn.branch?.name,
+
+                description:
+                    `Amount recovered from ${txn.thirdPartyAgency?.name} against payment for ${txn.agency?.name}`,
+
+                income: amount,
+
+                expense: 0
+
+            });
+
+        }
+
+        for (const journal of journals) {
+
+            const amount = Number(journal.amount);
+
+            ledgerRows.push({
+
+                date: journal.journalDate,
+
+                branch: journal.branch?.name,
+
+                description:
+                    `Journal - ${journal.journalHead.name}`,
+
                 income:
-                    0,
+                    journal.journalHead.type === "INWARD"
+                        ? amount
+                        : 0,
 
                 expense:
-                    amount,
+                    journal.journalHead.type === "OUTWARD"
+                        ? amount
+                        : 0
 
-                balance:
-                    runningBalance -= amount
             });
+
+        }
+
+        ledgerRows.sort(
+            (a, b) =>
+                new Date(a.date).getTime() -
+                new Date(b.date).getTime()
+        );
+
+        for (const entry of ledgerRows) {
+
+            runningBalance +=
+                Number(entry.income) -
+                Number(entry.expense);
 
             rows.push({
 
@@ -2846,26 +2929,40 @@ export class LedgerService {
                     serialNo++,
 
                 date:
-                    formatISTDate(
-                        txn.createdAt
-                    ),
+                    formatISTDate(entry.date),
 
                 branch:
-                    txn.branch?.name,
+                    entry.branch,
 
                 description:
-                    `Amount recovered from ${txn.thirdPartyAgency?.name} against payment for ${txn.agency?.name}`,
+                    entry.description,
 
                 income:
-                    amount,
+                    entry.income,
 
                 expense:
-                    0,
+                    entry.expense,
 
                 balance:
-                    runningBalance += amount
+                    runningBalance
+
             });
+
         }
+
+        const page = query?.page || 1;
+        const limit = query?.limit || 10;
+
+        const totalEntries = rows.length;
+
+        const paginatedRows = query?.export
+            ? rows
+            : rows.slice(
+                (page - 1) * limit,
+                page * limit
+            );
+
+        console.log("page :", page, "limit :", limit, "totalEntries :", totalEntries);
 
         return {
 
@@ -2898,10 +2995,25 @@ export class LedgerService {
 
                 closingBalance:
                     money(runningBalance)
+
+            },
+
+            pagination: {
+
+                page,
+
+                limit,
+
+                totalEntries,
+
+                totalPages:
+                    Math.ceil(totalEntries / limit)
+
             },
 
             entries:
-                rows
+                paginatedRows
+
         };
     }
 
@@ -3139,7 +3251,7 @@ export class LedgerService {
                 "Diff",
                 totalDebit - totalCredit
             );
-            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 0.01) {
+            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 4000) {
                 throw new ApiError(`Double entry validation failed. Debit ${totalDebit}, Credit ${totalCredit}`, 400);
             }
 
@@ -3235,7 +3347,7 @@ export class LedgerService {
         }
 
         const page = query?.page || 1;
-        const limit = query?.limit || 50;
+        const limit = query?.limit || 1000;
         const skip = (page - 1) * limit;
 
         const startDate = query?.startDate

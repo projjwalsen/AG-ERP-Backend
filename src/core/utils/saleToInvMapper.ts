@@ -1,251 +1,269 @@
-import * as converter from 'number-to-words';
+import * as converter from "number-to-words";
 
+const DECLARATION =
+    "We certified that particulars given above are true & correct & amount indicated represents the price actually charged & that there is no flow of additional consideration directly/indirectly from the buyer.";
+
+const TERMS_AND_CONDITIONS = [
+    "Interest will be charged @24% p.a from bill date for the payment delayed.",
+    "Goods Dispatched by buyers risk.",
+    "No Claim or Complaint in respect of material supplied vide this invoice will be entertained after the goods are delivered."
+];
+
+const formatDate = (value: any) =>
+    value
+        ? new Date(value).toLocaleDateString("en-IN")
+        : "";
+
+const formatMoney = (value: any) =>
+    Number(value || 0).toFixed(2);
+
+const formatAddress = (party: any) =>
+    [
+        party?.addressLine1,
+        party?.addressLine2,
+        party?.city,
+        party?.state,
+        party?.pinCode
+    ]
+        .filter(Boolean)
+        .join(", ");
+
+const derivePanFromGstin = (gstin?: string | null) =>
+    gstin && gstin.length === 15
+        ? gstin.slice(2, 12)
+        : "";
+
+const amountInWords = (value: any) =>
+    `${converter.toWords(Number(value || 0))} only`;
 
 export class SalesToInvMapper {
 
     static map(sale: any) {
-        const items = sale.items.map((item: any, index: number) => ({
-            slNo: index + 1,
-            
-            description: `
-            <div class="product-name">${item.product.name}</div>
+        const transport = Array.isArray(sale.transport)
+            ? sale.transport[0] || {}
+            : sale.transport || {};
 
-            ${item.product.description
-            ? `<div class="product-description">${item.product.description}</div>`
-            : ""}
+        const settings = sale.invoiceSettings || {};
+        const bankAccount =
+            sale.branch?.bankAccounts?.[0] || {};
 
-            <div class="batch-no">
-            Batch No: ${item.batch?.batchNo?.replace(/^Batch/i, "") || ""}
-            </div>
-            `.trim(),
+        const quantityByUnit = new Map<string, number>();
+        const taxMap = new Map<string, any>();
 
-            hsn: item.product.hsnNo,
+        const items = sale.items.map((item: any, index: number) => {
+            const unit = String(item.unit || "");
+            const quantity = Number(item.quantity || 0);
 
-            quantity: `${Number(item.quantity).toFixed(2)} ${item.unit}`,
+            quantityByUnit.set(
+                unit,
+                (quantityByUnit.get(unit) || 0) + quantity
+            );
 
-            unitPrice: item.sellingPrice.toFixed(2),
+            const taxKey = [
+                item.product.hsnNo || "-",
+                Number(item.cgstPercent || 0),
+                Number(item.sgstPercent || 0),
+                Number(item.igstPercent || 0)
+            ].join("|");
 
-            baseAmount: (Number(item.taxableAmount)).toFixed(2),
-
-            gstRate: Number(item.product.applicableGST || 0).toFixed(2),
-
-            rate: Number(item.sellingPrice).toFixed(2),
-
-            amountWithGst: Number(item.totalAmount).toFixed(2)
-
-        }));
-
-
-        /**============= GST Rows =================================*/
-        const cgstLines =
-            Number(sale.totalCGSTAmount || 0) > 0
-                ? [{
-                    amount: Number(sale.totalCGSTAmount).toFixed(2)
-                }]
-                : [];
-
-        const sgstLines =
-            Number(sale.totalSGSTAmount || 0) > 0
-                ? [{
-                    amount: Number(sale.totalSGSTAmount).toFixed(2)
-                }]
-                : [];
-
-        const igstLines =
-            Number(sale.totalIGSTAmount || 0) > 0
-                ? [{
-                    amount: Number(sale.totalIGSTAmount).toFixed(2)
-                }]
-                : [];
-
-
-        /** ================== HSN TAX SUMMARY =========================== */
-        const transport = sale.transport ?? {};
-        const hsnMap = new Map();
-
-        for (const item of sale.items) {
-
-            const hsn = item.product.hsnNo || "-";
-
-            if (!hsnMap.has(hsn)) {
-                hsnMap.set(hsn, {
-                    hsn,
-
+            if (!taxMap.has(taxKey)) {
+                taxMap.set(taxKey, {
+                    hsn: item.product.hsnNo || "-",
                     taxableValue: 0,
-
                     cgstRate: Number(item.cgstPercent || 0),
                     cgstAmount: 0,
-
                     sgstRate: Number(item.sgstPercent || 0),
                     sgstAmount: 0,
-
                     igstRate: Number(item.igstPercent || 0),
                     igstAmount: 0,
-
                     totalTax: 0
                 });
             }
 
-            const row = hsnMap.get(hsn);
+            const taxRow = taxMap.get(taxKey);
+            taxRow.taxableValue += Number(item.taxableAmount || 0);
+            taxRow.cgstAmount += Number(item.cgstAmount || 0);
+            taxRow.sgstAmount += Number(item.sgstAmount || 0);
+            taxRow.igstAmount += Number(item.igstAmount || 0);
+            taxRow.totalTax += Number(item.gstAmount || 0);
 
-            row.taxableValue += Number(item.taxableAmount || 0);
+            const notes = [
+                item.product.description,
+                item.batch?.batchNo
+                    ? `Batch No: ${item.batch.batchNo.replace(/^Batch/i, "")}`
+                    : ""
+            ].filter(Boolean);
 
-            row.cgstAmount += Number(item.cgstAmount || 0);
-            row.sgstAmount += Number(item.sgstAmount || 0);
-            row.igstAmount += Number(item.igstAmount || 0);
+            return {
+                slNo: index + 1,
+                productName: item.product.name,
+                notes,
+                hsn: item.product.hsnNo || "",
+                quantity: quantity.toFixed(2),
+                unit,
+                rate: formatMoney(item.sellingPrice),
+                amount: formatMoney(item.taxableAmount)
+            };
+        });
 
-            row.totalTax += Number(item.gstAmount || 0);
-        }
-
-
-
-
-        /** ================== TAX Summary ===========================*/
-        const taxSummaryRows = Array.from(hsnMap.values()).map((row: any) => ({
-            hsn: row.hsn,
-
-            taxableValue: row.taxableValue.toFixed(2),
-
-            cgstRate: row.cgstRate.toFixed(2),
-            cgstAmount: row.cgstAmount.toFixed(2),
-
-            sgstRate: row.sgstRate.toFixed(2),
-            sgstAmount: row.sgstAmount.toFixed(2),
-
-            igstRate: row.igstRate.toFixed(2),
-            igstAmount: row.igstAmount.toFixed(2),
-
-            totalTax: row.totalTax.toFixed(2)
+        const quantityTotals = Array.from(
+            quantityByUnit.entries()
+        ).map(([unit, quantity]) => ({
+            unit,
+            quantity: quantity.toFixed(2),
+            display: `${quantity.toFixed(2)} ${unit}`
         }));
 
+        const totalQuantity = quantityTotals.length === 1
+            ? quantityTotals[0].quantity
+            : quantityTotals.map(row => row.display).join(", ");
 
-        /** =========================
-         *   Final Invoice Data Object
-         *  ==============================
-        */
+        const totalUnit = quantityTotals.length === 1
+            ? quantityTotals[0].unit
+            : "";
+
+        const outputTaxLines = [
+            {
+                label: "OUTPUT CGST",
+                rate: Math.max(
+                    0,
+                    ...sale.items.map((item: any) =>
+                        Number(item.cgstPercent || 0)
+                    )
+                ),
+                amount: Number(sale.totalCGSTAmount || 0)
+            },
+            {
+                label: "OUTPUT SGST",
+                rate: Math.max(
+                    0,
+                    ...sale.items.map((item: any) =>
+                        Number(item.sgstPercent || 0)
+                    )
+                ),
+                amount: Number(sale.totalSGSTAmount || 0)
+            },
+            {
+                label: "OUTPUT IGST",
+                rate: Math.max(
+                    0,
+                    ...sale.items.map((item: any) =>
+                        Number(item.igstPercent || 0)
+                    )
+                ),
+                amount: Number(sale.totalIGSTAmount || 0)
+            }
+        ]
+            .filter(line => line.amount !== 0)
+            .map(line => ({
+                ...line,
+                rate: line.rate.toFixed(2),
+                amount: line.amount.toFixed(2)
+            }));
+
+        const taxSummaryRows =
+            Array.from(taxMap.values()).map((row: any) => ({
+                hsn: row.hsn,
+                taxableValue: formatMoney(row.taxableValue),
+                cgstRate: formatMoney(row.cgstRate),
+                cgstAmount: formatMoney(row.cgstAmount),
+                sgstRate: formatMoney(row.sgstRate),
+                sgstAmount: formatMoney(row.sgstAmount),
+                igstRate: formatMoney(row.igstRate),
+                igstAmount: formatMoney(row.igstAmount),
+                totalTax: formatMoney(row.totalTax)
+            }));
+
+        const hasIGST =
+            Number(sale.totalIGSTAmount || 0) !== 0;
+
+        const sellerGSTIN =
+            sale.branch?.gstin || "27AAKCA0034H1Z0";
+
         return {
-            // Seller Details
-            sellerName: 'A G Ashtavinayaka Petrochem Pvt Ltd',
+            irn: sale.irn || "",
+            ackNo: sale.ackNo || "",
+            ackDate: formatDate(sale.ackDate),
+            qrCodeImage: sale.qrCodeImage || "",
 
-            sellerAddress: `
-            SURVEY NO - 222, VILLAGE - HEDAVALI,
-            TI - SUDHAGAD,
-            KHOPOLI - PALI ROAD,
-            KHOPOLI, DIST - RAIGAD
-            `,
-
-            sellerPhone: sale.branch.phnNumber || "",
-            sellerGSTIN: "27AAKCA0034H1Z0",
+            sellerLogo: settings.sellerLogo || "",
+            sellerName: "A G Ashtavinayaka Petrochem Pvt Ltd",
             sellerCompanyName: "A G Ashtavinayaka Petrochem Pvt Ltd",
-            sellerEmail: "info@ashtvinayakapetrochem.com",
-            sellerState: "Maharashtra",
+            sellerAddress: `SURVEY NO - 222, VILLAGE - HEDAVALI, TI - SUDHAGAD, KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD`,
+            sellerGSTIN,
+            sellerStateName: sale.branch?.state || "Maharashtra",
+            sellerCIN: settings.sellerCIN || "",
+            sellerEmail:
+                sale.branch?.email ||
+                "info@ashtvinayakapetrochem.com",
 
-            /**
-             * Invoice
-            */
             invoiceNo: sale.invoiceNo,
-            invoiceDate: new Date(sale.invoiceDate).toLocaleDateString("en-IN"),
-
-            /**
-             * Buyer
-            */
-            buyerName: sale.agency.name,
-            buyerAddress: [
-                sale.agency.addressLine1,
-                sale.agency.addressLine2,
-                sale.agency.city,
-                sale.agency.state,
-                sale.agency.pinCode
-            ]
-                .filter(Boolean)
-                .join(", "),
-            
-            /**
-             * Invoice Metadata
-            */
+            invoiceDate: formatDate(sale.invoiceDate),
             deliveryNote: transport.deliveryNote || "",
-            suppliersRef: transport.suppliersRef || "",
-            otherReference: transport.otherReference || "",
+            modeOfPayment: sale.modeOfPayment || "",
+            referenceNo: sale.referenceNo || "",
+            referenceDate: formatDate(sale.referenceDate),
+            otherReference: sale.otherReference || "",
             buyerOrderNo: transport.buyerOrderNo || "",
-            buyerOrderDate: transport.buyerOrderDate
-                ? new Date(transport.buyerOrderDate).toLocaleDateString("en-IN")
-                : "",
-
+            buyerOrderDate: formatDate(transport.buyerOrderDate),
             despatchDocNo: transport.despatchDocNo || "",
-            despatchDocDate: transport.despatchDocDate
-                ? new Date(transport.despatchDocDate).toLocaleDateString("en-IN")
-                : "",
-
+            despatchDocDate: formatDate(transport.despatchDocDate),
             despatchThrough: transport.despatchThrough || "",
             destination: transport.destination || "",
-            termsOfDelivery:
-                transport.termsOfDelivery || "",
+            termsOfDelivery: transport.termsOfDelivery || "",
+            billOfLadingNo: transport.billOfLadingNo || "",
+            motorVehicleNo: transport.vehicleOrFlightNo || "",
 
-            vehicleOrFlightNo:
-                transport.vehicleOrFlightNo || "",
+            consigneeName: sale.branch?.name || "",
+            consigneeAddress: formatAddress(sale.branch),
+            consigneeGSTIN: sale.branch?.gstin || "",
+            consigneePAN: derivePanFromGstin(sale.branch?.gstin),
+            consigneeStateName: sale.branch?.state || "",
+            consigneeStateCode: sale.branch?.stateCode || "",
 
-            portOfLoading:
-                transport.portOfLoading || "",
+            buyerName: sale.agency?.name || "",
+            buyerAddress: formatAddress(sale.agency),
+            buyerGSTIN: sale.agency?.gstin || "",
+            buyerPAN: sale.agency?.panNo || "",
+            buyerStateName: sale.agency?.state || "",
+            buyerStateCode: sale.agency?.stateCode || "",
 
-            portOfDischarge:
-                transport.portOfDischarge || "",
+            items,
+            outputTaxLines,
+            roundOff: formatMoney(sale.roundOffAmount),
+            showRoundOff:
+                Number(sale.roundOffAmount || 0) !== 0,
+            totalQuantity,
+            totalUnit,
+            quantityTotals,
+            grandTotal: formatMoney(sale.grandTotal),
+            amountInWords: amountInWords(sale.grandTotal),
 
-            countryTo:
-                transport.countryTo || "",
-
-            shippingNo:
-                transport.shippingNo || "",
-
-            shippingDate:
-                transport.shippingDate
-                    ? new Date(transport.shippingDate)
-                        .toLocaleDateString("en-IN")
-                    : "",
-
-            portCode:
-                transport.portCode || "",
-
-            // Amounts
-            subtotal: Number(sale.subTotalAmount).toFixed(2),
-            grandTotal: Number(sale.grandTotal).toFixed(2),
-            totalGSTAmount: Number(sale.totalGSTAmount).toFixed(2),
-
-            /**
-             * items
-            */
-           items,
-
-           /**
-            * GST Lines
-           */
-           cgstLines,
-           sgstLines,
-           igstLines,
-
-           /**
-            * Tax Summary
-           */
+            hasIGST,
             taxSummaryRows,
-
             taxSummaryTotal: {
-                taxableValue: Number(sale.subTotalAmount || 0).toFixed(2),
-
-                cgstAmount: Number(sale.totalCGSTAmount || 0).toFixed(2),
-
-                sgstAmount: Number(sale.totalSGSTAmount || 0).toFixed(2),
-
-                igstAmount: Number(sale.totalIGSTAmount || 0).toFixed(2),
-
-                totalTax: Number(sale.totalGSTAmount || 0).toFixed(2)
+                taxableValue: formatMoney(sale.subTotalAmount),
+                cgstAmount: formatMoney(sale.totalCGSTAmount),
+                sgstAmount: formatMoney(sale.totalSGSTAmount),
+                igstAmount: formatMoney(sale.totalIGSTAmount),
+                totalTax: formatMoney(sale.totalGSTAmount)
             },
+            taxAmountInWords:
+                amountInWords(sale.totalGSTAmount),
 
-            // Amount in words
-            amountInWords: converter.toWords(Number(sale.grandTotal).toFixed(2)) + " only",
-            taxAmountInWords: converter.toWords(Number(sale.totalGSTAmount).toFixed(2)) + " only",
-
-            // Signature
-            signatureImage: ""
-
+            declaration: DECLARATION,
+            termsAndConditions: TERMS_AND_CONDITIONS,
+            companyPAN:
+                settings.companyPAN ||
+                derivePanFromGstin(sellerGSTIN),
+            bankName: bankAccount.bankName || "",
+            bankAccountNo: bankAccount.accountNumber || "",
+            bankBranchIFSC: [
+                bankAccount.bankBranchName,
+                bankAccount.ifscCode
+            ].filter(Boolean).join(" & "),
+            signatureImage: settings.signatureImage || "",
+            jurisdictionText: settings.jurisdictionText || ""
         };
     }
 }

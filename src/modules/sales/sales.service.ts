@@ -55,6 +55,8 @@ type SaleTransportPayload = {
 
     vehicleOrFlightNo?: string;
 
+    billOfLadingNo?: string;
+
     /** Export */
 
     portOfLoading?: string;
@@ -81,6 +83,14 @@ type CreateSalesPayload = {
 
     voucherType?: string;
     otherReference?:string;
+
+    irn?: string;
+    ackNo?: string;
+    ackDate?: string;
+    qrCodeImage?: string;
+    modeOfPayment?: string;
+    referenceNo?: string;
+    referenceDate?: string;
 
     transport?: SaleTransportPayload;
     roundOffAmount?:number;
@@ -511,6 +521,31 @@ export class SalesService {
                 otherReference:
                     payload.otherReference?.trim(),
 
+                irn:
+                    payload.irn?.trim(),
+
+                ackNo:
+                    payload.ackNo?.trim(),
+
+                ackDate:
+                    payload.ackDate
+                        ? new Date(payload.ackDate)
+                        : undefined,
+
+                qrCodeImage:
+                    payload.qrCodeImage?.trim(),
+
+                modeOfPayment:
+                    payload.modeOfPayment?.trim(),
+
+                referenceNo:
+                    payload.referenceNo?.trim(),
+
+                referenceDate:
+                    payload.referenceDate
+                        ? new Date(payload.referenceDate)
+                        : undefined,
+
                 roundOffAmount:
                     payload.roundOffAmount ?? 0,
 
@@ -569,6 +604,9 @@ export class SalesService {
                         vehicleOrFlightNo:
                             payload.transport?.vehicleOrFlightNo,
 
+                        billOfLadingNo:
+                            payload.transport?.billOfLadingNo,
+
                         portOfLoading:
                             payload.transport?.portOfLoading,
 
@@ -625,6 +663,7 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
+                transport: true,
                 transactions: true,
                 items: {
                     include: {
@@ -1210,15 +1249,20 @@ export class SalesService {
                     /**
                      * GST calculations
                      */
+                    const systemSellingPrice =
+                        item.unit === ProductUnit.LTR
+                            ? Number(
+                                batch.product.sellPriceLTR ||
+                                batch.product.sellPricePerUnit
+                            )
+                            : Number(
+                                batch.product.sellPricePerUnit
+                            );
+
                     const sellingPrice =
-                    item.unit === ProductUnit.LTR
-                        ? Number(
-                            batch.product.sellPriceLTR ||
-                            batch.product.sellPricePerUnit
-                        )
-                        : Number(
-                            batch.product.sellPricePerUnit
-                        );
+                        item.unitPrice
+                            ? Number(item.unitPrice)
+                            : systemSellingPrice;
 
                     const taxableAmount =
                         item.quantity * sellingPrice;
@@ -1343,7 +1387,48 @@ export class SalesService {
                         "SALE",
 
                     otherReference:
-                        payload.otherReference?.trim(),
+                        payload.otherReference !== undefined
+                            ? payload.otherReference.trim()
+                            : undefined,
+
+                    irn:
+                        payload.irn !== undefined
+                            ? payload.irn.trim()
+                            : undefined,
+
+                    ackNo:
+                        payload.ackNo !== undefined
+                            ? payload.ackNo.trim()
+                            : undefined,
+
+                    ackDate:
+                        payload.ackDate !== undefined
+                            ? payload.ackDate
+                                ? new Date(payload.ackDate)
+                                : null
+                            : undefined,
+
+                    qrCodeImage:
+                        payload.qrCodeImage !== undefined
+                            ? payload.qrCodeImage.trim()
+                            : undefined,
+
+                    modeOfPayment:
+                        payload.modeOfPayment !== undefined
+                            ? payload.modeOfPayment.trim()
+                            : undefined,
+
+                    referenceNo:
+                        payload.referenceNo !== undefined
+                            ? payload.referenceNo.trim()
+                            : undefined,
+
+                    referenceDate:
+                        payload.referenceDate !== undefined
+                            ? payload.referenceDate
+                                ? new Date(payload.referenceDate)
+                                : null
+                            : undefined,
 
                     roundOffAmount:
                         payload.roundOffAmount,
@@ -1408,6 +1493,9 @@ export class SalesService {
                         vehicleOrFlightNo:
                             payload.transport.vehicleOrFlightNo,
 
+                        billOfLadingNo:
+                            payload.transport.billOfLadingNo,
+
                         portOfLoading:
                             payload.transport.portOfLoading,
 
@@ -1464,6 +1552,9 @@ export class SalesService {
 
                         vehicleOrFlightNo:
                             payload.transport.vehicleOrFlightNo,
+
+                        billOfLadingNo:
+                            payload.transport.billOfLadingNo,
 
                         portOfLoading:
                             payload.transport.portOfLoading,
@@ -1548,6 +1639,56 @@ export class SalesService {
     }
 
 
+    private static async loadSaleForInvoice(
+        saleId: string,
+        approvedOnly: boolean
+    ) {
+        const [sale, invoiceSettings] = await Promise.all([
+            prisma.sale.findUnique({
+                where: {
+                    id: saleId,
+                    ...(approvedOnly && {
+                        status: "APPROVED"
+                    })
+                },
+                include: {
+                    agency: true,
+                    branch: {
+                        include: {
+                            bankAccounts: {
+                                where: {
+                                    isActive: true
+                                },
+                                orderBy: {
+                                    createdAt: "asc"
+                                }
+                            }
+                        }
+                    },
+                    transport: true,
+                    items: {
+                        include: {
+                            product: true,
+                            batch: true
+                        }
+                    }
+                }
+            }),
+            prisma.setting.findFirst({
+                orderBy: {
+                    createdAt: "asc"
+                }
+            })
+        ]);
+
+        return sale
+            ? {
+                ...sale,
+                invoiceSettings
+            }
+            : null;
+    }
+
     static async downloadInvoicePDF(
         actor: any,
         saleId: string
@@ -1556,23 +1697,11 @@ export class SalesService {
             throw new ApiError("Unauthorized", 401);
         }
 
-        const sale = await prisma.sale.findUnique({
-            where: {
-                id: saleId,
-                status: "APPROVED"
-            },
-            include: {
-                agency: true,
-                branch: true,
-                transport: true,
-                items: {
-                    include: {
-                        product: true,
-                        batch: true
-                    }
-                }
-            }
-        });
+        const sale =
+            await this.loadSaleForInvoice(
+                saleId,
+                true
+            );
 
         if(!sale){
             throw new ApiError("Sale not found or is Not Approved", 404);
@@ -1580,7 +1709,7 @@ export class SalesService {
 
         const invoiceData = SalesToInvMapper.map(sale);
 
-        const pdf = 
+        const pdf =
             await InvoiceRenderer.generatePdf(
                 invoiceData
             );
@@ -1596,22 +1725,15 @@ export class SalesService {
             throw new ApiError("Unauthorized", 401);
         }
 
-        const sale = await prisma.sale.findUnique({
-            where: {
-                id: saleId
-            },
-            include: {
-                agency: true,
-                branch: true,
-                transport: true,
-                items: {
-                    include: {
-                        product: true,
-                        batch: true
-                    }
-                }
-            }
-        });
+        const sale =
+            await this.loadSaleForInvoice(
+                saleId,
+                false
+            );
+
+        if (!sale) {
+            throw new ApiError("Sale not found", 404);
+        }
 
         const data = SalesToInvMapper.map(sale);
 

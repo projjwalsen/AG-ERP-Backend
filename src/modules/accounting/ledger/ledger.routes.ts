@@ -230,6 +230,20 @@ router.get("/get-all", getLedgers);
  *         schema:
  *           type: boolean
  *         example: true
+ * 
+ *       - in: query
+ *         name: page
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           default: 1
+ * 
+ *       - in: query
+ *         name: limit
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           default: 10
  *
  *     responses:
  *       200:

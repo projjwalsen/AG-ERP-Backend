@@ -17,7 +17,9 @@ export const getBranchDayBook = async (
 
         const query = {
             startDate: (req as any).query.startDate as string,
-            endDate: (req as any).query.endDate as string
+            endDate: (req as any).query.endDate as string,
+            page: Number(req.query.page) || 1,
+            limit: Number(req.query.limit) || 25
         };
 
         const bankAccountId = (req as any).query.bankAccountId as string;
@@ -33,6 +35,19 @@ export const getBranchDayBook = async (
         );
         console.log("result", result.entries.length);
         if (isExport) {
+            // Exports must include every entry, not just the current page.
+            const fullResult =
+                await ReportingService.getBranchDayBook(
+                    actor,
+                    branchId,
+                    {
+                        ...query,
+                        page: 1,
+                        limit: result.pagination.totalEntries || 25,
+                        bankAccountId
+                    }
+                );
+
             console.log("Exporting branch day book report...");
             return ExcelService.export(
                 res,
@@ -41,7 +56,7 @@ export const getBranchDayBook = async (
                     title: `${result.branch.name} - BRANCH DAY BOOK`,
                     sheetName: "Day Book",
                     columns: branchDayBookColumns,
-                    data: result.entries
+                    data: fullResult.entries
                 }
             );
         }

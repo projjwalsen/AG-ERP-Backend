@@ -9,6 +9,7 @@ type CreateProductPayload = {
     name: string;
     category: string;
     description?: string;
+    disclaimer?: string;
 
     hsnNo?: string;
     applicableGST?: number;
@@ -111,6 +112,7 @@ export class ProductService {
                 name: payload.name.trim(),
                 category: payload.category.trim(),
                 description: payload.description?.trim() || null,
+                disclaimer: payload.disclaimer?.trim() || null,
                 hsnNo: payload.hsnNo,
                 applicableGST: payload.applicableGST,
                 baseUnit: payload.baseUnit || "KG",
@@ -128,6 +130,7 @@ export class ProductService {
                 name: true,
                 category: true,
                 description: true,
+                disclaimer: true,
                 baseUnit: true,
                 density: true,
                 hsnNo: true,
@@ -204,6 +207,7 @@ export class ProductService {
                     name: true,
                     category: true,
                     description: true,
+                    disclaimer: true,
                     baseUnit: true,
                     density: true,
                     hsnNo: true,
@@ -276,6 +280,7 @@ export class ProductService {
                 name: true,
                 category: true,
                 description: true,
+                disclaimer: true,
                 baseUnit: true,
                 density: true,
                 hsnNo: true,
@@ -419,6 +424,7 @@ export class ProductService {
                 name: payload.name?.trim(),
                 category: payload.category?.trim(),
                 description: payload.description?.trim() || null,
+                disclaimer: payload.disclaimer?.trim() || null,
                 baseUnit: payload.baseUnit,
                 density: density,
                 hsnNo: payload.hsnNo,
@@ -434,6 +440,7 @@ export class ProductService {
                 name: true,
                 category: true,
                 description: true,
+                disclaimer: true,
                 baseUnit: true,
                 density: true,
                 hsnNo: true,
