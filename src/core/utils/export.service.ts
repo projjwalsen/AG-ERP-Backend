@@ -636,7 +636,12 @@ export class ExcelService {
             options.period;
 
         worksheet.getCell("A3").alignment = {
-            horizontal: "center"
+            horizontal: "center",
+        };
+
+        worksheet.getCell("A3").font = {
+            bold: true,
+            size: 12
         };
 
         /**
@@ -663,26 +668,34 @@ export class ExcelService {
         worksheet.getCell("B6").value =
             options.companyName;
 
+        worksheet.getCell("B6").font = {
+            bold: true
+        };
+
+
         /**
          * Period
          */
 
-        worksheet.getCell("B7").value =
-            options.period;
 
         /**
          * Transactions / Closing
          */
 
-        worksheet.getCell("C8").value =
-            "Transactions";
+        worksheet.mergeCells("C8:D8");
 
-        worksheet.getCell("C8").font = {
+        const transactions =
+            worksheet.getCell("C8");
+
+        transactions.value = "Transactions";
+
+        transactions.font = {
             bold: true
         };
 
-        worksheet.getCell("E8").font = {
-            bold: true
+        transactions.alignment = {
+            horizontal: "center",
+            vertical: "middle"
         };
 
         /**
@@ -695,7 +708,6 @@ export class ExcelService {
             worksheet.getRow(10);
 
         header.values = [
-
             "Particulars",
 
             "Opening Balance",
@@ -747,22 +759,37 @@ export class ExcelService {
          * ===================================================
          */
 
+
+
         options.data.forEach(row => {
 
-            const excelRow =
-                worksheet.addRow([
+            const excelRow = worksheet.addRow([
+                row.particulars,
+                (row.openingBalance),
+                (row.debit),
+                (row.credit),
+                (row.balance)
+            ]);
 
-                    row.particulars,
+            excelRow.getCell(2).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
-                    row.openingBalance,
+            excelRow.getCell(3).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
-                    row.debit,
+            excelRow.getCell(4).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
-                    row.credit,
-
-                    row.balance
-
-                ]);
+            excelRow.getCell(5).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
             excelRow.getCell(3).numFmt =
                 "#,##0.00";
@@ -804,27 +831,11 @@ export class ExcelService {
          */
 
         worksheet.columns = [
-
-            {
-                width: 55
-            },
-
-            {
-                width: 20
-            },
-
-            {
-                width: 20
-            },
-
-            {
-                width: 20
-            },
-
-            {
-                width: 20
-            }
-
+            { width: 55 }, // Particulars
+            { width: 23 }, // Opening
+            { width: 23 }, // Debit
+            { width: 23 }, // Credit
+            { width: 23 }  // Closing
         ];
 
         /**
