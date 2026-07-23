@@ -17,6 +17,14 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
 
             otherReference,
 
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
+
             roundOffAmount,
 
             transport,
@@ -38,6 +46,14 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
             voucherType,
 
             otherReference,
+
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
 
             roundOffAmount,
 
@@ -155,6 +171,14 @@ export const updateSale = async (req: Request, res: Response, next: NextFunction
 
             otherReference,
 
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
+
             roundOffAmount,
 
             transport,
@@ -177,6 +201,14 @@ export const updateSale = async (req: Request, res: Response, next: NextFunction
             voucherType,
 
             otherReference,
+
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
 
             roundOffAmount,
 

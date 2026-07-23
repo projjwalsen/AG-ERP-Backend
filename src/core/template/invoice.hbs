@@ -2,415 +2,215 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
   <title>TAX INVOICE - {{invoiceNo}}</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: 'Roboto Condensed', Arial, sans-serif; font-size:16px; color:#000; background:#fff; }
-
-    .page {
-      width: 794px;
-      margin: 0 auto;
-      padding: 18px 20px 10px;
-    }
-
-    /* ─── MASTER TABLE: single collapsed table for entire invoice ─── */
-    .inv {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid #000;
-    }
-    .inv td, .inv th {
-      border: 1px solid #000;
-      padding: 3px 6px;
-      vertical-align: top;
-      font-size: 11px;
-    }
-
-    /* Title row */
-    .title-cell {
-      text-align: center;
-      font-size: 15px;
-      font-weight: bold;
-      letter-spacing: 1px;
-      border-left: none !important;
-      border-right: none !important;
-      border-top: none !important;
-      padding: 4px 6px;
-    }
-    .dup-cell {
-      font-size: 10px;
-      font-style: italic;
-      text-align: right;
-      vertical-align: middle;
-      border-right: none !important;
-      border-top: none !important;
-      white-space: nowrap;
-      padding: 4px 6px;
-    }
-    .title-wrap-cell {
-      border: none !important;
-      padding: 0 !important;
-    }
-
-    /* Label / value helpers */
-    .lbl  { font-size:10px; color:#333; display:block; }
+    body { font-family: Arial, sans-serif; color:#000; background:#fff; }
+    .page { width:794px; margin:0 auto; padding:18px 20px 10px; }
+    .top-strip { display:flex; justify-content:space-between; align-items:flex-start; font-size:10.5px; margin-bottom:4px; }
+    .irn-block { flex:1; max-width:620px; overflow-wrap:anywhere; word-break:break-all; }
+    .irn-block .row { display:flex; align-items:flex-start; margin-bottom:2px; font-weight:bold; }
+    .irn-block .value { flex:1; min-width:0; }
+    .lbl-inline { display:inline-block; flex:0 0 72px; }
+    .einv { text-align:right; }
+    .einv-label { font-size:11px; font-weight:bold; margin-bottom:2px; }
+    .qr-img { width:70px; height:70px; object-fit:contain; }
+    .doc-title { text-align:center; font-size:16px; font-weight:bold; margin-bottom:4px; }
+    .inv { width:100%; border-collapse:collapse; border:1px solid #000; }
+    .inv td, .inv th { border:1px solid #000; padding:3px 6px; vertical-align:top; font-size:11px; }
+    .lbl { font-size:10px; color:#333; display:block; }
     .bold { font-weight:bold; }
-    .right{ text-align:right; }
-    .center{ text-align:center; }
-
-    /* ─── ITEMS inner table (nested, borderless outer) ─── */
-    .items {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .items th, .items td {
-      border: 1px solid #000;
-      padding: 3px 5px;
-      font-size: 11.5px;
-    }
-    /* remove outer borders so parent cell border is used */
-    .items thead tr:first-child th { border-top: none; }
-    .items tbody tr:last-child  td { border-bottom: none; }
-    .items tr th:first-child,
-    .items tr td:first-child      { border-left: none; }
-    .items tr th:last-child,
-    .items tr td:last-child       { border-right: none; }
-
-    .items .c-sl     { width:34px;  text-align:center; }
-    .items .c-desc   { line-height: 1.4; }
-    .items .c-desc .product-name {
-      font-weight: 700;
-      font-size: 13px;
-      text-transform: uppercase;
-    }
-
-    .items .c-desc .product-description {
-      font-size: 12px;
-    }
-
-    .items .c-desc .batch-no {
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .items .c-hsn    { width:76px;  text-align:center; }
-    .items .c-qty    { width:56px;  text-align:center; }
-    .items .c-uprice { width:68px;  text-align:right;  } /* Unit Price       */
-    .items .c-base   { width:74px;  text-align:right;  } /* Qty × Unit Price */
-    .items .c-gst    { width:46px;  text-align:center; } /* GST %            */
-    .items .c-amtgst { width:82px;  text-align:right;  } /* Amt with GST     */
-
-    /* spacer body — keeps left/right borders, opens top/bottom */
-    .spacer td {
-      border-top: none !important;
-      border-bottom: none !important;
-      height: 200px;
-    }
-
-    /* ─── TAX SUMMARY inner table ─── */
-    .taxsum {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .taxsum th, .taxsum td {
-      border: 1px solid #000;
-      padding: 3px 5px;
-      font-size: 10px;
-    }
-    .taxsum thead tr:first-child th { border-top: none; }
-    .taxsum tbody tr:last-child  td { border-bottom: none; }
-    .taxsum tr th:first-child,
-    .taxsum tr td:first-child       { border-left: none; }
-    .taxsum tr th:last-child,
-    .taxsum tr td:last-child        { border-right: none; }
+    .center { text-align:center; }
+    .seller-hdr { display:flex; align-items:flex-start; gap:12px; min-height:112px; }
+    .logo-img { width:82px; height:82px; object-fit:contain; flex-shrink:0; margin-top:2px; }
+    .seller-details { flex:1; min-width:0; line-height:1.25; }
+    .seller-name { font-size:12px; font-weight:bold; line-height:1.25; margin-bottom:2px; }
+    .items, .taxsum { width:100%; border-collapse:collapse; }
+    .items th, .items td { border:1px solid #000; padding:3px 5px; font-size:11.5px; }
+    .items thead tr:first-child th, .taxsum thead tr:first-child th { border-top:none; }
+    .items tbody tr:last-child td, .taxsum tbody tr:last-child td { border-bottom:none; }
+    .items tr th:first-child, .items tr td:first-child,
+    .taxsum tr th:first-child, .taxsum tr td:first-child { border-left:none; }
+    .items tr th:last-child, .items tr td:last-child,
+    .taxsum tr th:last-child, .taxsum tr td:last-child { border-right:none; }
+    .c-sl { width:32px; text-align:center; }
+    .c-desc { line-height:1.4; text-align:left; }
+    .product-name { font-weight:700; font-size:13px; text-transform:uppercase; }
+    .product-note { font-style:italic; font-size:11px; }
+    .c-hsn { width:70px; text-align:center; }
+    .c-qty { width:90px; text-align:center; }
+    .c-rate { width:56px; text-align:right; }
+    .c-per { width:30px; text-align:center; }
+    .c-amt { width:100px; text-align:right; }
+    .tax-line-lbl { text-align:right; font-style:italic; font-weight:normal; }
+    .tax-line-rate { text-align:center; }
+    .tax-line-amt { text-align:right; }
+    .spacer td { border-top:none !important; border-bottom:none !important; height:150px; }
+    .taxsum th, .taxsum td { border:1px solid #000; padding:3px 5px; font-size:10px; }
     .taxsum td { text-align:right; }
     .taxsum td:first-child { text-align:left; }
     .taxsum th { text-align:center; font-weight:bold; }
-
-    /* signature */
-    .sig-img { display:block; margin-left:auto; height:32px; }
-    .footer  { text-align:center; font-size:9.5px; margin-top:8px; }
+    .sig-img { display:block; margin-left:auto; height:32px; max-width:150px; object-fit:contain; }
+    .footer { text-align:center; font-size:9.5px; margin-top:6px; }
+    .terms-list { font-size:9.5px; padding-left:14px; margin-top:2px; }
+    .bank-lbl { display:inline-block; width:110px; font-size:10px; }
+    @media print {
+      .items thead { display:table-header-group; }
+      .totals-block { break-inside:avoid; }
+    }
   </style>
 </head>
 <body>
 <div class="page">
-<table class="inv">
-
-  <!-- ══ ROW 0: TITLE ══ -->
-  <tr>
-    <td colspan="2" class="title-cell">TAX INVOICE</td>
-    <td class="dup-cell">Duplicate Copy</td>
-  </tr>
-
-  <!-- ══ ROW 1: Seller (rowspan 2) | Invoice No | Dated ══ -->
-  <tr>
-    <td rowspan="2" style="width:55%">
-      <div class="bold" style="font-size:12px">{{sellerName}}</div>
-      <div>{{sellerAddress}}</div>
-      <div>{{sellerPhone}}</div>
-    </td>
-    <td style="width:22%">
-      <span class="lbl">Invoice No.</span>
-      <span class="bold">{{invoiceNo}}</span>
-    </td>
-    <td style="width:23%">
-      <span class="lbl">Dated</span>
-      <span class="bold">{{invoiceDate}}</span>
-    </td>
-  </tr>
-
-  <!-- ══ ROW 2: (seller rowspan) | Delivery Note ══ -->
-  <tr>
-    <td colspan="2">
-      <span class="lbl">Delivery Note</span>
-      {{deliveryNote}}
-    </td>
-  </tr>
-
-  <!-- ══ ROW 3: GSTIN | Supplier Ref | Other Ref ══ -->
-  <tr>
-    <td>GSTIN/UIN: <strong>{{sellerGSTIN}}</strong></td>
-    <td>
-      <span class="lbl">Supplier's Ref.</span>
-      {{suppliersRef}}
-    </td>
-    <td>
-      <span class="lbl">Other Reference(s)</span>
-      {{otherReference}}
-    </td>
-  </tr>
-
-  <!-- ══ ROW 4: Buyer | Buyer Order No | Dated ══ -->
-  <tr>
-    <td>
-      <span class="lbl">Buyer</span>
-      <div class="bold">{{buyerName}}</div>
-      <div>{{buyerAddress}}</div>
-    </td>
-    <td>
-      <span class="lbl">Buyer's Order No.</span>
-      {{buyerOrderNo}}
-    </td>
-    <td>
-      <span class="lbl">Dated</span>
-      {{buyerOrderDate}}
-    </td>
-  </tr>
-
-  <!-- ══ ROW 5: (blank) | Despatch Doc No | Dated ══ -->
-  <tr>
-    <td style="height:22px"></td>
-    <td>
-      <span class="lbl">Despatch Document No.</span>
-      {{despatchDocNo}}
-    </td>
-    <td>
-      <span class="lbl">Dated</span>
-      {{despatchDocDate}}
-    </td>
-  </tr>
-
-  <!-- ══ ROW 6: (blank) | Despatch Through | Destination ══ -->
-  <tr>
-    <td style="height:22px"></td>
-    <td>
-      <span class="lbl">Despatch through</span>
-      {{despatchThrough}}
-    </td>
-    <td>
-      <span class="lbl">Destination</span>
-      {{destination}}
-    </td>
-  </tr>
-
-  <!-- ══ ROW 7: LINE ITEMS (full width nested table) ══ -->
-  <tr>
-    <td colspan="3" style="padding:0">
-      <table class="items">
-        <thead>
-          <tr>
-            <th class="c-sl">Sl<br>No.</th>
-            <th class="c-desc" style="text-align:left"></th>
-            <th class="c-hsn">HSN</th>
-            <th class="c-qty">Quantity</th>
-            <th class="c-uprice">Unit<br>Price</th>
-            <th class="c-base">Amount</th>
-            <th class="c-gst">GST rate<br>(%)</th>
-            <th class="c-amtgst">Amt with<br>GST</th>
-          </tr>
-        </thead>
-        <tbody>
-
-          {{#each items}}
-          <tr>
-            <td class="c-sl center">{{slNo}}</td>
-            <td class="c-desc">{{{description}}}</td>
-            <td class="c-hsn center">{{hsn}}</td>
-            <td class="c-qty center">{{quantity}} {{unit}}</td>
-            <td class="c-uprice">{{unitPrice}}</td>
-            <td class="c-base">{{baseAmount}}</td>
-            <td class="c-gst center">{{gstRate}}</td>
-            <td class="c-amtgst">{{amountWithGst}}</td>
-          </tr>
-          {{/each}}
-
-          <!-- spacer -->
-          <tr class="spacer">
-            <td class="c-sl"></td>
-            <td class="c-desc"></td>
-            <td class="c-hsn"></td>
-            <td class="c-qty"></td>
-            <td class="c-uprice"></td>
-            <td class="c-base"></td>
-            <td class="c-gst"></td>
-            <td class="c-amtgst"></td>
-          </tr>
-
-          <!-- Discount -->
-          {{!-- <tr>
-            <td colspan="7" style="border-right:none; text-align:left">Discount</td>
-            <td style="text-align:right; border-left:none">{{discount}}</td>
-          </tr> --}}
-
-          <!-- CGST rows -->
-          {{#each cgstLines}}
-          <tr>
-            <td colspan="5" style="border-right:none; text-align:right"><strong>CGST</strong></td>
-            <td style="text-align:right; border-left:none">{{amount}}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          {{/each}}
-
-          <!-- SGST rows -->
-          {{#each sgstLines}}
-          <tr>
-            <td colspan="5" style="border-right:none; text-align:right"><strong>SGST</strong></td>
-            <td style="text-align:right; border-left:none">{{amount}}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          {{/each}}
-
-          <!-- IGST rows -->
-          {{#each igstLines}}
-          <tr>
-            <td colspan="5" style="border-right:none; text-align:right"><strong>IGST</strong></td>
-            <td style="text-align:right; border-left:none">{{amount}}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          {{/each}}
-
-          <!-- Grand Total -->
-          <tr>
-            <td colspan="7" style="border-right:none; text-align:right; font-weight:bold">Total</td>
-            <td style="text-align:right; border-left:none; font-weight:bold">{{grandTotal}}</td>
-          </tr>
-
-        </tbody>
-      </table>
-    </td>
-  </tr>
-
-  <!-- ══ ROW 8: Amount in Words ══ -->
-  <tr>
-    <td colspan="2">
-      <strong>Amount Chargeable (in words)</strong><br>
-      <strong>{{amountInWords}}</strong>
-    </td>
-    <td style="text-align:right; font-style:italic; font-size:10px; vertical-align:bottom">E. &amp; O.E</td>
-  </tr>
-
-  <!-- ══ ROW 9: HSN / TAX SUMMARY (full width nested table) ══ -->
-  <tr>
-    <td colspan="3" style="padding:0">
-      <table class="taxsum">
-        <thead>
-          <tr>
-            <th rowspan="2" style="text-align:left; width:80px">HSN/SAC</th>
-            <th rowspan="2" style="width:80px">Taxable Value</th>
-            <th colspan="2" style="border-bottom:none; padding-bottom:1px">Central Tax</th>
-            <th colspan="2" style="border-bottom:none; padding-bottom:1px">State Tax</th>
-            <th colspan="2" style="border-bottom:none; padding-bottom:1px">IGST</th>
-            <th rowspan="2">Total Tax Amount</th>
-          </tr>
-          <tr>
-            <th style="width:38px; border-top:none; padding-top:1px">rate</th>
-            <th style="width:58px; border-top:none; padding-top:1px">Amount</th>
-            <th style="width:38px; border-top:none; padding-top:1px">rate</th>
-            <th style="width:58px; border-top:none; padding-top:1px">Amount</th>
-            <th style="width:38px; border-top:none; padding-top:1px">rate</th>
-            <th style="width:58px; border-top:none; padding-top:1px">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each taxSummaryRows}}
-          <tr>
-            <td style="text-align:left">{{hsn}}</td>
-            <td>{{taxableValue}}</td>
-            <td style="text-align:center">{{cgstRate}}</td>
-            <td>{{cgstAmount}}</td>
-            <td style="text-align:center">{{sgstRate}}</td>
-            <td>{{sgstAmount}}</td>
-            <td style="text-align:center">{{igstRate}}</td>
-            <td>{{igstAmount}}</td>
-            <td>{{totalTax}}</td>
-          </tr>
-          {{/each}}
-          <tr>
-            <td style="text-align:left; font-weight:bold">Total</td>
-            <td style="font-weight:bold">{{taxSummaryTotal.taxableValue}}</td>
-            <td></td>
-            <td style="font-weight:bold">{{taxSummaryTotal.cgstAmount}}</td>
-            <td></td>
-            <td style="font-weight:bold">{{taxSummaryTotal.sgstAmount}}</td>
-            <td></td>
-            <td style="font-weight:bold">{{taxSummaryTotal.igstAmount}}</td>
-            <td style="font-weight:bold">{{taxSummaryTotal.totalTax}}</td>
-          </tr>
-        </tbody>
-      </table>
-    </td>
-  </tr>
-
-  <!-- ══ ROW 10: Tax Amount in Words ══ -->
-  <tr>
-    <td colspan="3">
-      <strong>Tax Amount (in Words) :</strong>&nbsp;&nbsp;
-      <strong>{{taxAmountInWords}}</strong>
-    </td>
-  </tr>
-
-  <!-- ══ ROW 11: Declaration | Signature ══ -->
-  <tr>
-    <td colspan="2" style="font-size:9.5px; vertical-align:top">
-      <strong>Declaration</strong><br>
-      We declare that this invoice shows the actual price of the goods<br>
-      described and that all particulers are true and correct.
-    </td>
-    <td style="text-align:right; vertical-align:bottom; padding-bottom:5px">
-      <div>for <strong>{{sellerCompanyName}}</strong></div>
-      {{#if signatureImage}}
-      <img class="sig-img" src="{{signatureImage}}" alt="Authorised Signature"/>
-      {{else}}
-      <div style="height:40px"></div>
+  <div class="doc-title">Tax Invoice</div>
+  <div class="top-strip">
+    <div class="irn-block">
+      <div class="row irn-row">
+        <span class="lbl-inline">IRN</span>
+        <span>:&nbsp;</span>
+        <span class="value">{{irn}}</span>
+      </div>
+      {{#if ackNo}}
+      <div class="row">
+        <span class="lbl-inline">Ack No.</span>
+        <span>:&nbsp;</span>
+        <span class="value">{{ackNo}}</span>
+      </div>
       {{/if}}
-      <div style="font-size:9.5px">Authorised Signatory</div>
-    </td>
-  </tr>
+      {{#if ackDate}}
+      <div class="row">
+        <span class="lbl-inline">Ack Date</span>
+        <span>:&nbsp;</span>
+        <span class="value">{{ackDate}}</span>
+      </div>
+      {{/if}}
+    </div>
+    {{#if qrCodeImage}}
+    <div class="einv"><div class="einv-label">e-Invoice</div><img class="qr-img" src="{{qrCodeImage}}" alt="QR Code"/></div>
+    {{/if}}
+  </div>
 
-  <!-- ══ ROW 12: Customer Seal ══ -->
-  <tr>
-    <td colspan="2" style="font-size:10px">Customer's seal and Signature</td>
-    <td></td>
-  </tr>
+  
 
-</table>
-
-<div class="footer">This is a Computer Generated Invoice</div>
+  <table class="inv">
+    <tr>
+      <td rowspan="6" style="width:48%">
+        <div class="seller-hdr">
+          {{#if sellerLogo}}<img class="logo-img" src="{{sellerLogo}}" alt="{{sellerCompanyName}}"/>{{/if}}
+          <div class="seller-details">
+            <div class="seller-name">{{sellerName}}</div>
+            <div>{{sellerAddress}}</div>
+            <div>GSTIN/UIN: <strong>{{sellerGSTIN}}</strong></div>
+            <div>State Name : {{sellerStateName}}</div>
+            {{#if sellerCIN}}<div>CIN: {{sellerCIN}}</div>{{/if}}
+            <div>E-Mail : {{sellerEmail}}</div>
+          </div>
+        </div>
+      </td>
+      <td style="width:26%"><span class="lbl">Invoice No.</span><span class="bold">{{invoiceNo}}</span></td>
+      <td style="width:26%"><span class="lbl">Dated</span><span class="bold">{{invoiceDate}}</span></td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Delivery Note</span>{{deliveryNote}}</td>
+      <td><span class="lbl">Mode/Terms of Payment</span>{{modeOfPayment}}</td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Reference No. &amp; Date.</span>{{referenceNo}} {{#if referenceDate}}dt. {{referenceDate}}{{/if}}</td>
+      <td><span class="lbl">Other References</span>{{otherReference}}</td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Buyer's Order No.</span>{{buyerOrderNo}}</td>
+      <td><span class="lbl">Dated</span>{{buyerOrderDate}}</td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Dispatch Doc No.</span>{{despatchDocNo}}</td>
+      <td><span class="lbl">Delivery Note Date</span>{{despatchDocDate}}</td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Dispatched through</span>{{despatchThrough}}</td>
+      <td><span class="lbl">Destination</span>{{destination}}</td>
+    </tr>
+    <tr>
+      <td rowspan="2">
+        <span class="lbl">Consignee (Ship to)</span>
+        <div class="bold">{{consigneeName}}</div><div>{{consigneeAddress}}</div>
+        <div>GSTIN/UIN : {{consigneeGSTIN}}</div><div>PAN/IT No : {{consigneePAN}}</div>
+        <div>State Name : {{consigneeStateName}} {{#if consigneeStateCode}}, Code : {{consigneeStateCode}}{{/if}}</div>
+      </td>
+      <td><span class="lbl">Bill of Lading/LR-RR No.</span>{{billOfLadingNo}}</td>
+      <td><span class="lbl">Motor Vehicle No.</span>{{motorVehicleNo}}</td>
+    </tr>
+    <tr><td colspan="2"><span class="lbl">Terms of Delivery</span>{{termsOfDelivery}}</td></tr>
+    <tr>
+      <td>
+        <span class="lbl">Buyer (Bill to)</span>
+        <div class="bold">{{buyerName}}</div><div>{{buyerAddress}}</div>
+        <div>GSTIN/UIN : {{buyerGSTIN}}</div><div>PAN/IT No : {{buyerPAN}}</div>
+        <div>State Name : {{buyerStateName}} {{#if buyerStateCode}}, Code : {{buyerStateCode}}{{/if}}</div>
+      </td>
+      <td colspan="2" style="height:22px"></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="padding:0">
+        <table class="items">
+          <thead><tr><th class="c-sl">Sl<br>No.</th><th class="c-desc">Description of Goods</th><th class="c-hsn">HSN/SAC</th><th class="c-qty">Quantity</th><th class="c-rate">Rate</th><th class="c-per">per</th><th class="c-amt">Amount</th></tr></thead>
+          <tbody>
+            {{#each items}}
+            <tr>
+              <td class="c-sl">{{slNo}}</td>
+              <td class="c-desc"><div class="product-name">{{productName}}</div>{{#each notes}}<div class="product-note">{{this}}</div>{{/each}}</td>
+              <td class="c-hsn">{{hsn}}</td><td class="c-qty">{{quantity}} {{unit}}</td><td class="c-rate">{{rate}}</td><td class="c-per">{{unit}}</td><td class="c-amt">{{amount}}</td>
+            </tr>
+            {{/each}}
+            <tr class="spacer"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            {{#each outputTaxLines}}
+            <tr><td colspan="4" style="border-right:none"></td><td class="tax-line-lbl" style="border-left:none;border-right:none"><em>{{label}}</em></td><td class="tax-line-rate" style="border-left:none;border-right:none">{{rate}} %</td><td class="tax-line-amt" style="border-left:none">{{amount}}</td></tr>
+            {{/each}}
+            {{#if showRoundOff}}
+            <tr><td colspan="6" style="border-right:none;text-align:right"><em>R/OFF</em></td><td style="text-align:right;border-left:none">{{roundOff}}</td></tr>
+            {{/if}}
+            <tr><td colspan="3" style="border-right:none"></td><td class="center bold" style="border-left:none;border-right:none">Total</td><td colspan="2" class="center bold" style="border-left:none;border-right:none">{{totalQuantity}} {{totalUnit}}</td><td style="text-align:right;border-left:none;font-weight:bold">₹ {{grandTotal}}</td></tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr><td colspan="2"><strong>Amount Chargeable (in words)</strong><br><strong>{{amountInWords}}</strong></td><td style="text-align:right;font-style:italic;font-size:10px;vertical-align:bottom">E. &amp; O.E</td></tr>
+    <tr>
+      <td colspan="3" style="padding:0">
+        <table class="taxsum">
+          <thead>
+            <tr><th rowspan="2" style="text-align:left">HSN/SAC</th><th rowspan="2">Taxable<br>Value</th><th colspan="2">CGST</th><th colspan="2">SGST/UTGST</th>{{#if hasIGST}}<th colspan="2">IGST</th>{{/if}}<th rowspan="2">Total<br>Tax Amount</th></tr>
+            <tr><th>Rate</th><th>Amount</th><th>Rate</th><th>Amount</th>{{#if hasIGST}}<th>Rate</th><th>Amount</th>{{/if}}</tr>
+          </thead>
+          <tbody>
+            {{#each taxSummaryRows}}
+            <tr><td>{{hsn}}</td><td>{{taxableValue}}</td><td class="center">{{cgstRate}}%</td><td>{{cgstAmount}}</td><td class="center">{{sgstRate}}%</td><td>{{sgstAmount}}</td>{{#if ../hasIGST}}<td class="center">{{igstRate}}%</td><td>{{igstAmount}}</td>{{/if}}<td>{{totalTax}}</td></tr>
+            {{/each}}
+            <tr><td class="bold">Total</td><td class="bold">{{taxSummaryTotal.taxableValue}}</td><td></td><td class="bold">{{taxSummaryTotal.cgstAmount}}</td><td></td><td class="bold">{{taxSummaryTotal.sgstAmount}}</td>{{#if hasIGST}}<td></td><td class="bold">{{taxSummaryTotal.igstAmount}}</td>{{/if}}<td class="bold">{{taxSummaryTotal.totalTax}}</td></tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr><td colspan="3"><strong>Tax Amount (in Words) :</strong>&nbsp;&nbsp;<strong>{{taxAmountInWords}}</strong></td></tr>
+    <tr class="totals-block">
+      <td colspan="2" style="font-size:9.5px;vertical-align:top">
+        <strong>Declaration</strong><br>{{declaration}}<br><br>
+        <strong>Company's PAN</strong> : {{companyPAN}}<br>
+        <strong>Terms and Conditions</strong>
+        <ol class="terms-list">{{#each termsAndConditions}}<li>{{this}}</li>{{/each}}</ol>
+      </td>
+      <td style="vertical-align:top;font-size:10px">
+        <strong>Company's Bank Details</strong><br>
+        <span class="bank-lbl">Bank Name</span>: {{bankName}}<br>
+        <span class="bank-lbl">A/c No.</span>: {{bankAccountNo}}<br>
+        <span class="bank-lbl">Branch &amp; IFS Code</span>: {{bankBranchIFSC}}<br>
+        <div style="text-align:right;margin-top:6px">for <strong>{{sellerCompanyName}}</strong></div>
+        {{#if signatureImage}}<img class="sig-img" src="{{signatureImage}}" alt="Authorised Signature"/>{{else}}<div style="height:34px"></div>{{/if}}
+        <div style="text-align:right;font-size:9.5px">Authorised Signatory</div>
+      </td>
+    </tr>
+  </table>
+  <div class="footer">{{#if jurisdictionText}}<div>{{jurisdictionText}}</div>{{/if}}<div>This is a Computer Generated Invoice</div></div>
 </div>
 </body>
 </html>
