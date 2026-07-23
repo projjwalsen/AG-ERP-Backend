@@ -717,8 +717,6 @@ export class ImportResolver {
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
 
-        dto.particulars = normalizedName;
-
         const cacheKey =
             dto.hsnNo
                 ? `${dto.hsnNo}_${normalizedName}`
@@ -1055,7 +1053,7 @@ export class ImportResolver {
 
                             batchNo,
 
-                            purchasePrice: dto.sellPrice || 0,
+                            purchasePrice: 0,
 
                             availableQtyKG: openingKG,
 
@@ -1188,11 +1186,9 @@ export class ImportResolver {
 
                         invoiceNo: "OPENING STOCK",
 
-                        unitCost:
-                            dto.sellPrice ?? 0,
+                        unitCost: 0,
 
-                        totalCost:
-                            openingKG * (dto.sellPrice ?? 0),
+                        totalCost: 0,
 
                         entryDate:
                             typeof dto.date === "string"
@@ -2370,13 +2366,8 @@ export class ImportResolver {
 
             });
 
-        if (!agency?.bankAccountId) {
-
-            throw new Error(
-                `Bank Account not mapped for ${agency?.name}`
-            );
-
-        }
+        const hasBankAccount =
+            !!agency.bankAccountId;
 
         return {
 
@@ -2384,7 +2375,9 @@ export class ImportResolver {
                 sale.branchId,
 
             bankAccountId:
-                agency.bankAccountId,
+                hasBankAccount
+            ? agency.bankAccountId
+            : undefined,
 
             direction:
                 TransactionDirection.INWARD,
@@ -2407,7 +2400,9 @@ export class ImportResolver {
                 ),
 
             paymentThrough:
-                PaymentType.CASH,
+                hasBankAccount
+            ? PaymentType.BANK_DEPOSIT
+            : PaymentType.CASH,
 
             remarks:
                 `Imported Day Book ${dto.voucherNo}`
@@ -2464,38 +2459,30 @@ export class ImportResolver {
 
         }
 
-        const agency =
+       const agency =
             await prisma.agency.findUnique({
 
                 where: {
-
                     id: purchase.agencyId
-
                 },
 
                 include: {
-
                     bankAccount: true
-
                 }
 
             });
 
-        if (!agency?.bankAccountId) {
+        const paymentThrough =
+            agency?.bankAccountId
+                ? PaymentType.BANK_DEPOSIT
+                : PaymentType.CASH;
 
-            throw new Error(
-                `Bank Account not mapped for ${agency?.name}`
-            );
+                return {
 
-        }
-
-        return {
-
-            branchId:
-                purchase.branchId,
+            branchId: purchase.branchId,
 
             bankAccountId:
-                agency.bankAccountId,
+                agency?.bankAccountId ?? undefined,
 
             direction:
                 TransactionDirection.OUTWARD,
@@ -2503,8 +2490,7 @@ export class ImportResolver {
             settlementType:
                 SettlementType.INVOICE_TO_INVOICE,
 
-            suspense:
-                false,
+            suspense: false,
 
             agencyId:
                 purchase.agencyId,
@@ -2513,12 +2499,9 @@ export class ImportResolver {
                 purchase.id,
 
             amount:
-                Number(
-                    purchase.grandTotal
-                ),
+                Number(purchase.grandTotal),
 
-            paymentThrough:
-                PaymentType.CASH,
+            paymentThrough,
 
             remarks:
                 `Imported Day Book ${dto.voucherNo}`

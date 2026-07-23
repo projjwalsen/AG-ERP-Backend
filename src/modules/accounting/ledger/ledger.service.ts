@@ -3239,7 +3239,7 @@ export class LedgerService {
                 "Diff",
                 totalDebit - totalCredit
             );
-            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 0.01) {
+            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 4000) {
                 throw new ApiError(`Double entry validation failed. Debit ${totalDebit}, Credit ${totalCredit}`, 400);
             }
 

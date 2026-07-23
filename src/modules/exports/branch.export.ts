@@ -84,18 +84,43 @@ export const branchColumns: ExportColumn<any>[] = [
 ];
 
 export const branchDayBookColumns = [
-    { header: "Serial No", key: "serialNo", width: 15 },
-    { header: "Voucher ID", key: "voucherId", width: 25 },
-    { header: "Transaction Date", key: "transactionDate", width: 25 },
-    { header: "Agency", key: "primaryAgencyName", width: 30 },
-    { header: "Third Party Agency", key: "secondaryAgencyName", width: 30 },
-    { header: "Payment Mode", key: "paymentMode", width: 20 },
-    { header: "Payment Type", key: "paymentType", width: 20 },
-    { header: "Reference", key: "transactionRef", width: 25 },
-    { header: "Debit", key: "debit", width: 15 },
-    { header: "Credit", key: "credit", width: 15 },
-    { header: "Balance", key: "runningBalance", width: 15 },
-    { header: "Remarks", key: "remarks", width: 40 }
+
+    {
+        header:"Date",
+        key:"date",
+        width:15
+    },
+
+    {
+        header:"Particulars",
+        key:"particulars",
+        width:45
+    },
+
+    {
+        header:"Vch Type",
+        key:"voucherType",
+        width:22
+    },
+
+    {
+        header:"Vch No.",
+        key:"voucherNo",
+        width:20
+    },
+
+    {
+        header:"Debit Amount",
+        key:"debitAmount",
+        width:18
+    },
+
+    {
+        header:"Credit Amount",
+        key:"creditAmount",
+        width:18
+    }
+
 ];
 
 export const gstr1Columns = [
