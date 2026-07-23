@@ -472,6 +472,12 @@ model Setting {
 
   allowNegativeTransaction Boolean @default(false)
 
+  sellerLogo      String?
+  sellerCIN       String?
+  companyPAN      String?
+  signatureImage  String?
+  jurisdictionText String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -688,6 +694,14 @@ model Sale {
 
   voucherNo    String?
 
+  irn           String?
+  ackNo         String?
+  ackDate       DateTime?
+  qrCodeImage   String?
+  modeOfPayment String?
+  referenceNo   String?
+  referenceDate DateTime?
+
   status   SalesStatus @default(PENDING)
   remarks String?
 
@@ -749,6 +763,8 @@ model SaleTransport {
   destination String?
 
   vehicleOrFlightNo String?
+
+  billOfLadingNo String?
 
   portOfLoading String?
 

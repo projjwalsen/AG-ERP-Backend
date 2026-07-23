@@ -24,6 +24,11 @@ export class SettingService {
         payload: {
             allowNegativeInventory?: boolean;
             allowNegativeTransaction?: boolean;
+            sellerLogo?: string | null;
+            sellerCIN?: string | null;
+            companyPAN?: string | null;
+            signatureImage?: string | null;
+            jurisdictionText?: string | null;
         }
     ) {
         if (!actor?.id) {
@@ -50,6 +55,23 @@ export class SettingService {
                 ...(payload.allowNegativeTransaction !== undefined && {
                     allowNegativeTransaction:
                         payload.allowNegativeTransaction
+                }),
+                ...(payload.sellerLogo !== undefined && {
+                    sellerLogo: payload.sellerLogo?.trim() || null
+                }),
+                ...(payload.sellerCIN !== undefined && {
+                    sellerCIN: payload.sellerCIN?.trim() || null
+                }),
+                ...(payload.companyPAN !== undefined && {
+                    companyPAN: payload.companyPAN?.trim() || null
+                }),
+                ...(payload.signatureImage !== undefined && {
+                    signatureImage:
+                        payload.signatureImage?.trim() || null
+                }),
+                ...(payload.jurisdictionText !== undefined && {
+                    jurisdictionText:
+                        payload.jurisdictionText?.trim() || null
                 })
             }
         });
