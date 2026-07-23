@@ -2,6 +2,7 @@ import { JournalService } from "../journal/journal.service";
 import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import pLimit from "p-limit";
+import { Express } from "express";
 
 export class JournalImportService {
 
