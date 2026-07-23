@@ -57,7 +57,21 @@ router.use(authMiddleware)
  *         name: bankAccountId
  *         required: false
  *         example: 1548c22a-8751-4de9-8161-df6baad75d95
- * 
+ *
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *          type: integer
+ *          default: 1
+ *
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *          type: integer
+ *          default: 25
+ *
  *       - in: query
  *         name: export
  *         required: false

@@ -591,7 +591,7 @@ export class ExcelService {
          * ===================================================
          */
 
-        worksheet.mergeCells("A1:F1");
+        worksheet.mergeCells("A1:E1");
 
         const title =
             worksheet.getCell("A1");
@@ -612,7 +612,7 @@ export class ExcelService {
          * Group Summary
          */
 
-        worksheet.mergeCells("A2:F2");
+        worksheet.mergeCells("A2:E2");
 
         worksheet.getCell("A2").value =
             "Group Summary";
@@ -630,7 +630,7 @@ export class ExcelService {
          * Period
          */
 
-        worksheet.mergeCells("A3:F3");
+        worksheet.mergeCells("A3:E3");
 
         worksheet.getCell("A3").value =
             options.period;
@@ -682,10 +682,10 @@ export class ExcelService {
          * Transactions / Closing
          */
 
-        worksheet.mergeCells("D8:E8");
+        worksheet.mergeCells("C8:D8");
 
         const transactions =
-            worksheet.getCell("D8");
+            worksheet.getCell("C8");
 
         transactions.value = "Transactions";
 
@@ -708,8 +708,6 @@ export class ExcelService {
             worksheet.getRow(10);
 
         header.values = [
-            "Date",
-
             "Particulars",
 
             "Opening Balance",
@@ -766,13 +764,17 @@ export class ExcelService {
         options.data.forEach(row => {
 
             const excelRow = worksheet.addRow([
-                row.date,
                 row.particulars,
                 (row.openingBalance),
                 (row.debit),
                 (row.credit),
                 (row.balance)
             ]);
+
+            excelRow.getCell(2).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
 
             excelRow.getCell(3).alignment = {
                 horizontal: "center",
@@ -789,15 +791,10 @@ export class ExcelService {
                 vertical: "middle"
             };
 
-            excelRow.getCell(6).alignment = {
-                horizontal: "center",
-                vertical: "middle"
-            };
-
-            excelRow.getCell(4).numFmt =
+            excelRow.getCell(3).numFmt =
                 "#,##0.00";
 
-            excelRow.getCell(5).numFmt =
+            excelRow.getCell(4).numFmt =
                 "#,##0.00";
 
 
@@ -834,7 +831,6 @@ export class ExcelService {
          */
 
         worksheet.columns = [
-            { width: 20 }, // Date
             { width: 55 }, // Particulars
             { width: 23 }, // Opening
             { width: 23 }, // Debit
