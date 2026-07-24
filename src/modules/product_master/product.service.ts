@@ -1,4 +1,4 @@
-import { ProductUnit } from "@prisma/client";
+import { ProductType, ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { convertKGToLTR } from "../../core/utils/density.utils";
@@ -8,6 +8,7 @@ type CreateProductPayload = {
     sku: string;
     name: string;
     category: string;
+    productType?: ProductType;
     description?: string;
     disclaimer?: string;
 
@@ -111,6 +112,7 @@ export class ProductService {
                 sku: normalizedSKU,
                 name: payload.name.trim(),
                 category: payload.category.trim(),
+                productType: payload.productType || ProductType.PURCHASED,
                 description: payload.description?.trim() || null,
                 disclaimer: payload.disclaimer?.trim() || null,
                 hsnNo: payload.hsnNo,
@@ -129,6 +131,7 @@ export class ProductService {
                 sku: true,
                 name: true,
                 category: true,
+                productType: true,
                 description: true,
                 disclaimer: true,
                 baseUnit: true,
@@ -205,8 +208,9 @@ export class ProductService {
                     id: true,
                     sku: true,
                     name: true,
-                    category: true,
-                    description: true,
+                category: true,
+                productType: true,
+                description: true,
                     disclaimer: true,
                     baseUnit: true,
                     density: true,
@@ -279,6 +283,7 @@ export class ProductService {
                 sku: true,
                 name: true,
                 category: true,
+                productType: true,
                 description: true,
                 disclaimer: true,
                 baseUnit: true,
@@ -423,6 +428,7 @@ export class ProductService {
                 sku: normalizedSKU,
                 name: payload.name?.trim(),
                 category: payload.category?.trim(),
+                productType: payload.productType,
                 description: payload.description?.trim() || null,
                 disclaimer: payload.disclaimer?.trim() || null,
                 baseUnit: payload.baseUnit,
@@ -439,6 +445,7 @@ export class ProductService {
                 sku: true,
                 name: true,
                 category: true,
+                productType: true,
                 description: true,
                 disclaimer: true,
                 baseUnit: true,

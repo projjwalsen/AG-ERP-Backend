@@ -5,6 +5,7 @@ import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedger
 import { ExcelService } from "../../../core/utils/export.service";
 import { accountingLedgerColumns, bankAccCashColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
 import { formatISTDate } from "../../../core/utils/loc.utils";
+import { prisma } from "../../../config/db";
 
 const buildSundryLedgerRows = (blocks: any[]) => {
     return blocks
@@ -333,6 +334,51 @@ export const getLedgerByBranchId = async (
                 req.query.startDate as string,
             endDate:
                 req.query.endDate as string,
+        }
+
+        if (
+            !query.startDate &&
+            (category === "DEBTORS" || category === "CREDITORS")
+        ) {
+
+            const firstVoucher =
+                await prisma.voucher.findFirst({
+
+                    where: {
+                        entries: {
+                            some: {
+                                ledger: {
+                                    branchId,
+                                    category:
+                                        category === "DEBTORS"
+                                            ? LedgerType.CUSTOMER
+                                            : LedgerType.VENDOR
+                                }
+                            }
+                        }
+                    },
+
+                    orderBy: {
+                        voucherDate: "asc"
+                    },
+
+                    select: {
+                        voucherDate: true
+                    }
+                });
+
+            if (firstVoucher) {
+
+                query.startDate =
+                    firstVoucher.voucherDate
+                        .toISOString()
+                        .split("T")[0];
+            }
+
+            query.endDate =
+                new Date()
+                    .toISOString()
+                    .split("T")[0];
         }
 
         const result =

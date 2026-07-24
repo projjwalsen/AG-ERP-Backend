@@ -28,6 +28,45 @@ type RemoveStockPayload = {
 
 export class InventoryService {
 
+    static async allocateFIFO(
+        tx: Prisma.TransactionClient | typeof prisma,
+        payload: { branchId: string; productId: string; quantity: number; unit: ProductUnit }
+    ) {
+        const batches = await tx.inventoryBatch.findMany({
+            where: {
+                branchId: payload.branchId,
+                productId: payload.productId,
+                isActive: true,
+                ...(payload.unit === ProductUnit.KG
+                    ? { availableQtyKG: { gt: 0 } }
+                    : { availableQtyLTR: { gt: 0 } })
+            },
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }]
+        });
+
+        let remaining = payload.quantity;
+        const allocations: Array<{ batch: typeof batches[number]; quantity: number }> = [];
+
+        for (const batch of batches) {
+            if (remaining <= 0) break;
+            const available = payload.unit === ProductUnit.KG
+                ? Number(batch.availableQtyKG)
+                : Number(batch.availableQtyLTR);
+            const quantity = Math.min(available, remaining);
+            if (quantity > 0) {
+                allocations.push({ batch, quantity });
+                remaining = Number((remaining - quantity).toFixed(3));
+            }
+        }
+
+        return {
+            allocations,
+            required: payload.quantity,
+            available: Number((payload.quantity - remaining).toFixed(3)),
+            shortage: remaining
+        };
+    }
+
     static async addStock(
         tx: Prisma.TransactionClient | typeof prisma, 
         payload: AddStockPayload

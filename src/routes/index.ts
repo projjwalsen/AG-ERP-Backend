@@ -18,6 +18,7 @@ import dashboardRoute from "../modules/dashboard/kpi.routes";
 import importRoute from "../modules/import/import.routes";
 import bankRoute from "../modules/bank/bank.routes";
 import journalRoute from "../modules/journal/journal.routes";
+import manufacturingRoute from "../modules/manufacturing/manufacturing.routes";
 
 const router = Router();
 
@@ -40,6 +41,7 @@ router.use("/reports", reportingRoute);
 router.use("/dashboard", dashboardRoute);
 router.use("/migration", importRoute);
 router.use("/journal", journalRoute);
+router.use("/manufacturing", manufacturingRoute);
 
 
 
