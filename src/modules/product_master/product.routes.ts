@@ -41,6 +41,11 @@ router.use(authMiddleware);
  *                 type: string
  *               category:
  *                 type: string
+ *               productType:
+ *                 type: string
+ *                 enum:
+ *                  - PURCHASED
+ *                  - MANUFACTURED
  *               description:
  *                 type: string
  *               disclaimer:
