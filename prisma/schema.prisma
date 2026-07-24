@@ -50,6 +50,10 @@ model User {
   ledgersCreated Ledger[] @relation("LedgerCreatedBy")
   journalsCreated Journal[] @relation("JournalCreatedBy")
   journalsApproved Journal[] @relation("JournalApprovedBy")
+  recipesCreated ProductRecipe[] @relation("RecipeCreatedBy")
+  recipesApproved ProductRecipe[] @relation("RecipeApprovedBy")
+  manufacturesCreated ProductManufacture[] @relation("ManufactureCreatedBy")
+  manufacturesApproved ProductManufacture[] @relation("ManufactureApprovedBy")
 
 
   createdById  String?
@@ -99,6 +103,7 @@ model Branch {
   vouchers Voucher[]
   productLedgerEntries ProductLedgerEntry[]
   journals Journal[]
+  productManufactures ProductManufacture[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -303,6 +308,12 @@ enum ProductUnit {
   LTR
 }
 
+enum ProductType {
+  PURCHASED
+  MANUFACTURED
+  BOTH
+}
+
 // ============================================
 // PRODUCT LEDGER ENUMS
 // ============================================
@@ -317,6 +328,8 @@ enum ProductMovementType {
   DAMAGE           // Damaged/defective stock
   TRANSFER_IN      // Stock transferred from another branch
   TRANSFER_OUT     // Stock transferred to another branch
+  MANUFACTURE_IN   // Finished goods received from manufacturing
+  MANUFACTURE_OUT  // Raw material consumed by manufacturing
 }
 
 enum ProductMovementDirection {
@@ -331,6 +344,7 @@ model Product {
 
   name  String
   category String?
+  productType ProductType @default(PURCHASED)
   description String?
   disclaimer String?
 
@@ -359,6 +373,10 @@ model Product {
   ledger Ledger[]
   ledgerEntries LedgerEntry[]
   productLedger ProductLedger?
+  recipeOutputs ProductRecipe[] @relation("RecipeOutputProduct")
+  recipeItems ProductRecipeItem[]
+  manufactures ProductManufacture[] @relation("ManufacturedOutputProduct")
+  manufacturingConsumptions ProductManufactureConsumption[]
 
   @@index([sku])
   @@index([name])
@@ -517,6 +535,8 @@ model InventoryBatch {
   purchaseItems PurchaseItem[]
   salesItems SalesItem[]
   productLedgerEntries ProductLedgerEntry[]
+  manufactureOutputs ProductManufacture[] @relation("ManufactureOutputBatch")
+  manufactureConsumptions ProductManufactureConsumption[]
 
   @@index([branchId])
   @@index([productId])
@@ -1102,11 +1122,118 @@ model Voucher {
   entries LedgerEntry[]
   transaction Transaction[]
   journals Journal[]
+  manufactures ProductManufacture[]
 
   @@index([voucherType])
   @@index([sourceId])
   @@index([branchId])
   @@unique([voucherType, sourceId])
+}
+
+enum ProductRecipeStatus {
+  DRAFT
+  APPROVED
+  LOCKED
+  REJECTED
+}
+
+model ProductRecipe {
+  id String @id @default(uuid())
+
+  outputProductId String
+  outputProduct Product @relation("RecipeOutputProduct", fields: [outputProductId], references: [id], onDelete: Restrict)
+  outputQuantity Decimal @db.Decimal(18, 3)
+  outputUnit ProductUnit
+  version Int @default(1)
+  remarks String?
+  status ProductRecipeStatus @default(DRAFT)
+
+  createdById String
+  createdBy User @relation("RecipeCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById String?
+  approvedBy User? @relation("RecipeApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt DateTime?
+
+  items ProductRecipeItem[]
+  manufactures ProductManufacture[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([outputProductId])
+  @@index([status])
+}
+
+model ProductRecipeItem {
+  id String @id @default(uuid())
+  recipeId String
+  recipe ProductRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  productId String
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity Decimal @db.Decimal(18, 3)
+  unit ProductUnit
+  createdAt DateTime @default(now())
+
+  @@unique([recipeId, productId])
+  @@index([productId])
+}
+
+enum ProductManufactureStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
+model ProductManufacture {
+  id String @id @default(uuid())
+  recipeId String
+  recipe ProductRecipe @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  outputProductId String
+  outputProduct Product @relation("ManufacturedOutputProduct", fields: [outputProductId], references: [id], onDelete: Restrict)
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  outputBatchId String?
+  outputBatch InventoryBatch? @relation("ManufactureOutputBatch", fields: [outputBatchId], references: [id], onDelete: SetNull)
+  outputBatchNo String
+  outputQuantity Decimal @db.Decimal(18, 3)
+  outputUnit ProductUnit
+  totalManufacturingCost Decimal? @db.Decimal(18, 2)
+  unitManufacturingCost Decimal? @db.Decimal(18, 2)
+  remarks String?
+  status ProductManufactureStatus @default(DRAFT)
+  voucherId String?
+  voucher Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy User @relation("ManufactureCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedById String?
+  approvedBy User? @relation("ManufactureApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt DateTime?
+
+  consumptions ProductManufactureConsumption[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recipeId])
+  @@index([branchId, status])
+  @@index([outputProductId])
+}
+
+model ProductManufactureConsumption {
+  id String @id @default(uuid())
+  manufactureId String
+  manufacture ProductManufacture @relation(fields: [manufactureId], references: [id], onDelete: Cascade)
+  productId String
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  batchId String
+  batch InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  quantity Decimal @db.Decimal(18, 3)
+  unit ProductUnit
+  unitCost Decimal @db.Decimal(18, 2)
+  totalCost Decimal @db.Decimal(18, 2)
+  createdAt DateTime @default(now())
+
+  @@index([manufactureId])
+  @@index([productId, batchId])
 }
 
 enum EntryType {

@@ -8,13 +8,13 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
         const actor = (req as any).user;
         const {
             name, sku, category, description, disclaimer,
-            hsnNo, applicableGST, baseUnit, density, 
+            hsnNo, applicableGST, baseUnit, density, productType,
             operationalUnit, minimumStockKG, sellPricePerUnit
         } = req.body;
 
         const product = await ProductService.createProduct(actor, {
             name, sku, category, description, disclaimer,
-            hsnNo, applicableGST, baseUnit, density, 
+            hsnNo, applicableGST, baseUnit, density, productType,
             operationalUnit, minimumStockKG, sellPricePerUnit
         });
 
@@ -103,14 +103,14 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
 
         const {
             name, sku, category, description, disclaimer,
-            hsnNo, applicableGST, baseUnit, density, 
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            hsnNo, applicableGST, baseUnit, density, productType,
+            operationalUnit, minimumStockKG, sellPricePerUnit, openingStockKG
         } = req.body;
 
         const product = await ProductService.updateProduct(actor, productId, {
             name, sku, category, description, disclaimer,
-            hsnNo, applicableGST, baseUnit, density, 
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            hsnNo, applicableGST, baseUnit, density, productType,
+            operationalUnit, minimumStockKG, sellPricePerUnit, openingStockKG
         });
 
         return res.status(200).json({

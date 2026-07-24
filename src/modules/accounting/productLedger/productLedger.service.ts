@@ -214,6 +214,48 @@ export class ProductLedgerService {
         });
     }
 
+    static async createManufactureInMovement(
+        tx: Prisma.TransactionClient,
+        payload: { productLedgerId: string; manufacture: any; batchId: string; batchNo: string }
+    ) {
+        return this.addMovement(tx, {
+            productLedgerId: payload.productLedgerId,
+            movementType: ProductMovementType.MANUFACTURE_IN,
+            direction: ProductMovementDirection.CREDIT,
+            quantityKG: Number(payload.manufacture.outputQuantity),
+            unit: payload.manufacture.outputUnit,
+            branchId: payload.manufacture.branchId,
+            batchId: payload.batchId,
+            batchNo: payload.batchNo,
+            unitCost: Number(payload.manufacture.unitManufacturingCost),
+            entryDate: payload.manufacture.createdAt || new Date(),
+            remarks: `Manufactured batch ${payload.batchNo}`,
+            createdById: payload.manufacture.createdById,
+            reference: payload.manufacture.id
+        });
+    }
+
+    static async createManufactureOutMovement(
+        tx: Prisma.TransactionClient,
+        payload: { productLedgerId: string; manufacture: any; consumption: any; batchNo: string }
+    ) {
+        return this.addMovement(tx, {
+            productLedgerId: payload.productLedgerId,
+            movementType: ProductMovementType.MANUFACTURE_OUT,
+            direction: ProductMovementDirection.DEBIT,
+            quantityKG: Number(payload.consumption.quantity),
+            unit: payload.consumption.unit,
+            branchId: payload.manufacture.branchId,
+            batchId: payload.consumption.batchId,
+            batchNo: payload.batchNo,
+            unitCost: Number(payload.consumption.unitCost),
+            entryDate: payload.manufacture.createdAt || new Date(),
+            remarks: `Consumed by manufacture ${payload.manufacture.id}`,
+            createdById: payload.manufacture.createdById,
+            reference: payload.manufacture.id
+        });
+    }
+
     /**
      * ========================================
      * GENERIC ADD MOVEMENT (PRIVATE)
@@ -250,6 +292,7 @@ export class ProductLedgerService {
             entryDate: Date;
             remarks?: string;
             createdById?: string;
+            reference?: string;
         }
     ) {
         const {
@@ -287,6 +330,7 @@ export class ProductLedgerService {
                 entryDate: payload.entryDate,
                 remarks: payload.remarks || null,
                 createdById: payload.createdById || null,
+                reference: payload.reference || null,
             },
             include: {
                 branch: true,
