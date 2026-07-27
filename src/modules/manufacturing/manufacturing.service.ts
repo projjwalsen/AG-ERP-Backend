@@ -20,6 +20,7 @@ type RecipeInput = { outputProductId: string; outputQuantity: number; outputUnit
 type ManufactureInput = { recipeId: string; branchId: string; outputQuantity: number; remarks?: string };
 
 const round = (value: number, decimals = 2) => Number(value.toFixed(decimals));
+const consumptionInclude = { product: true };
 
 export class ManufacturingService {
     private static actor(actor: any) {
@@ -214,7 +215,7 @@ export class ManufacturingService {
     static async listManufactures(actor: any, status?: ProductManufactureStatus, branchId?: string) {
         this.actor(actor);
         if (branchId) this.branch(actor, branchId);
-        return prisma.productManufacture.findMany({ where: { ...(status ? { status } : {}), ...(branchId ? { branchId } : {}) }, include: { outputProduct: true, recipe: true, consumptions: true }, orderBy: { createdAt: "desc" } });
+        return prisma.productManufacture.findMany({ where: { ...(status ? { status } : {}), ...(branchId ? { branchId } : {}) }, include: { outputProduct: true, recipe: true, consumptions: { include: consumptionInclude } }, orderBy: { createdAt: "desc" } });
     }
 
     static async approveManufacture(actor: any, manufactureId: string) {
@@ -251,7 +252,7 @@ export class ManufacturingService {
             accountingEntries.push({ ledgerId: finishedLedger.id, entryType: EntryType.DEBIT, amount: calculation.totalManufacturingCost, branchId: manufacture.branchId, productId: manufacture.outputProductId, narration: `Finished goods received for ${manufacture.id}` });
             accountingEntries.push({ ledgerId: wipLedger.id, entryType: EntryType.CREDIT, amount: calculation.totalManufacturingCost, branchId: manufacture.branchId, narration: `Manufacturing WIP cleared for ${manufacture.id}` });
             const voucher = await LedgerService.createVoucher({ voucherType: VoucherType.JOURNAL, sourceId: manufacture.id, branchId: manufacture.branchId, narration: `Manufacturing ${recipe.outputProduct.name}`, voucherDate: manufacture.createdAt, entries: accountingEntries }, tx);
-            return tx.productManufacture.update({ where: { id: manufacture.id }, data: { totalManufacturingCost: calculation.totalManufacturingCost, unitManufacturingCost: calculation.unitManufacturingCost, outputBatchId: outputBatch.id, voucherId: voucher.id }, include: { outputProduct: true, recipe: { include: { outputProduct: true, items: true } }, consumptions: true, voucher: { include: { entries: true } } } });
+            return tx.productManufacture.update({ where: { id: manufacture.id }, data: { totalManufacturingCost: calculation.totalManufacturingCost, unitManufacturingCost: calculation.unitManufacturingCost, outputBatchId: outputBatch.id, voucherId: voucher.id }, include: { outputProduct: true, recipe: { include: { outputProduct: true, items: true } }, consumptions: { include: consumptionInclude }, voucher: { include: { entries: true } } } });
         });
     }
 
