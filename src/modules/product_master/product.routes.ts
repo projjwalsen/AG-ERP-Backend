@@ -46,6 +46,7 @@ router.use(authMiddleware);
  *                 enum:
  *                  - PURCHASED
  *                  - MANUFACTURED
+ *                  - BOTH
  *               description:
  *                 type: string
  *               disclaimer:
@@ -70,6 +71,33 @@ router.use(authMiddleware);
  *                 type: number
  *               sellPricePerUnit:
  *                 type: number
+ *               recipe:
+ *                 type: object
+ *                 description: Required when productType is MANUFACTURED or BOTH
+ *                 properties:
+ *                   outputQuantity:
+ *                     type: number
+ *                   outputUnit:
+ *                     type: string
+ *                     enum:
+ *                       - KG
+ *                       - LTR
+ *                   remarks:
+ *                     type: string
+ *                   items:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         productId:
+ *                           type: string
+ *                         quantity:
+ *                           type: number
+ *                         unit:
+ *                           type: string
+ *                           enum:
+ *                             - KG
+ *                             - LTR
  *     responses:
  *       201:
  *         description: Product created successfully

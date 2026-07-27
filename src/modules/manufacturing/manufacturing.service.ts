@@ -17,6 +17,7 @@ import { LedgerService } from "../accounting/ledger/ledger.service";
 
 type RecipeItemInput = { productId: string; quantity: number; unit: ProductUnit };
 type RecipeInput = { outputProductId: string; outputQuantity: number; outputUnit: ProductUnit; items: RecipeItemInput[]; remarks?: string };
+type RecipeForProductInput = Omit<RecipeInput, "outputProductId">;
 type ManufactureInput = { recipeId: string; branchId: string; outputQuantity: number; remarks?: string };
 
 const round = (value: number, decimals = 2) => Number(value.toFixed(decimals));
@@ -75,8 +76,8 @@ export class ManufacturingService {
         return recipe;
     }
 
-    private static async rejectCircularRecipe(outputProductId: string, itemProductIds: string[]) {
-        const approved = await prisma.productRecipe.findMany({
+    private static async rejectCircularRecipe(outputProductId: string, itemProductIds: string[], tx: any = prisma) {
+        const approved = await tx.productRecipe.findMany({
             where: { status: { in: [ProductRecipeStatus.APPROVED, ProductRecipeStatus.LOCKED] } },
             select: { outputProductId: true, items: { select: { productId: true } } }
         });
@@ -138,18 +139,18 @@ export class ManufacturingService {
         };
     }
 
-    static async createRecipe(actor: any, input: RecipeInput) {
+    static async createRecipeForProduct(actor: any, outputProductId: string, input: RecipeForProductInput, tx: any = prisma) {
         this.actor(actor);
-        this.validateRecipe(input);
-        const product = await prisma.product.findUnique({ where: { id: input.outputProductId } });
+        this.validateRecipe({ ...input, outputProductId });
+        const product = await tx.product.findUnique({ where: { id: outputProductId } });
         if (!product) throw new ApiError("Output product not found", 404);
         if (product.productType === ProductType.PURCHASED) throw new ApiError("Output product must be MANUFACTURED or BOTH", 400);
-        const itemProducts = await prisma.product.findMany({ where: { id: { in: input.items.map(item => item.productId) } }, select: { id: true } });
+        const itemProducts = await tx.product.findMany({ where: { id: { in: input.items.map(item => item.productId) } }, select: { id: true } });
         if (itemProducts.length !== input.items.length) throw new ApiError("One or more recipe products were not found", 404);
-        await this.rejectCircularRecipe(input.outputProductId, input.items.map(item => item.productId));
-        return prisma.productRecipe.create({
+        await this.rejectCircularRecipe(outputProductId, input.items.map(item => item.productId), tx);
+        return tx.productRecipe.create({
             data: {
-                outputProductId: input.outputProductId,
+                outputProductId,
                 outputQuantity: input.outputQuantity,
                 outputUnit: input.outputUnit,
                 remarks: input.remarks?.trim() || null,
@@ -158,6 +159,10 @@ export class ManufacturingService {
             },
             include: { outputProduct: true, items: { include: { product: true } } }
         });
+    }
+
+    static async createRecipe(actor: any, input: RecipeInput) {
+        return this.createRecipeForProduct(actor, input.outputProductId, input);
     }
 
     static async listRecipes(actor: any, status?: ProductRecipeStatus) {

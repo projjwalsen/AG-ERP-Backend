@@ -3,6 +3,7 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { convertKGToLTR } from "../../core/utils/density.utils";
 import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
+import { ManufacturingService } from "../manufacturing/manufacturing.service";
 
 type CreateProductPayload = {
     sku: string;
@@ -22,6 +23,12 @@ type CreateProductPayload = {
     openingStockKG?: number;
 
     sellPricePerUnit: number;
+    recipe?: {
+        outputQuantity: number;
+        outputUnit: ProductUnit;
+        items: { productId: string; quantity: number; unit: ProductUnit }[];
+        remarks?: string;
+    };
 }
 
 type UpdateProductPayload = Partial<CreateProductPayload>;
@@ -107,53 +114,73 @@ export class ProductService {
          */
         const previewLTR = payload.density ? convertKGToLTR(1000, payload.density) : null;
 
-        const product = await prisma.product.create({
-            data: {
-                sku: normalizedSKU,
-                name: payload.name.trim(),
-                category: payload.category.trim(),
-                productType: payload.productType || ProductType.PURCHASED,
-                description: payload.description?.trim() || null,
-                disclaimer: payload.disclaimer?.trim() || null,
-                hsnNo: payload.hsnNo,
-                applicableGST: payload.applicableGST,
-                baseUnit: payload.baseUnit || "KG",
-                density: payload.density,
-                operationalUnit: payload.operationalUnit || "LTR",
-                minimumStockKG: payload.minimumStockKG,
-                openingStockKG: payload.openingStockKG || 0,
-                sellPricePerUnit: normalizedPrice,
-                sellPriceLTR: sellPriceLTR,
-                isActive: true
-            },
-            select: {
-                id: true,
-                sku: true,
-                name: true,
-                category: true,
-                productType: true,
-                description: true,
-                disclaimer: true,
-                baseUnit: true,
-                density: true,
-                hsnNo: true,
-                applicableGST: true,
-                operationalUnit: true,
-                minimumStockKG: true,
-                openingStockKG: true,
-                sellPricePerUnit: true,
-                sellPriceLTR: true,
-                isActive: true,
-                createdAt: true,
-            }
-        });
+        const productType = payload.productType || ProductType.PURCHASED;
+        const shouldCreateRecipe = productType === ProductType.MANUFACTURED || productType === ProductType.BOTH;
 
-        await ProductLedgerService.getOrCreateProductLedger(
-            product.id
-        );
+        if (shouldCreateRecipe && !payload.recipe) {
+            throw new ApiError(
+                "Recipe payload is required for manufactured products",
+                400
+            );
+        }
+
+        const { product, recipe } = await prisma.$transaction(async tx => {
+            const product = await tx.product.create({
+                data: {
+                    sku: normalizedSKU,
+                    name: payload.name.trim(),
+                    category: payload.category.trim(),
+                    productType,
+                    description: payload.description?.trim() || null,
+                    disclaimer: payload.disclaimer?.trim() || null,
+                    hsnNo: payload.hsnNo,
+                    applicableGST: payload.applicableGST,
+                    baseUnit: payload.baseUnit || "KG",
+                    density: payload.density,
+                    operationalUnit: payload.operationalUnit || "LTR",
+                    minimumStockKG: payload.minimumStockKG,
+                    openingStockKG: payload.openingStockKG || 0,
+                    sellPricePerUnit: normalizedPrice,
+                    sellPriceLTR: sellPriceLTR,
+                    isActive: true
+                },
+                select: {
+                    id: true,
+                    sku: true,
+                    name: true,
+                    category: true,
+                    productType: true,
+                    description: true,
+                    disclaimer: true,
+                    baseUnit: true,
+                    density: true,
+                    hsnNo: true,
+                    applicableGST: true,
+                    operationalUnit: true,
+                    minimumStockKG: true,
+                    openingStockKG: true,
+                    sellPricePerUnit: true,
+                    sellPriceLTR: true,
+                    isActive: true,
+                    createdAt: true,
+                }
+            });
+
+            await ProductLedgerService.getOrCreateProductLedger(
+                product.id,
+                tx
+            );
+
+            const recipe = shouldCreateRecipe && payload.recipe
+                ? await ManufacturingService.createRecipeForProduct(actor, product.id, payload.recipe, tx)
+                : null;
+
+            return { product, recipe };
+        });
 
         return {
             ...product,
+            recipe,
             conversionPreview: payload.density ? {
                 sampleKg: 1000,
                 equivalentLtr: previewLTR!,
@@ -208,9 +235,9 @@ export class ProductService {
                     id: true,
                     sku: true,
                     name: true,
-                category: true,
-                productType: true,
-                description: true,
+                    category: true,
+                    productType: true,
+                    description: true,
                     disclaimer: true,
                     baseUnit: true,
                     density: true,
@@ -222,6 +249,21 @@ export class ProductService {
                     sellPricePerUnit: true,
                     isActive: true,
                     createdAt: true,
+                    recipeOutputs: {
+                        include: {
+                            items: {
+                                include: {
+                                    product: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            sku: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
 
                 orderBy: {
