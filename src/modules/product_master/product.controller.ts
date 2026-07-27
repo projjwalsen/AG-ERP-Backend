@@ -9,13 +9,15 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
         const {
             name, sku, category, description, disclaimer,
             hsnNo, applicableGST, baseUnit, density, productType,
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            operationalUnit, minimumStockKG, openingStockKG, sellPricePerUnit,
+            recipe
         } = req.body;
 
         const product = await ProductService.createProduct(actor, {
             name, sku, category, description, disclaimer,
             hsnNo, applicableGST, baseUnit, density, productType,
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            operationalUnit, minimumStockKG, openingStockKG, sellPricePerUnit,
+            recipe
         });
 
         return res.status(201).json({
