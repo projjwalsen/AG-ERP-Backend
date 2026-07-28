@@ -879,6 +879,10 @@ export class ReportingService {
                 agencyName: string;
 
                 vendorCode: string;
+                gstin: string | null;
+                branchName: string | null;
+                balanceType?: "RECEIVABLE" | "PAYABLE";
+                createdAt?: Date | null;
 
                 totalOutstanding: number;
 
@@ -916,6 +920,7 @@ export class ReportingService {
                 },
                 include: {
                     agency: true,
+                    branch: true,
                     allocations: true
                 },
                 orderBy: {
@@ -1035,6 +1040,9 @@ export class ReportingService {
                         agencyId: sale.agencyId,
                         agencyName: sale.agency?.name || null,
                         vendorCode: "",
+                        gstin: sale.agency?.gstin || null,
+                        branchName: sale.branch?.name || null,
+                        createdAt: sale.invoiceDate,
                         totalOutstanding: 0,
                         bucket_0_30_days: {
                             amount: 0,
@@ -1056,6 +1064,14 @@ export class ReportingService {
                 }
 
                 const agency = agencyMap.get(sale.agencyId)!;
+
+                if (!agency.createdAt || sale.invoiceDate < agency.createdAt) {
+                    agency.createdAt = sale.invoiceDate;
+                }
+
+                if (agency.branchName && agency.branchName !== sale.branch?.name) {
+                    agency.branchName = "Multiple";
+                }
 
                 agency.totalOutstanding += outstanding;
 
@@ -1105,6 +1121,7 @@ export class ReportingService {
                 },
                 include: {
                     agency: true,
+                    branch: true,
                     allocations: true
                 },
                 orderBy: {
@@ -1225,6 +1242,9 @@ export class ReportingService {
                         agencyId: purchase.agencyId,
                         agencyName: purchase.agency?.name || null,
                         vendorCode: "",
+                        gstin: purchase.agency?.gstin || null,
+                        branchName: purchase.branch?.name || null,
+                        createdAt: purchase.createdAt,
                         totalOutstanding: 0,
                         bucket_0_30_days: {
                             amount: 0,
@@ -1246,6 +1266,14 @@ export class ReportingService {
                 }
 
                 const agency = agencyMap.get(purchase.agencyId)!;
+
+                if (!agency.createdAt || purchase.createdAt < agency.createdAt) {
+                    agency.createdAt = purchase.createdAt;
+                }
+
+                if (agency.branchName && agency.branchName !== purchase.branch?.name) {
+                    agency.branchName = "Multiple";
+                }
 
                 agency.totalOutstanding += outstanding;
 
@@ -1299,6 +1327,11 @@ export class ReportingService {
 
             row.vendorCode =
                 `V${String(index + 1).padStart(3, "0")}`;
+
+            row.balanceType =
+                query.type === "RECEIVABLE"
+                    ? "RECEIVABLE"
+                    : "PAYABLE";
 
         });
         

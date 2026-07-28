@@ -268,7 +268,7 @@ export const getOutstandingReport = async (
                     | "RECEIVABLE"
                     | "PAYABLE",
             export:
-                exportType === "DETAILS"
+                ["DETAILS", "AGING", "TRUE"].includes(exportType)
         };
 
         const report =

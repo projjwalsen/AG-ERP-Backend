@@ -229,14 +229,20 @@ export const stockInventoryColumns = [
 
 export const outstandingColumns = [
     {
+        header: "Vendor Code",
+        key: "vendorCode",
+        width: 15
+    },
+
+    {
         header: "Agency Name",
-        key: "agency_name",
+        key: "agencyName",
         width: 35
     },
 
     {
         header: "Branch",
-        value: row => row.branch?.name,
+        key: "branchName",
         width: 25
     },
 
@@ -248,7 +254,7 @@ export const outstandingColumns = [
 
     {
         header: "Outstanding Amount",
-        key: "total_outstanding",
+        key: "totalOutstanding",
         width: 20
     },
 
@@ -261,8 +267,10 @@ export const outstandingColumns = [
     {
         header: "Created At",
         value: row =>
-            new Date(row.createdAt)
-                .toLocaleDateString("en-IN"),
+            row.createdAt
+                ? new Date(row.createdAt)
+                    .toLocaleDateString("en-IN")
+                : "",
         width: 18
     }
 ];
