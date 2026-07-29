@@ -344,6 +344,7 @@ export class ProductService {
                 isActive: true,                
                 createdAt: true,
                 updatedAt: true,
+                recipeOutputs: true
             }
         });
 
