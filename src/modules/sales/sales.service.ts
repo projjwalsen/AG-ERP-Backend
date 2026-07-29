@@ -5,9 +5,11 @@ import { RBACService } from "../rbac/rbac.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { SalesToInvMapper } from "../../core/utils/saleToInvMapper";
 import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
+import { EmailService } from "../../core/utils/email.service";
 import { randomUUID } from "crypto";
 import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { logger } from "../../config/logger";
 
 type SalesItemPayload = {
     productId: string;
@@ -681,7 +683,13 @@ export class SalesService {
             }
         });
 
-        return sale; 
+        const invoiceEmail =
+            await this.sendSaleInvoiceEmail(sale.id);
+
+        return {
+            ...sale,
+            invoiceEmail
+        }; 
     }
 
     /**
@@ -1696,6 +1704,112 @@ export class SalesService {
                 invoiceSettings
             }
             : null;
+    }
+
+    private static async sendSaleInvoiceEmail(
+        saleId: string
+    ) {
+        const sale =
+            await this.loadSaleForInvoice(
+                saleId,
+                false
+            );
+
+        if (!sale) {
+            return {
+                status: "SKIPPED",
+                reason: "SALE_NOT_FOUND"
+            };
+        }
+
+        const recipientEmail =
+            sale.agency?.email?.trim();
+
+        if (!recipientEmail) {
+            return {
+                status: "SKIPPED",
+                reason: "AGENCY_EMAIL_NOT_FOUND"
+            };
+        }
+
+        try {
+            const invoiceData =
+                SalesToInvMapper.map(sale);
+
+            const pdf =
+                await InvoiceRenderer.generatePdf(
+                    invoiceData
+                );
+
+            const safeInvoiceNo =
+                String(sale.invoiceNo)
+                    .replace(/[^a-z0-9_-]/gi, "_");
+
+            const result =
+                await EmailService.sendTransactionalEmail({
+                    to: [{
+                        email: recipientEmail,
+                        name: sale.agency?.name
+                    }],
+                    replyTo: sale.branch?.email
+                        ? {
+                            email: sale.branch.email,
+                            name: sale.branch.name
+                        }
+                        : undefined,
+                    subject:
+                        `Sales Invoice ${sale.invoiceNo}`,
+                    htmlContent: `
+                        <p>Dear ${sale.agency?.name || "Customer"},</p>
+                        <p>Please find attached sales invoice <strong>${sale.invoiceNo}</strong>.</p>
+                        <p>Invoice Amount: <strong>Rs. ${Number(sale.grandTotal || 0).toFixed(2)}</strong></p>
+                        <p>Regards,<br/>A G Ashtavinayaka Petrochem Pvt Ltd</p>
+                    `,
+                    textContent:
+                        `Please find attached sales invoice ${sale.invoiceNo}. Invoice Amount: Rs. ${Number(sale.grandTotal || 0).toFixed(2)}.`,
+                    attachments: [{
+                        name: `sale_invoice_${safeInvoiceNo}.pdf`,
+                        content: Buffer.from(pdf)
+                    }],
+                    tags: [
+                        "sale-invoice",
+                        String(sale.invoiceNo)
+                    ]
+                });
+
+            if ((result as any)?.skipped) {
+                return {
+                    status: "SKIPPED",
+                    reason: (result as any).reason
+                };
+            }
+
+            const responseData =
+                (result as any)?.data || result;
+
+            return {
+                status: "SENT",
+                to: recipientEmail,
+                messageId: responseData?.messageId,
+                messageIds: responseData?.messageIds
+            };
+        } catch (error) {
+            logger.error({
+                err: error,
+                saleId,
+                invoiceNo: sale.invoiceNo,
+                agencyId: sale.agencyId
+            }, "Sale invoice email failed");
+
+            return {
+                status: "FAILED",
+                to: recipientEmail,
+                reason:
+                    error instanceof Error
+                        ? error.message
+                        : "Unable to send invoice email"
+            };
+        }
     }
 
     static async downloadInvoicePDF(

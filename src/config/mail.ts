@@ -1,7 +1,10 @@
-import { Brevo, BrevoClient } from "@getbrevo/brevo";
+import { BrevoClient } from "@getbrevo/brevo";
 
 export const brevoClient = new BrevoClient({
-    apiKey: process.env.BREVO_KEY || "",
+    apiKey:
+        process.env.BREVO_API_KEY ||
+        process.env.BREVO_KEY ||
+        "",
     timeoutInSeconds: 40,
     maxRetries: 0,
 });
