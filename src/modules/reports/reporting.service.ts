@@ -1,10 +1,279 @@
-import { LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
+import { EntryType, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 
 export class ReportingService {
+    private static splitSignedBalance(value: number) {
+        const rounded = Number(value.toFixed(2));
+
+        return {
+            debit: rounded > 0 ? rounded : 0,
+            credit: rounded < 0 ? Math.abs(rounded) : 0
+        };
+    }
+
+    private static sumEntryGroups(
+        groups: Array<{ ledgerId: string; entryType: EntryType; _sum: { amount: any } }>
+    ) {
+        const map = new Map<string, { debit: number; credit: number }>();
+
+        for (const group of groups) {
+            const current = map.get(group.ledgerId) || { debit: 0, credit: 0 };
+            const amount = Number(group._sum.amount || 0);
+
+            if (group.entryType === EntryType.DEBIT) {
+                current.debit += amount;
+            } else {
+                current.credit += amount;
+            }
+
+            map.set(group.ledgerId, current);
+        }
+
+        return map;
+    }
+
+    static async getTrialBalanceReport(
+        actor: any,
+        query?: {
+            branchId?: string;
+            startDate?: string;
+            endDate?: string;
+            includeZero?: boolean;
+        }
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const branchId =
+            actor.branchAccessType === "ALL"
+                ? query?.branchId
+                : actor.branchId;
+
+        if (query?.branchId && actor.branchAccessType !== "ALL" && query.branchId !== actor.branchId) {
+            throw new ApiError("You do not have access to this branch", 403);
+        }
+
+        let branch = null;
+
+        if (branchId) {
+            branch = await prisma.branch.findUnique({
+                where: { id: branchId },
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    gstin: true
+                }
+            });
+
+            if (!branch) {
+                throw new ApiError("Branch not found", 404);
+            }
+        }
+
+        const startDate = query?.startDate
+            ? parseDate(query.startDate, "startDate")
+            : undefined;
+
+        const endDate = query?.endDate
+            ? parseDate(query.endDate, "endDate")
+            : new Date();
+
+        if (startDate) {
+            startDate.setHours(0, 0, 0, 0);
+        }
+
+        endDate.setHours(23, 59, 59, 999);
+
+        if (startDate && startDate > endDate) {
+            throw new ApiError("startDate cannot be after endDate", 400);
+        }
+
+        const branchEntryFilter: Prisma.LedgerEntryWhereInput | undefined = branchId
+            ? {
+                OR: [
+                    { branchId },
+                    { voucher: { branchId } }
+                ]
+            }
+            : undefined;
+
+        const periodWhere: Prisma.LedgerEntryWhereInput = {
+            AND: [
+                ...(branchEntryFilter ? [branchEntryFilter] : []),
+                {
+                    voucher: {
+                        voucherDate: {
+                            ...(startDate ? { gte: startDate } : {}),
+                            lte: endDate
+                        }
+                    }
+                }
+            ]
+        };
+
+        const priorWhere: Prisma.LedgerEntryWhereInput = startDate
+            ? {
+                AND: [
+                    ...(branchEntryFilter ? [branchEntryFilter] : []),
+                    {
+                        voucher: {
+                            voucherDate: {
+                                lt: startDate
+                            }
+                        }
+                    }
+                ]
+            }
+            : {
+                id: "__never__"
+            };
+
+        const ledgerWhere: Prisma.LedgerWhereInput = {
+            isActive: true,
+            ...(branchId
+                ? {
+                    OR: [
+                        { branchId },
+                        { branchId: null },
+                        { entries: { some: branchEntryFilter } }
+                    ]
+                }
+                : {})
+        };
+
+        const [ledgers, periodGroups, priorGroups] = await Promise.all([
+            prisma.ledger.findMany({
+                where: ledgerWhere,
+                include: {
+                    group: true,
+                    branch: {
+                        select: {
+                            id: true,
+                            name: true,
+                            code: true
+                        }
+                    }
+                },
+                orderBy: [
+                    { group: { name: "asc" } },
+                    { name: "asc" }
+                ]
+            }),
+            prisma.ledgerEntry.groupBy({
+                by: ["ledgerId", "entryType"],
+                where: periodWhere,
+                _sum: { amount: true }
+            }),
+            prisma.ledgerEntry.groupBy({
+                by: ["ledgerId", "entryType"],
+                where: priorWhere,
+                _sum: { amount: true }
+            })
+        ]);
+
+        const periodMap = this.sumEntryGroups(periodGroups);
+        const priorMap = this.sumEntryGroups(priorGroups);
+
+        const rows = ledgers
+            .map((ledger) => {
+                const shouldUseLedgerOpening =
+                    !branchId ||
+                    ledger.branchId === branchId;
+
+                const openingBase =
+                    !shouldUseLedgerOpening
+                        ? 0
+                    : ledger.nature === LedgerNature.CREDIT
+                        ? -Number(ledger.openingBalance || 0)
+                        : Number(ledger.openingBalance || 0);
+
+                const prior = priorMap.get(ledger.id) || { debit: 0, credit: 0 };
+                const period = periodMap.get(ledger.id) || { debit: 0, credit: 0 };
+
+                const openingSigned =
+                    openingBase +
+                    prior.debit -
+                    prior.credit;
+
+                const closingSigned =
+                    openingSigned +
+                    period.debit -
+                    period.credit;
+
+                const opening = this.splitSignedBalance(openingSigned);
+                const closing = this.splitSignedBalance(closingSigned);
+
+                return {
+                    ledgerId: ledger.id,
+                    ledgerCode: ledger.code,
+                    ledgerName: ledger.name,
+                    ledgerCategory: ledger.category,
+                    ledgerNature: ledger.nature,
+                    groupId: ledger.groupId,
+                    groupName: ledger.group.name,
+                    branchId: ledger.branchId,
+                    branchName: ledger.branch?.name || null,
+                    openingDebit: opening.debit,
+                    openingCredit: opening.credit,
+                    periodDebit: Number(period.debit.toFixed(2)),
+                    periodCredit: Number(period.credit.toFixed(2)),
+                    closingDebit: closing.debit,
+                    closingCredit: closing.credit
+                };
+            })
+            .filter(row =>
+                query?.includeZero ||
+                row.openingDebit ||
+                row.openingCredit ||
+                row.periodDebit ||
+                row.periodCredit ||
+                row.closingDebit ||
+                row.closingCredit
+            );
+
+        const summary = rows.reduce(
+            (total, row) => ({
+                totalOpeningDebit: Number((total.totalOpeningDebit + row.openingDebit).toFixed(2)),
+                totalOpeningCredit: Number((total.totalOpeningCredit + row.openingCredit).toFixed(2)),
+                totalPeriodDebit: Number((total.totalPeriodDebit + row.periodDebit).toFixed(2)),
+                totalPeriodCredit: Number((total.totalPeriodCredit + row.periodCredit).toFixed(2)),
+                totalClosingDebit: Number((total.totalClosingDebit + row.closingDebit).toFixed(2)),
+                totalClosingCredit: Number((total.totalClosingCredit + row.closingCredit).toFixed(2))
+            }),
+            {
+                totalOpeningDebit: 0,
+                totalOpeningCredit: 0,
+                totalPeriodDebit: 0,
+                totalPeriodCredit: 0,
+                totalClosingDebit: 0,
+                totalClosingCredit: 0
+            }
+        );
+
+        const difference = Number((summary.totalClosingDebit - summary.totalClosingCredit).toFixed(2));
+
+        return {
+            reportName: "Trial Balance",
+            generatedAt: new Date(),
+            branchId,
+            branch,
+            period: {
+                startDate: startDate || null,
+                endDate
+            },
+            summary: {
+                ...summary,
+                difference,
+                isBalanced: Math.abs(difference) < 0.01
+            },
+            rows
+        };
+    }
 
     static async getBranchDayBook(
         actor: any,
@@ -871,6 +1140,12 @@ export class ReportingService {
 
         const today = new Date();
         const detailRows: any[] = [];
+        const resolveAgingBucket = (ageDays: number) => {
+            if (ageDays <= 60) return "0-60 Days";
+            if (ageDays <= 120) return "61-120 Days";
+            if (ageDays <= 180) return "121-180 Days";
+            return "180+ Days";
+        };
 
         const agencyMap = new Map<
             string,
@@ -886,19 +1161,19 @@ export class ReportingService {
 
                 totalOutstanding: number;
 
-                bucket_0_30_days: {
+                bucket_0_60_days: {
                     amount: number;
                     invoices: any[];
                 };
-                bucket_31_60_days: {
+                bucket_61_120_days: {
                     amount: number;
                     invoices: any[];
                 };
-                bucket_61_90_days: {
+                bucket_121_180_days: {
                     amount: number;
                     invoices: any[];
                 };
-                bucket_91_plus_days: {
+                bucket_180_plus_days: {
                     amount: number;
                     invoices: any[];
                 };
@@ -982,13 +1257,7 @@ export class ReportingService {
                         ageDays,
 
                     agingBucket:
-                        ageDays <= 30
-                            ? "0-30 Days"
-                            : ageDays <= 60
-                                ? "31-60 Days"
-                                : ageDays <= 90
-                                    ? "61-90 Days"
-                                    : "Above 90 Days",
+                        resolveAgingBucket(ageDays),
 
                     branch:
                         sale.branchId,
@@ -1044,19 +1313,19 @@ export class ReportingService {
                         branchName: sale.branch?.name || null,
                         createdAt: sale.invoiceDate,
                         totalOutstanding: 0,
-                        bucket_0_30_days: {
+                        bucket_0_60_days: {
                             amount: 0,
                             invoices: []
                         },
-                        bucket_31_60_days: {
+                        bucket_61_120_days: {
                             amount: 0,
                             invoices: []
                         },
-                        bucket_61_90_days: {
+                        bucket_121_180_days: {
                             amount: 0,
                             invoices: []
                         },
-                        bucket_91_plus_days: {
+                        bucket_180_plus_days: {
                             amount: 0,
                             invoices: []
                         }
@@ -1077,28 +1346,28 @@ export class ReportingService {
 
                 let bucket;
 
-                if(ageDays <= 30){
+                if(ageDays <= 60){
 
                     bucket =
-                        agency.bucket_0_30_days;
+                        agency.bucket_0_60_days;
 
                 }
-                else if(ageDays <= 60){
+                else if(ageDays <= 120){
 
                     bucket =
-                        agency.bucket_31_60_days;
+                        agency.bucket_61_120_days;
 
                 }
-                else if(ageDays <= 90){
+                else if(ageDays <= 180){
 
                     bucket =
-                        agency.bucket_61_90_days;
+                        agency.bucket_121_180_days;
 
                 }
                 else{
 
                     bucket =
-                        agency.bucket_91_plus_days;
+                        agency.bucket_180_plus_days;
 
                 }
 
@@ -1186,13 +1455,7 @@ export class ReportingService {
                         ageDays,
 
                     agingBucket:
-                        ageDays <= 30
-                            ? "0-30 Days"
-                            : ageDays <= 60
-                                ? "31-60 Days"
-                                : ageDays <= 90
-                                    ? "61-90 Days"
-                                    : "Above 90 Days",
+                        resolveAgingBucket(ageDays),
 
                     branch:
                         purchase.branchId,
@@ -1246,19 +1509,19 @@ export class ReportingService {
                         branchName: purchase.branch?.name || null,
                         createdAt: purchase.createdAt,
                         totalOutstanding: 0,
-                        bucket_0_30_days: {
+                        bucket_0_60_days: {
                             amount: 0,
                             invoices: []
                         },
-                        bucket_31_60_days: {
+                        bucket_61_120_days: {
                             amount: 0,
                             invoices: []
                         },
-                        bucket_61_90_days: {
+                        bucket_121_180_days: {
                             amount: 0,
                             invoices: []
                         },
-                        bucket_91_plus_days: {
+                        bucket_180_plus_days: {
                             amount: 0,
                             invoices: []
                         }
@@ -1279,28 +1542,28 @@ export class ReportingService {
 
                 let bucket;
 
-                if (ageDays <= 30) {
+                if (ageDays <= 60) {
 
                     bucket =
-                        agency.bucket_0_30_days;
+                        agency.bucket_0_60_days;
 
                 }
-                else if (ageDays <= 60) {
+                else if (ageDays <= 120) {
 
                     bucket =
-                        agency.bucket_31_60_days;
+                        agency.bucket_61_120_days;
 
                 }
-                else if (ageDays <= 90) {
+                else if (ageDays <= 180) {
 
                     bucket =
-                        agency.bucket_61_90_days;
+                        agency.bucket_121_180_days;
 
                 }
                 else {
 
                     bucket =
-                        agency.bucket_91_plus_days;
+                        agency.bucket_180_plus_days;
 
                 }
 
@@ -1345,10 +1608,10 @@ export class ReportingService {
                 rows.reduce(
                     (sum, row) =>
                         sum +
-                        row.bucket_0_30_days.invoices.length +
-                        row.bucket_31_60_days.invoices.length +
-                        row.bucket_61_90_days.invoices.length +
-                        row.bucket_91_plus_days.invoices.length,
+                        row.bucket_0_60_days.invoices.length +
+                        row.bucket_61_120_days.invoices.length +
+                        row.bucket_121_180_days.invoices.length +
+                        row.bucket_180_plus_days.invoices.length,
                     0
                 ),
 
@@ -1360,35 +1623,35 @@ export class ReportingService {
                     0
                 ),
 
-            bucket_0_30_days:
+            bucket_0_60_days:
                 rows.reduce(
                     (sum, row) =>
                         sum +
-                        (row.bucket_0_30_days?.amount ?? 0),
+                        (row.bucket_0_60_days?.amount ?? 0),
                     0
                 ),
 
-            bucket_31_60_days:
+            bucket_61_120_days:
                 rows.reduce(
                     (sum, row) =>
                         sum +
-                        (row.bucket_31_60_days?.amount ?? 0),
+                        (row.bucket_61_120_days?.amount ?? 0),
                     0
                 ),
 
-            bucket_61_90_days:
+            bucket_121_180_days:
                 rows.reduce(
                     (sum, row) =>
                         sum +
-                        (row.bucket_61_90_days?.amount ?? 0),
+                        (row.bucket_121_180_days?.amount ?? 0),
                     0
                 ),
 
-            bucket_91_plus_days:
+            bucket_180_plus_days:
                 rows.reduce(
                     (sum, row) =>
                         sum +
-                        (row.bucket_91_plus_days?.amount ?? 0),
+                        (row.bucket_180_plus_days?.amount ?? 0),
                     0
                 )
 

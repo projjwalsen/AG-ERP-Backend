@@ -1,6 +1,7 @@
 import { Prisma, ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
+import { getAvailableQuantityForUnit, getStockQuantities } from "../../core/utils/density.utils";
 
 type AddStockPayload = {
     branchId: string;
@@ -37,7 +38,7 @@ export class InventoryService {
                 branchId: payload.branchId,
                 productId: payload.productId,
                 isActive: true,
-                ...(payload.unit === ProductUnit.KG
+                ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT
                     ? { availableQtyKG: { gt: 0 } }
                     : { availableQtyLTR: { gt: 0 } })
             },
@@ -49,9 +50,11 @@ export class InventoryService {
 
         for (const batch of batches) {
             if (remaining <= 0) break;
-            const available = payload.unit === ProductUnit.KG
-                ? Number(batch.availableQtyKG)
-                : Number(batch.availableQtyLTR);
+            const available = getAvailableQuantityForUnit(
+                batch.availableQtyKG,
+                batch.availableQtyLTR,
+                payload.unit
+            );
             const quantity = Math.min(available, remaining);
             if (quantity > 0) {
                 allocations.push({ batch, quantity });
@@ -106,31 +109,12 @@ export class InventoryService {
                 }
             });
 
-            // Quantity conversion
-            let quantityKG = 0;
-            let quantityLTR = 0;
-
             const density = Number(product.density ?? 1);
-
-            if (payload.unit === ProductUnit.KG) {
-
-                quantityKG = payload.quantity;
-
-                quantityLTR = Number(
-                    (payload.quantity / density).toFixed(3)
-                );
-
-            } else {
-
-                // Excel quantity remains LTR
-                quantityLTR = payload.quantity;
-
-                // Default density = 1 when missing
-                quantityKG = Number(
-                    (payload.quantity * density).toFixed(3)
-                );
-
-            }
+            const { quantityKG, quantityLTR } = getStockQuantities(
+                payload.quantity,
+                payload.unit,
+                density
+            );
 
         /** Create / Update Batch */
         if (!inventoryBatch) {
@@ -225,10 +209,6 @@ export class InventoryService {
             throw new ApiError("Inventory Batch not found", 404);
         }
 
-        // Quantity conversion
-        let quantityKG = 0;
-        let quantityLTR = 0;
-
         const settings = await tx.setting.findFirst();
 
         const allowNegativeStock =
@@ -236,34 +216,25 @@ export class InventoryService {
 
         const density =
             Number(product.density ?? 1);
+        const { quantityKG, quantityLTR } = getStockQuantities(
+            payload.quantity,
+            payload.unit,
+            density
+        );
 
-        if (payload.unit === ProductUnit.KG) {
-
-            quantityKG = payload.quantity;
-
-            quantityLTR = Number(
-                (payload.quantity / density).toFixed(3)
-            );
+        if (payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT) {
 
             if (
                 !allowNegativeStock &&
                 Number(inventoryBatch.availableQtyKG) < quantityKG
             ) {
                 throw new ApiError(
-                    "Insufficient stock in KG. Allow negativeInventory in settings.",
+                    `Insufficient stock in ${payload.unit}. Allow negativeInventory in settings.`,
                     400
                 );
             }
 
         } else {
-
-            // Sale quantity remains in LTR
-            quantityLTR = payload.quantity;
-
-            // Default density = 1
-            quantityKG = Number(
-                (payload.quantity * density).toFixed(3)
-            );
 
             if (
                 !allowNegativeStock &&
@@ -296,7 +267,7 @@ export class InventoryService {
             const updatedResult = await tx.inventoryBatch.updateMany({
                 where: {
                     id: inventoryBatch.id,
-                    ...(payload.unit === ProductUnit.KG
+                    ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT
                         ? {
                             availableQtyKG: {
                                 gte: quantityKG

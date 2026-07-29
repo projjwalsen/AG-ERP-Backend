@@ -18,6 +18,7 @@ import { LedgerService } from "../accounting/ledger/ledger.service";
 type RecipeItemInput = { productId: string; quantity: number; unit: ProductUnit };
 type RecipeInput = { outputProductId: string; outputQuantity: number; outputUnit: ProductUnit; items: RecipeItemInput[]; remarks?: string };
 type RecipeForProductInput = Omit<RecipeInput, "outputProductId">;
+type CreateRecipeForProductOptions = { autoApprove?: boolean };
 type ManufactureInput = { recipeId: string; branchId: string; outputQuantity: number; remarks?: string };
 
 const round = (value: number, decimals = 2) => Number(value.toFixed(decimals));
@@ -139,7 +140,7 @@ export class ManufacturingService {
         };
     }
 
-    static async createRecipeForProduct(actor: any, outputProductId: string, input: RecipeForProductInput, tx: any = prisma) {
+    static async createRecipeForProduct(actor: any, outputProductId: string, input: RecipeForProductInput, tx: any = prisma, options: CreateRecipeForProductOptions = {}) {
         this.actor(actor);
         this.validateRecipe({ ...input, outputProductId });
         const product = await tx.product.findUnique({ where: { id: outputProductId } });
@@ -148,12 +149,16 @@ export class ManufacturingService {
         const itemProducts = await tx.product.findMany({ where: { id: { in: input.items.map(item => item.productId) } }, select: { id: true } });
         if (itemProducts.length !== input.items.length) throw new ApiError("One or more recipe products were not found", 404);
         await this.rejectCircularRecipe(outputProductId, input.items.map(item => item.productId), tx);
+        if (options.autoApprove) {
+            await tx.productRecipe.updateMany({ where: { outputProductId, status: ProductRecipeStatus.APPROVED }, data: { status: ProductRecipeStatus.LOCKED } });
+        }
         return tx.productRecipe.create({
             data: {
                 outputProductId,
                 outputQuantity: input.outputQuantity,
                 outputUnit: input.outputUnit,
                 remarks: input.remarks?.trim() || null,
+                ...(options.autoApprove ? { status: ProductRecipeStatus.APPROVED, approvedById: actor.id, approvedAt: new Date() } : {}),
                 createdById: actor.id,
                 items: { create: input.items.map(item => ({ productId: item.productId, quantity: item.quantity, unit: item.unit })) }
             },

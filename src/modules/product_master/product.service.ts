@@ -58,12 +58,17 @@ export class ProductService {
 
         if (
             payload.density &&
-            payload.baseUnit === ProductUnit.KG
+            (payload.baseUnit === ProductUnit.KG || payload.baseUnit === ProductUnit.MT)
         ) {
+            const pricePerKG =
+                payload.baseUnit === ProductUnit.MT
+                    ? normalizedPrice / 1000
+                    : normalizedPrice;
+
             sellPriceLTR =
                 Number(
                     (
-                        normalizedPrice *
+                        pricePerKG *
                         payload.density
                     ).toFixed(2)
                 );
@@ -93,7 +98,8 @@ export class ProductService {
          * density becomes mandatory
          */
         if (
-            (payload.baseUnit || "KG") === "KG" &&
+            ((payload.baseUnit || ProductUnit.KG) === ProductUnit.KG ||
+                (payload.baseUnit || ProductUnit.KG) === ProductUnit.MT) &&
             (payload.operationalUnit || "LTR") === "LTR" &&
             !payload.density
         ) {
@@ -172,7 +178,7 @@ export class ProductService {
             );
 
             const recipe = shouldCreateRecipe && payload.recipe
-                ? await ManufacturingService.createRecipeForProduct(actor, product.id, payload.recipe, tx)
+                ? await ManufacturingService.createRecipeForProduct(actor, product.id, payload.recipe, tx, { autoApprove: true })
                 : null;
 
             return { product, recipe };
@@ -424,8 +430,8 @@ export class ProductService {
             payload.density ??
             Number(existingProduct.density);
         if (
-            payload.baseUnit === "KG" &&
-            operationalUnit === "LTR" &&
+            (baseUnit === ProductUnit.KG || baseUnit === ProductUnit.MT) &&
+            operationalUnit === ProductUnit.LTR &&
             !density
         ) {
             throw new ApiError(
@@ -453,12 +459,17 @@ export class ProductService {
 
         if (
             finalDensity &&
-            baseUnit === ProductUnit.KG
+            (baseUnit === ProductUnit.KG || baseUnit === ProductUnit.MT)
         ) {
+            const pricePerKG =
+                baseUnit === ProductUnit.MT
+                    ? finalSellPrice / 1000
+                    : finalSellPrice;
+
             sellPriceLTR =
                 Number(
                     (
-                        finalSellPrice *
+                        pricePerKG *
                         finalDensity
                     ).toFixed(2)
                 );

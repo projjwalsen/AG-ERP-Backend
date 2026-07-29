@@ -123,6 +123,68 @@ export const branchDayBookColumns = [
 
 ];
 
+export const trialBalanceColumns = [
+    {
+        header: "Ledger Code",
+        key: "ledgerCode",
+        width: 22
+    },
+
+    {
+        header: "Ledger Name",
+        key: "ledgerName",
+        width: 35
+    },
+
+    {
+        header: "Group",
+        key: "groupName",
+        width: 28
+    },
+
+    {
+        header: "Category",
+        key: "ledgerCategory",
+        width: 18
+    },
+
+    {
+        header: "Opening Debit",
+        key: "openingDebit",
+        width: 18
+    },
+
+    {
+        header: "Opening Credit",
+        key: "openingCredit",
+        width: 18
+    },
+
+    {
+        header: "Period Debit",
+        key: "periodDebit",
+        width: 18
+    },
+
+    {
+        header: "Period Credit",
+        key: "periodCredit",
+        width: 18
+    },
+
+    {
+        header: "Closing Debit",
+        key: "closingDebit",
+        width: 18
+    },
+
+    {
+        header: "Closing Credit",
+        key: "closingCredit",
+        width: 18
+    }
+];
+
 export const gstr1Columns = [
     {
         header: "Branch Name",
@@ -378,26 +440,26 @@ export const outstandingAgingColumns = (
     },
 
     {
-        header: "0-30 Days",
-        value: row => row.bucket_0_30_days?.amount ?? 0,
+        header: "0-60 Days",
+        value: row => row.bucket_0_60_days?.amount ?? 0,
         width: 18
     },
 
     {
-        header: "31-60 Days",
-        value: row => row.bucket_31_60_days?.amount ?? 0,
+        header: "61-120 Days",
+        value: row => row.bucket_61_120_days?.amount ?? 0,
         width: 18
     },
 
     {
-        header: "61-90 Days",
-        value: row => row.bucket_61_90_days?.amount ?? 0,
+        header: "121-180 Days",
+        value: row => row.bucket_121_180_days?.amount ?? 0,
         width: 18
     },
 
     {
-        header: "Above 90 Days",
-        value: row => row.bucket_91_plus_days?.amount ?? 0,
+        header: "180+ Days",
+        value: row => row.bucket_180_plus_days?.amount ?? 0,
         width: 18
     },
 ];
