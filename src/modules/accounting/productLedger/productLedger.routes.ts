@@ -87,7 +87,7 @@ router.use(authMiddleware);
  *                             description: Product code
  *                           unit:
  *                             type: string
- *                             enum: [KG, LTR, PIECE]
+ *                             enum: [KG, LTR, MT]
  *                           globalStockKG:
  *                             type: number
  *                             description: Global stock in KG
@@ -507,7 +507,7 @@ router.get(
  *                           type: string
  *                         unit:
  *                           type: string
- *                           enum: [KG, LTR, PIECE]
+ *                           enum: [KG, LTR, MT]
  *                     stock:
  *                       type: object
  *                       properties:

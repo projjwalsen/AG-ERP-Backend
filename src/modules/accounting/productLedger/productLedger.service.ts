@@ -7,6 +7,7 @@ import {
   ProductUnit 
 } from "@prisma/client";
 import { parseDate } from "../../../core/utils/loc.utils";
+import { getStockQuantities } from "../../../core/utils/density.utils";
 
 export class ProductLedgerService {
 
@@ -89,6 +90,7 @@ export class ProductLedgerService {
         tx: Prisma.TransactionClient,
         payload: {
             productLedgerId: string;
+            productId?: string;
             quantity: number;
             unit: ProductUnit;
             remarks?: string;
@@ -99,12 +101,34 @@ export class ProductLedgerService {
             throw new ApiError("Opening balance quantity must be greater than 0", 400);
         }
 
+        let quantityKG = payload.quantity;
+        let quantityLTR: number | undefined;
+
+        if (payload.productId) {
+            const product = await tx.product.findUnique({
+                where: { id: payload.productId }
+            });
+
+            if (!product) {
+                throw new ApiError("Product not found", 404);
+            }
+
+            const quantities = getStockQuantities(
+                payload.quantity,
+                payload.unit,
+                Number(product.density ?? 1)
+            );
+
+            quantityKG = quantities.quantityKG;
+            quantityLTR = quantities.quantityLTR;
+        }
+
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.OPENING_BALANCE,
             direction: ProductMovementDirection.CREDIT,
-            quantityKG: payload.quantity,
-            quantityLTR: undefined,
+            quantityKG,
+            quantityLTR,
             unit: payload.unit,
             branchId: undefined,
             agencyId: undefined,
@@ -143,13 +167,26 @@ export class ProductLedgerService {
         }
 
         const { purchase, purchaseItem } = payload;
+        const product = await tx.product.findUnique({
+            where: { id: purchaseItem.productId }
+        });
+
+        if (!product) {
+            throw new ApiError("Product not found", 404);
+        }
+
+        const quantities = getStockQuantities(
+            Number(purchaseItem.quantity),
+            purchaseItem.unit,
+            Number(product.density ?? 1)
+        );
 
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.PURCHASE,
             direction: ProductMovementDirection.CREDIT,
-            quantityKG: Number(purchaseItem.quantity),
-            quantityLTR: undefined,
+            quantityKG: quantities.quantityKG,
+            quantityLTR: quantities.quantityLTR,
             unit: purchaseItem.unit,
             branchId: purchase.branchId,
             agencyId: purchase.agencyId,
@@ -159,6 +196,7 @@ export class ProductLedgerService {
             batchNo: payload.batchNo,
             invoiceNo: purchase.invoiceNo,
             unitCost: Number(purchaseItem.purchasePrice),
+            totalCost: Number(purchaseItem.quantity) * Number(purchaseItem.purchasePrice),
             entryDate: purchase.createdAt || new Date(),
             remarks: `Purchase from invoice ${purchase.invoiceNo}`,
             createdById: purchase.createdById,
@@ -192,13 +230,26 @@ export class ProductLedgerService {
         }
 
         const { sale, saleItem } = payload;
+        const product = await tx.product.findUnique({
+            where: { id: saleItem.productId }
+        });
+
+        if (!product) {
+            throw new ApiError("Product not found", 404);
+        }
+
+        const quantities = getStockQuantities(
+            Number(saleItem.quantity),
+            saleItem.unit,
+            Number(product.density ?? 1)
+        );
 
         return this.addMovement(tx, {
             productLedgerId: payload.productLedgerId,
             movementType: ProductMovementType.SALE,
             direction: ProductMovementDirection.DEBIT,
-            quantityKG: Number(saleItem.quantity),
-            quantityLTR: undefined,
+            quantityKG: quantities.quantityKG,
+            quantityLTR: quantities.quantityLTR,
             unit: saleItem.unit,
             branchId: sale.branchId,
             agencyId: sale.agencyId,
@@ -289,6 +340,7 @@ export class ProductLedgerService {
             batchNo?: string;
             invoiceNo?: string;
             unitCost?: number;
+            totalCost?: number;
             entryDate: Date;
             remarks?: string;
             createdById?: string;
@@ -326,7 +378,7 @@ export class ProductLedgerService {
                 batchNo: payload.batchNo || null,
                 invoiceNo: payload.invoiceNo || null,
                 unitCost: payload.unitCost || null,
-                totalCost: payload.unitCost ? (quantityKG * payload.unitCost) : null,
+                totalCost: payload.totalCost ?? (payload.unitCost ? (quantityKG * payload.unitCost) : null),
                 entryDate: payload.entryDate,
                 remarks: payload.remarks || null,
                 createdById: payload.createdById || null,

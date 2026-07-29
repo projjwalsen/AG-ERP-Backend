@@ -306,6 +306,7 @@ model AgencyOutstanding {
 enum ProductUnit {
   KG
   LTR
+  MT
 }
 
 enum ProductType {

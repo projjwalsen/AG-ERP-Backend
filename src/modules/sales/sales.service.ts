@@ -271,10 +271,15 @@ export class SalesService {
             const setting = await prisma.setting.findFirst();
             const allowNegativeStock = setting?.allowNegativeInventory ?? false;
 
-            if(item.unit === ProductUnit.KG){
+            if(item.unit === ProductUnit.KG || item.unit === ProductUnit.MT){
+                const requiredQtyKG =
+                    item.unit === ProductUnit.MT
+                        ? Number(item.quantity) * 1000
+                        : Number(item.quantity);
+
                 if( 
                     !allowNegativeStock &&
-                    Number(batch.availableQtyKG) < Number(item.quantity)
+                    Number(batch.availableQtyKG) < requiredQtyKG
                 ) {
                     throw new ApiError(
                         `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG. Allow negative stock setting.`,
@@ -328,6 +333,8 @@ export class SalesService {
                         batch.product.sellPriceLTR ||
                         batch.product.sellPricePerUnit
                     )
+                    : item.unit === ProductUnit.MT
+                    ? Number(batch.product.sellPricePerUnit) * 1000
                     : Number(
                         batch.product.sellPricePerUnit
                     );
@@ -1255,6 +1262,8 @@ export class SalesService {
                                 batch.product.sellPriceLTR ||
                                 batch.product.sellPricePerUnit
                             )
+                            : item.unit === ProductUnit.MT
+                            ? Number(batch.product.sellPricePerUnit) * 1000
                             : Number(
                                 batch.product.sellPricePerUnit
                             );

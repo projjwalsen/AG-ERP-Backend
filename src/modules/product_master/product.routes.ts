@@ -60,11 +60,13 @@ router.use(authMiddleware);
  *                 enum:
  *                   - KG
  *                   - LTR
+ *                   - MT
  *               operationalUnit:
  *                 type: string
  *                 enum:
  *                   - KG
  *                   - LTR
+ *                   - MT
  *               density:
  *                 type: number
  *               minimumStockKG:
@@ -82,6 +84,7 @@ router.use(authMiddleware);
  *                     enum:
  *                       - KG
  *                       - LTR
+ *                       - MT
  *                   remarks:
  *                     type: string
  *                   items:
@@ -98,6 +101,7 @@ router.use(authMiddleware);
  *                           enum:
  *                             - KG
  *                             - LTR
+ *                             - MT
  *     responses:
  *       201:
  *         description: Product created successfully

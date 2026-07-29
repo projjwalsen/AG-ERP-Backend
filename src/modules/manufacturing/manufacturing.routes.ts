@@ -31,7 +31,7 @@ router.use(authMiddleware);
  *                 example: 1
  *               outputUnit:
  *                 type: string
- *                 enum: [KG, LTR]
+ *                 enum: [KG, LTR, MT]
  *                 example: KG
  *               remarks:
  *                 type: string
@@ -51,7 +51,7 @@ router.use(authMiddleware);
  *                       example: 1
  *                     unit:
  *                       type: string
- *                       enum: [KG, LTR]
+ *                       enum: [KG, LTR, MT]
  *                       example: KG
  *     responses:
  *       201:

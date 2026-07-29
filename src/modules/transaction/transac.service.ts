@@ -1093,45 +1093,45 @@ export class TransactionService {
 
         let bankAccount = null;
 
-if (payload.paymentThrough === PaymentType.BANK_DEPOSIT) {
+        if (payload.paymentThrough === PaymentType.BANK_DEPOSIT) {
 
-    if (!payload.bankAccountId) {
+            if (!payload.bankAccountId) {
 
-        throw new ApiError(
-            "Bank Account is required",
-            400
-        );
-
-    }
-
-    bankAccount =
-        await prisma.bankAccount.findFirst({
-
-            where: {
-
-                id: payload.bankAccountId,
-
-                branchId: payload.branchId,
-
-                isActive: true
+                throw new ApiError(
+                    "Bank Account is required",
+                    400
+                );
 
             }
 
-        });
+            bankAccount =
+                await prisma.bankAccount.findFirst({
 
-    if (!bankAccount) {
+                    where: {
 
-        throw new ApiError(
+                        id: payload.bankAccountId,
 
-            "Invalid Bank Account for selected branch",
+                        branchId: payload.branchId,
 
-            400
+                        isActive: true
 
-        );
+                    }
 
-    }
+                });
 
-}
+            if (!bankAccount) {
+
+                throw new ApiError(
+
+                    "Invalid Bank Account for selected branch",
+
+                    400
+
+                );
+
+            }
+
+        }
 
         if (actor.branchAccessType !== "ALL" && payload.branchId !== actor.branchId) {
             throw new ApiError("Cannot create transaction for another branch", 403);

@@ -345,7 +345,6 @@ router.get(
  *               paymentThrough:
  *                 type: string
  *                 enum:
- *                  - CASH
  *                  - CHEQUE
  *                  - DD
  *                  - NEFT

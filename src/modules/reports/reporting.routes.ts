@@ -7,6 +7,75 @@ router.use(authMiddleware)
 
 /**
  * @openapi
+ * /api/reports/trial-balance:
+ *   get:
+ *     summary: Trial Balance Report
+ *     description: |
+ *       Generates a ledger-wise Trial Balance using accounting LedgerEntry rows.
+ *
+ *       The report includes:
+ *       - Opening Debit / Credit
+ *       - Period Debit / Credit
+ *       - Closing Debit / Credit
+ *       - Balanced status and closing difference
+ *
+ *       Date filtering is based on Voucher voucherDate.
+ *     tags:
+ *       - Reports
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Optional branch filter. Non-ALL users are restricted to their own branch.
+ *       - in: query
+ *         name: startDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-07-01
+ *         description: Optional period start date. Entries before this date become opening balance.
+ *       - in: query
+ *         name: endDate
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: 2026-07-31
+ *         description: Period end date. Defaults to today.
+ *       - in: query
+ *         name: includeZero
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         description: Include ledgers with no opening, movement, or closing balance.
+ *       - in: query
+ *         name: export
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         description: Set true to download Excel.
+ *     responses:
+ *       200:
+ *         description: Trial balance generated successfully.
+ *       400:
+ *         description: Invalid date range.
+ *       401:
+ *         description: Unauthorized.
+ *       403:
+ *         description: Branch access denied.
+ */
+router.get(
+    "/trial-balance",
+    ReportingController.getTrialBalanceReport
+)
+
+/**
+ * @openapi
  * /api/reports/branch/{branchId}/day-book:
  *   get:
  *     summary: Branch Wise Day Book / Cash Book

@@ -151,6 +151,7 @@ router.use(authMiddleware);
  *                       enum:
  *                         - KG
  *                         - LTR
+ *                         - MT
  *                       example: KG
  *
  *                     salePrice:
