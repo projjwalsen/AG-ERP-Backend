@@ -72,3 +72,21 @@ export const formatISTDate = (
     .format(new Date(value))
     .replace(",", "");
 };
+
+export const formatISTDateOnly = (
+    value?: Date | string | null
+) => {
+    if (!value) {
+        return "";
+    }
+
+    return new Intl.DateTimeFormat(
+        "en-IN",
+        {
+            timeZone: "Asia/Kolkata",
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    ).format(new Date(value));
+};

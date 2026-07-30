@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        Purchase Order {{po.poNo}}
+    </title>
+
+    <style>
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            color: #111;
+            background: #ffffff;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+
+            padding: 10mm;
+
+            background: #ffffff;
+        }
+
+        .document {
+            min-height: 277mm;
+
+            border: 2px solid #0877bd;
+
+            padding: 10mm;
+
+            position: relative;
+        }
+
+
+        /* =====================================================
+           HEADER
+           ===================================================== */
+
+        .header {
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                flex-start;
+
+            margin-bottom: 9mm;
+        }
+
+        .company {
+            width: 48%;
+        }
+
+        .logo {
+            max-width: 75px;
+            max-height: 75px;
+
+            object-fit: contain;
+
+            margin-bottom: 4px;
+        }
+
+        .company-name {
+            font-size: 22px;
+
+            font-weight: 700;
+
+            color: #0877bd;
+
+            margin-bottom: 8px;
+        }
+
+        .company-details {
+            font-size: 11px;
+
+            line-height: 1.45;
+
+            color: #222;
+        }
+
+        .document-heading {
+            width: 48%;
+
+            text-align: right;
+
+            padding-top: 15px;
+        }
+
+        .document-heading h1 {
+            margin: 0 0 10px;
+
+            font-size: 29px;
+
+            letter-spacing: 1px;
+
+            color: #0877bd;
+        }
+
+        .meta {
+            display: grid;
+
+            grid-template-columns:
+                90px 1fr;
+
+            gap: 5px 10px;
+
+            font-size: 12px;
+
+            justify-content: end;
+        }
+
+        .meta-label {
+            text-align: right;
+
+            font-weight: 700;
+        }
+
+        .meta-value {
+            text-align: right;
+        }
+
+
+        /* =====================================================
+           PARTY SECTION
+           ===================================================== */
+
+        .party-grid {
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 35px;
+
+            margin-bottom: 8mm;
+        }
+
+        .section-title {
+            background: #0877bd;
+
+            color: white;
+
+            padding: 5px 10px;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+        }
+
+        .party-content {
+            min-height: 82px;
+
+            padding: 5px 3px;
+
+            font-size: 11px;
+
+            line-height: 1.45;
+        }
+
+        .party-name {
+            font-weight: 700;
+
+            font-size: 12px;
+
+            margin-bottom: 2px;
+        }
+
+
+        /* =====================================================
+           INFO BAR
+           ===================================================== */
+
+        .info-table {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            margin-bottom: 6mm;
+
+            table-layout: fixed;
+        }
+
+        .info-table th {
+            background: #0877bd;
+
+            color: white;
+
+            padding: 5px;
+
+            font-size: 10px;
+
+            text-align: center;
+
+            border: 1px solid #0877bd;
+        }
+
+        .info-table td {
+            height: 24px;
+
+            padding: 5px;
+
+            font-size: 10px;
+
+            text-align: center;
+
+            border: 1px solid #0877bd;
+        }
+
+
+        /* =====================================================
+           ITEMS
+           ===================================================== */
+
+        .items-table {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            table-layout: fixed;
+        }
+
+        .items-table thead {
+            display: table-header-group;
+        }
+
+        .items-table th {
+            background: #0877bd;
+
+            color: white;
+
+            border: 1px solid #0877bd;
+
+            padding: 6px 5px;
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+        }
+
+        .items-table td {
+            border-left:
+                1px solid #0877bd;
+
+            border-right:
+                1px solid #0877bd;
+
+            padding: 7px 6px;
+
+            font-size: 10px;
+
+            vertical-align: top;
+
+            word-break: break-word;
+        }
+
+        .items-table tbody tr:last-child td {
+            border-bottom:
+                1px solid #0877bd;
+        }
+
+        /*
+         * ITEM contains product name.
+         * PARTICULARS contains description/disclaimer.
+         */
+
+        .col-item {
+            width: 25%;
+        }
+
+        .col-description {
+            width: 29%;
+        }
+
+        .col-qty {
+            width: 14%;
+        }
+
+        .col-price {
+            width: 16%;
+        }
+
+        .col-total {
+            width: 16%;
+        }
+
+        .product-name {
+            font-weight: 700;
+
+            font-size: 10px;
+
+            line-height: 1.4;
+        }
+
+        .particular-description {
+            line-height: 1.4;
+
+            white-space: pre-line;
+        }
+
+        .disclaimer {
+            margin-top: 4px;
+
+            font-size: 9px;
+
+            line-height: 1.35;
+
+            color: #555;
+
+            font-style: italic;
+        }
+
+        .number {
+            text-align: right;
+
+            white-space: nowrap;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+
+        /* =====================================================
+           BOTTOM
+           ===================================================== */
+
+        .bottom {
+            display: grid;
+
+            grid-template-columns:
+                60% 40%;
+
+            margin-top: 6mm;
+
+            gap: 12px;
+        }
+
+        .comments-title {
+            background: #0877bd;
+
+            color: white;
+
+            padding: 5px 8px;
+
+            font-size: 10px;
+
+            font-weight: 700;
+        }
+
+        .comments {
+            min-height: 70px;
+
+            padding: 8px;
+
+            border:
+                1px solid #0877bd;
+
+            border-top: none;
+
+            font-size: 10px;
+
+            line-height: 1.4;
+
+            white-space: pre-line;
+        }
+
+        .summary {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            font-size: 11px;
+        }
+
+        .summary td {
+            padding: 6px;
+        }
+
+        .summary-label {
+            text-align: right;
+
+            font-weight: 600;
+        }
+
+        .summary-value {
+            text-align: right;
+
+            width: 45%;
+
+            white-space: nowrap;
+        }
+
+        .grand-total td {
+            background: #ffc107;
+
+            font-weight: 700;
+
+            font-size: 12px;
+
+            border-top:
+                1px solid #d9a400;
+        }
+
+
+        /* =====================================================
+           APPROVAL
+           ===================================================== */
+
+        .approval {
+            margin-top: 15mm;
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items:
+                flex-end;
+        }
+
+        .approval-info {
+            font-size: 10px;
+
+            line-height: 1.5;
+        }
+
+        .signature {
+            width: 190px;
+
+            text-align: center;
+
+            font-size: 10px;
+        }
+
+        .signature img {
+            max-width: 130px;
+
+            max-height: 55px;
+
+            object-fit: contain;
+
+            margin-bottom: 5px;
+        }
+
+        .signature-line {
+            border-top:
+                1px solid #333;
+
+            padding-top: 5px;
+        }
+
+
+        /* =====================================================
+           FOOTER
+           ===================================================== */
+
+        .footer {
+            position: absolute;
+
+            bottom: 8mm;
+
+            left: 10mm;
+
+            right: 10mm;
+
+            text-align: center;
+
+            font-size: 9px;
+
+            color: #555;
+        }
+
+        .footer strong {
+            color: #222;
+        }
+
+
+        /* =====================================================
+           PRINT SAFETY
+           ===================================================== */
+
+        tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .approval {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .bottom {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="page">
+
+<div class="document">
+
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <div class="header">
+
+
+        <div class="company">
+
+
+            {{#if company.logo}}
+
+                <img
+                    class="logo"
+                    src="{{company.logo}}"
+                    alt="Company Logo"
+                >
+
+            {{/if}}
+
+
+            <div class="company-name">
+                {{company.name}}
+            </div>
+
+
+            <div class="company-details">
+
+
+                {{#if company.addressLine1}}
+
+                    <div>
+                        {{company.addressLine1}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if company.addressLine2}}
+
+                    <div>
+                        {{company.addressLine2}}
+                    </div>
+
+                {{/if}}
+
+
+                <div>
+
+                    {{company.city}}
+
+                    {{#if company.state}}
+                        , {{company.state}}
+                    {{/if}}
+
+                    {{#if company.pinCode}}
+                        - {{company.pinCode}}
+                    {{/if}}
+
+                </div>
+
+
+                {{#if company.phone}}
+
+                    <div>
+                        Phone:
+                        {{company.phone}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if company.email}}
+
+                    <div>
+                        Email:
+                        {{company.email}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if company.gstin}}
+
+                    <div>
+                        GSTIN:
+                        {{company.gstin}}
+                    </div>
+
+                {{/if}}
+
+
+            </div>
+
+        </div>
+
+
+
+        <div class="document-heading">
+
+            <h1>
+                PURCHASE ORDER
+            </h1>
+
+
+            <div class="meta">
+
+
+                <div class="meta-label">
+                    DATE
+                </div>
+
+                <div class="meta-value">
+                    {{po.poDate}}
+                </div>
+
+
+                <div class="meta-label">
+                    PO #
+                </div>
+
+                <div class="meta-value">
+                    {{po.poNo}}
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         VENDOR + SHIP TO
+         ===================================================== -->
+
+    <div class="party-grid">
+
+
+        <!-- VENDOR -->
+
+        <div>
+
+            <div class="section-title">
+                VENDOR
+            </div>
+
+
+            <div class="party-content">
+
+
+                <div class="party-name">
+                    {{vendor.name}}
+                </div>
+
+
+                {{#if vendor.contactPerson}}
+
+                    <div>
+                        {{vendor.contactPerson}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if vendor.addressLine1}}
+
+                    <div>
+                        {{vendor.addressLine1}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if vendor.addressLine2}}
+
+                    <div>
+                        {{vendor.addressLine2}}
+                    </div>
+
+                {{/if}}
+
+
+                <div>
+
+                    {{vendor.city}}
+
+                    {{#if vendor.state}}
+                        , {{vendor.state}}
+                    {{/if}}
+
+                    {{#if vendor.pinCode}}
+                        - {{vendor.pinCode}}
+                    {{/if}}
+
+                </div>
+
+
+                {{#if vendor.mobileNumber}}
+
+                    <div>
+                        Phone:
+                        {{vendor.mobileNumber}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if vendor.email}}
+
+                    <div>
+                        Email:
+                        {{vendor.email}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if vendor.gstin}}
+
+                    <div>
+                        GSTIN:
+                        {{vendor.gstin}}
+                    </div>
+
+                {{/if}}
+
+
+            </div>
+
+        </div>
+
+
+
+        <!-- SHIP TO -->
+
+        <div>
+
+            <div class="section-title">
+                SHIP TO
+            </div>
+
+
+            <div class="party-content">
+
+
+                <div class="party-name">
+                    {{company.name}}
+                </div>
+
+
+                {{#if branch.name}}
+
+                    <div>
+                        {{branch.name}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if branch.addressLine1}}
+
+                    <div>
+                        {{branch.addressLine1}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if branch.addressLine2}}
+
+                    <div>
+                        {{branch.addressLine2}}
+                    </div>
+
+                {{/if}}
+
+
+                <div>
+
+                    {{branch.city}}
+
+                    {{#if branch.state}}
+                        , {{branch.state}}
+                    {{/if}}
+
+                    {{#if branch.pinCode}}
+                        - {{branch.pinCode}}
+                    {{/if}}
+
+                </div>
+
+
+                {{#if branch.phone}}
+
+                    <div>
+                        Phone:
+                        {{branch.phone}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if branch.email}}
+
+                    <div>
+                        Email:
+                        {{branch.email}}
+                    </div>
+
+                {{/if}}
+
+
+                {{#if branch.gstin}}
+
+                    <div>
+                        GSTIN:
+                        {{branch.gstin}}
+                    </div>
+
+                {{/if}}
+
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         PO INFORMATION
+         ===================================================== -->
+
+    <table class="info-table">
+
+        <thead>
+
+        <tr>
+
+            <th>
+                REQUISITIONER
+            </th>
+
+            <th>
+                VENDOR
+            </th>
+
+            <th>
+                BRANCH
+            </th>
+
+            <th>
+                STATUS
+            </th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody>
+
+        <tr>
+
+            <td>
+                {{po.requisitioner}}
+            </td>
+
+            <td>
+                {{vendor.name}}
+            </td>
+
+            <td>
+                {{branch.name}}
+            </td>
+
+            <td>
+                {{po.status}}
+            </td>
+
+        </tr>
+
+        </tbody>
+
+    </table>
+
+
+
+    <!-- =====================================================
+         ITEMS
+         ===================================================== -->
+
+    <table class="items-table">
+
+
+        <thead>
+
+        <tr>
+
+            <th class="col-item">
+                ITEM
+            </th>
+
+            <th class="col-description">
+                PARTICULARS
+            </th>
+
+            <th class="col-qty">
+                QTY
+            </th>
+
+            <th class="col-price">
+                UNIT PRICE
+            </th>
+
+            <th class="col-total">
+                TOTAL
+            </th>
+
+        </tr>
+
+        </thead>
+
+
+        <tbody>
+
+
+        {{#each items}}
+
+            <tr>
+
+
+                <!-- ============================================
+                     ITEM = PRODUCT NAME
+                     ============================================ -->
+
+                <td>
+
+                    <div class="product-name">
+                        {{this.name}}
+                    </div>
+
+                </td>
+
+
+
+                <!-- ============================================
+                     PARTICULARS
+
+                     Product name is intentionally NOT rendered
+                     here.
+
+                     Only description / disclaimer are rendered.
+                     ============================================ -->
+
+                <td>
+
+
+                    {{#if this.description}}
+
+                        <div class="particular-description">
+                            {{this.description}}
+                        </div>
+
+                    {{/if}}
+
+
+                    {{#if this.disclaimer}}
+
+                        <div class="disclaimer">
+                            {{this.disclaimer}}
+                        </div>
+
+                    {{/if}}
+
+
+                </td>
+
+
+
+                <!-- QTY -->
+
+                <td class="center">
+
+                    {{this.quantity}}
+                    {{this.unit}}
+
+                </td>
+
+
+
+                <!-- UNIT PRICE -->
+
+                <td class="number">
+
+                    ₹ {{this.purchasePrice}}
+
+                </td>
+
+
+
+                <!-- TOTAL -->
+
+                <td class="number">
+
+                    ₹ {{this.totalAmount}}
+
+                </td>
+
+
+            </tr>
+
+        {{/each}}
+
+
+        </tbody>
+
+    </table>
+
+
+
+    <!-- =====================================================
+         COMMENTS + TOTAL
+         ===================================================== -->
+
+    <div class="bottom">
+
+
+        <div>
+
+            <div class="comments-title">
+                Comments or Special Instructions
+            </div>
+
+
+            <div class="comments">
+
+                {{#if po.remarks}}
+
+                    {{po.remarks}}
+
+                {{else}}
+
+                    No special instructions.
+
+                {{/if}}
+
+            </div>
+
+        </div>
+
+
+
+        <div>
+
+
+            <table class="summary">
+
+
+                <tr>
+
+                    <td class="summary-label">
+                        SUBTOTAL
+                    </td>
+
+                    <td class="summary-value">
+                        ₹ {{po.subtotalAmount}}
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td class="summary-label">
+                        _
+                    </td>
+
+                    <td class="summary-value">
+                        _
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td class="summary-label">
+                        _
+                    </td>
+
+                    <td class="summary-value">
+                        _
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td class="summary-label">
+                        OTHER
+                    </td>
+
+                    <td class="summary-value">
+                        -
+                    </td>
+
+                </tr>
+
+
+                <tr class="grand-total">
+
+                    <td>
+                        TOTAL
+                    </td>
+
+                    <td class="summary-value">
+                        ₹ {{po.subtotalAmount}}
+                    </td>
+
+                </tr>
+
+
+            </table>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         APPROVAL
+         ===================================================== -->
+
+    <div class="approval">
+
+
+        <div class="approval-info">
+
+
+            <strong>
+                Approved By:
+            </strong>
+
+            {{po.approvedBy}}
+
+
+            <br>
+
+
+            <strong>
+                Approved On:
+            </strong>
+
+            {{po.approvedAt}}
+
+
+        </div>
+
+
+
+        <div class="signature">
+
+
+            {{#if company.signature}}
+
+                <img
+                    src="{{company.signature}}"
+                    alt="Authorized Signature"
+                >
+
+            {{/if}}
+
+
+            <div class="signature-line">
+
+                Authorized Signatory
+
+                <br>
+
+                {{company.name}}
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- =====================================================
+         FOOTER
+         ===================================================== -->
+
+    <div class="footer">
+
+        This Purchase Order was generated electronically.
+
+        <br>
+
+        <strong>
+            {{company.name}}
+        </strong>
+
+    </div>
+
+
+</div>
+
+</div>
+
+</body>
+
+</html>

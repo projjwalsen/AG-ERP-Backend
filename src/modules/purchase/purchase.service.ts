@@ -64,6 +64,8 @@ type PurchaseTransportPayload = {
 }
 
 type createPurchasePayload = {
+    purchaseOrderId?: string;
+
     agencyId: string;
     branchId: string;
 
@@ -413,6 +415,7 @@ export class PurchaseService {
         /** Create Purchase */
         const purchase = await prisma.purchase.create({
             data:{
+                purchaseOrderId: payload.purchaseOrderId || null,
 
                 agencyId: payload.agencyId,
 
