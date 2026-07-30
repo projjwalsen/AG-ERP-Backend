@@ -1,24 +1,52 @@
 import { Request, Response, NextFunction } from "express";
 import { DebitCreditNoteService } from "./debitCreditNote.service";
+import { DebitCreditNoteSourceType } from "@prisma/client";
 
 const actor = (req: Request) => (req as any).user;
 
-export const getAgencyInvoices = async (req: Request, res: Response, next: NextFunction) => {
+export const getAgencyInvoices = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     try {
-        const invoices = await DebitCreditNoteService.getAgencyInvoices(actor(req), {
-            agencyId: req.query.agencyId as string,
-            branchId: req.query.branchId as string,
-            sourceType: req.query.sourceType as any,
-            search: req.query.search as string
-        });
+
+        const invoices =
+            await DebitCreditNoteService
+                .getAgencyInvoices(
+                    actor(req),
+                    {
+                        sourceType:
+                            req.query.sourceType as
+                                DebitCreditNoteSourceType,
+
+                        agencyId:
+                            req.query.agencyId
+                                ? String(req.query.agencyId)
+                                : undefined,
+
+                        branchId:
+                            req.query.branchId
+                                ? String(req.query.branchId)
+                                : undefined,
+
+                        search:
+                            req.query.search
+                                ? String(req.query.search)
+                                : undefined
+                    }
+                );
 
         return res.status(200).json({
             success: true,
-            message: "Invoices retrieved successfully",
+            message:
+                "Invoices retrieved successfully",
+
             data: {
                 invoices
             }
         });
+
     } catch (error) {
         next(error);
     }

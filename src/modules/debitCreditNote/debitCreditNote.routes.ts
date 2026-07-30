@@ -32,7 +32,7 @@ router.use(authMiddleware);
  *     parameters:
  *       - in: query
  *         name: agencyId
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *         description: Agency whose invoices should be returned

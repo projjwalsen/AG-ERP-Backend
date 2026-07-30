@@ -440,174 +440,354 @@ export class DebitCreditNoteService {
         }
     ) {
         if (!actor?.id) {
-            throw new ApiError("Unauthorized", 401);
+            throw new ApiError(
+                "Unauthorized",
+                401
+            );
         }
 
-        const agencyId = query.agencyId?.trim();
-        const branchId = query.branchId?.trim();
-        const search = query.search?.trim();
-
-        if (!agencyId) {
-            throw new ApiError("Agency ID is required", 400);
-        }
-
-        if (!branchId) {
-            throw new ApiError("Branch ID is required", 400);
-        }
+        /* ============================================================
+         * VALIDATE SOURCE TYPE
+         * ============================================================ */
 
         if (
             !query.sourceType ||
-            !Object.values(DebitCreditNoteSourceType).includes(query.sourceType)
+            !Object.values(
+                DebitCreditNoteSourceType
+            ).includes(query.sourceType)
         ) {
-            throw new ApiError("Valid source type is required", 400);
+            throw new ApiError(
+                "Valid source type is required",
+                400
+            );
         }
 
-        // Validate that the actor is allowed to access THIS requested branch.
-        this.validateBranchAccess(actor, branchId);
+        const agencyId =
+            query.agencyId?.trim() || undefined;
+
+        const search =
+            query.search?.trim() || undefined;
 
         /* ============================================================
-        * PURCHASE
-        * ============================================================ */
+         * RESOLVE BRANCH
+         *
+         * RESTRICTED USER:
+         * Always actor.branchId
+         *
+         * ALL ACCESS USER:
+         * branchId provided -> filter branch
+         * branchId missing  -> all branches
+         * ============================================================ */
 
-        if (query.sourceType === DebitCreditNoteSourceType.PURCHASE) {
-            const purchases = await prisma.purchase.findMany({
-                where: {
-                    agencyId,
-                    branchId,
-                    status: PurchaseStatus.APPROVED,
+        let branchId: string | undefined;
 
-                    ...(search
-                        ? {
-                            invoiceNo: {
-                                contains: search,
-                                mode: "insensitive" as const
+        if (
+            actor.branchAccessType === "ALL"
+        ) {
+            branchId =
+                query.branchId?.trim() ||
+                undefined;
+
+        } else {
+
+            if (!actor.branchId) {
+                throw new ApiError(
+                    "Actor branch is not configured",
+                    400
+                );
+            }
+
+            branchId =
+                actor.branchId;
+        }
+
+        /* ============================================================
+         * PURCHASE
+         * ============================================================ */
+
+        if (
+            query.sourceType ===
+            DebitCreditNoteSourceType.PURCHASE
+        ) {
+
+            const purchases =
+                await prisma.purchase.findMany({
+
+                    where: {
+
+                        status:
+                            PurchaseStatus.APPROVED,
+
+                        ...(branchId && {
+                            branchId
+                        }),
+
+                        ...(agencyId && {
+                            agencyId
+                        }),
+
+                        ...(search && {
+
+                            OR: [
+
+                                /* Invoice search */
+
+                                {
+                                    invoiceNo: {
+                                        contains:
+                                            search,
+
+                                        mode:
+                                            "insensitive"
+                                    }
+                                },
+
+                                /* Agency search */
+
+                                {
+                                    agency: {
+                                        name: {
+                                            contains:
+                                                search,
+
+                                            mode:
+                                                "insensitive"
+                                        }
+                                    }
+                                }
+
+                            ]
+
+                        })
+
+                    },
+
+                    select: {
+
+                        id: true,
+
+                        invoiceNo: true,
+
+                        invoiceDate: true,
+
+                        grandTotal: true,
+
+                        status: true,
+
+                        remarks: true,
+
+                        otherReference: true,
+
+                        agency: {
+
+                            select: {
+                                id: true,
+                                name: true
                             }
+
+                        },
+
+                        branch: {
+
+                            select: {
+                                id: true,
+                                name: true,
+                                code: true
+                            }
+
                         }
-                        : {})
+
+                    },
+
+                    orderBy: [
+                        {
+                            agency: {
+                                name: "asc"
+                            }
+                        },
+                        {
+                            invoiceDate: "desc"
+                        }
+                    ]
+
+                });
+
+            return purchases.map(
+                purchase => ({
+
+                    id:
+                        purchase.id,
+
+                    sourceType:
+                        DebitCreditNoteSourceType.PURCHASE,
+
+                    invoiceNo:
+                        purchase.invoiceNo,
+
+                    invoiceDate:
+                        purchase.invoiceDate,
+
+                    grandTotal:
+                        purchase.grandTotal,
+
+                    status:
+                        purchase.status,
+
+                    narration:
+                        purchase.remarks ??
+                        purchase.otherReference ??
+                        null,
+
+                    agency:
+                        purchase.agency,
+
+                    branch:
+                        purchase.branch
+
+                })
+            );
+        }
+
+        /* ============================================================
+         * SALE
+         * ============================================================ */
+
+        const sales =
+            await prisma.sale.findMany({
+
+                where: {
+
+                    status:
+                        SalesStatus.APPROVED,
+
+                    ...(branchId && {
+                        branchId
+                    }),
+
+                    ...(agencyId && {
+                        agencyId
+                    }),
+
+                    ...(search && {
+
+                        OR: [
+
+                            /* Invoice search */
+
+                            {
+                                invoiceNo: {
+                                    contains:
+                                        search,
+
+                                    mode:
+                                        "insensitive"
+                                }
+                            },
+
+                            /* Agency search */
+
+                            {
+                                agency: {
+                                    name: {
+                                        contains:
+                                            search,
+
+                                        mode:
+                                            "insensitive"
+                                    }
+                                }
+                            }
+
+                        ]
+
+                    })
+
                 },
 
                 select: {
+
                     id: true,
+
                     invoiceNo: true,
+
                     invoiceDate: true,
+
                     grandTotal: true,
 
                     status: true,
 
                     remarks: true,
+
                     otherReference: true,
 
                     agency: {
+
                         select: {
                             id: true,
                             name: true
                         }
+
                     },
 
                     branch: {
+
                         select: {
                             id: true,
                             name: true,
                             code: true
                         }
+
                     }
+
                 },
 
-                orderBy: {
-                    invoiceDate: "desc"
-                }
+                orderBy: [
+                    {
+                        agency: {
+                            name: "asc"
+                        }
+                    },
+                    {
+                        invoiceDate: "desc"
+                    }
+                ]
+
             });
 
-            return purchases.map((purchase) => ({
-                id: purchase.id,
-                sourceType: DebitCreditNoteSourceType.PURCHASE,
+        return sales.map(
+            sale => ({
 
-                invoiceNo: purchase.invoiceNo,
-                invoiceDate: purchase.invoiceDate,
-                grandTotal: purchase.grandTotal,
+                id:
+                    sale.id,
 
-                status: purchase.status,
+                sourceType:
+                    DebitCreditNoteSourceType.SALE,
+
+                invoiceNo:
+                    sale.invoiceNo,
+
+                invoiceDate:
+                    sale.invoiceDate,
+
+                grandTotal:
+                    sale.grandTotal,
+
+                status:
+                    sale.status,
 
                 narration:
-                    purchase.remarks ??
-                    purchase.otherReference ??
+                    sale.remarks ??
+                    sale.otherReference ??
                     null,
 
-                agency: purchase.agency,
-                branch: purchase.branch
-            }));
-        }
+                agency:
+                    sale.agency,
 
-        /* ============================================================
-        * SALE
-        * ============================================================ */
+                branch:
+                    sale.branch
 
-        const sales = await prisma.sale.findMany({
-            where: {
-                agencyId,
-                branchId,
-                status: SalesStatus.APPROVED,
-
-                ...(search
-                    ? {
-                        invoiceNo: {
-                            contains: search,
-                            mode: "insensitive" as const
-                        }
-                    }
-                    : {})
-            },
-
-            select: {
-                id: true,
-                invoiceNo: true,
-                invoiceDate: true,
-                grandTotal: true,
-
-                status: true,
-
-                remarks: true,
-                otherReference: true,
-
-                agency: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                },
-
-                branch: {
-                    select: {
-                        id: true,
-                        name: true,
-                        code: true
-                    }
-                }
-            },
-
-            orderBy: {
-                invoiceDate: "desc"
-            }
-        });
-
-        return sales.map((sale) => ({
-            id: sale.id,
-            sourceType: DebitCreditNoteSourceType.SALE,
-
-            invoiceNo: sale.invoiceNo,
-            invoiceDate: sale.invoiceDate,
-            grandTotal: sale.grandTotal,
-
-            status: sale.status,
-
-            narration:
-                sale.remarks ??
-                sale.otherReference ??
-                null,
-
-            agency: sale.agency,
-            branch: sale.branch
-        }));
+            })
+        );
     }
 
     /* ========================================================
