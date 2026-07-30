@@ -125,19 +125,101 @@ export const getNoteById = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-export const approveNote = async (req: Request, res: Response, next: NextFunction) => {
+export const approveNote = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
     try {
-        const note = await DebitCreditNoteService.approveNote(actor(req), (req as any).params.noteId);
 
-        return res.status(200).json({
-            success: true,
-            message: "Debit/Credit note approved successfully",
-            data: {
-                note
-            }
-        });
+        const {
+            note,
+            pdf
+        } =
+            await DebitCreditNoteService
+                .approveNote(
+                    actor(req),
+                    (req as any).params.noteId
+                );
+
+        const filename =
+            `${note.noteNo}.pdf`;
+
+        res.setHeader(
+            "Content-Type",
+            "application/pdf"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `inline; filename="${filename}"`
+        );
+
+        res.setHeader(
+            "Content-Length",
+            Buffer.byteLength(pdf)
+        );
+
+        return res.status(200).end(
+            Buffer.from(pdf)
+        );
+
     } catch (error) {
         next(error);
+    }
+};
+
+export const getNotePdf = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+
+        const {
+            pdf,
+            note
+        } =
+            await DebitCreditNoteService
+                .generatePdf(
+                    actor(req),
+                    (req as any).params.noteId
+                );
+
+        const download =
+            String(req.query.download)
+                .toLowerCase() === "true";
+
+        const filename =
+            `${note.noteNo}.pdf`;
+
+        res.setHeader(
+            "Content-Type",
+            "application/pdf"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `${
+                download
+                    ? "attachment"
+                    : "inline"
+            }; filename="${filename}"`
+        );
+
+        res.setHeader(
+            "Content-Length",
+            Buffer.byteLength(pdf)
+        );
+
+        return res.status(200).end(
+            Buffer.from(pdf)
+        );
+
+    } catch (error) {
+
+        next(error);
+
     }
 };
 

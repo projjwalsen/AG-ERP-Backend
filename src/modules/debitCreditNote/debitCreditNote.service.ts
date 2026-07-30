@@ -15,6 +15,8 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { RBACService } from "../rbac/rbac.service";
 import { TransactionService } from "../transaction/transac.service";
+import { DebitCreditNoteMapper } from "../../core/utils/DRCRNoteMapper";
+import { DebitCreditNoteRenderer } from "../../core/utils/DRCRRender";
 
 /* ============================================================
  * TYPES
@@ -1026,145 +1028,173 @@ export class DebitCreditNoteService {
             "SALE:APPROVE"
         );
 
-        return prisma.$transaction(
-            async tx => {
+        /*
+         * FIRST:
+         * Complete accounting approval transaction.
+         */
+        const approvedNote =
+            await prisma.$transaction(
+                async tx => {
 
-                const note =
-                    await tx.debitCreditNote.findUnique({
-                        where: {
-                            id: noteId
-                        },
+                    const note =
+                        await tx.debitCreditNote.findUnique({
+                            where: {
+                                id: noteId
+                            },
 
-                        include: {
-                            particulars: true
-                        }
-                    });
+                            include: {
+                                particulars: true
+                            }
+                        });
 
-                if (!note) {
-                    throw new ApiError(
-                        "Debit/Credit note not found",
-                        404
-                    );
-                }
-
-                this.validateBranchAccess(
-                    actor,
-                    note.branchId
-                );
-
-                if (
-                    note.status !==
-                    DebitCreditNoteStatus.PENDING
-                ) {
-                    throw new ApiError(
-                        "Only pending Debit/Credit notes can be approved",
-                        400
-                    );
-                }
-
-                /*
-                 * Revalidate invoice.
-                 *
-                 * Again: payment status does not matter.
-                 */
-                await this.validateInvoiceContext(
-                    tx,
-                    {
-                        agencyId:
-                            note.agencyId,
-
-                        branchId:
-                            note.branchId,
-
-                        sourceType:
-                            note.sourceType,
-
-                        saleId:
-                            note.saleId || undefined,
-
-                        purchaseId:
-                            note.purchaseId || undefined
+                    if (!note) {
+                        throw new ApiError(
+                            "Debit/Credit note not found",
+                            404
+                        );
                     }
-                );
 
-                /*
-                 * Lock note before accounting posting.
-                 */
-                const lock =
-                    await tx.debitCreditNote.updateMany({
+                    this.validateBranchAccess(
+                        actor,
+                        note.branchId
+                    );
+
+                    if (
+                        note.status !==
+                        DebitCreditNoteStatus.PENDING
+                    ) {
+                        throw new ApiError(
+                            "Only pending Debit/Credit notes can be approved",
+                            400
+                        );
+                    }
+
+                    /*
+                     * Revalidate source invoice.
+                     */
+                    await this.validateInvoiceContext(
+                        tx,
+                        {
+                            agencyId:
+                                note.agencyId,
+
+                            branchId:
+                                note.branchId,
+
+                            sourceType:
+                                note.sourceType,
+
+                            saleId:
+                                note.saleId || undefined,
+
+                            purchaseId:
+                                note.purchaseId || undefined
+                        }
+                    );
+
+                    /*
+                     * Lock note.
+                     */
+                    const lock =
+                        await tx.debitCreditNote.updateMany({
+                            where: {
+                                id: note.id,
+
+                                status:
+                                    DebitCreditNoteStatus.PENDING
+                            },
+
+                            data: {
+                                status:
+                                    DebitCreditNoteStatus.APPROVED,
+
+                                approvedById:
+                                    actor.id,
+
+                                approvedAt:
+                                    new Date()
+                            }
+                        });
+
+                    if (!lock.count) {
+                        throw new ApiError(
+                            "Debit/Credit note already processed",
+                            409
+                        );
+                    }
+
+                    /*
+                     * Update AgencyOutstanding.
+                     */
+                    const outstandingType =
+                        this.resolveOutstandingType(
+                            note.sourceType,
+                            note.type
+                        );
+
+                    await TransactionService
+                        .updatePersistentOutstanding(
+                            tx,
+                            note.agencyId,
+                            note.branchId,
+                            Number(note.totalAmount),
+                            outstandingType,
+                            "ADD"
+                        );
+
+                    /*
+                     * Post accounting voucher / ledger.
+                     */
+                    const voucher =
+                        await LedgerService
+                            .postDebitCreditNoteApproval(
+                                tx,
+                                note.id
+                            );
+
+                    /*
+                     * Attach voucher.
+                     */
+                    return tx.debitCreditNote.update({
                         where: {
-                            id: note.id,
-
-                            status:
-                                DebitCreditNoteStatus.PENDING
+                            id: note.id
                         },
 
                         data: {
-                            status:
-                                DebitCreditNoteStatus.APPROVED,
+                            voucherId:
+                                voucher.id
+                        },
 
-                            approvedById:
-                                actor.id,
-
-                            approvedAt:
-                                new Date()
-                        }
+                        include:
+                            includeNoteDetails
                     });
-
-                if (!lock.count) {
-                    throw new ApiError(
-                        "Debit/Credit note already processed",
-                        409
-                    );
                 }
+            );
 
-                /*
-                 * Update agency net outstanding.
-                 */
-                const outstandingType =
-                    this.resolveOutstandingType(
-                        note.sourceType,
-                        note.type
-                    );
+        /*
+         * Transaction has COMMITTED here.
+         *
+         * Now generate PDF.
+         */
+        const setting =
+            await prisma.setting.findFirst();
 
-                await TransactionService
-                    .updatePersistentOutstanding(
-                        tx,
-                        note.agencyId,
-                        note.branchId,
-                        Number(note.totalAmount),
-                        outstandingType,
-                        "ADD"
-                    );
+        const templateData =
+            DebitCreditNoteMapper.map(
+                approvedNote,
+                setting
+            );
 
-                /*
-                 * Post ACCOUNTING LEDGER.
-                 */
-                const voucher =
-                    await LedgerService
-                        .postDebitCreditNoteApproval(
-                            tx,
-                            note.id
-                        );
+        const pdf =
+            await DebitCreditNoteRenderer
+                .generatePdf(
+                    templateData
+                );
 
-                /*
-                 * Attach accounting voucher to note.
-                 */
-                return tx.debitCreditNote.update({
-                    where: {
-                        id: note.id
-                    },
-
-                    data: {
-                        voucherId:
-                            voucher.id
-                    },
-
-                    include:
-                        includeNoteDetails
-                });
-            }
-        );
+        return {
+            note: approvedNote,
+            pdf
+        };
     }
 
     /* ========================================================
@@ -1433,6 +1463,60 @@ export class DebitCreditNoteService {
                 hasPreviousPage:
                     page > 1
             }
+        };
+    }
+
+    static async generatePdf(
+        actor: any,
+        noteId: string
+    ) {
+
+        await this.ensurePermission(
+            actor,
+            "SALE:VIEW"
+        );
+
+        const note =
+            await this.getNoteById(
+                actor,
+                noteId
+            );
+
+        if (
+            note.status !==
+            DebitCreditNoteStatus.APPROVED
+        ) {
+            throw new ApiError(
+                "PDF can only be generated for an approved Debit/Credit note",
+                400
+            );
+        }
+
+        if (!note.voucherId) {
+            throw new ApiError(
+                "Accounting voucher is missing for this approved Debit/Credit note",
+                409
+            );
+        }
+
+        const setting =
+            await prisma.setting.findFirst();
+
+        const templateData =
+            DebitCreditNoteMapper.map(
+                note,
+                setting
+            );
+
+        const pdf =
+            await DebitCreditNoteRenderer
+                .generatePdf(
+                    templateData
+                );
+
+        return {
+            pdf,
+            note
         };
     }
 }

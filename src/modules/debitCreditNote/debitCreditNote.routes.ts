@@ -355,6 +355,54 @@ router.get(
     controller.getNoteById
 );
 
+/**
+ * @openapi
+ * /api/debit-credit-notes/{noteId}/pdf:
+ *   get:
+ *     summary: View or download approved Debit/Credit Note PDF
+ *     tags:
+ *       - Debit Credit Notes
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: noteId
+ *         required: true
+ *         schema:
+ *           type: string
+ *
+ *       - in: query
+ *         name: download
+ *         required: false
+ *         description: Set true to download the PDF. Defaults to inline view.
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *
+ *     responses:
+ *       200:
+ *         description: Debit/Credit Note PDF
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *
+ *       400:
+ *         description: Debit/Credit Note is not approved
+ *
+ *       404:
+ *         description: Debit/Credit Note not found
+ *
+ *       409:
+ *         description: Accounting voucher missing
+ */
+router.get(
+    "/:noteId/pdf",
+    checkPermission("SALE:VIEW"),
+    controller.getNotePdf
+);
+
 
 
 /**

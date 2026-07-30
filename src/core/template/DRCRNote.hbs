@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #292929;
+            background: #ffffff;
+            font-size: 12px;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 18mm 16mm 16mm;
+            margin: 0 auto;
+            background: white;
+        }
+
+        /* =========================================
+           HEADER
+        ========================================= */
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        .company {
+            width: 48%;
+        }
+
+        .logo {
+            max-width: 120px;
+            max-height: 70px;
+            object-fit: contain;
+            margin-bottom: 18px;
+        }
+
+        .company-name {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 7px;
+        }
+
+        .company-address {
+            line-height: 1.6;
+        }
+
+        .company-meta {
+            margin-top: 18px;
+            line-height: 1.6;
+        }
+
+        .document-header {
+            width: 45%;
+            text-align: right;
+        }
+
+        .document-title {
+            font-size: 36px;
+            font-weight: 400;
+            margin: 0 0 8px;
+        }
+
+        .document-number {
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .amount-box {
+            display: inline-block;
+            min-width: 180px;
+            padding: 18px 25px;
+            border: 1px solid #777;
+            text-align: center;
+        }
+
+        .amount-box-label {
+            font-size: 12px;
+            margin-bottom: 7px;
+        }
+
+        .amount-box-value {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        /* =========================================
+           PARTY + DOCUMENT INFO
+        ========================================= */
+
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 48px;
+            gap: 40px;
+        }
+
+        .party {
+            width: 48%;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .party-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .party-address {
+            line-height: 1.6;
+        }
+
+        .party-meta {
+            margin-top: 17px;
+            line-height: 1.6;
+        }
+
+        .document-info {
+            width: 46%;
+            padding-top: 5px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            width: 52%;
+            text-align: right;
+            padding-right: 22px;
+            font-weight: 500;
+        }
+
+        .info-value {
+            width: 48%;
+        }
+
+        /* =========================================
+           NARRATION
+        ========================================= */
+
+        .narration {
+            margin-top: 28px;
+            padding: 12px 14px;
+            background: #f6f6f6;
+            line-height: 1.5;
+        }
+
+        .narration strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* =========================================
+           TABLE
+        ========================================= */
+
+        .particular-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 32px;
+        }
+
+        .particular-table thead {
+            background: #3e3e3c;
+            color: white;
+        }
+
+        .particular-table th {
+            padding: 12px 14px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .particular-table th:first-child {
+            width: 55px;
+            text-align: center;
+        }
+
+        .particular-table th:last-child {
+            width: 160px;
+            text-align: right;
+        }
+
+        .particular-table td {
+            padding: 16px 14px;
+            vertical-align: top;
+            border-bottom: 1px solid #bdbdbd;
+        }
+
+        .particular-table td:first-child {
+            text-align: center;
+        }
+
+        .particular-table td:last-child {
+            text-align: right;
+            font-size: 14px;
+        }
+
+        /* =========================================
+           TOTAL
+        ========================================= */
+
+        .summary-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .summary {
+            width: 46%;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .summary-total {
+            border-top: 1px solid #ddd;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .summary-highlight {
+            background: #f4f4f4;
+            margin-top: 5px;
+        }
+
+        /* =========================================
+           FOOTER
+        ========================================= */
+
+        .footer {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .footer-left {
+            width: 55%;
+            line-height: 1.5;
+        }
+
+        .signature {
+            width: 35%;
+            text-align: center;
+        }
+
+        .signature-image {
+            max-width: 130px;
+            max-height: 55px;
+            object-fit: contain;
+            margin-bottom: 7px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #999;
+            padding-top: 7px;
+            margin-top: 35px;
+        }
+
+        .status {
+            margin-top: 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .source-label {
+            margin-top: 24px;
+            font-size: 11px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <!-- ========================================
+         HEADER
+    ========================================= -->
+
+    <div class="header">
+
+        <div class="company">
+
+            {{#if seller.logo}}
+                <img
+                    class="logo"
+                    src="{{seller.logo}}"
+                    alt="Company Logo"
+                />
+            {{/if}}
+
+            <div class="company-name">
+                {{seller.name}}
+            </div>
+
+            <div class="company-address">
+                {{#if seller.addressLine1}}
+                    {{seller.addressLine1}}<br />
+                {{/if}}
+
+                {{#if seller.addressLine2}}
+                    {{seller.addressLine2}}<br />
+                {{/if}}
+
+                {{#if seller.city}}
+                    {{seller.city}}
+                {{/if}}
+
+                {{#if seller.state}}
+                    , {{seller.state}}
+                {{/if}}
+
+                {{#if seller.pinCode}}
+                    - {{seller.pinCode}}
+                {{/if}}
+            </div>
+
+            <div class="company-meta">
+
+                {{#if seller.gstin}}
+                    <div>
+                        <strong>GSTIN:</strong>
+                        {{seller.gstin}}
+                    </div>
+                {{/if}}
+
+                {{#if seller.pan}}
+                    <div>
+                        <strong>PAN:</strong>
+                        {{seller.pan}}
+                    </div>
+                {{/if}}
+
+                {{#if seller.phone}}
+                    <div>
+                        <strong>Phone:</strong>
+                        {{seller.phone}}
+                    </div>
+                {{/if}}
+
+                {{#if seller.email}}
+                    <div>
+                        <strong>Email:</strong>
+                        {{seller.email}}
+                    </div>
+                {{/if}}
+
+            </div>
+
+        </div>
+
+        <div class="document-header">
+
+            <h1 class="document-title">
+                {{title}}
+            </h1>
+
+            <div class="document-number">
+                {{title}} # {{noteNo}}
+            </div>
+
+            <div class="amount-box">
+
+                <div class="amount-box-label">
+                    Note Amount
+                </div>
+
+                <div class="amount-box-value">
+                    {{currencySymbol}}{{totalAmount}}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================
+         PARTY + NOTE INFORMATION
+    ========================================= -->
+
+    <div class="info-section">
+
+        <div class="party">
+
+            <div class="section-title">
+                {{partyLabel}}
+            </div>
+
+            <div class="party-name">
+                {{party.name}}
+            </div>
+
+            <div class="party-address">
+
+                {{#if party.addressLine1}}
+                    {{party.addressLine1}}<br />
+                {{/if}}
+
+                {{#if party.addressLine2}}
+                    {{party.addressLine2}}<br />
+                {{/if}}
+
+                {{#if party.city}}
+                    {{party.city}}
+                {{/if}}
+
+                {{#if party.state}}
+                    , {{party.state}}
+                {{/if}}
+
+                {{#if party.pinCode}}
+                    - {{party.pinCode}}
+                {{/if}}
+
+            </div>
+
+            <div class="party-meta">
+
+                {{#if party.gstin}}
+                    <div>
+                        <strong>GSTIN:</strong>
+                        {{party.gstin}}
+                    </div>
+                {{/if}}
+
+                {{#if party.pan}}
+                    <div>
+                        <strong>PAN:</strong>
+                        {{party.pan}}
+                    </div>
+                {{/if}}
+
+                {{#if party.phone}}
+                    <div>
+                        <strong>Phone:</strong>
+                        {{party.phone}}
+                    </div>
+                {{/if}}
+
+                {{#if party.email}}
+                    <div>
+                        <strong>Email:</strong>
+                        {{party.email}}
+                    </div>
+                {{/if}}
+
+            </div>
+
+        </div>
+
+
+        <div class="document-info">
+
+            <div class="info-row">
+                <div class="info-label">
+                    {{title}} Date:
+                </div>
+
+                <div class="info-value">
+                    {{noteDate}}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">
+                    Reference Invoice #:
+                </div>
+
+                <div class="info-value">
+                    {{invoice.invoiceNo}}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">
+                    Reference Invoice Date:
+                </div>
+
+                <div class="info-value">
+                    {{invoice.invoiceDate}}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">
+                    Reference Invoice Amount:
+                </div>
+
+                <div class="info-value">
+                    {{currencySymbol}}{{invoice.grandTotal}}
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">
+                    Source:
+                </div>
+
+                <div class="info-value">
+                    {{sourceType}}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {{#if placeOfSupply}}
+
+        <div class="source-label">
+            <strong>Place of Supply:</strong>
+            {{placeOfSupply}}
+        </div>
+
+    {{/if}}
+
+
+    {{#if narration}}
+
+        <div class="narration">
+            <strong>Narration</strong>
+            {{narration}}
+        </div>
+
+    {{/if}}
+
+
+    <!-- ========================================
+         PARTICULARS
+    ========================================= -->
+
+    <table class="particular-table">
+
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Particular & Description</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {{#each particulars}}
+
+                <tr>
+
+                    <td>
+                        {{this.serialNo}}
+                    </td>
+
+                    <td>
+                        {{this.description}}
+                    </td>
+
+                    <td>
+                        {{../currencySymbol}}{{this.amount}}
+                    </td>
+
+                </tr>
+
+            {{/each}}
+
+        </tbody>
+
+    </table>
+
+
+    <!-- ========================================
+         TOTAL
+    ========================================= -->
+
+    <div class="summary-wrapper">
+
+        <div class="summary">
+
+            <div class="summary-row">
+                <span>Sub Total</span>
+
+                <span>
+                    {{currencySymbol}}{{subTotal}}
+                </span>
+            </div>
+
+            <div class="summary-row summary-total">
+                <span>Total</span>
+
+                <span>
+                    {{currencySymbol}}{{totalAmount}}
+                </span>
+            </div>
+
+            <div class="summary-row summary-highlight">
+                <span>Note Amount</span>
+
+                <strong>
+                    {{currencySymbol}}{{totalAmount}}
+                </strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================
+         FOOTER
+    ========================================= -->
+
+    <div class="footer">
+
+        <div class="footer-left">
+
+            {{#if amountInWords}}
+                <div>
+                    <strong>Amount in Words:</strong>
+                    {{amountInWords}}
+                </div>
+            {{/if}}
+
+            <div class="status">
+                Status: {{status}}
+            </div>
+
+        </div>
+
+
+        <div class="signature">
+
+            {{#if signatureImage}}
+
+                <img
+                    class="signature-image"
+                    src="{{signatureImage}}"
+                    alt="Signature"
+                />
+
+            {{/if}}
+
+            <div class="signature-line">
+                Authorized Signatory
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
