@@ -50,6 +50,8 @@ model User {
   ledgersCreated Ledger[] @relation("LedgerCreatedBy")
   journalsCreated Journal[] @relation("JournalCreatedBy")
   journalsApproved Journal[] @relation("JournalApprovedBy")
+  debitCreditNotesCreated DebitCreditNote[] @relation("DebitCreditNoteCreatedBy")
+  debitCreditNotesApproved DebitCreditNote[] @relation("DebitCreditNoteApprovedBy")
   recipesCreated ProductRecipe[] @relation("RecipeCreatedBy")
   recipesApproved ProductRecipe[] @relation("RecipeApprovedBy")
   manufacturesCreated ProductManufacture[] @relation("ManufactureCreatedBy")
@@ -103,6 +105,7 @@ model Branch {
   vouchers Voucher[]
   productLedgerEntries ProductLedgerEntry[]
   journals Journal[]
+  debitCreditNotes DebitCreditNote[]
   productManufactures ProductManufacture[]
 
   createdAt DateTime @default(now())
@@ -245,6 +248,7 @@ model Agency {
   branches  AgencyBranch[]
   purchases Purchase[]
   sales Sale[]
+  debitCreditNotes DebitCreditNote[]
   transactions Transaction[]
   thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
   outstanding AgencyOutstanding[]
@@ -602,6 +606,7 @@ model Purchase {
   allocations TransactionAllocation[]
   transactions Transaction[]
   transport PurchaseTransport[]
+  debitCreditNotes DebitCreditNote[]
   
   @@index([agencyId])
   @@index([branchId])
@@ -754,6 +759,7 @@ model Sale {
   allocations TransactionAllocation[]
   transactions Transaction[]
   transport SaleTransport[]
+  debitCreditNotes DebitCreditNote[]
   
   @@index([agencyId])
   @@index([branchId])
@@ -1094,6 +1100,8 @@ enum VoucherType {
 
   JOURNAL
   CONTRA
+  DEBIT_NOTE
+  CREDIT_NOTE
 
   OPENING_BALANCE
 }
@@ -1124,6 +1132,7 @@ model Voucher {
   transaction Transaction[]
   journals Journal[]
   manufactures ProductManufacture[]
+  debitCreditNotes DebitCreditNote[]
 
   @@index([voucherType])
   @@index([sourceId])
@@ -1277,6 +1286,88 @@ enum JournalStatus {
     PENDING
     APPROVED
     REJECTED
+}
+
+enum DebitCreditNoteType {
+    DEBIT_NOTE
+    CREDIT_NOTE
+}
+
+enum DebitCreditNoteSourceType {
+    SALE
+    PURCHASE
+}
+
+enum DebitCreditNoteStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}
+
+model DebitCreditNote {
+    id String @id @default(uuid())
+
+    noteNo String @unique
+    type DebitCreditNoteType
+    sourceType DebitCreditNoteSourceType
+
+    agencyId String
+    agency Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+
+    branchId String
+    branch Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+    saleId String?
+    sale Sale? @relation(fields: [saleId], references: [id], onDelete: Restrict)
+
+    purchaseId String?
+    purchase Purchase? @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+    noteDate DateTime @default(now())
+    narration String?
+    totalAmount Decimal @default(0.00) @db.Decimal(18, 2)
+
+    status DebitCreditNoteStatus @default(PENDING)
+
+    voucherId String?
+    voucher Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+
+    createdById String?
+    createdBy User? @relation("DebitCreditNoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+    approvedById String?
+    approvedBy User? @relation("DebitCreditNoteApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+    approvedAt DateTime?
+    rejectionRemarks String?
+
+    particulars DebitCreditNoteParticular[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([agencyId])
+    @@index([branchId])
+    @@index([saleId])
+    @@index([purchaseId])
+    @@index([sourceType])
+    @@index([status])
+    @@index([type])
+    @@index([voucherId])
+}
+
+model DebitCreditNoteParticular {
+    id String @id @default(uuid())
+
+    noteId String
+    note DebitCreditNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+    description String
+    amount Decimal @db.Decimal(18, 2)
+
+    createdAt DateTime @default(now())
+
+    @@index([noteId])
 }
 
 enum JournalHeadType {

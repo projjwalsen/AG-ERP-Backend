@@ -1,10 +1,22 @@
-import { EntryType, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
+import { DebitCreditNoteStatus, DebitCreditNoteType, EntryType, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 
 export class ReportingService {
+    private static adjustedSaleTotal(sale: any) {
+        const debitNotes = (sale.debitCreditNotes || [])
+            .filter((note: any) => note.type === DebitCreditNoteType.DEBIT_NOTE)
+            .reduce((sum: number, note: any) => sum + Number(note.totalAmount), 0);
+
+        const creditNotes = (sale.debitCreditNotes || [])
+            .filter((note: any) => note.type === DebitCreditNoteType.CREDIT_NOTE)
+            .reduce((sum: number, note: any) => sum + Number(note.totalAmount), 0);
+
+        return Number(sale.grandTotal) + debitNotes - creditNotes;
+    }
+
     private static splitSignedBalance(value: number) {
         const rounded = Number(value.toFixed(2));
 
@@ -1196,7 +1208,12 @@ export class ReportingService {
                 include: {
                     agency: true,
                     branch: true,
-                    allocations: true
+                    allocations: true,
+                    debitCreditNotes: {
+                        where: {
+                            status: DebitCreditNoteStatus.APPROVED
+                        }
+                    }
                 },
                 orderBy: {
                     invoiceDate: "asc"
@@ -1211,7 +1228,8 @@ export class ReportingService {
                         0
                     );
 
-                const outstanding = Number(sale.grandTotal) - allocated;
+                const adjustedTotal = this.adjustedSaleTotal(sale);
+                const outstanding = adjustedTotal - allocated;
 
                 if(outstanding <= 0) continue;
 
@@ -1284,6 +1302,9 @@ export class ReportingService {
                         ageDays,
 
                     grandTotal:
+                        adjustedTotal,
+
+                    originalGrandTotal:
                         Number(sale.grandTotal),
 
                     allocatedAmount:

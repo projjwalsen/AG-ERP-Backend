@@ -1,4 +1,4 @@
-import { TransactionDirection, TransactionStatus, PaymentType, OutstandingType, SettlementType, Prisma, SalesStatus, PurchaseStatus, Transaction } from "@prisma/client";
+import { DebitCreditNoteStatus, DebitCreditNoteType, TransactionDirection, TransactionStatus, PaymentType, OutstandingType, SettlementType, Prisma, SalesStatus, PurchaseStatus, Transaction } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { randomUUID } from "crypto";
@@ -83,6 +83,17 @@ type AgencyFIFOPreview = {
 };
 
 export class TransactionService {
+    private static adjustedSaleTotal(sale: any) {
+        const debitNotes = (sale.debitCreditNotes || [])
+            .filter((note: any) => note.type === DebitCreditNoteType.DEBIT_NOTE)
+            .reduce((sum: number, note: any) => sum + Number(note.totalAmount), 0);
+
+        const creditNotes = (sale.debitCreditNotes || [])
+            .filter((note: any) => note.type === DebitCreditNoteType.CREDIT_NOTE)
+            .reduce((sum: number, note: any) => sum + Number(note.totalAmount), 0);
+
+        return Number(sale.grandTotal) + debitNotes - creditNotes;
+    }
 
     private static async generateTransactionNo(branchId: string) {
         const branch = await prisma.branch.findUnique({
@@ -112,6 +123,85 @@ export class TransactionService {
         return setting;
     }
 
+    private static getSaleSettlementTotal(
+        sale: any
+    ) {
+
+        const debitNotes =
+            (sale.debitCreditNotes ?? [])
+                .filter(
+                    (note: any) =>
+                        note.type ===
+                        DebitCreditNoteType.DEBIT_NOTE
+                )
+                .reduce(
+                    (sum: number, note: any) =>
+                        sum +
+                        Number(note.totalAmount),
+                    0
+                );
+
+        const creditNotes =
+            (sale.debitCreditNotes ?? [])
+                .filter(
+                    (note: any) =>
+                        note.type ===
+                        DebitCreditNoteType.CREDIT_NOTE
+                )
+                .reduce(
+                    (sum: number, note: any) =>
+                        sum +
+                        Number(note.totalAmount),
+                    0
+                );
+
+        return (
+            Number(sale.grandTotal) +
+            debitNotes -
+            creditNotes
+        );
+    }
+
+
+    private static getPurchaseSettlementTotal(
+        purchase: any
+    ) {
+
+        const debitNotes =
+            (purchase.debitCreditNotes ?? [])
+                .filter(
+                    (note: any) =>
+                        note.type ===
+                        DebitCreditNoteType.DEBIT_NOTE
+                )
+                .reduce(
+                    (sum: number, note: any) =>
+                        sum +
+                        Number(note.totalAmount),
+                    0
+                );
+
+        const creditNotes =
+            (purchase.debitCreditNotes ?? [])
+                .filter(
+                    (note: any) =>
+                        note.type ===
+                        DebitCreditNoteType.CREDIT_NOTE
+                )
+                .reduce(
+                    (sum: number, note: any) =>
+                        sum +
+                        Number(note.totalAmount),
+                    0
+                );
+
+        return (
+            Number(purchase.grandTotal) -
+            debitNotes +
+            creditNotes
+        );
+    }
+
     private static async getInvoiceOutstanding(
         tx: Prisma.TransactionClient,
         payload: Pick<
@@ -125,8 +215,16 @@ export class TransactionService {
                     id: payload.saleId
                 },
                 include: {
-                    allocations: true
-                }
+                    allocations:
+                        true,
+
+                    debitCreditNotes: {
+                        where: {
+                            status:
+                                DebitCreditNoteStatus.APPROVED
+                        }
+                    }
+                },
             });
 
             if(!sale) {
@@ -139,47 +237,134 @@ export class TransactionService {
                 0
             );
 
+            const settlementTotal =
+                this.getSaleSettlementTotal(
+                    sale
+                );
+
             return {
-                type: "SALE",
-                id: sale.id,
-                agencyId: sale.agencyId,
-                branchId: sale.branchId,
-                status: sale.status,
-                grandTotal: Number(sale.grandTotal),
+                type:
+                    "SALE",
+
+                id:
+                    sale.id,
+
+                agencyId:
+                    sale.agencyId,
+
+                branchId:
+                    sale.branchId,
+
+                status:
+                    sale.status,
+
+                /**
+                 * Original invoice amount.
+                 */
+                grandTotal:
+                    Number(sale.grandTotal),
+
+                /**
+                 * Effective amount after approved
+                 * Debit/Credit Notes.
+                 */
+                settlementTotal,
+
                 allocated,
-                outstandings: Number(sale.grandTotal) - allocated
-            }
+
+                /**
+                 * Remaining settlement position.
+                 *
+                 * Can become negative when the invoice
+                 * was already fully paid and a later
+                 * Credit Note reduces the receivable.
+                 */
+                outstandings:
+                    settlementTotal -
+                    allocated
+            };
         }
 
-        const purchase = await tx.purchase.findUnique({
-            where: {
-                id: payload.purchaseId
-            },
-            include: {
-                allocations: true
-            }
-        });
+        const purchase =
+            await tx.purchase.findUnique({
 
-        if(!purchase) {
-            throw new ApiError("Purchase Invoice not found", 400);
+                where: {
+                    id:
+                        payload.purchaseId
+                },
+
+                include: {
+
+                    allocations:
+                        true,
+
+                    debitCreditNotes: {
+                        where: {
+                            status:
+                                DebitCreditNoteStatus.APPROVED
+                        }
+                    }
+                }
+            });
+
+        if (!purchase) {
+            throw new ApiError(
+                "Purchase Invoice not found",
+                400
+            );
         }
 
-        const allocated = purchase.allocations.reduce(
-            (sum, a) => sum + Number(a.allocatedAmount),
-            0
-        );
+        const allocated =
+            purchase.allocations.reduce(
+                (sum, allocation) =>
+                    sum +
+                    Number(
+                        allocation.allocatedAmount
+                    ),
+                0
+            );
+
+        const settlementTotal =
+            this.getPurchaseSettlementTotal(
+                purchase
+            );
 
         return {
-            type: "PURCHASE",
-            id: purchase.id,
-            agencyId: purchase.agencyId,
-            branchId: purchase.branchId,
-            status: purchase.status,
-            grandTotal: Number(purchase.grandTotal),
+            type:
+                "PURCHASE",
+
+            id:
+                purchase.id,
+
+            agencyId:
+                purchase.agencyId,
+
+            branchId:
+                purchase.branchId,
+
+            status:
+                purchase.status,
+
+            /**
+             * ORIGINAL INVOICE.
+             * Never changed.
+             */
+            grandTotal:
+                Number(purchase.grandTotal),
+
+            /**
+             * Only calculated accounting/
+             * settlement position.
+             */
+            settlementTotal,
+
             allocated,
-            outstandings: Number(purchase.grandTotal) - allocated
+
+            outstandings:
+                settlementTotal -
+                allocated
         };
-    }
+            }
 
     private static async validateInvoiceSettlement(
         tx: Prisma.TransactionClient,
@@ -512,7 +697,12 @@ export class TransactionService {
                     status: SalesStatus.APPROVED
                 },
                 include: {
-                    allocations: true
+                    allocations: true,
+                    debitCreditNotes: {
+                        where: {
+                            status: DebitCreditNoteStatus.APPROVED
+                        }
+                    }
                 },
                 orderBy: {
                     createdAt: "asc"
@@ -532,7 +722,7 @@ export class TransactionService {
                     );
 
                 const outstanding =
-                    Number(sale.grandTotal) -
+                    this.adjustedSaleTotal(sale) -
                     allocated;
 
                 if (outstanding <= 0)
@@ -785,6 +975,11 @@ export class TransactionService {
                     },
                     include: {
                         allocations: true,
+                        debitCreditNotes: {
+                            where: {
+                                status: DebitCreditNoteStatus.APPROVED
+                            }
+                        },
                         items: {
                             include: {
                                 product: true,
@@ -813,7 +1008,7 @@ export class TransactionService {
                         );
 
                     const outstanding =
-                        Number(sale.grandTotal) -
+                        this.adjustedSaleTotal(sale) -
                         alreadyAllocated;
 
                     if (outstanding <= 0)
@@ -834,7 +1029,7 @@ export class TransactionService {
 
                         fifoOrder: fifo++,
 
-                        totalAmount: Number(sale.grandTotal),
+                        totalAmount: this.adjustedSaleTotal(sale),
 
                         outstandingAmount: outstanding,
 
@@ -1863,6 +2058,11 @@ export class TransactionService {
                 },
                 include: {
                     allocations: true,
+                    debitCreditNotes: {
+                        where: {
+                            status: DebitCreditNoteStatus.APPROVED
+                        }
+                    },
                 },
                 orderBy: {
                     createdAt: "desc"
@@ -1877,11 +2077,12 @@ export class TransactionService {
                     );
 
                 const outstanding =
-                    Number(sale.grandTotal) - allocated;
+                    this.adjustedSaleTotal(sale) - allocated;
 
                 return {
                     ...sale,
                     allocatedAmount: allocated,
+                    adjustedTotal: this.adjustedSaleTotal(sale),
                     outstandingAmount: outstanding,
                     fullySettled: outstanding === 0,
                     partiallySettled: 
