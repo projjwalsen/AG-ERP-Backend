@@ -5,6 +5,7 @@ import { RBACService } from "../rbac/rbac.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { buildPurchaseNarration } from "../../core/utils/narration";
 
 type PurchaseItemPayload = {
     productId: string;
@@ -64,6 +65,8 @@ type PurchaseTransportPayload = {
 }
 
 type createPurchasePayload = {
+    purchaseOrderId?: string;
+
     agencyId: string;
     branchId: string;
 
@@ -413,6 +416,7 @@ export class PurchaseService {
         /** Create Purchase */
         const purchase = await prisma.purchase.create({
             data:{
+                purchaseOrderId: payload.purchaseOrderId || null,
 
                 agencyId: payload.agencyId,
 
@@ -512,7 +516,50 @@ export class PurchaseService {
             }
         });
 
-        return purchase;
+        const existingRemarks =
+            purchase.remarks?.trim();
+
+        if (existingRemarks) {
+            return purchase;
+        }
+
+
+        const narration =
+            buildPurchaseNarration(
+                purchase
+            );
+
+
+        const updatedPurchase =
+            await prisma.purchase.update({
+
+                where: {
+                    id: purchase.id
+                },
+
+                data: {
+                    remarks:
+                        narration
+                },
+
+                include: {
+
+                    agency: true,
+
+                    branch: true,
+
+                    transport: true,
+
+                    items: {
+                        include: {
+                            product: true
+                        }
+                    }
+                }
+            });
+
+
+        return updatedPurchase;
     }
 
     static async getAllPurchases(

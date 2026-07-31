@@ -19,6 +19,8 @@ import importRoute from "../modules/import/import.routes";
 import bankRoute from "../modules/bank/bank.routes";
 import journalRoute from "../modules/journal/journal.routes";
 import manufacturingRoute from "../modules/manufacturing/manufacturing.routes";
+import debitCreditNoteRoute from "../modules/debitCreditNote/debitCreditNote.routes";
+import poRoute from "../modules/PurchOrder/po.routes";
 
 const router = Router();
 
@@ -42,7 +44,8 @@ router.use("/dashboard", dashboardRoute);
 router.use("/migration", importRoute);
 router.use("/journal", journalRoute);
 router.use("/manufacturing", manufacturingRoute);
-
+router.use("/debit-credit-notes", debitCreditNoteRoute);
+router.use("/purchase-orders", poRoute);
 
 
 export default router;

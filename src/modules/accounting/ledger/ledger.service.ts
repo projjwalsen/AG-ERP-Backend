@@ -1,5 +1,7 @@
 import {
     AgencyType,
+    DebitCreditNoteSourceType,
+    DebitCreditNoteType,
     EntryType,
     LedgerNature,
     LedgerType,
@@ -120,6 +122,8 @@ export class LedgerService {
             PAYMENT: "PAY",
             JOURNAL: "JRN",
             CONTRA: "CTR",
+            DEBIT_NOTE: "DBN",
+            CREDIT_NOTE: "CRN",
             OPENING_BALANCE: "OPN"
         };
 
@@ -4423,6 +4427,216 @@ export class LedgerService {
                     : [])
 
             ]
+        }, tx);
+    }
+
+    static async postDebitCreditNoteApproval(
+        tx: Prisma.TransactionClient,
+        noteId: string
+    ) {
+        const note = 
+            await tx.debitCreditNote.findUnique({
+                where: { id: noteId },
+                include: {
+                    agency: true,
+                    sale: {
+                        select: {
+                            id: true,
+                            invoiceNo: true
+                        }
+                    },
+                    purchase: {
+                        select: {
+                            id: true,
+                            invoiceNo: true
+                        }
+                    },
+                    
+                    particulars: true
+                }
+            });
+
+        if (!note) {
+            throw new ApiError(
+                "Debit/Credit note not found for accounting posting", 
+                404
+            );
+        }
+
+        const amount = money(note.totalAmount);
+        if (amount <= 0) {
+            throw new ApiError("Debit/Credit note amount must be greater than zero", 400);
+        }
+
+        /** Resolving the source invoice */
+        const isSale = note.sourceType ===
+            DebitCreditNoteSourceType.SALE;
+        const isPurchase = note.sourceType ===
+            DebitCreditNoteSourceType.PURCHASE;
+
+        if(isSale && !note.sale) {
+            throw new ApiError(
+                "Sale invoice not found for the debit/credit note",
+                404
+            );
+        }
+
+        if(isPurchase && !note.purchase) {
+            throw new ApiError(
+                "Purchase invoice not found for the debit/credit note",
+                404
+            );
+        }
+
+        const invoiceNo = isSale ?
+            note.sale!.invoiceNo :
+            note.purchase!.invoiceNo;
+
+        /**
+         * PARTY LEDGER
+         * SALE -> CUSTOMER/SAUNDRY DEBTOR
+         * PURCHASE -> VENDOR/SAUNDRY CREDITOR
+         */
+
+        const partyLedger = 
+            isSale 
+                ? await this.getOrCreateCustomerLedger(
+                    tx,
+                    note.branchId,
+                    note.agencyId
+                )
+                : await this.getOrCreateVendorLedger(
+                    tx,
+                    note.branchId,
+                    note.agencyId
+                );
+                
+                
+        /** NOTE ADJUSTMENT LEDGER */
+        const noteLedger =
+                await this.getOrCreateLedger(
+                    tx,
+                    {
+                        code: `${note.sourceType}-${note.type}-${note.branchId}`,
+
+                        name: 
+                            `${
+                                isSale
+                                    ? "Sales"
+                                    : "Purchase"
+                            } ${
+                                note.type === 
+                                DebitCreditNoteType.DEBIT_NOTE
+                                    ? "Debit Note Adjustments"
+                                    : "Credit Note Adjustments"
+                            }`,
+
+                        category: LedgerType.JOURNAL,
+
+                        groupCode: 
+                            note.type === DebitCreditNoteType.DEBIT_NOTE
+                                ? "INDIRECT_INCOME"
+                                : "INDIRECT_EXPENSE",
+
+                        nature: 
+                            note.type === DebitCreditNoteType.DEBIT_NOTE 
+                            ? LedgerNature.CREDIT 
+                            : LedgerNature.DEBIT,
+
+                        branchId: note.branchId
+                    }
+                );
+
+        /** VOUCHER TYPE */
+        const voucherType = 
+                note.type ===
+                DebitCreditNoteType.DEBIT_NOTE
+                    ? VoucherType.DEBIT_NOTE
+                    : VoucherType.CREDIT_NOTE;
+
+        const narration = 
+            [
+                note.sourceType,
+                note.type,
+                note.noteNo,
+                `Invoice:${invoiceNo}`,
+                note.agency.name,
+                note.narration
+            ]
+            .filter(Boolean)
+            .join(" | ");
+
+        
+        /** ACCOUNTING DIRECTION 
+            _____________________ 
+            * SALE DEBIT NOTE
+            * Dr Customer
+            * Cr Adjustment
+            *
+            * SALE CREDIT NOTE
+            * Dr Adjustment
+            * Cr Customer
+            *
+            * PURCHASE DEBIT NOTE
+            * Dr Vendor
+            * Cr Adjustment
+            *
+            * PURCHASE CREDIT NOTE
+            * Dr Adjustment
+            * Cr Vendor
+        */
+
+        const partyEntryType = 
+            note.type ===
+            DebitCreditNoteType.DEBIT_NOTE
+                ? EntryType.DEBIT
+                : EntryType.CREDIT;
+
+        const particularEntryType =
+            note.type ===
+            DebitCreditNoteType.DEBIT_NOTE
+                ? EntryType.CREDIT
+                : EntryType.DEBIT;
+
+        /**
+         * Each user particular becomes its own
+         * ledger entry against the adjustment ledger.
+         */
+        const particularEntries =
+            note.particulars.map(
+                particular => ({
+                    ledgerId: noteLedger.id,
+                    
+                    entryType: particularEntryType,
+
+                    amount: Number(particular.amount),
+
+                    branchId: note.branchId,
+
+                    narration: 
+                        `Invoice:${invoiceNo} | ${particular.description}`
+                })
+            );
+
+
+        return this.createVoucher({
+            voucherType,
+            sourceId: note.id,
+            branchId: note.branchId,
+            voucherDate: note.noteDate,
+            narration,
+            entries: 
+                [
+                    {
+                        ledgerId: partyLedger.id,
+                        entryType: partyEntryType,
+                        amount,
+                        branchId: note.branchId,
+                        narration: 
+                            `${note.type} ${note.noteNo} | Invoice:${invoiceNo}`
+                    },
+                    ...particularEntries
+                ]
         }, tx);
     }
 

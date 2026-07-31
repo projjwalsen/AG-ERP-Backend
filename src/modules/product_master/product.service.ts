@@ -588,23 +588,227 @@ export class ProductService {
     }
 
     static async getActiveProducts(
-        actor: any,   
-    ){
-        if(!actor?.id){
+        actor: any
+    ) {
+
+        if (!actor?.id) {
             throw new ApiError(
                 "Unauthorized",
                 401
-            )
+            );
         }
 
-        const products = await prisma.product.findMany({
-            where: {
-                isActive: true
-            },
-            orderBy: {
-                name: "asc"
+
+        /*
+         * ============================================================
+         * GET ACTIVE PRODUCTS
+         * ============================================================
+         */
+
+        const products =
+            await prisma.product.findMany({
+
+                where: {
+                    isActive: true
+                },
+
+                orderBy: {
+                    name: "asc"
+                }
+            });
+
+
+        if (products.length === 0) {
+            return [];
+        }
+
+
+        /*
+         * ============================================================
+         * GET ALL INVENTORY BATCHES FOR ACTIVE PRODUCTS
+         * ============================================================
+         *
+         * InventoryBatch stores:
+         *
+         * availableQtyKG
+         * availableQtyLTR
+         *
+         * There is no generic availableQuantity field.
+         * ============================================================
+         */
+
+        const inventoryBatches =
+            await prisma.inventoryBatch.findMany({
+
+                where: {
+
+                    productId: {
+                        in: products.map(
+                            product => product.id
+                        )
+                    },
+
+                    isActive: true
+                },
+
+                select: {
+                    productId: true,
+                    availableQtyKG: true,
+                    availableQtyLTR: true
+                }
+            });
+
+
+        /*
+         * ============================================================
+         * BUILD CUMULATIVE STOCK MAP
+         * ============================================================
+         *
+         * Stock is summed across ALL batches of the product.
+         * ============================================================
+         */
+
+        const stockMap =
+            new Map<
+                string,
+                {
+                    kg: number;
+                    ltr: number;
+                }
+            >();
+
+
+        for (const batch of inventoryBatches) {
+
+            const current =
+                stockMap.get(
+                    batch.productId
+                ) ?? {
+                    kg: 0,
+                    ltr: 0
+                };
+
+
+            current.kg +=
+                Number(
+                    batch.availableQtyKG ?? 0
+                );
+
+
+            current.ltr +=
+                Number(
+                    batch.availableQtyLTR ?? 0
+                );
+
+
+            stockMap.set(
+                batch.productId,
+                current
+            );
+        }
+
+
+        /*
+         * ============================================================
+         * ADD AVAILABLE STOCK BASED ON PRODUCT OPERATIONAL UNIT
+         * ============================================================
+         *
+         * KG  -> availableQtyKG
+         * LTR -> availableQtyLTR
+         * MT  -> availableQtyKG / 1000
+         * ============================================================
+         */
+
+        return products.map(
+            product => {
+
+                const stock =
+                    stockMap.get(
+                        product.id
+                    ) ?? {
+                        kg: 0,
+                        ltr: 0
+                    };
+
+
+                switch (product.operationalUnit) {
+
+                    /*
+                     * -----------------------------
+                     * KG PRODUCT
+                     * -----------------------------
+                     */
+
+                    case ProductUnit.KG:
+
+                        return {
+                            ...product,
+
+                            availableStockKG:
+                                Number(
+                                    stock.kg.toFixed(3)
+                                )
+                        };
+
+
+                    /*
+                     * -----------------------------
+                     * LTR PRODUCT
+                     * -----------------------------
+                     */
+
+                    case ProductUnit.LTR:
+
+                        return {
+                            ...product,
+
+                            availableStockLTR:
+                                Number(
+                                    stock.ltr.toFixed(3)
+                                )
+                        };
+
+
+                    /*
+                     * -----------------------------
+                     * MT PRODUCT
+                     * -----------------------------
+                     *
+                     * Inventory is stored in KG.
+                     *
+                     * 1000 KG = 1 MT
+                     */
+
+                    case ProductUnit.MT:
+
+                        return {
+                            ...product,
+
+                            availableStockMT:
+                                Number(
+                                    (stock.kg / 1000)
+                                        .toFixed(3)
+                                )
+                        };
+
+
+                    /*
+                     * Should never happen because
+                     * operationalUnit is ProductUnit.
+                     */
+
+                    default:
+
+                        return {
+                            ...product,
+
+                            availableStockKG:
+                                Number(
+                                    stock.kg.toFixed(3)
+                                )
+                        };
+                }
             }
-        });
-        return products;
+        );
     }
 }
