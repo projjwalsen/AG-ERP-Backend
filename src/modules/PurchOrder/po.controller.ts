@@ -320,39 +320,39 @@ export const getPurchaseInvoiceEntry = async (
  * ============================================================
  */
 
-export const createPurchaseFromOrder = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+// export const createPurchaseFromOrder = async (
+//     req: Request,
+//     res: Response,
+//     next: NextFunction
+// ) => {
 
-    try {
+//     try {
 
-        const purchase =
-            await PurchaseOrderService
-                .createPurchaseFromOrder(
-                    actor(req),
-                    (req as any).params.purchaseOrderId,
-                    req.body
-                );
+//         const purchase =
+//             await PurchaseOrderService
+//                 .createPurchaseFromOrder(
+//                     actor(req),
+//                     (req as any).params.purchaseOrderId,
+//                     req.body
+//                 );
 
-        return res.status(201).json({
+//         return res.status(201).json({
 
-            success: true,
+//             success: true,
 
-            message:
-                "Purchase invoice created successfully from purchase order",
+//             message:
+//                 "Purchase invoice created successfully from purchase order",
 
-            data: {
-                purchase
-            }
-        });
+//             data: {
+//                 purchase
+//             }
+//         });
 
-    } catch (error) {
+//     } catch (error) {
 
-        next(error);
-    }
-};
+//         next(error);
+//     }
+// };
 
 
 export const purchaseOrderPdf =

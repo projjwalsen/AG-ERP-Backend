@@ -32,6 +32,10 @@ router.use(authMiddleware);
  *               - items
  *
  *             properties:
+ * 
+ *               purchaseOrderId:
+ *                 type: string
+ *                 example: clx_purchaseOrderId_002
  *
  *               agencyId:
  *                 type: string

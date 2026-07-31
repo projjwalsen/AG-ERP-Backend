@@ -8,6 +8,7 @@ import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
 import { randomUUID } from "crypto";
 import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { buildSaleNarration } from "../../core/utils/narration";
 
 type SalesItemPayload = {
     productId: string;
@@ -681,7 +682,45 @@ export class SalesService {
             }
         });
 
-        return sale; 
+        const existingRemarks =
+            sale.remarks?.trim();
+
+        if (existingRemarks) {
+            return sale;
+        }
+
+        const narration =
+            buildSaleNarration(
+                sale
+            );
+
+        const updatedSale =
+            await prisma.sale.update({
+
+                where: {
+                    id: sale.id
+                },
+
+                data: {
+                    remarks: narration
+                },
+
+                include: {
+                    agency: true,
+                    branch: true,
+                    transport: true,
+                    transactions: true,
+
+                    items: {
+                        include: {
+                            product: true,
+                            batch: true
+                        }
+                    }
+                }
+            });
+
+        return updatedSale;
     }
 
     /**

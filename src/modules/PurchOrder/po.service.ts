@@ -1076,403 +1076,403 @@ export class PurchaseOrderService {
     *     PurchaseService.createPurchase().
     * ============================================================ */
 
-    static async createPurchaseFromOrder(
-        actor: any,
-        purchaseOrderId: string,
-        payload: CreatePurchaseFromOrderPayload
-    ) {
-
-        await this.ensurePermission(
-            actor,
-            "PURCHASE:WRITE"
-        );
-
-        /* ========================================================
-        * BASIC VALIDATION
-        * ======================================================== */
-
-        if (!purchaseOrderId?.trim()) {
-            throw new ApiError(
-                "Purchase Order ID is required",
-                400
-            );
-        }
-
-        if (!payload.invoiceNo?.trim()) {
-            throw new ApiError(
-                "Supplier invoice number is required",
-                400
-            );
-        }
-
-        if (!payload.items?.length) {
-            throw new ApiError(
-                "Purchase items are required",
-                400
-            );
-        }
-
-        /* ========================================================
-        * LOAD PURCHASE ORDER
-        * ======================================================== */
-
-        const po =
-            await prisma.purchaseOrder.findUnique({
-
-                where: {
-                    id: purchaseOrderId
-                },
-
-                include: {
-
-                    items: true,
-
-                    purchases: {
-                        select: {
-                            id: true,
-                            invoiceNo: true,
-                            status: true
-                        }
-                    }
-                }
-            });
-
-        if (!po) {
-            throw new ApiError(
-                "Purchase order not found",
-                404
-            );
-        }
-
-        /* ========================================================
-        * BRANCH ACCESS
-        * ======================================================== */
-
-        this.validateBranchAccess(
-            actor,
-            po.branchId
-        );
-
-        /* ========================================================
-        * PO MUST BE APPROVED
-        * ======================================================== */
-
-        if (
-            po.status !==
-            PurchaseOrderStatus.APPROVED
-        ) {
-            throw new ApiError(
-                "Purchase can only be created from an approved purchase order",
-                400
-            );
-        }
-
-        if (!po.items.length) {
-            throw new ApiError(
-                `Purchase order ${po.poNo} has no items`,
-                400
-            );
-        }
-
-        /* ========================================================
-        * BUILD PO PRODUCT MAP
-        *
-        * PO is the source of truth for product selection.
-        * ======================================================== */
-
-        const poItemMap =
-            new Map(
-                po.items.map(
-                    item => [
-                        item.productId,
-                        item
-                    ]
-                )
-            );
-
-        /* ========================================================
-        * PREVENT DUPLICATE PRODUCTS IN REQUEST
-        * ======================================================== */
-
-        const submittedProductIds =
-            new Set<string>();
-
-        for (const item of payload.items) {
-
-            if (!item.productId) {
-                throw new ApiError(
-                    "Product ID is required for every purchase item",
-                    400
-                );
-            }
-
-            if (
-                submittedProductIds.has(
-                    item.productId
-                )
-            ) {
-                throw new ApiError(
-                    `Product ${item.productId} has been submitted more than once`,
-                    400
-                );
-            }
-
-            submittedProductIds.add(
-                item.productId
-            );
-        }
-
-        /* ========================================================
-        * VALIDATE PRODUCTS
-        *
-        * No product outside the PO is allowed.
-        * ======================================================== */
-
-        for (const item of payload.items) {
-
-            if (
-                !poItemMap.has(
-                    item.productId
-                )
-            ) {
-                throw new ApiError(
-                    `Product ${item.productId} does not belong to Purchase Order ${po.poNo}`,
-                    400
-                );
-            }
-        }
-
-        /* ========================================================
-        * REQUIRE ALL PO PRODUCTS
-        *
-        * This makes the PO product list FIXED.
-        *
-        * PO:
-        * Product A
-        * Product B
-        *
-        * Purchase must contain:
-        * Product A
-        * Product B
-        *
-        * Client cannot:
-        * - add Product C
-        * - remove Product A/B
-        * - duplicate Product A/B
-        *
-        * Quantity / price / batch remain editable.
-        * ======================================================== */
-
-        if (
-            submittedProductIds.size !==
-            poItemMap.size
-        ) {
-
-            const missingProducts =
-                po.items
-                    .filter(
-                        poItem =>
-                            !submittedProductIds.has(
-                                poItem.productId
-                            )
-                    )
-                    .map(
-                        poItem =>
-                            poItem.productId
-                    );
-
-            throw new ApiError(
-                `Purchase must contain all products from Purchase Order ${po.poNo}. Missing products: ${missingProducts.join(", ")}`,
-                400
-            );
-        }
-
-        /* ========================================================
-        * BUILD FINAL PURCHASE ITEMS
-        *
-        * IMPORTANT:
-        *
-        * productId -> PO
-        *
-        * quantity -> CLIENT / actual invoice
-        * price    -> CLIENT / actual invoice
-        * batchNo  -> CLIENT / actual received batch
-        *
-        * We DO NOT blindly forward payload.items.
-        * ======================================================== */
-
-        const purchaseItems =
-            payload.items.map(
-                item => {
-
-                    const poItem =
-                        poItemMap.get(
-                            item.productId
-                        );
-
-                    if (!poItem) {
-                        // Defensive check.
-                        // Should already be impossible because of
-                        // validation above.
-                        throw new ApiError(
-                            `Product ${item.productId} does not belong to Purchase Order ${po.poNo}`,
-                            400
-                        );
-                    }
-
-                    const quantity =
-                        Number(item.quantity);
-
-                    const purchasePrice =
-                        Number(item.purchasePrice);
-
-                    const batchNo =
-                        item.batchNo?.trim();
-
-                    /* --------------------------------------------
-                    * ACTUAL QUANTITY
-                    * -------------------------------------------- */
-
-                    if (
-                        !Number.isFinite(quantity) ||
-                        quantity <= 0
-                    ) {
-                        throw new ApiError(
-                            `Quantity must be greater than zero for product ${item.productId}`,
-                            400
-                        );
-                    }
-
-                    /* --------------------------------------------
-                    * ACTUAL PURCHASE PRICE
-                    * -------------------------------------------- */
-
-                    if (
-                        !Number.isFinite(purchasePrice) ||
-                        purchasePrice < 0
-                    ) {
-                        throw new ApiError(
-                            `Invalid purchase price for product ${item.productId}`,
-                            400
-                        );
-                    }
-
-                    /* --------------------------------------------
-                    * ACTUAL BATCH
-                    * -------------------------------------------- */
-
-                    if (!batchNo) {
-                        throw new ApiError(
-                            `Batch number is required for product ${item.productId}`,
-                            400
-                        );
-                    }
-
-                    return {
-
-                        /*
-                        * PRODUCT IS FIXED FROM PO.
-                        */
-                        productId:
-                            poItem.productId,
-
-                        /*
-                        * These are actual invoice /
-                        * received values and may differ
-                        * from PO.
-                        */
-                        quantity,
-
-                        purchasePrice,
-
-                        batchNo,
-
-                        /*
-                        * Unit should also come from PO
-                        * rather than trusting client input.
-                        */
-                        unit:
-                            poItem.unit
-                    };
-                }
-            );
-
-
-        return PurchaseService.createPurchase(
-            actor,
-            {
-
-                /* ------------------------------------------------
-                * PO RELATION
-                * ------------------------------------------------ */
-
-                purchaseOrderId:
-                    po.id,
-
-                /* ------------------------------------------------
-                * FIXED FROM PO
-                * ------------------------------------------------ */
-
-                agencyId:
-                    po.agencyId,
-
-                branchId:
-                    po.branchId,
-
-                /* ------------------------------------------------
-                * ACTUAL SUPPLIER INVOICE
-                * ------------------------------------------------ */
-
-                invoiceNo:
-                    payload.invoiceNo.trim(),
-
-                invoiceDate:
-                    payload.invoiceDate,
-
-                supplierInvoiceDate:
-                    payload.supplierInvoiceDate,
-
-                otherReference:
-                    payload.otherReference,
-
-                remarks:
-                    payload.remarks,
-
-                roundOffAmount:
-                    payload.roundOffAmount,
-
-                /* ------------------------------------------------
-                * TRANSPORT
-                * ------------------------------------------------ */
-
-                transport: {
-
-                    /*
-                    * PO identity is controlled
-                    * by server.
-                    */
-                    purchaseOrderNo:
-                        po.poNo,
-
-                    purchaseOrderDate:
-                        po.poDate,
-
-                    /*
-                    * Actual transport details
-                    * supplied during invoice entry.
-                    */
-                    ...payload.transport
-                },
-
-                /* ------------------------------------------------
-                * ACTUAL PURCHASE ITEMS
-                * ------------------------------------------------ */
-
-                items:
-                    purchaseItems
-            }
-        );
-    }
+    // static async createPurchaseFromOrder(
+    //     actor: any,
+    //     purchaseOrderId: string,
+    //     payload: CreatePurchaseFromOrderPayload
+    // ) {
+
+    //     await this.ensurePermission(
+    //         actor,
+    //         "PURCHASE:WRITE"
+    //     );
+
+    //     /* ========================================================
+    //     * BASIC VALIDATION
+    //     * ======================================================== */
+
+    //     if (!purchaseOrderId?.trim()) {
+    //         throw new ApiError(
+    //             "Purchase Order ID is required",
+    //             400
+    //         );
+    //     }
+
+    //     if (!payload.invoiceNo?.trim()) {
+    //         throw new ApiError(
+    //             "Supplier invoice number is required",
+    //             400
+    //         );
+    //     }
+
+    //     if (!payload.items?.length) {
+    //         throw new ApiError(
+    //             "Purchase items are required",
+    //             400
+    //         );
+    //     }
+
+    //     /* ========================================================
+    //     * LOAD PURCHASE ORDER
+    //     * ======================================================== */
+
+    //     const po =
+    //         await prisma.purchaseOrder.findUnique({
+
+    //             where: {
+    //                 id: purchaseOrderId
+    //             },
+
+    //             include: {
+
+    //                 items: true,
+
+    //                 purchases: {
+    //                     select: {
+    //                         id: true,
+    //                         invoiceNo: true,
+    //                         status: true
+    //                     }
+    //                 }
+    //             }
+    //         });
+
+    //     if (!po) {
+    //         throw new ApiError(
+    //             "Purchase order not found",
+    //             404
+    //         );
+    //     }
+
+    //     /* ========================================================
+    //     * BRANCH ACCESS
+    //     * ======================================================== */
+
+    //     this.validateBranchAccess(
+    //         actor,
+    //         po.branchId
+    //     );
+
+    //     /* ========================================================
+    //     * PO MUST BE APPROVED
+    //     * ======================================================== */
+
+    //     if (
+    //         po.status !==
+    //         PurchaseOrderStatus.APPROVED
+    //     ) {
+    //         throw new ApiError(
+    //             "Purchase can only be created from an approved purchase order",
+    //             400
+    //         );
+    //     }
+
+    //     if (!po.items.length) {
+    //         throw new ApiError(
+    //             `Purchase order ${po.poNo} has no items`,
+    //             400
+    //         );
+    //     }
+
+    //     /* ========================================================
+    //     * BUILD PO PRODUCT MAP
+    //     *
+    //     * PO is the source of truth for product selection.
+    //     * ======================================================== */
+
+    //     const poItemMap =
+    //         new Map(
+    //             po.items.map(
+    //                 item => [
+    //                     item.productId,
+    //                     item
+    //                 ]
+    //             )
+    //         );
+
+    //     /* ========================================================
+    //     * PREVENT DUPLICATE PRODUCTS IN REQUEST
+    //     * ======================================================== */
+
+    //     const submittedProductIds =
+    //         new Set<string>();
+
+    //     for (const item of payload.items) {
+
+    //         if (!item.productId) {
+    //             throw new ApiError(
+    //                 "Product ID is required for every purchase item",
+    //                 400
+    //             );
+    //         }
+
+    //         if (
+    //             submittedProductIds.has(
+    //                 item.productId
+    //             )
+    //         ) {
+    //             throw new ApiError(
+    //                 `Product ${item.productId} has been submitted more than once`,
+    //                 400
+    //             );
+    //         }
+
+    //         submittedProductIds.add(
+    //             item.productId
+    //         );
+    //     }
+
+    //     /* ========================================================
+    //     * VALIDATE PRODUCTS
+    //     *
+    //     * No product outside the PO is allowed.
+    //     * ======================================================== */
+
+    //     for (const item of payload.items) {
+
+    //         if (
+    //             !poItemMap.has(
+    //                 item.productId
+    //             )
+    //         ) {
+    //             throw new ApiError(
+    //                 `Product ${item.productId} does not belong to Purchase Order ${po.poNo}`,
+    //                 400
+    //             );
+    //         }
+    //     }
+
+    //     /* ========================================================
+    //     * REQUIRE ALL PO PRODUCTS
+    //     *
+    //     * This makes the PO product list FIXED.
+    //     *
+    //     * PO:
+    //     * Product A
+    //     * Product B
+    //     *
+    //     * Purchase must contain:
+    //     * Product A
+    //     * Product B
+    //     *
+    //     * Client cannot:
+    //     * - add Product C
+    //     * - remove Product A/B
+    //     * - duplicate Product A/B
+    //     *
+    //     * Quantity / price / batch remain editable.
+    //     * ======================================================== */
+
+    //     if (
+    //         submittedProductIds.size !==
+    //         poItemMap.size
+    //     ) {
+
+    //         const missingProducts =
+    //             po.items
+    //                 .filter(
+    //                     poItem =>
+    //                         !submittedProductIds.has(
+    //                             poItem.productId
+    //                         )
+    //                 )
+    //                 .map(
+    //                     poItem =>
+    //                         poItem.productId
+    //                 );
+
+    //         throw new ApiError(
+    //             `Purchase must contain all products from Purchase Order ${po.poNo}. Missing products: ${missingProducts.join(", ")}`,
+    //             400
+    //         );
+    //     }
+
+    //     /* ========================================================
+    //     * BUILD FINAL PURCHASE ITEMS
+    //     *
+    //     * IMPORTANT:
+    //     *
+    //     * productId -> PO
+    //     *
+    //     * quantity -> CLIENT / actual invoice
+    //     * price    -> CLIENT / actual invoice
+    //     * batchNo  -> CLIENT / actual received batch
+    //     *
+    //     * We DO NOT blindly forward payload.items.
+    //     * ======================================================== */
+
+    //     const purchaseItems =
+    //         payload.items.map(
+    //             item => {
+
+    //                 const poItem =
+    //                     poItemMap.get(
+    //                         item.productId
+    //                     );
+
+    //                 if (!poItem) {
+    //                     // Defensive check.
+    //                     // Should already be impossible because of
+    //                     // validation above.
+    //                     throw new ApiError(
+    //                         `Product ${item.productId} does not belong to Purchase Order ${po.poNo}`,
+    //                         400
+    //                     );
+    //                 }
+
+    //                 const quantity =
+    //                     Number(item.quantity);
+
+    //                 const purchasePrice =
+    //                     Number(item.purchasePrice);
+
+    //                 const batchNo =
+    //                     item.batchNo?.trim();
+
+    //                 /* --------------------------------------------
+    //                 * ACTUAL QUANTITY
+    //                 * -------------------------------------------- */
+
+    //                 if (
+    //                     !Number.isFinite(quantity) ||
+    //                     quantity <= 0
+    //                 ) {
+    //                     throw new ApiError(
+    //                         `Quantity must be greater than zero for product ${item.productId}`,
+    //                         400
+    //                     );
+    //                 }
+
+    //                 /* --------------------------------------------
+    //                 * ACTUAL PURCHASE PRICE
+    //                 * -------------------------------------------- */
+
+    //                 if (
+    //                     !Number.isFinite(purchasePrice) ||
+    //                     purchasePrice < 0
+    //                 ) {
+    //                     throw new ApiError(
+    //                         `Invalid purchase price for product ${item.productId}`,
+    //                         400
+    //                     );
+    //                 }
+
+    //                 /* --------------------------------------------
+    //                 * ACTUAL BATCH
+    //                 * -------------------------------------------- */
+
+    //                 if (!batchNo) {
+    //                     throw new ApiError(
+    //                         `Batch number is required for product ${item.productId}`,
+    //                         400
+    //                     );
+    //                 }
+
+    //                 return {
+
+    //                     /*
+    //                     * PRODUCT IS FIXED FROM PO.
+    //                     */
+    //                     productId:
+    //                         poItem.productId,
+
+    //                     /*
+    //                     * These are actual invoice /
+    //                     * received values and may differ
+    //                     * from PO.
+    //                     */
+    //                     quantity,
+
+    //                     purchasePrice,
+
+    //                     batchNo,
+
+    //                     /*
+    //                     * Unit should also come from PO
+    //                     * rather than trusting client input.
+    //                     */
+    //                     unit:
+    //                         poItem.unit
+    //                 };
+    //             }
+    //         );
+
+
+    //     return PurchaseService.createPurchase(
+    //         actor,
+    //         {
+
+    //             /* ------------------------------------------------
+    //             * PO RELATION
+    //             * ------------------------------------------------ */
+
+    //             purchaseOrderId:
+    //                 po.id,
+
+    //             /* ------------------------------------------------
+    //             * FIXED FROM PO
+    //             * ------------------------------------------------ */
+
+    //             agencyId:
+    //                 po.agencyId,
+
+    //             branchId:
+    //                 po.branchId,
+
+    //             /* ------------------------------------------------
+    //             * ACTUAL SUPPLIER INVOICE
+    //             * ------------------------------------------------ */
+
+    //             invoiceNo:
+    //                 payload.invoiceNo.trim(),
+
+    //             invoiceDate:
+    //                 payload.invoiceDate,
+
+    //             supplierInvoiceDate:
+    //                 payload.supplierInvoiceDate,
+
+    //             otherReference:
+    //                 payload.otherReference,
+
+    //             remarks:
+    //                 payload.remarks,
+
+    //             roundOffAmount:
+    //                 payload.roundOffAmount,
+
+    //             /* ------------------------------------------------
+    //             * TRANSPORT
+    //             * ------------------------------------------------ */
+
+    //             transport: {
+
+    //                 /*
+    //                 * PO identity is controlled
+    //                 * by server.
+    //                 */
+    //                 purchaseOrderNo:
+    //                     po.poNo,
+
+    //                 purchaseOrderDate:
+    //                     po.poDate,
+
+    //                 /*
+    //                 * Actual transport details
+    //                 * supplied during invoice entry.
+    //                 */
+    //                 ...payload.transport
+    //             },
+
+    //             /* ------------------------------------------------
+    //             * ACTUAL PURCHASE ITEMS
+    //             * ------------------------------------------------ */
+
+    //             items:
+    //                 purchaseItems
+    //         }
+    //     );
+    // }
 
     /* ============================================================
     * GET PURCHASE ORDER PDF DATA
@@ -1559,7 +1559,7 @@ export class PurchaseOrderService {
                 * company name if stored elsewhere.
                 */
                 name:
-                    "ASHTAVINAYAKA",
+                    "AG ASHTAVINAYAKA PVT LTD",
 
                 logo:
                     setting?.sellerLogo ||
