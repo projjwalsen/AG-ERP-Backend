@@ -349,6 +349,33 @@ export class PurchaseService {
         }
 
         if (payload.importedTotals) {
+            const expectedGrandTotal =
+                money(
+                    subTotalAmount +
+                    totalGSTAmount +
+                    roundOffAmount
+                );
+
+            if (
+                Math.abs(
+                    money(payload.importedTotals.subTotal) -
+                    subTotalAmount
+                ) > 0.01 ||
+                Math.abs(
+                    money(payload.importedTotals.totalGST) -
+                    totalGSTAmount
+                ) > 0.01 ||
+                Math.abs(
+                    money(payload.importedTotals.grandTotal) -
+                    expectedGrandTotal
+                ) > 0.01
+            ) {
+                throw new ApiError(
+                    `Purchase import total mismatch for invoice ${normalizedInvoiceNo}. Items ${subTotalAmount} + GST ${totalGSTAmount} + RoundOff ${roundOffAmount} = ${expectedGrandTotal}, but imported Grand Total is ${payload.importedTotals.grandTotal}`,
+                    400
+                );
+            }
+
             subTotalAmount =
                 payload.importedTotals.subTotal;
             totalCGSTAmount =

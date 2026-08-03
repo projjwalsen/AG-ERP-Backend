@@ -125,63 +125,39 @@ export const branchDayBookColumns = [
 
 export const trialBalanceColumns = [
     {
-        header: "Ledger Code",
-        key: "ledgerCode",
-        width: 22
+        header: "Sr. No.",
+        key: "srNo",
+        width: 10
     },
 
     {
-        header: "Ledger Name",
-        key: "ledgerName",
-        width: 35
+        header: "Account",
+        key: "account",
+        width: 42
     },
 
     {
-        header: "Group",
-        key: "groupName",
-        width: 28
+        header: "Parent Group",
+        key: "parentGroup",
+        width: 30
     },
 
     {
-        header: "Category",
-        key: "ledgerCategory",
-        width: 18
+        header: "Debit",
+        key: "debit",
+        width: 20
     },
 
     {
-        header: "Opening Debit",
-        key: "openingDebit",
-        width: 18
+        header: "Credit",
+        key: "credit",
+        width: 20
     },
 
     {
-        header: "Opening Credit",
-        key: "openingCredit",
-        width: 18
-    },
-
-    {
-        header: "Period Debit",
-        key: "periodDebit",
-        width: 18
-    },
-
-    {
-        header: "Period Credit",
-        key: "periodCredit",
-        width: 18
-    },
-
-    {
-        header: "Closing Debit",
-        key: "closingDebit",
-        width: 18
-    },
-
-    {
-        header: "Closing Credit",
-        key: "closingCredit",
-        width: 18
+        header: "Closing Balance",
+        key: "closingBalance",
+        width: 24
     }
 ];
 

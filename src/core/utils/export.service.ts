@@ -42,6 +42,21 @@ export interface ExportRequest<T> {
 
 export class ExcelService {
 
+    private static formatIndianAmount(
+        amount: number
+    ): string {
+
+        return Number(
+            amount || 0
+        ).toLocaleString(
+            "en-IN",
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+    }
+
     private static styleLedgerHeader(
         row: ExcelJS.Row
     ) {
@@ -1293,6 +1308,402 @@ export class ExcelService {
         await workbook.xlsx.write(
             res as any
         );
+
+        res.end();
+    }
+
+    static async exportTrialBalance(
+        res: Response,
+        options: {
+            filename: string;
+            sheetName?: string;
+            companyName: string;
+            branchName?: string | null;
+            period: string;
+
+            data: Array<{
+                srNo: number;
+                account: string;
+                parentGroup: string;
+                debit: number;
+                credit: number;
+                closingDebit: number;
+                closingCredit: number;
+            }>;
+
+            summary: {
+                totalDebit: number;
+                totalCredit: number;
+                totalClosingDebit: number;
+                totalClosingCredit: number;
+                isBalanced: boolean;
+            };
+        }
+    ) {
+        const workbook = new ExcelJS.Workbook();
+
+        workbook.creator = options.companyName;
+        workbook.created = new Date();
+
+        const worksheet = workbook.addWorksheet(
+            options.sheetName || "Trial Balance"
+        );
+
+        /* ============================================================
+           PAGE SETUP
+        ============================================================ */
+
+        worksheet.pageSetup = {
+            orientation: "landscape",
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0,
+            paperSize: 9, // A4
+            margins: {
+                left: 0.25,
+                right: 0.25,
+                top: 0.5,
+                bottom: 0.5,
+                header: 0.2,
+                footer: 0.2
+            }
+        };
+
+        /* ============================================================
+           COLUMNS
+        ============================================================ */
+
+        worksheet.getColumn(1).width = 10;
+        worksheet.getColumn(2).width = 45;
+        worksheet.getColumn(3).width = 32;
+        worksheet.getColumn(4).width = 20;
+        worksheet.getColumn(5).width = 20;
+        worksheet.getColumn(6).width = 24;
+
+        /* ============================================================
+           ROW 1 - COMPANY
+        ============================================================ */
+
+        worksheet.mergeCells("A1:F1");
+
+        const companyCell = worksheet.getCell("A1");
+
+        companyCell.value = options.companyName;
+
+        companyCell.font = {
+            bold: true,
+            size: 16
+        };
+
+        companyCell.alignment = {
+            horizontal: "center",
+            vertical: "middle"
+        };
+
+        worksheet.getRow(1).height = 26;
+
+        /* ============================================================
+           ROW 2 - TITLE
+        ============================================================ */
+
+        worksheet.mergeCells("A2:F2");
+
+        const titleCell = worksheet.getCell("A2");
+
+        titleCell.value = "TRIAL BALANCE";
+
+        titleCell.font = {
+            bold: true,
+            size: 14
+        };
+
+        titleCell.alignment = {
+            horizontal: "center",
+            vertical: "middle"
+        };
+
+        worksheet.getRow(2).height = 24;
+
+        /* ============================================================
+           ROW 3 - BRANCH / PERIOD
+        ============================================================ */
+
+        worksheet.mergeCells("A3:C3");
+        worksheet.mergeCells("D3:F3");
+
+        const branchCell = worksheet.getCell("A3");
+        const periodCell = worksheet.getCell("D3");
+
+        branchCell.value = options.branchName
+            ? `Branch : ${options.branchName}`
+            : "All Branches";
+
+        branchCell.font = {
+            bold: true
+        };
+
+        branchCell.alignment = {
+            horizontal: "left",
+            vertical: "middle"
+        };
+
+        periodCell.value = `Period : ${options.period}`;
+
+        periodCell.font = {
+            bold: true
+        };
+
+        periodCell.alignment = {
+            horizontal: "right",
+            vertical: "middle"
+        };
+
+        worksheet.getRow(3).height = 20;
+
+        /* ============================================================
+           ROW 4 - BLANK
+        ============================================================ */
+
+        worksheet.getRow(4).height = 8;
+
+        /* ============================================================
+           ROW 5 - TABLE HEADER
+        ============================================================ */
+
+        const headerRowNumber = 5;
+
+        const headerRow = worksheet.getRow(headerRowNumber);
+
+        headerRow.getCell(1).value = "Sr. No.";
+        headerRow.getCell(2).value = "Account";
+        headerRow.getCell(3).value = "Parent Group";
+        headerRow.getCell(4).value = "Debit";
+        headerRow.getCell(5).value = "Credit";
+        headerRow.getCell(6).value = "Closing Balance";
+
+        headerRow.height = 24;
+
+        for (let column = 1; column <= 6; column++) {
+            const cell = headerRow.getCell(column);
+
+            cell.font = {
+                bold: true,
+                color: {
+                    argb: "FFFFFFFF"
+                }
+            };
+
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: {
+                    argb: "FF1F4E78"
+                }
+            };
+
+            cell.alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
+
+            cell.border = {
+                top: {
+                    style: "thin"
+                },
+                left: {
+                    style: "thin"
+                },
+                bottom: {
+                    style: "thin"
+                },
+                right: {
+                    style: "thin"
+                }
+            };
+        }
+
+        /* ============================================================
+           DATA ROWS
+        ============================================================ */
+
+        for (const item of options.data) {
+            let closingBalance = "-";
+
+            if (item.closingDebit > 0) {
+                closingBalance =
+                    `${this.formatIndianAmount(item.closingDebit)} Dr`;
+            } else if (item.closingCredit > 0) {
+                closingBalance =
+                    `${this.formatIndianAmount(item.closingCredit)} Cr`;
+            }
+
+            const row = worksheet.addRow([
+                item.srNo,
+                item.account,
+                item.parentGroup,
+
+                item.debit !== 0
+                    ? item.debit
+                    : null,
+
+                item.credit !== 0
+                    ? item.credit
+                    : null,
+
+                closingBalance
+            ]);
+
+            row.height = 21;
+
+            row.getCell(1).alignment = {
+                horizontal: "center",
+                vertical: "middle"
+            };
+
+            row.getCell(2).alignment = {
+                horizontal: "left",
+                vertical: "middle"
+            };
+
+            row.getCell(3).alignment = {
+                horizontal: "left",
+                vertical: "middle"
+            };
+
+            row.getCell(4).numFmt = '#,##0.00';
+            row.getCell(5).numFmt = '#,##0.00';
+
+            row.getCell(4).alignment = {
+                horizontal: "right",
+                vertical: "middle"
+            };
+
+            row.getCell(5).alignment = {
+                horizontal: "right",
+                vertical: "middle"
+            };
+
+            row.getCell(6).alignment = {
+                horizontal: "right",
+                vertical: "middle"
+            };
+
+            for (let column = 1; column <= 6; column++) {
+                row.getCell(column).border = {
+                    bottom: {
+                        style: "hair"
+                    }
+                };
+            }
+        }
+
+        /* ============================================================
+           TOTAL ROW
+        ============================================================ */
+
+        const totalRow = worksheet.addRow([
+            "",
+            "TOTAL",
+            "",
+            options.summary.totalDebit,
+            options.summary.totalCredit,
+            ""
+        ]);
+
+        totalRow.height = 25;
+
+        totalRow.font = {
+            bold: true,
+            size: 11
+        };
+
+        totalRow.getCell(4).numFmt = '#,##0.00';
+        totalRow.getCell(5).numFmt = '#,##0.00';
+
+        totalRow.getCell(4).alignment = {
+            horizontal: "right"
+        };
+
+        totalRow.getCell(5).alignment = {
+            horizontal: "right"
+        };
+
+        for (let column = 1; column <= 6; column++) {
+            totalRow.getCell(column).border = {
+                top: {
+                    style: "double"
+                },
+                bottom: {
+                    style: "double"
+                }
+            };
+        }
+
+        /* ============================================================
+           CLOSING BALANCE TOTAL
+        ============================================================ */
+
+        const closingRow = worksheet.addRow([
+            "",
+            "Closing Balance Total",
+            "",
+            options.summary.totalClosingDebit,
+            options.summary.totalClosingCredit,
+            options.summary.isBalanced
+                ? "BALANCED"
+                : "NOT BALANCED"
+        ]);
+
+        closingRow.font = {
+            bold: true
+        };
+
+        closingRow.getCell(4).numFmt = '#,##0.00';
+        closingRow.getCell(5).numFmt = '#,##0.00';
+
+        closingRow.getCell(4).alignment = {
+            horizontal: "right"
+        };
+
+        closingRow.getCell(5).alignment = {
+            horizontal: "right"
+        };
+
+        closingRow.getCell(6).alignment = {
+            horizontal: "right"
+        };
+
+        /* ============================================================
+           FREEZE HEADER
+        ============================================================ */
+
+        worksheet.views = [
+            {
+                state: "frozen",
+                ySplit: headerRowNumber
+            }
+        ];
+
+        worksheet.pageSetup.printTitlesRow =
+            `${headerRowNumber}:${headerRowNumber}`;
+
+        /* ============================================================
+           RESPONSE
+        ============================================================ */
+
+        res.status(200);
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${options.filename}.xlsx"`
+        );
+
+        await workbook.xlsx.write(res as any);
 
         res.end();
     }

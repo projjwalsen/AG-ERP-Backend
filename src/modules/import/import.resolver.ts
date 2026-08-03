@@ -1564,6 +1564,7 @@ export class ImportResolver {
             );
 
             const productRows = voucher.rows.filter(row =>
+                !row.isTotalRow &&
                 row.quantity > 0 &&
                 row.taxableAmount > 0
             );
@@ -1719,19 +1720,27 @@ export class ImportResolver {
                 AgencyType.CLIENT
             );
 
-        const branch = await prisma.branch.findFirst({
-            where: {
-                isActive: true
-            }
-        });
+        const branch =
+            await this.resolveOrCreateBranch(voucher);
 
         if (!branch) {
-            throw new ApiError("No branch found", 400);
+            throw new ApiError(
+                `Unable to resolve branch "${voucher.branchName}"`,
+                400
+            );
+        }
+
+        if (!branch.isActive) {
+            throw new ApiError(
+                `Branch "${branch.name}" is inactive`,
+                400
+            );
         }
 
         const items: any[] = [];
 
         const productRows = voucher.rows.filter(row =>
+            !row.isTotalRow &&
             row.quantity > 0 &&
             row.taxableAmount > 0
         );
@@ -1766,7 +1775,128 @@ export class ImportResolver {
              *
              * Creates two sale items.
              */
-            for (const allocation of allocations) {
+            const money = (value: number) =>
+                Math.round(Number(value || 0) * 100) / 100;
+
+            const originalQuantity =
+                Number(row.quantity || 0);
+
+            if (originalQuantity <= 0) {
+                throw new ApiError(
+                    `Invalid quantity for ${row.particulars}`,
+                    400
+                );
+            }
+
+            let allocatedTaxable = 0;
+            let allocatedCGST = 0;
+            let allocatedSGST = 0;
+            let allocatedIGST = 0;
+
+            for (
+                let index = 0;
+                index < allocations.length;
+                index++
+            ) {
+
+                const allocation =
+                    allocations[index];
+
+                const isLast =
+                    index === allocations.length - 1;
+
+                const ratio =
+                    Number(allocation.quantity) /
+                    originalQuantity;
+
+                /*
+                * For every allocation except the last one,
+                * distribute proportionally.
+                *
+                * Last allocation receives the remainder so
+                * the item totals EXACTLY equal the Excel row.
+                */
+
+                const taxableAmount =
+                    isLast
+                        ? money(
+                            Number(row.taxableAmount || 0) -
+                            allocatedTaxable
+                        )
+                        : money(
+                            Number(row.taxableAmount || 0) *
+                            ratio
+                        );
+
+                const cgstAmount =
+                    isLast
+                        ? money(
+                            Number(row.cgst || 0) -
+                            allocatedCGST
+                        )
+                        : money(
+                            Number(row.cgst || 0) *
+                            ratio
+                        );
+
+                const sgstAmount =
+                    isLast
+                        ? money(
+                            Number(row.sgst || 0) -
+                            allocatedSGST
+                        )
+                        : money(
+                            Number(row.sgst || 0) *
+                            ratio
+                        );
+
+                const igstAmount =
+                    isLast
+                        ? money(
+                            Number(row.igst || 0) -
+                            allocatedIGST
+                        )
+                        : money(
+                            Number(row.igst || 0) *
+                            ratio
+                        );
+
+                allocatedTaxable =
+                    money(
+                        allocatedTaxable +
+                        taxableAmount
+                    );
+
+                allocatedCGST =
+                    money(
+                        allocatedCGST +
+                        cgstAmount
+                    );
+
+                allocatedSGST =
+                    money(
+                        allocatedSGST +
+                        sgstAmount
+                    );
+
+                allocatedIGST =
+                    money(
+                        allocatedIGST +
+                        igstAmount
+                    );
+
+                const gstAmount =
+                    money(
+                        cgstAmount +
+                        sgstAmount +
+                        igstAmount
+                    );
+
+                const totalAmount =
+                    money(
+                        taxableAmount +
+                        gstAmount
+                    );
 
                 items.push({
 
@@ -1785,33 +1915,20 @@ export class ImportResolver {
                     unitPrice:
                         row.rate,
 
-                    // ===== IMPORT ONLY =====
+                    taxableAmount,
 
-                    taxableAmount:
-                        row.taxableAmount,
+                    cgstAmount,
 
-                    cgstAmount:
-                        row.cgst,
+                    sgstAmount,
 
-                    sgstAmount:
-                        row.sgst,
+                    igstAmount,
 
-                    igstAmount:
-                        row.igst,
-
-                    gstAmount:
-                        (row.cgst || 0) +
-                        (row.sgst || 0) +
-                        (row.igst || 0),
+                    gstAmount,
 
                     gstPercent:
                         row.gstPercent,
 
-                    totalAmount:
-                        row.taxableAmount +
-                        (row.cgst || 0) +
-                        (row.sgst || 0) +
-                        (row.igst || 0)
+                    totalAmount
 
                 });
             }

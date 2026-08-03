@@ -468,19 +468,54 @@ export class SalesService {
 
         let grandTotal = 0;
 
+        const money = (value: number) =>
+            Math.round(Number(value || 0) * 100) / 100;
+
         for(const item of validatedItems) {
-            subtotalAmount += item.taxableAmount;
+            subtotalAmount =
+                money(subtotalAmount + item.taxableAmount);
 
-            totalGSTAmount += item.gstAmount;
+            totalGSTAmount =
+                money(totalGSTAmount + item.gstAmount);
 
-            totalCGSTAmount += item.cgstAmount;
-            totalSGSTAmount += item.sgstAmount;
-            totalIGSTAmount += item.igstAmount;
+            totalCGSTAmount =
+                money(totalCGSTAmount + item.cgstAmount);
+            totalSGSTAmount =
+                money(totalSGSTAmount + item.sgstAmount);
+            totalIGSTAmount =
+                money(totalIGSTAmount + item.igstAmount);
 
-            grandTotal += item.totalAmount;
+            grandTotal =
+                money(grandTotal + item.totalAmount);
         }
 
         if (payload.importedTotals) {
+            const expectedGrandTotal =
+                money(
+                    subtotalAmount +
+                    totalGSTAmount +
+                    (payload.roundOffAmount ?? 0)
+                );
+
+            if (
+                Math.abs(
+                    money(payload.importedTotals.subTotal) -
+                    subtotalAmount
+                ) > 0.01 ||
+                Math.abs(
+                    money(payload.importedTotals.totalGST) -
+                    totalGSTAmount
+                ) > 0.01 ||
+                Math.abs(
+                    money(payload.importedTotals.grandTotal) -
+                    expectedGrandTotal
+                ) > 0.01
+            ) {
+                throw new ApiError(
+                    `Sale import total mismatch for invoice ${invoiceNo}. Items ${subtotalAmount} + GST ${totalGSTAmount} + RoundOff ${payload.roundOffAmount ?? 0} = ${expectedGrandTotal}, but imported Grand Total is ${payload.importedTotals.grandTotal}`,
+                    400
+                );
+            }
 
             subtotalAmount =
                 payload.importedTotals.subTotal;

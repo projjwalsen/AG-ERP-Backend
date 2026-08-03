@@ -60,20 +60,40 @@ export class ReportingService {
             throw new ApiError("Unauthorized", 401);
         }
 
+        /**
+         * ============================================================
+         * 1. BRANCH ACCESS
+         * ============================================================
+         */
+
         const branchId =
             actor.branchAccessType === "ALL"
                 ? query?.branchId
                 : actor.branchId;
 
-        if (query?.branchId && actor.branchAccessType !== "ALL" && query.branchId !== actor.branchId) {
-            throw new ApiError("You do not have access to this branch", 403);
+        if (
+            query?.branchId &&
+            actor.branchAccessType !== "ALL" &&
+            query.branchId !== actor.branchId
+        ) {
+            throw new ApiError(
+                "You do not have access to this branch",
+                403
+            );
         }
 
-        let branch = null;
+        let branch: {
+            id: string;
+            name: string;
+            code: string;
+            gstin: string | null;
+        } | null = null;
 
         if (branchId) {
             branch = await prisma.branch.findUnique({
-                where: { id: branchId },
+                where: {
+                    id: branchId
+                },
                 select: {
                     id: true,
                     name: true,
@@ -83,44 +103,119 @@ export class ReportingService {
             });
 
             if (!branch) {
-                throw new ApiError("Branch not found", 404);
+                throw new ApiError(
+                    "Branch not found",
+                    404
+                );
             }
         }
 
-        const startDate = query?.startDate
-            ? parseDate(query.startDate, "startDate")
-            : undefined;
+        /**
+         * ============================================================
+         * 2. REPORT PERIOD
+         * ============================================================
+         */
 
-        const endDate = query?.endDate
-            ? parseDate(query.endDate, "endDate")
-            : new Date();
+        const startDate =
+            query?.startDate
+                ? parseDate(
+                    query.startDate,
+                    "startDate"
+                )
+                : undefined;
+
+        const endDate =
+            query?.endDate
+                ? parseDate(
+                    query.endDate,
+                    "endDate"
+                )
+                : new Date();
 
         if (startDate) {
-            startDate.setHours(0, 0, 0, 0);
+            startDate.setHours(
+                0,
+                0,
+                0,
+                0
+            );
         }
 
-        endDate.setHours(23, 59, 59, 999);
+        endDate.setHours(
+            23,
+            59,
+            59,
+            999
+        );
 
-        if (startDate && startDate > endDate) {
-            throw new ApiError("startDate cannot be after endDate", 400);
+        if (
+            startDate &&
+            startDate > endDate
+        ) {
+            throw new ApiError(
+                "startDate cannot be after endDate",
+                400
+            );
         }
 
-        const branchEntryFilter: Prisma.LedgerEntryWhereInput | undefined = branchId
-            ? {
-                OR: [
-                    { branchId },
-                    { voucher: { branchId } }
-                ]
-            }
-            : undefined;
+        /**
+         * ============================================================
+         * 3. BRANCH ENTRY FILTER
+         * ============================================================
+         *
+         * LedgerEntry can carry branchId directly.
+         * Voucher also carries branchId.
+         *
+         * Existing architecture supports both.
+         */
 
-        const periodWhere: Prisma.LedgerEntryWhereInput = {
+        const branchEntryFilter:
+            Prisma.LedgerEntryWhereInput | undefined =
+            branchId
+                ? {
+                    OR: [
+                        {
+                            branchId
+                        },
+                        {
+                            voucher: {
+                                branchId
+                            }
+                        }
+                    ]
+                }
+                : undefined;
+
+        /**
+         * ============================================================
+         * 4. PERIOD MOVEMENT
+         * ============================================================
+         *
+         * Debit/Credit columns represent transactions inside:
+         *
+         * startDate -> endDate
+         *
+         * If startDate is not provided:
+         * all transactions up to endDate are treated as the period.
+         */
+
+        const periodWhere:
+            Prisma.LedgerEntryWhereInput = {
+
             AND: [
-                ...(branchEntryFilter ? [branchEntryFilter] : []),
+                ...(branchEntryFilter
+                    ? [branchEntryFilter]
+                    : []),
+
                 {
                     voucher: {
                         voucherDate: {
-                            ...(startDate ? { gte: startDate } : {}),
+                            ...(startDate
+                                ? {
+                                    gte: startDate
+                                }
+                                : {}),
+
                             lte: endDate
                         }
                     }
@@ -128,41 +223,91 @@ export class ReportingService {
             ]
         };
 
-        const priorWhere: Prisma.LedgerEntryWhereInput = startDate
-            ? {
-                AND: [
-                    ...(branchEntryFilter ? [branchEntryFilter] : []),
-                    {
-                        voucher: {
-                            voucherDate: {
-                                lt: startDate
+        /**
+         * ============================================================
+         * 5. PRIOR MOVEMENT
+         * ============================================================
+         *
+         * Needed only for calculating Closing Balance.
+         *
+         * We don't display Opening Balance, but closing balance still
+         * requires everything that happened before startDate.
+         */
+
+        const priorWhere:
+            Prisma.LedgerEntryWhereInput =
+            startDate
+                ? {
+                    AND: [
+                        ...(branchEntryFilter
+                            ? [branchEntryFilter]
+                            : []),
+
+                        {
+                            voucher: {
+                                voucherDate: {
+                                    lt: startDate
+                                }
                             }
                         }
-                    }
-                ]
-            }
-            : {
-                id: "__never__"
-            };
+                    ]
+                }
+                : {
+                    id: "__never__"
+                };
 
-        const ledgerWhere: Prisma.LedgerWhereInput = {
+        /**
+         * ============================================================
+         * 6. LEDGERS
+         * ============================================================
+         */
+
+        const ledgerWhere:
+            Prisma.LedgerWhereInput = {
+
             isActive: true,
+
             ...(branchId
                 ? {
                     OR: [
-                        { branchId },
-                        { branchId: null },
-                        { entries: { some: branchEntryFilter } }
+                        {
+                            branchId
+                        },
+
+                        {
+                            branchId: null
+                        },
+
+                        {
+                            entries: {
+                                some:
+                                    branchEntryFilter
+                            }
+                        }
                     ]
                 }
                 : {})
         };
 
-        const [ledgers, periodGroups, priorGroups] = await Promise.all([
+        /**
+         * ============================================================
+         * 7. FETCH DATA
+         * ============================================================
+         */
+
+        const [
+            ledgers,
+            periodGroups,
+            priorGroups
+        ] = await Promise.all([
+
             prisma.ledger.findMany({
-                where: ledgerWhere,
+                where:
+                    ledgerWhere,
+
                 include: {
                     group: true,
+
                     branch: {
                         select: {
                             id: true,
@@ -171,118 +316,365 @@ export class ReportingService {
                         }
                     }
                 },
+
                 orderBy: [
-                    { group: { name: "asc" } },
-                    { name: "asc" }
+                    {
+                        group: {
+                            name: "asc"
+                        }
+                    },
+                    {
+                        name: "asc"
+                    }
                 ]
             }),
+
             prisma.ledgerEntry.groupBy({
-                by: ["ledgerId", "entryType"],
-                where: periodWhere,
-                _sum: { amount: true }
+                by: [
+                    "ledgerId",
+                    "entryType"
+                ],
+
+                where:
+                    periodWhere,
+
+                _sum: {
+                    amount: true
+                }
             }),
+
             prisma.ledgerEntry.groupBy({
-                by: ["ledgerId", "entryType"],
-                where: priorWhere,
-                _sum: { amount: true }
+                by: [
+                    "ledgerId",
+                    "entryType"
+                ],
+
+                where:
+                    priorWhere,
+
+                _sum: {
+                    amount: true
+                }
             })
         ]);
 
-        const periodMap = this.sumEntryGroups(periodGroups);
-        const priorMap = this.sumEntryGroups(priorGroups);
+        const periodMap =
+            this.sumEntryGroups(
+                periodGroups
+            );
 
-        const rows = ledgers
-            .map((ledger) => {
+        const priorMap =
+            this.sumEntryGroups(
+                priorGroups
+            );
+
+        /**
+         * ============================================================
+         * 8. BUILD ACCOUNT-WISE TRIAL BALANCE
+         * ============================================================
+         *
+         * Signed balance convention:
+         *
+         * Debit  = +
+         * Credit = -
+         *
+         * Closing =
+         * ledger opening
+         * + prior debit
+         * - prior credit
+         * + period debit
+         * - period credit
+         */
+
+        const rawRows =
+            ledgers.map(ledger => {
+
+                /**
+                 * A branch-specific report must not blindly inherit
+                 * another branch's opening balance.
+                 */
                 const shouldUseLedgerOpening =
                     !branchId ||
                     ledger.branchId === branchId;
 
-                const openingBase =
+                const ledgerOpeningSigned =
                     !shouldUseLedgerOpening
                         ? 0
-                    : ledger.nature === LedgerNature.CREDIT
-                        ? -Number(ledger.openingBalance || 0)
-                        : Number(ledger.openingBalance || 0);
+                        : ledger.nature ===
+                            LedgerNature.CREDIT
 
-                const prior = priorMap.get(ledger.id) || { debit: 0, credit: 0 };
-                const period = periodMap.get(ledger.id) || { debit: 0, credit: 0 };
+                            ? -Number(
+                                ledger.openingBalance ||
+                                0
+                            )
 
-                const openingSigned =
-                    openingBase +
-                    prior.debit -
-                    prior.credit;
+                            : Number(
+                                ledger.openingBalance ||
+                                0
+                            );
+
+                const prior =
+                    priorMap.get(
+                        ledger.id
+                    ) || {
+                        debit: 0,
+                        credit: 0
+                    };
+
+                const period =
+                    periodMap.get(
+                        ledger.id
+                    ) || {
+                        debit: 0,
+                        credit: 0
+                    };
+
+                const debit =
+                    Number(
+                        period.debit.toFixed(2)
+                    );
+
+                const credit =
+                    Number(
+                        period.credit.toFixed(2)
+                    );
 
                 const closingSigned =
-                    openingSigned +
-                    period.debit -
-                    period.credit;
+                    Number(
+                        (
+                            ledgerOpeningSigned +
+                            prior.debit -
+                            prior.credit +
+                            debit -
+                            credit
+                        ).toFixed(2)
+                    );
 
-                const opening = this.splitSignedBalance(openingSigned);
-                const closing = this.splitSignedBalance(closingSigned);
+                const closingDebit =
+                    closingSigned > 0
+                        ? closingSigned
+                        : 0;
+
+                const closingCredit =
+                    closingSigned < 0
+                        ? Math.abs(
+                            closingSigned
+                        )
+                        : 0;
 
                 return {
-                    ledgerId: ledger.id,
-                    ledgerCode: ledger.code,
-                    ledgerName: ledger.name,
-                    ledgerCategory: ledger.category,
-                    ledgerNature: ledger.nature,
-                    groupId: ledger.groupId,
-                    groupName: ledger.group.name,
-                    branchId: ledger.branchId,
-                    branchName: ledger.branch?.name || null,
-                    openingDebit: opening.debit,
-                    openingCredit: opening.credit,
-                    periodDebit: Number(period.debit.toFixed(2)),
-                    periodCredit: Number(period.credit.toFixed(2)),
-                    closingDebit: closing.debit,
-                    closingCredit: closing.credit
+                    ledgerId:
+                        ledger.id,
+
+                    ledgerCode:
+                        ledger.code,
+
+                    account:
+                        ledger.name,
+
+                    parentGroup:
+                        ledger.group.name,
+
+                    groupId:
+                        ledger.groupId,
+
+                    ledgerCategory:
+                        ledger.category,
+
+                    ledgerNature:
+                        ledger.nature,
+
+                    branchId:
+                        ledger.branchId,
+
+                    branchName:
+                        ledger.branch?.name ||
+                        null,
+
+                    /**
+                     * Period movement
+                     */
+                    debit,
+
+                    credit,
+
+                    /**
+                     * Numeric closing balance
+                     */
+                    closingDebit:
+                        Number(
+                            closingDebit.toFixed(2)
+                        ),
+
+                    closingCredit:
+                        Number(
+                            closingCredit.toFixed(2)
+                        ),
+
+                    /**
+                     * Signed value is useful internally.
+                     */
+                    closingSigned
                 };
-            })
-            .filter(row =>
-                query?.includeZero ||
-                row.openingDebit ||
-                row.openingCredit ||
-                row.periodDebit ||
-                row.periodCredit ||
-                row.closingDebit ||
-                row.closingCredit
+            });
+
+        /**
+         * ============================================================
+         * 9. REMOVE ZERO ACCOUNTS
+         * ============================================================
+         */
+
+        const filteredRows =
+            rawRows.filter(row => {
+
+                if (query?.includeZero) {
+                    return true;
+                }
+
+                return (
+                    row.debit !== 0 ||
+                    row.credit !== 0 ||
+                    row.closingDebit !== 0 ||
+                    row.closingCredit !== 0
+                );
+            });
+
+        /**
+         * ============================================================
+         * 10. SR. NO.
+         * ============================================================
+         */
+
+        const rows =
+            filteredRows.map(
+                (row, index) => ({
+                    srNo:
+                        index + 1,
+
+                    ...row
+                })
             );
 
-        const summary = rows.reduce(
-            (total, row) => ({
-                totalOpeningDebit: Number((total.totalOpeningDebit + row.openingDebit).toFixed(2)),
-                totalOpeningCredit: Number((total.totalOpeningCredit + row.openingCredit).toFixed(2)),
-                totalPeriodDebit: Number((total.totalPeriodDebit + row.periodDebit).toFixed(2)),
-                totalPeriodCredit: Number((total.totalPeriodCredit + row.periodCredit).toFixed(2)),
-                totalClosingDebit: Number((total.totalClosingDebit + row.closingDebit).toFixed(2)),
-                totalClosingCredit: Number((total.totalClosingCredit + row.closingCredit).toFixed(2))
-            }),
-            {
-                totalOpeningDebit: 0,
-                totalOpeningCredit: 0,
-                totalPeriodDebit: 0,
-                totalPeriodCredit: 0,
-                totalClosingDebit: 0,
-                totalClosingCredit: 0
-            }
-        );
+        /**
+         * ============================================================
+         * 11. SUMMARY
+         * ============================================================
+         *
+         * In a properly balanced double-entry system:
+         *
+         * Period Debit = Period Credit
+         *
+         * and
+         *
+         * Closing Debit = Closing Credit
+         */
 
-        const difference = Number((summary.totalClosingDebit - summary.totalClosingCredit).toFixed(2));
+        const summary =
+            rows.reduce(
+                (total, row) => {
+
+                    total.totalDebit +=
+                        row.debit;
+
+                    total.totalCredit +=
+                        row.credit;
+
+                    total.totalClosingDebit +=
+                        row.closingDebit;
+
+                    total.totalClosingCredit +=
+                        row.closingCredit;
+
+                    return total;
+                },
+                {
+                    totalDebit: 0,
+                    totalCredit: 0,
+                    totalClosingDebit: 0,
+                    totalClosingCredit: 0
+                }
+            );
+
+        summary.totalDebit =
+            Number(
+                summary.totalDebit.toFixed(2)
+            );
+
+        summary.totalCredit =
+            Number(
+                summary.totalCredit.toFixed(2)
+            );
+
+        summary.totalClosingDebit =
+            Number(
+                summary.totalClosingDebit.toFixed(2)
+            );
+
+        summary.totalClosingCredit =
+            Number(
+                summary.totalClosingCredit.toFixed(2)
+            );
+
+        const periodDifference =
+            Number(
+                (
+                    summary.totalDebit -
+                    summary.totalCredit
+                ).toFixed(2)
+            );
+
+        const closingDifference =
+            Number(
+                (
+                    summary.totalClosingDebit -
+                    summary.totalClosingCredit
+                ).toFixed(2)
+            );
 
         return {
-            reportName: "Trial Balance",
-            generatedAt: new Date(),
+            reportName:
+                "Trial Balance",
+
+            generatedAt:
+                new Date(),
+
             branchId,
+
             branch,
+
             period: {
-                startDate: startDate || null,
+                startDate:
+                    startDate || null,
+
                 endDate
             },
+
             summary: {
                 ...summary,
-                difference,
-                isBalanced: Math.abs(difference) < 0.01
+
+                periodDifference,
+
+                closingDifference,
+
+                isPeriodBalanced:
+                    Math.abs(
+                        periodDifference
+                    ) < 0.01,
+
+                isClosingBalanced:
+                    Math.abs(
+                        closingDifference
+                    ) < 0.01,
+
+                isBalanced:
+                    Math.abs(
+                        periodDifference
+                    ) < 0.01 &&
+                    Math.abs(
+                        closingDifference
+                    ) < 0.01
             },
+
             rows
         };
     }

@@ -52,6 +52,8 @@ export interface ExcelRowDTO {
 
     grandTotal?: number;
 
+    isTotalRow?: boolean;
+
     narration?: string;
 
     transport?: {
