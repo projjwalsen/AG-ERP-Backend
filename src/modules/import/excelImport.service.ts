@@ -97,6 +97,45 @@ export class ExcelImportService {
 
     }
 
+    private static money(value: number): number {
+        return Math.round(Number(value || 0) * 100) / 100;
+    }
+
+    private static isTotalRowLabel(value: any): boolean {
+        const text =
+            String(value || "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
+
+        return /^(GROSS\s+TOTAL|GRAND\s+TOTAL|TOTAL)$/.test(text);
+    }
+
+    private static isTotalRow(row: Record<string, any>, particulars?: string): boolean {
+        if (this.isTotalRowLabel(particulars)) {
+            return true;
+        }
+
+        return Object.values(row || {}).some(value =>
+            this.isTotalRowLabel(value)
+        );
+    }
+
+    private static firstNonZeroAmount(values: Array<number | undefined>): number {
+        for (const value of values) {
+            const amount =
+                this.money(
+                    Number(value || 0)
+                );
+
+            if (amount !== 0) {
+                return amount;
+            }
+        }
+
+        return 0;
+    }
+
     public static toDate(value: any): Date | undefined {
 
         if (!value)
@@ -388,6 +427,12 @@ export class ExcelImportService {
                     .replace(/\s+/g, " ")
                     .trim()
                     .toUpperCase();
+
+            const isTotalRow =
+                this.isTotalRow(
+                    row,
+                    productName
+                );
 
             /**
              * Ignore party/header rows in Sales Register.
@@ -727,9 +772,12 @@ export class ExcelImportService {
                     this.toNumber(
                         this.getValue(
                             row,
-                            "Gross Total"
+                            "Gross Total",
+                            "Grand Total"
                         )
                     ),
+
+                isTotalRow,
 
                 narration:
                     this.getValue(
@@ -961,88 +1009,105 @@ export class ExcelImportService {
 
         for (const voucher of vouchers) {
 
+            const itemRows =
+                voucher.rows.filter(row => !row.isTotalRow);
+
+            const explicitRoundOff =
+                this.firstNonZeroAmount(
+                    voucher.rows.map(row => row.roundOff)
+                );
+
+            const explicitGrandTotal =
+                this.firstNonZeroAmount(
+                    voucher.rows.map(row => row.grandTotal)
+                );
+
+            const subTotal =
+                this.money(
+                    itemRows.reduce(
+                        (sum, row) =>
+                            sum + (row.taxableAmount || 0),
+                        0
+                    )
+                );
+
+            const totalCGST =
+                this.money(
+                    itemRows.reduce(
+                        (sum, row) =>
+                            sum + (row.cgst || 0),
+                        0
+                    )
+                );
+
+            const totalSGST =
+                this.money(
+                    itemRows.reduce(
+                        (sum, row) =>
+                            sum + (row.sgst || 0),
+                        0
+                    )
+                );
+
+            const totalIGST =
+                this.money(
+                    itemRows.reduce(
+                        (sum, row) =>
+                            sum + (row.igst || 0),
+                        0
+                    )
+                );
+
+            const totalGST =
+                this.money(
+                    totalCGST +
+                    totalSGST +
+                    totalIGST
+                );
+
+            const computedGrandTotal =
+                this.money(
+                    subTotal +
+                    totalGST +
+                    explicitRoundOff
+                );
+
             voucher.importedTotals = {
 
                 subTotal:
-
-                    Number(
-
-                        voucher.rows
-                            .reduce(
-                                (sum, row) =>
-                                    sum + (row.taxableAmount || 0),
-                                0
-                            )
-                            .toFixed(2)
-
-                    ),
+                    subTotal,
 
                 totalCGST:
-
-                    Number(
-
-                        voucher.rows
-                            .reduce(
-                                (sum, row) =>
-                                    sum + (row.cgst || 0),
-                                0
-                            )
-                            .toFixed(2)
-
-                    ),
+                    totalCGST,
 
                 totalSGST:
-
-                    Number(
-
-                        voucher.rows
-                            .reduce(
-                                (sum, row) =>
-                                    sum + (row.sgst || 0),
-                                0
-                            )
-                            .toFixed(2)
-
-                    ),
+                    totalSGST,
 
                 totalIGST:
-
-                    Number(
-
-                        voucher.rows
-                            .reduce(
-                                (sum, row) =>
-                                    sum + (row.igst || 0),
-                                0
-                            )
-                            .toFixed(2)
-
-                    ),
+                    totalIGST,
 
                 totalGST:
-
-                    Number(
-
-                        voucher.rows
-                            .reduce(
-                                (sum, row) =>
-                                    sum +
-                                    (row.cgst || 0) +
-                                    (row.sgst || 0) +
-                                    (row.igst || 0),
-                                0
-                            )
-                            .toFixed(2)
-
-                    ),
+                    totalGST,
 
                 roundOff:
-                    voucher.rows[0]?.roundOff || 0,
+                    explicitRoundOff,
 
                 grandTotal:
-                    voucher.rows[0]?.grandTotal || 0
+                    explicitGrandTotal || computedGrandTotal
 
             };
+
+            if (
+                explicitGrandTotal &&
+                Math.abs(
+                    computedGrandTotal -
+                    explicitGrandTotal
+                ) > 0.01
+            ) {
+                throw new Error(
+                    `Voucher ${voucher.voucherNo} total mismatch. Items ${subTotal} + GST ${totalGST} + RoundOff ${explicitRoundOff} = ${computedGrandTotal}, but Excel Grand Total is ${explicitGrandTotal}`
+                );
+            }
 
 
             if (!voucher.agencyName) {
@@ -1061,15 +1126,15 @@ export class ExcelImportService {
 
             }
 
-            if (voucher.rows.length === 0) {
+            if (itemRows.length === 0) {
 
                 throw new Error(
-                    `No Items found in Voucher ${voucher.voucherNo}`
+                    `No importable item rows found in Voucher ${voucher.voucherNo}. Gross Total/Grand Total rows are ignored.`
                 );
 
             }
 
-            for (const item of voucher.rows) {
+            for (const item of itemRows) {
 
                 if (!item.particulars) {
 
@@ -1321,6 +1386,18 @@ export class ExcelImportService {
                 if (!voucherNo)
                     return null;
 
+                const particulars =
+                    String(
+                        this.getValue(
+                            row,
+                            "Particulars"
+                        ) || ""
+                    ).trim();
+
+                if (this.isTotalRow(row, particulars)) {
+                    return null;
+                }
+
                 return {
 
                     date:
@@ -1335,13 +1412,7 @@ export class ExcelImportService {
 
                     voucherType,
 
-                    particulars:
-                        String(
-                            this.getValue(
-                                row,
-                                "Particulars"
-                            ) || ""
-                        ).trim(),
+                    particulars,
 
                     debitAmount:
                         this.toNumber(

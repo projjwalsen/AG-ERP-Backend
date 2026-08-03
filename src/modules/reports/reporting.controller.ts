@@ -77,66 +77,110 @@ export const getTrialBalanceReport = async (
     next: NextFunction
 ) => {
     try {
-        const actor = (req as any).user;
+        const actor =
+            (req as any).user;
 
         const query = {
-            branchId: req.query.branchId as string,
-            startDate: req.query.startDate as string,
-            endDate: req.query.endDate as string,
-            includeZero: String(req.query.includeZero).toLowerCase() === "true"
+            branchId:
+                req.query.branchId as string,
+
+            startDate:
+                req.query.startDate as string,
+
+            endDate:
+                req.query.endDate as string,
+
+            includeZero:
+                String(
+                    req.query.includeZero
+                ).toLowerCase() === "true"
         };
 
         const isExport =
-            String(req.query.export).toLowerCase() === "true";
+            String(
+                req.query.export
+            ).toLowerCase() === "true";
 
         const report =
-            await ReportingService.getTrialBalanceReport(
-                actor,
-                query
-            );
+            await ReportingService
+                .getTrialBalanceReport(
+                    actor,
+                    query
+                );
+
+        /**
+         * ========================================================
+         * EXCEL EXPORT
+         * ========================================================
+         */
 
         if (isExport) {
-            const periodText =
-                `${report.period.startDate ? formatISTDate(report.period.startDate) : "Opening"} to ${formatISTDate(report.period.endDate)}`;
 
-            return ExcelService.export(
-                res,
-                {
-                    filename: "trial-balance",
-                    sheetName: "Trial Balance",
-                    title: `Trial Balance - ${periodText}`,
-                    columns: trialBalanceColumns,
-                    companyName: "ASHTAVINAYAKA",
-                    showCompanyName: true,
-                    data: [
-                        ...report.rows,
-                        {
-                            ledgerCode: "",
-                            ledgerName: "TOTAL",
-                            groupName: "",
-                            ledgerCategory: "",
-                            openingDebit: report.summary.totalOpeningDebit,
-                            openingCredit: report.summary.totalOpeningCredit,
-                            periodDebit: report.summary.totalPeriodDebit,
-                            periodCredit: report.summary.totalPeriodCredit,
-                            closingDebit: report.summary.totalClosingDebit,
-                            closingCredit: report.summary.totalClosingCredit
-                        }
-                    ]
-                }
-            );
+            const periodText =
+                `${
+                    report.period.startDate
+                        ? formatISTDate(
+                            report.period.startDate
+                        )
+                        : "Beginning"
+                } to ${
+                    formatISTDate(
+                        report.period.endDate
+                    )
+                }`;
+
+            return ExcelService
+                .exportTrialBalance(
+                    res,
+                    {
+                        filename:
+                            "trial-balance",
+
+                        sheetName:
+                            "Trial Balance",
+
+                        companyName:
+                            "ASHTAVINAYAKA",
+
+                        branchName:
+                            report.branch?.name ||
+                            null,
+
+                        period:
+                            periodText,
+
+                        data:
+                            report.rows,
+
+                        summary:
+                            report.summary
+                    }
+                );
         }
 
-        return res.status(200).json({
-            success: true,
-            message: "Trial balance report generated successfully",
-            data: report
-        });
+        /**
+         * ========================================================
+         * JSON
+         * ========================================================
+         */
+
+        return res
+            .status(200)
+            .json({
+                success: true,
+
+                message:
+                    "Trial balance report generated successfully",
+
+                data:
+                    report
+            });
 
     } catch (error) {
+
         next(error);
     }
-}
+};
 
 
 export const getGSTR1Report = async (

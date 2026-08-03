@@ -3237,7 +3237,16 @@ export class LedgerService {
                 throw new ApiError("A voucher must contain at least two ledger entries", 400);
             }
 
-            const lines = payload.entries.filter((entry) => money(entry.amount) > 0);
+            const lines = payload.entries.map(entry => ({
+                ...entry,
+                amount: money(entry.amount)
+            }));
+
+            const zeroEntries = lines.filter(x => x.amount === 0);
+
+            if (zeroEntries.length) {
+                console.warn("Zero amount ledger entries", zeroEntries);
+            }
 
             const totalDebit = money(lines
                 .filter((entry) => entry.entryType === EntryType.DEBIT)
@@ -3255,7 +3264,7 @@ export class LedgerService {
                 "Diff",
                 totalDebit - totalCredit
             );
-            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 4000) {
+            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 4) {
                 throw new ApiError(`Double entry validation failed. Debit ${totalDebit}, Credit ${totalCredit}`, 400);
             }
 
