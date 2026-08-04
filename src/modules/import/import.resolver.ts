@@ -69,6 +69,20 @@ export class ImportResolver {
 
     }
 
+    private static normalizeProductBaseName(name: string): string {
+
+        return String(name ?? "")
+            .toUpperCase()
+            .replace(/\(\d{4,8}\)/g, "")
+            .replace(/\b\d{4,8}\b/g, "")
+            .replace(/\s*[-–]\s*(KG|KGS|LTR|LTRS|LITER|LITERS|LITRE|LITRES|MT|MTS)\b/gi, "")
+            .replace(/\b(KG|KGS|LTR|LTRS|LITER|LITERS|LITRE|LITRES|MT|MTS)\b/gi, "")
+            .replace(/\s*-\s*$/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+    }
+
     // for agency master import only 
     static async resolveOrCreateAgencyMaster(
         dto: AgencyImportDTO
@@ -401,7 +415,10 @@ export class ImportResolver {
     }
 
 
-    static async resolveOrCreateBranch(dto: GroupedVoucherDTO) {
+    static async resolveOrCreateBranch(
+        dto: GroupedVoucherDTO,
+        createIfMissing = true
+    ) {
 
         const cacheKey =
             dto.branchName
@@ -487,6 +504,13 @@ export class ImportResolver {
 
         }
 
+        if (!createIfMissing) {
+            throw new ApiError(
+                `Branch not found in master: ${dto.branchName}`,
+                404
+            );
+        }
+
         let created;
 
         try {
@@ -546,6 +570,9 @@ export class ImportResolver {
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
 
+        const normalizedBaseName =
+            this.normalizeProductBaseName(dto.particulars!);
+
         const cacheKey =
             dto.hsnNo
                 ? `${dto.hsnNo}_${normalizedName}`
@@ -568,13 +595,29 @@ export class ImportResolver {
 
                         hsnNo: dto.hsnNo,
 
-                        name: {
+                        OR: [
 
-                            contains: normalizedName,
+                            {
+                                name: {
 
-                            mode: "insensitive"
+                                    contains: normalizedName,
 
-                        }
+                                    mode: "insensitive"
+
+                                }
+                            },
+
+                            {
+                                name: {
+
+                                    contains: normalizedBaseName,
+
+                                    mode: "insensitive"
+
+                                }
+                            }
+
+                        ]
 
                     }
 
@@ -1050,6 +1093,9 @@ export class ImportResolver {
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
 
+        const normalizedBaseName =
+            this.normalizeProductBaseName(dto.particulars!);
+
         const cacheKey =
             dto.hsnNo
                 ? `${dto.hsnNo}_${normalizedName}`
@@ -1074,13 +1120,29 @@ export class ImportResolver {
 
                             hsnNo: dto.hsnNo,
 
-                            name: {
+                            OR: [
 
-                                contains: normalizedName,
+                                {
+                                    name: {
 
-                                mode: "insensitive"
+                                        contains: normalizedName,
 
-                            }
+                                        mode: "insensitive"
+
+                                    }
+                                },
+
+                                {
+                                    name: {
+
+                                        contains: normalizedBaseName,
+
+                                        mode: "insensitive"
+
+                                    }
+                                }
+
+                            ]
 
                         }
 
@@ -1208,7 +1270,7 @@ export class ImportResolver {
 
                         sku: crypto.randomUUID(),
 
-                        name: normalizedName,
+                        name: dto.particulars!.trim(),
 
                         disclaimer: dto.disclaimer,
 
@@ -1560,7 +1622,8 @@ export class ImportResolver {
 
         const branch = 
             await this.resolveOrCreateBranch(
-                voucher
+                voucher,
+                false
             );
 
             const productRows = voucher.rows.filter(row =>
@@ -1652,6 +1715,7 @@ export class ImportResolver {
                 voucher.narration,
 
             roundOffAmount:
+                voucher.importedTotals?.roundOff ??
                 voucher.rows[0]?.roundOff,
 
             transport: {
@@ -1720,8 +1784,11 @@ export class ImportResolver {
                 AgencyType.CLIENT
             );
 
-        const branch =
-            await this.resolveOrCreateBranch(voucher);
+        const branch = await prisma.branch.findFirst({
+            where: {
+                isActive: true
+            }
+        });
 
         if (!branch) {
             throw new ApiError(
@@ -1963,7 +2030,9 @@ export class ImportResolver {
                 voucher.narration,
 
             roundOffAmount:
-                voucher.rows[0]?.roundOff ?? 0,
+                voucher.importedTotals?.roundOff ??
+                voucher.rows[0]?.roundOff ??
+                0,
 
             transport: {
 

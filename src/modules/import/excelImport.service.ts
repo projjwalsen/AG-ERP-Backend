@@ -310,7 +310,10 @@ export class ExcelImportService {
 
             let disclaimer = "";
 
-            if (type === "SALE") {
+            if (
+                type === "SALE" ||
+                type === "PURCHASE"
+            ) {
 
                 const nextRow = rows[index + 1];
 
@@ -409,18 +412,7 @@ export class ExcelImportService {
 
             const productName =
                 particulars
-
-                    .replace(/\(\d{4,8}\)/g, "")
-
-                    .replace(/\s*[-–]\s*(KG|KGS|LTR|LTRS|MT|MTS)\b/gi, "")
-
-                    .replace(/\b(KG|KGS|LTR|LTRS|MT|MTS)\b/gi, "")
-
-                    .replace(/\s+/g, " ")
-
-                    .trim()
-
-                + (hsnNo ? ` - ${hsnNo}` : "");
+                    .trim();
 
             const normalizedProduct =
                 productName
@@ -600,7 +592,8 @@ export class ExcelImportService {
                         "Input CGST 9%",
                         "Output CGST 9%",
                         "INPUT CGST",
-                        "OUTPUT CGST"
+                        "OUTPUT CGST",
+                        "CGST ITC Not Reflected in GSTR-2B"
                     )
                 );
 
@@ -611,7 +604,8 @@ export class ExcelImportService {
                         "Input SGST 9%",
                         "Output SGST 9%",
                         "INPUT SGST",
-                        "OUTPUT SGST"
+                        "OUTPUT SGST",
+                        "SGST ITC Not Reflected in GSTR-2B"
                     )
                 );
 
@@ -1012,7 +1006,7 @@ export class ExcelImportService {
             const itemRows =
                 voucher.rows.filter(row => !row.isTotalRow);
 
-            const explicitRoundOff =
+            const parsedRoundOff =
                 this.firstNonZeroAmount(
                     voucher.rows.map(row => row.roundOff)
                 );
@@ -1065,11 +1059,20 @@ export class ExcelImportService {
                     totalIGST
                 );
 
+            const effectiveRoundOff =
+                explicitGrandTotal
+                    ? this.money(
+                        explicitGrandTotal -
+                        subTotal -
+                        totalGST
+                    )
+                    : parsedRoundOff;
+
             const computedGrandTotal =
                 this.money(
                     subTotal +
                     totalGST +
-                    explicitRoundOff
+                    effectiveRoundOff
                 );
 
             voucher.importedTotals = {
@@ -1090,7 +1093,7 @@ export class ExcelImportService {
                     totalGST,
 
                 roundOff:
-                    explicitRoundOff,
+                    effectiveRoundOff,
 
                 grandTotal:
                     explicitGrandTotal || computedGrandTotal
@@ -1105,7 +1108,7 @@ export class ExcelImportService {
                 ) > 0.01
             ) {
                 throw new Error(
-                    `Voucher ${voucher.voucherNo} total mismatch. Items ${subTotal} + GST ${totalGST} + RoundOff ${explicitRoundOff} = ${computedGrandTotal}, but Excel Grand Total is ${explicitGrandTotal}`
+                    `Voucher ${voucher.voucherNo} total mismatch. Items ${subTotal} + GST ${totalGST} + RoundOff ${effectiveRoundOff} = ${computedGrandTotal}, but Excel Grand Total is ${explicitGrandTotal}`
                 );
             }
 
