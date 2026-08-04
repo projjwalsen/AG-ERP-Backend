@@ -385,9 +385,8 @@ model Product {
   purchaseOrderItems        PurchaseOrderItem[]
 
   @@index([sku])
-  @@index([name])
   @@index([category])
-  @@index([hsnNo])
+  @@index([hsnNo, name])
 }
 
 // ============================================
@@ -478,9 +477,8 @@ model ProductLedgerEntry {
   user        User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([productLedgerId])
-  @@index([purchaseId])
-  @@index([saleId])
-  @@index([branchId])
+  @@index([purchaseId, branchId])
+  @@index([saleId, branchId])
   @@index([agencyId])
   @@index([batchId])
   @@index([entryDate])
@@ -547,6 +545,9 @@ model InventoryBatch {
   @@index([branchId])
   @@index([productId])
   @@index([batchNo])
+
+  // FIFO optimization
+  @@index([branchId, productId, isActive, createdAt])
 }
 
 /**
@@ -716,6 +717,9 @@ model PurchaseItem {
   totalAmount Decimal @default(0.00) @db.Decimal(18, 2)
 
   createdAt DateTime @default(now())
+
+  @@index([purchaseId, productId])
+  @@index([batchId])
 }
 
 /**
@@ -870,6 +874,9 @@ model SalesItem {
   totalAmount Decimal @default(0.00) @db.Decimal(18, 2)
 
   createdAt DateTime @default(now())
+
+  @@index([saleId, productId])
+  @@index([batchId])
 }
 
 model Inventory {
@@ -1099,8 +1106,7 @@ model Ledger {
   entries      LedgerEntry[]
   journalHeads JournalHead[]
 
-  @@index([agencyId])
-  @@index([branchId])
+  @@index([agencyId, branchId])
   @@index([productId])
   @@index([category])
   @@index([groupId])
