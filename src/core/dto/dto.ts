@@ -209,6 +209,10 @@ export interface JournalImportDTO {
 
     voucherNo: string;
 
+    invoiceNo?: string;
+
+    otherReferenceNo?: string;
+
     voucherType: string;
 
     particulars: string;

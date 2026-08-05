@@ -2322,17 +2322,9 @@ export class ImportResolver {
     ) {
 
         const sale =
-            await prisma.sale.findFirst({
-
-                where: {
-
-                    invoiceNo: dto.voucherNo,
-
-                    status: SalesStatus.APPROVED
-
-                }
-
-            });
+            await this.resolveSaleForJournalTransaction(
+                dto
+            );
 
         if (!sale) {
 
@@ -2347,10 +2339,21 @@ export class ImportResolver {
 
                 where: {
 
-                    saleId: sale.id,
-
                     settlementType:
-                        SettlementType.INVOICE_TO_INVOICE
+                        SettlementType.INVOICE_TO_INVOICE,
+
+                    OR: [
+                        {
+                            saleId:
+                                sale.id
+                        },
+                        {
+                            remarks:
+                                this.journalTransactionImportRemark(
+                                    dto
+                                )
+                        }
+                    ]
 
                 }
 
@@ -2382,7 +2385,7 @@ export class ImportResolver {
             });
 
         const hasBankAccount =
-            !!agency.bankAccountId;
+            !!agency?.bankAccountId;
 
         return {
 
@@ -2391,7 +2394,7 @@ export class ImportResolver {
 
             bankAccountId:
                 hasBankAccount
-            ? agency.bankAccountId
+            ? agency?.bankAccountId
             : undefined,
 
             direction:
@@ -2420,7 +2423,9 @@ export class ImportResolver {
             : PaymentType.CASH,
 
             remarks:
-                `Imported Day Book ${dto.voucherNo}`
+                this.journalTransactionImportRemark(
+                    dto
+                )
 
         };
 
@@ -2432,17 +2437,9 @@ export class ImportResolver {
     ) {
 
         const purchase =
-            await prisma.purchase.findFirst({
-
-                where: {
-
-                    invoiceNo: dto.voucherNo,
-
-                    status: PurchaseStatus.APPROVED
-
-                }
-
-            });
+            await this.resolvePurchaseForJournalTransaction(
+                dto
+            );
 
         if (!purchase) {
 
@@ -2457,10 +2454,21 @@ export class ImportResolver {
 
                 where: {
 
-                    purchaseId: purchase.id,
-
                     settlementType:
-                        SettlementType.INVOICE_TO_INVOICE
+                        SettlementType.INVOICE_TO_INVOICE,
+
+                    OR: [
+                        {
+                            purchaseId:
+                                purchase.id
+                        },
+                        {
+                            remarks:
+                                this.journalTransactionImportRemark(
+                                    dto
+                                )
+                        }
+                    ]
 
                 }
 
@@ -2474,7 +2482,7 @@ export class ImportResolver {
 
         }
 
-       const agency =
+        const agency =
             await prisma.agency.findUnique({
 
                 where: {
@@ -2492,7 +2500,7 @@ export class ImportResolver {
                 ? PaymentType.BANK_DEPOSIT
                 : PaymentType.CASH;
 
-                return {
+        return {
 
             branchId: purchase.branchId,
 
@@ -2519,9 +2527,128 @@ export class ImportResolver {
             paymentThrough,
 
             remarks:
-                `Imported Day Book ${dto.voucherNo}`
+                this.journalTransactionImportRemark(
+                    dto
+                )
 
         };
+
+    }
+
+    private static journalTransactionImportRemark(
+        dto: JournalImportDTO
+    ) {
+
+        return `Imported Day Book ${dto.voucherNo}`;
+
+    }
+
+    private static journalInvoiceCandidates(
+        dto: JournalImportDTO
+    ) {
+
+        const values = [
+            dto.invoiceNo,
+            dto.voucherNo,
+            dto.otherReferenceNo
+        ];
+
+        const candidates = new Set<string>();
+
+        for (const value of values) {
+
+            const normalized =
+                value
+                    ?.trim();
+
+            if (normalized) {
+                candidates.add(normalized);
+                candidates.add(normalized.toUpperCase());
+            }
+
+        }
+
+        return Array.from(candidates);
+
+    }
+
+    private static async resolveSaleForJournalTransaction(
+        dto: JournalImportDTO
+    ) {
+
+        const candidates =
+            this.journalInvoiceCandidates(dto);
+
+        const matchInvoiceCandidates =
+            candidates.flatMap(candidate => [
+                {
+                    invoiceNo: {
+                        equals: candidate,
+                        mode: "insensitive" as const
+                    }
+                },
+                {
+                    otherReference: {
+                        equals: candidate,
+                        mode: "insensitive" as const
+                    }
+                },
+                {
+                    voucherNo: {
+                        equals: candidate,
+                        mode: "insensitive" as const
+                    }
+                }
+            ]);
+
+        return prisma.sale.findFirst({
+
+            where: {
+
+                status: SalesStatus.APPROVED,
+
+                OR: matchInvoiceCandidates
+
+            }
+
+        });
+
+    }
+
+    private static async resolvePurchaseForJournalTransaction(
+        dto: JournalImportDTO
+    ) {
+
+        const candidates =
+            this.journalInvoiceCandidates(dto);
+
+        const matchInvoiceCandidates =
+            candidates.flatMap(candidate => [
+                {
+                    invoiceNo: {
+                        equals: candidate,
+                        mode: "insensitive" as const
+                    }
+                },
+                {
+                    otherReference: {
+                        equals: candidate,
+                        mode: "insensitive" as const
+                    }
+                }
+            ]);
+
+        return prisma.purchase.findFirst({
+
+            where: {
+
+                status: PurchaseStatus.APPROVED,
+
+                OR: matchInvoiceCandidates
+
+            }
+
+        });
 
     }
 }

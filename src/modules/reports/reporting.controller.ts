@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { ReportingService } from "./reporting.service";
 import { ExcelService } from "../../core/utils/export.service";
-import { branchDayBookColumns, gstr1Columns, gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
+import { gstr1Columns, gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
 import { formatISTDate } from "../../core/utils/loc.utils";
 
 
@@ -46,18 +46,12 @@ export const getBranchDayBook = async (
                         limit: result.pagination.totalEntries || 25,
                         bankAccountId
                     }
-                );
+            );
 
             console.log("Exporting branch day book report...");
-            return ExcelService.export(
+            return ExcelService.exportBranchDayBook(
                 res,
-                {
-                    filename: "branch-day-book",
-                    title: `${result.branch.name} - BRANCH DAY BOOK`,
-                    sheetName: "Day Book",
-                    columns: branchDayBookColumns,
-                    data: fullResult.entries
-                }
+                fullResult
             );
         }
 

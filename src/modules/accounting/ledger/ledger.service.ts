@@ -1769,7 +1769,8 @@ export class LedgerService {
                                     ledger: {
                                         id: ledger.id,
                                         name: ledger.name,
-                                        code: ledger.code
+                                        code: ledger.code,
+                                        agency: ledger.agency
                                     },
 
                                     entries:
@@ -1821,7 +1822,8 @@ export class LedgerService {
                                     ledger: {
                                         id: ledger.id,
                                         name: ledger.name,
-                                        code: ledger.code
+                                        code: ledger.code,
+                                        agency: ledger.agency
                                     },
 
                                     entries:
@@ -1924,7 +1926,19 @@ export class LedgerService {
 
                         include: {
                             agency: true,
-                            thirdPartyAgency: true
+                            thirdPartyAgency: true,
+                            sale: {
+                                select: {
+                                    voucherType: true,
+                                    invoiceNo: true
+                                }
+                            },
+                            purchase: {
+                                select: {
+                                    voucherType: true,
+                                    invoiceNo: true
+                                }
+                            }
                         },
 
                         orderBy: {
@@ -1991,13 +2005,22 @@ export class LedgerService {
 
                             return {
 
-                                serialNo:
-                                    index + 1,
+                                serialNo: index + 1,
 
-                                date:
-                                    formatISTDate(
-                                        txn.createdAt
-                                    ),
+                                transactionDate: txn.createdAt,
+
+                                voucherType:
+                                    txn.sale?.voucherType ??
+                                    txn.purchase?.voucherType ??
+                                    "-",
+
+                                voucherNo:
+                                    txn.sale?.invoiceNo ??
+                                    txn.purchase?.invoiceNo ??
+                                    txn.transactionNo,
+
+                                paymentMode:
+                                    txn.paymentMode,
 
                                 description,
 

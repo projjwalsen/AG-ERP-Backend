@@ -161,6 +161,74 @@ export const trialBalanceColumns = [
     }
 ];
 
+export const gstLedgerColumns: ExportColumn<any>[] = [
+    {
+        header: "Ledger Code",
+        key: "code",
+        width: 18
+    },
+    {
+        header: "Ledger Name",
+        key: "name",
+        width: 32
+    },
+    {
+        header: "Group",
+        value: (row) => row.group?.name || "",
+        width: 24
+    },
+    {
+        header: "Category",
+        key: "category",
+        width: 16
+    },
+    {
+        header: "GSTIN",
+        key: "gstin",
+        width: 22
+    },
+    {
+        header: "PAN",
+        key: "pan",
+        width: 16
+    },
+    {
+        header: "Opening Balance",
+        value: (row) => `${Number(row.openingBalance || 0).toFixed(2)} ${row.balanceType || ""}`.trim(),
+        width: 18
+    },
+    {
+        header: "Debit",
+        value: (row) => Number(row.debit || 0).toFixed(2),
+        width: 15
+    },
+    {
+        header: "Credit",
+        value: (row) => Number(row.credit || 0).toFixed(2),
+        width: 15
+    },
+    {
+        header: "Closing Balance",
+        value: (row) => `${Number(row.closingBalance || 0).toFixed(2)} ${row.balanceType || ""}`.trim(),
+        width: 18
+    },
+    {
+        header: "Status",
+        value: (row) => row.isActive ? "Active" : "Inactive",
+        width: 14
+    },
+    {
+        header: "Created At",
+        value: (row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString("en-IN") : "",
+        width: 18
+    },
+    {
+        header: "Updated At",
+        value: (row) => row.updatedAt ? new Date(row.updatedAt).toLocaleDateString("en-IN") : "",
+        width: 18
+    }
+];
+
 export const gstr1Columns = [
     {
         header: "Branch Name",
