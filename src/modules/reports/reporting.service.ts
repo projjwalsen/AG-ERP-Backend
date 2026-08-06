@@ -66,7 +66,7 @@ export class ReportingService {
          * ============================================================
          */
 
-        const branchId =
+        let branchId =
             actor.branchAccessType === "ALL"
                 ? query?.branchId
                 : actor.branchId;
@@ -89,7 +89,30 @@ export class ReportingService {
             gstin: string | null;
         } | null = null;
 
-        if (branchId) {
+        if (!branchId && actor.branchAccessType === "ALL") {
+            const activeBranches = await prisma.branch.findMany({
+                where: {
+                    isActive: true
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    gstin: true
+                },
+                take: 2,
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+            if (activeBranches.length === 1) {
+                branch = activeBranches[0];
+                branchId = branch.id;
+            }
+        }
+
+        if (branchId && !branch) {
             branch = await prisma.branch.findUnique({
                 where: {
                     id: branchId
@@ -485,10 +508,13 @@ export class ReportingService {
                         ledger.nature,
 
                     branchId:
-                        ledger.branchId,
+                        ledger.branchId ||
+                        branch?.id ||
+                        null,
 
                     branchName:
                         ledger.branch?.name ||
+                        branch?.name ||
                         null,
 
                     /**
@@ -638,7 +664,8 @@ export class ReportingService {
             generatedAt:
                 new Date(),
 
-            branchId,
+            branchId:
+                branchId || null,
 
             branch,
 
