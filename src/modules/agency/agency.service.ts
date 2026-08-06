@@ -290,7 +290,7 @@ export class AgencyService {
             prisma.agency.count({ where })
         ]);
 
-        console.log("Total Agencies:", agencies);
+        // console.log("Total Agencies:", agencies);
 
         return {
             data: agencies.map((agency) => ({

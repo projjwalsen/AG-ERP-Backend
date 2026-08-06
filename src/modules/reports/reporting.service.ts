@@ -1181,7 +1181,7 @@ export class ReportingService {
                 runningBalance =
                     runningBalance + credit - debit;
 
-                    console.log("transaction ", txn);
+                    // console.log("transaction ", txn);
 
                     const transactionDate = getTransactionDate(txn);
 

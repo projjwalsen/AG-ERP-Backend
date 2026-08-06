@@ -24,7 +24,7 @@ export class InvoiceRenderer {
     static async generatePdf(data: any) {
         const compiledHtml = await this.compileTemplate(data);
         const chromeexecutablePath = await puppeteer.executablePath();
-        console.log("Puppeteer executable path:", chromeexecutablePath);
+        // console.log("Puppeteer executable path:", chromeexecutablePath);
         const browser = await puppeteer.launch({
             headless: true,
             args: [

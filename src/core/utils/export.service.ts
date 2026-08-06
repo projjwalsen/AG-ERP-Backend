@@ -571,7 +571,7 @@ export class ExcelService {
                 String(col.key)
                 );
 
-        console.log("Raw value for column", col.header, ":", raw);
+        // console.log("Raw value for column", col.header, ":", raw);
 
         output[col.header] =
             this.truncate(raw, col.maxLength);
