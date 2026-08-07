@@ -91,7 +91,7 @@ const getSundryLedgerPeriod = (
  */
 // export const createLedger = async (req: Request, res: Response, next: NextFunction) => {
 //     try {
-//         const actor = (req as any).user; 
+//         const actor = (req as any).user;
 //         const payload = req.body;
 
 //         const ledger = await LedgerService.createLedgerMaster(actor, payload);
@@ -138,7 +138,7 @@ export const getLedgers = async (req: Request, res: Response, next: NextFunction
     try {
         const actor = (req as any).user;
         const isExport = (req.query.export as string) === "true" || false;
-        
+
         const query = {
             branchId: (req as any).query.branchId as string,
             view: (req as any).query.view as
@@ -231,7 +231,7 @@ export const getCompanyLedger = async (
                 Number(req.query.limit || 10)
         };
 
-        console.log("getCompanyLedger query :", query);
+        // console.log("getCompanyLedger query :", query);
 
         const isExport =
             String(req.query.export)
@@ -257,9 +257,26 @@ export const getCompanyLedger = async (
                     title:
                         "ASHTAVINAYAKA COMPANY LEDGER",
 
+                    companyName:
+                        "ASHTAVINAYAKA",
 
-                    period:
-                        `${query.startDate || ""} - ${query.endDate || ""}`,
+                    fromDate:
+                        req.query.startDate as string,
+
+                    toDate:
+                        req.query.endDate as string,
+
+                    openingBalance:
+                        result.summary.openingBalance,
+
+                    totalIncome:
+                        result.summary.totalIncome,
+
+                    totalExpense:
+                        result.summary.totalExpense,
+
+                    closingBalance:
+                        result.summary.closingBalance,
 
                     data:
                         result.entries
@@ -401,11 +418,32 @@ export const getLedgerByBranchId = async (
                             filename:
                                 `branch-ledger-${result.branch.code}`,
 
+                            sheetName:
+                                "Accounting Ledger",
+
                             title:
                                 `${result.branch.name} BRANCH ACCOUNTING LEDGER`,
 
-                            period:
-                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
+                            companyName:
+                                result.branch.name,
+
+                            fromDate:
+                                req.query.startDate as string,
+
+                            toDate:
+                                req.query.endDate as string,
+
+                            openingBalance:
+                                result.summary.openingBalance,
+
+                            totalIncome:
+                                result.summary.totalIncome,
+
+                            totalExpense:
+                                result.summary.totalExpense,
+
+                            closingBalance:
+                                result.summary.closingBalance,
 
                             data:
                                 result.entries
@@ -420,11 +458,32 @@ export const getLedgerByBranchId = async (
                             filename:
                                 `branch-ledger-${result.branch.code}`,
 
+                            sheetName:
+                                "Cash Ledger",
+
                             title:
                                 `${result.branch.name} BRANCH CASH LEDGER`,
 
-                            period:
-                                `${req.query.startDate || ""} - ${req.query.endDate || ""}`,
+                            companyName:
+                                result.branch.name,
+
+                            fromDate:
+                                req.query.startDate as string,
+
+                            toDate:
+                                req.query.endDate as string,
+
+                            openingBalance:
+                                0,
+
+                            totalIncome:
+                                result.summary.totalIncome,
+
+                            totalExpense:
+                                result.summary.totalExpense,
+
+                            closingBalance:
+                                result.summary.closingBalance,
 
                             data:
                                 result.entries
@@ -445,13 +504,6 @@ export const getLedgerByBranchId = async (
                             query.endDate
                         );
 
-                    const exportRows =
-                        rows.map(({
-                            rawStartDate,
-                            rawEndDate,
-                            ...row
-                        }) => row);
-
                     return ExcelService.exportSundryLedger(
                         res,
                         {
@@ -470,7 +522,7 @@ export const getLedgerByBranchId = async (
                             period: exportPeriod,
 
                             data:
-                                exportRows
+                                result.data
                         }
                     );
                 }
@@ -488,14 +540,6 @@ export const getLedgerByBranchId = async (
                             query.startDate,
                             query.endDate
                         );
-
-                    const exportRows =
-                        rows.map(({
-                            rawStartDate,
-                            rawEndDate,
-                            ...row
-                        }) => row);
-
 
                     return ExcelService.exportSundryLedger(
                         res,
@@ -515,7 +559,7 @@ export const getLedgerByBranchId = async (
                             period: exportPeriod,
 
                             data:
-                                exportRows
+                                result.data
                         }
                     );
                 }

@@ -73,7 +73,7 @@ router.use(authMiddleware);
  */
 router.get(
     "/invoices",
-    checkPermission("SALE:VIEW"),
+    checkPermission("DRCR_NOTE:VIEW"),
     controller.getAgencyInvoices
 );
 
@@ -218,7 +218,7 @@ router.get(
  */
 router.post(
     "/",
-    checkPermission("SALE:WRITE"),
+    checkPermission("DRCR_NOTE:WRITE"),
     controller.createNote
 );
 
@@ -315,7 +315,7 @@ router.post(
  */
 router.get(
     "/",
-    checkPermission("SALE:VIEW"),
+    checkPermission("DRCR_NOTE:VIEW"),
     controller.listNotes
 );
 
@@ -351,7 +351,7 @@ router.get(
  */
 router.get(
     "/:noteId",
-    checkPermission("SALE:VIEW"),
+    checkPermission("DRCR_NOTE:VIEW"),
     controller.getNoteById
 );
 
@@ -399,7 +399,7 @@ router.get(
  */
 router.get(
     "/:noteId/pdf",
-    checkPermission("SALE:VIEW"),
+    checkPermission("DRCR_NOTE:VIEW"),
     controller.getNotePdf
 );
 
@@ -444,7 +444,7 @@ router.get(
  */
 router.patch(
     "/:noteId/approve",
-    checkPermission("SALE:APPROVE"),
+    checkPermission("DRCR_NOTE:APPROVE"),
     controller.approveNote
 );
 
@@ -493,7 +493,7 @@ router.patch(
  */
 router.patch(
     "/:noteId/reject",
-    checkPermission("SALE:APPROVE"),
+    checkPermission("DRCR_NOTE:APPROVE"),
     controller.rejectNote
 );
 

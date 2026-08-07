@@ -27,13 +27,13 @@ export class AgencyImportService {
         const agencies =
             ExcelImportService.parseAgencyRows(rows);
 
-            console.table(
-    agencies.map(x => ({
-        agency: x.agencyName,
-        gstin: x.agencyGSTIN,
-        opening: x.openingBalance
-    }))
-);
+//             console.table(
+//     agencies.map(x => ({
+//         agency: x.agencyName,
+//         gstin: x.agencyGSTIN,
+//         opening: x.openingBalance
+//     }))
+// );
 
         const summary = {
             total: agencies.length,

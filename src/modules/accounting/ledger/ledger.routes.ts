@@ -12,7 +12,7 @@ import {
     getCompanyLedger,
     getGSTLedger
 } from "./ledger.controller";
-import { authMiddleware } from "../../../core/middleware/auth";
+import { authMiddleware, checkPermission } from "../../../core/middleware/auth";
 
 const router = Router();
 
@@ -45,7 +45,8 @@ router.use(authMiddleware);
  *       401:
  *         description: Unauthorized
  */
-router.get("/groups", getLedgerGroups);
+router.get("/groups",checkPermission("LEDGER:VIEW") ,getLedgerGroups);
+
 
 /**
  * @openapi
@@ -79,7 +80,7 @@ router.get("/groups", getLedgerGroups);
  *       401:
  *         description: Unauthorized
  */
-router.get("/trial-balance", getTrialBalance);
+router.get("/trial-balance", checkPermission("LEDGER:VIEW"), getTrialBalance);
 
 /**
  * @openapi
@@ -156,7 +157,7 @@ router.get("/trial-balance", getTrialBalance);
  *       401:
  *         description: Unauthorized
  */
-router.get("/get-all", getLedgers);
+router.get("/get-all", checkPermission("LEDGER:VIEW"), getLedgers);
 
 
 /**
@@ -286,6 +287,7 @@ router.get("/get-all", getLedgers);
 
 router.get(
     "/company-ledger",
+    checkPermission("LEDGER:VIEW"),
     getCompanyLedger
 );
 
@@ -394,6 +396,7 @@ router.get(
 
 router.get(
     "/gst-ledger",
+    checkPermission("LEDGER:VIEW"),
     getGSTLedger
 )
 
@@ -424,7 +427,7 @@ router.get(
  *       401:
  *         description: Unauthorized
  */
-router.get("/:ledgerId", getLedgerById);
+router.get("/:ledgerId", checkPermission("LEDGER:VIEW"), getLedgerById);
 
 /**
  * @openapi
@@ -461,6 +464,7 @@ router.get("/:ledgerId", getLedgerById);
  */
 router.get(
     "/branch/:branchId",
+    checkPermission("LEDGER:VIEW"),
     getLedgerByBranchId
 )
 
@@ -499,6 +503,7 @@ router.get(
 
 router.get(
     "/agency/:agencyId",
+    checkPermission("LEDGER:VIEW"),
     getLedgerByAgencyId
 )
 
@@ -560,6 +565,7 @@ router.get(
 
 router.get(
     "/suspense/:branchId",
+    checkPermission("LEDGER:VIEW"),
     getLedgerBySuspenseId
 );
 
@@ -602,7 +608,7 @@ router.get(
  *       404:
  *         description: Ledger not found
  */
-router.post("/:ledgerId/opening-balance", setOpeningBalance);
+router.post("/:ledgerId/opening-balance", checkPermission("LEDGER:VIEW"), setOpeningBalance);
 
 
 
@@ -651,6 +657,6 @@ router.post("/:ledgerId/opening-balance", setOpeningBalance);
  *       401:
  *         description: Unauthorized
  */
-router.get("/:ledgerId/statement", getLedgerStatement);
+router.get("/:ledgerId/statement",checkPermission("LEDGER:VIEW"), getLedgerStatement);
 
 export default router;

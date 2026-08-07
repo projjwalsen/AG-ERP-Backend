@@ -1556,21 +1556,21 @@ export class LedgerService {
                         }
                     });
 
-                    console.log(
-                        "CASH TXNS",
-                        transactions.length
-                    );
+                    // console.log(
+                    //     "CASH TXNS",
+                    //     transactions.length
+                    // );
 
-                    console.table(
-                        transactions.map(x => ({
-                            transactionNo: x.transactionNo,
-                            amount: x.amount,
-                            paymentMode: x.paymentMode,
-                            direction: x.direction,
-                            agencyId: x.agencyId,
-                            thirdPartyAgencyId: x.thirdPartyAgencyId
-                        }))
-                    );
+                    // console.table(
+                    //     transactions.map(x => ({
+                    //         transactionNo: x.transactionNo,
+                    //         amount: x.amount,
+                    //         paymentMode: x.paymentMode,
+                    //         direction: x.direction,
+                    //         agencyId: x.agencyId,
+                    //         thirdPartyAgencyId: x.thirdPartyAgencyId
+                    //     }))
+                    // );
 
                 let balance = 0;
 
@@ -1769,7 +1769,8 @@ export class LedgerService {
                                     ledger: {
                                         id: ledger.id,
                                         name: ledger.name,
-                                        code: ledger.code
+                                        code: ledger.code,
+                                        agency: ledger.agency
                                     },
 
                                     entries:
@@ -1821,7 +1822,8 @@ export class LedgerService {
                                     ledger: {
                                         id: ledger.id,
                                         name: ledger.name,
-                                        code: ledger.code
+                                        code: ledger.code,
+                                        agency: ledger.agency
                                     },
 
                                     entries:
@@ -1924,7 +1926,19 @@ export class LedgerService {
 
                         include: {
                             agency: true,
-                            thirdPartyAgency: true
+                            thirdPartyAgency: true,
+                            sale: {
+                                select: {
+                                    voucherType: true,
+                                    invoiceNo: true
+                                }
+                            },
+                            purchase: {
+                                select: {
+                                    voucherType: true,
+                                    invoiceNo: true
+                                }
+                            }
                         },
 
                         orderBy: {
@@ -1991,13 +2005,22 @@ export class LedgerService {
 
                             return {
 
-                                serialNo:
-                                    index + 1,
+                                serialNo: index + 1,
 
-                                date:
-                                    formatISTDate(
-                                        txn.createdAt
-                                    ),
+                                transactionDate: txn.createdAt,
+
+                                voucherType:
+                                    txn.sale?.voucherType ??
+                                    txn.purchase?.voucherType ??
+                                    "-",
+
+                                voucherNo:
+                                    txn.sale?.invoiceNo ??
+                                    txn.purchase?.invoiceNo ??
+                                    txn.transactionNo,
+
+                                paymentMode:
+                                    txn.paymentMode,
 
                                 description,
 
@@ -2211,15 +2234,15 @@ export class LedgerService {
                         }
                     });
 
-                    console.table(
-                        transactions.map(x => ({
-                            transactionNo: x.transactionNo,
-                            agencyId: x.agencyId,
-                            agencyName: x.agency?.name,
-                            thirdPartyAgencyId: x.thirdPartyAgencyId,
-                            amount: x.amount
-                        }))
-                    );
+                    // console.table(
+                    //     transactions.map(x => ({
+                    //         transactionNo: x.transactionNo,
+                    //         agencyId: x.agencyId,
+                    //         agencyName: x.agency?.name,
+                    //         thirdPartyAgencyId: x.thirdPartyAgencyId,
+                    //         amount: x.amount
+                    //     }))
+                    // );
 
                 let runningBalance = 0;
 
@@ -2966,7 +2989,7 @@ export class LedgerService {
                 page * limit
             );
 
-        console.log("page :", page, "limit :", limit, "totalEntries :", totalEntries);
+        // console.log("page :", page, "limit :", limit, "totalEntries :", totalEntries);
 
         return {
 
@@ -3256,14 +3279,14 @@ export class LedgerService {
                 .reduce((sum, entry) => sum + money(entry.amount), 0));
 
 
-            console.log(
-                "Debit",
-                totalDebit,
-                "Credit",
-                totalCredit,
-                "Diff",
-                totalDebit - totalCredit
-            );
+            // console.log(
+            //     "Debit",
+            //     totalDebit,
+            //     "Credit",
+            //     totalCredit,
+            //     "Diff",
+            //     totalDebit - totalCredit
+            // );
             if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 4) {
                 throw new ApiError(`Double entry validation failed. Debit ${totalDebit}, Credit ${totalCredit}`, 400);
             }
@@ -4250,17 +4273,17 @@ export class LedgerService {
                 (roundOff < 0 ? Math.abs(roundOff) : 0)
             );
 
-        console.table({
-            subtotal: Number(purchase.subtotalAmount),
-            cgst: Number(purchase.totalCGSTAmount),
-            sgst: Number(purchase.totalSGSTAmount),
-            igst: Number(purchase.totalIGSTAmount),
-            roundOff,
-            grandTotal: Number(purchase.grandTotal),
-            debit,
-            credit,
-            diff: money(debit - credit)
-        });
+        // console.table({
+        //     subtotal: Number(purchase.subtotalAmount),
+        //     cgst: Number(purchase.totalCGSTAmount),
+        //     sgst: Number(purchase.totalSGSTAmount),
+        //     igst: Number(purchase.totalIGSTAmount),
+        //     roundOff,
+        //     grandTotal: Number(purchase.grandTotal),
+        //     debit,
+        //     credit,
+        //     diff: money(debit - credit)
+        // });
 
         return this.createVoucher({
             voucherType: VoucherType.PURCHASE,

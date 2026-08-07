@@ -66,7 +66,7 @@ export class ReportingService {
          * ============================================================
          */
 
-        const branchId =
+        let branchId =
             actor.branchAccessType === "ALL"
                 ? query?.branchId
                 : actor.branchId;
@@ -89,7 +89,30 @@ export class ReportingService {
             gstin: string | null;
         } | null = null;
 
-        if (branchId) {
+        if (!branchId && actor.branchAccessType === "ALL") {
+            const activeBranches = await prisma.branch.findMany({
+                where: {
+                    isActive: true
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    gstin: true
+                },
+                take: 2,
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+            if (activeBranches.length === 1) {
+                branch = activeBranches[0];
+                branchId = branch.id;
+            }
+        }
+
+        if (branchId && !branch) {
             branch = await prisma.branch.findUnique({
                 where: {
                     id: branchId
@@ -485,10 +508,13 @@ export class ReportingService {
                         ledger.nature,
 
                     branchId:
-                        ledger.branchId,
+                        ledger.branchId ||
+                        branch?.id ||
+                        null,
 
                     branchName:
                         ledger.branch?.name ||
+                        branch?.name ||
                         null,
 
                     /**
@@ -638,7 +664,8 @@ export class ReportingService {
             generatedAt:
                 new Date(),
 
-            branchId,
+            branchId:
+                branchId || null,
 
             branch,
 
@@ -743,7 +770,17 @@ export class ReportingService {
             endDate.setHours(23, 59, 59, 999);
         }
 
-        const transactions = 
+        const periodDateFilter = {
+            ...(startDate
+                ? {
+                    gte: startDate
+                }
+                : {}),
+
+            lte: endDate
+        };
+
+        const transactions =
             await prisma.transaction.findMany({
                 where: {
                     branchId,
@@ -757,47 +794,23 @@ export class ReportingService {
                             OR: [
                                 {
                                     sale: {
-                                        ...(startDate && endDate
-                                            ? {
-                                                invoiceDate: {
-                                                    gte: startDate,
-                                                    lte: endDate
-                                                }
-                                            }
-                                            : startDate
-                                            ? {
-                                                invoiceDate: {
-                                                    gte: startDate
-                                                }
-                                            }
-                                            : {
-                                                invoiceDate: {
-                                                    lte: endDate
-                                                }
-                                            })
+                                        invoiceDate: periodDateFilter
                                     }
                                 },
                                 {
                                     purchase: {
-                                        ...(startDate && endDate
-                                            ? {
-                                                invoiceDate: {
-                                                    gte: startDate,
-                                                    lte: endDate
-                                                }
-                                            }
-                                            : startDate
-                                            ? {
-                                                invoiceDate: {
-                                                    gte: startDate
-                                                }
-                                            }
-                                            : {
-                                                invoiceDate: {
-                                                    lte: endDate
-                                                }
-                                            })
+                                        invoiceDate: periodDateFilter
                                     }
+                                },
+                                {
+                                    voucher: {
+                                        some: {
+                                            voucherDate: periodDateFilter
+                                        }
+                                    }
+                                },
+                                {
+                                    createdAt: periodDateFilter
                                 }
                             ]
                         }
@@ -807,6 +820,11 @@ export class ReportingService {
                     agency: true,
                     thirdPartyAgency: true,
                     bankAccount: true,
+                    createdBy: {
+                        select: {
+                            name: true
+                        }
+                    },
 
                     sale: true,
 
@@ -821,6 +839,342 @@ export class ReportingService {
                         }
                     }
                 },
+            });
+
+        const voucherWhere: Prisma.VoucherWhereInput = {
+            branchId,
+            voucherDate: periodDateFilter,
+
+            ...(query?.bankAccountId
+                ? {
+                    sourceId: {
+                        in: transactions.map(txn => txn.id)
+                    }
+                }
+                : {})
+        };
+
+        const vouchers =
+            await prisma.voucher.findMany({
+                where: voucherWhere,
+                include: {
+                    entries: {
+                        include: {
+                            ledger: {
+                                include: {
+                                    group: true
+                                }
+                            }
+                        },
+                        orderBy: {
+                            createdAt: "asc"
+                        }
+                    }
+                },
+                orderBy: [
+                    {
+                        voucherDate: "asc"
+                    },
+                    {
+                        voucherNo: "asc"
+                    }
+                ]
+            });
+
+        const sourceIds =
+            Array.from(
+                new Set(
+                    vouchers
+                        .map(voucher => voucher.sourceId)
+                        .filter(Boolean)
+                )
+            );
+
+        const [
+            sourceTransactions,
+            sourceJournals
+        ] =
+            sourceIds.length
+                ? await Promise.all([
+                    prisma.transaction.findMany({
+                        where: {
+                            id: {
+                                in: sourceIds
+                            }
+                        },
+                        include: {
+                            agency: true,
+                            thirdPartyAgency: true,
+                            bankAccount: true,
+                            sale: true,
+                            purchase: true,
+                            createdBy: {
+                                select: {
+                                    name: true
+                                }
+                            }
+                        }
+                    }),
+
+                    prisma.journal.findMany({
+                        where: {
+                            id: {
+                                in: sourceIds
+                            }
+                        },
+                        include: {
+                            journalHead: true,
+                            createdBy: {
+                                select: {
+                                    name: true
+                                }
+                            }
+                        }
+                    })
+                ])
+                : [
+                    [],
+                    []
+                ];
+
+        const transactionSourceMap =
+            new Map(
+                sourceTransactions.map(txn => [
+                    txn.id,
+                    txn
+                ])
+            );
+
+        const journalSourceMap =
+            new Map(
+                sourceJournals.map(journal => [
+                    journal.id,
+                    journal
+                ])
+            );
+
+        const formatVoucherType = (value: string) =>
+            String(value || "")
+                .replace(/_/g, " ")
+                .toLowerCase()
+                .replace(/\b\w/g, char => char.toUpperCase());
+
+        const getVoucherParty = (
+            voucher: typeof vouchers[number],
+            sourceTxn?: typeof sourceTransactions[number],
+            sourceJournal?: typeof sourceJournals[number]
+        ) =>
+            sourceTxn?.agency?.name ||
+            sourceTxn?.thirdPartyAgency?.name ||
+            sourceJournal?.journalHead?.name ||
+            voucher.entries.find(entry =>
+                ![
+                    "BANK",
+                    "CASH",
+                    "GST",
+                    "ROUND_OFF"
+                ].includes(String(entry.ledger.category))
+            )?.ledger.name ||
+            voucher.entries[0]?.ledger.name ||
+            "";
+
+        const getVoucherReference = (
+            sourceTxn?: typeof sourceTransactions[number],
+            sourceJournal?: typeof sourceJournals[number]
+        ) =>
+            sourceTxn?.transactionRefNo ||
+            sourceTxn?.referenceNo ||
+            sourceTxn?.sale?.invoiceNo ||
+            sourceTxn?.purchase?.invoiceNo ||
+            sourceJournal?.importKey ||
+            "";
+
+        const getPaymentMode = (
+            sourceTxn?: typeof sourceTransactions[number],
+            sourceJournal?: typeof sourceJournals[number]
+        ) =>
+            sourceTxn?.paymentThrough ||
+            sourceTxn?.paymentMode ||
+            sourceTxn?.paymentType ||
+            sourceJournal?.paymentThrough ||
+            sourceJournal?.paymentMode ||
+            "";
+
+        const getSummaryAmounts = (
+            voucher: typeof vouchers[number],
+            sourceTxn?: typeof sourceTransactions[number]
+        ) => {
+            const amount =
+                Number(sourceTxn?.amount || 0) ||
+                Math.max(
+                    Number(voucher.totalDebit || 0),
+                    Number(voucher.totalCredit || 0)
+                );
+
+            switch (String(voucher.voucherType)) {
+
+                case "PURCHASE":
+                case "RCM_PURCHASE":
+                case "RECEIPT":
+                case "CREDIT_NOTE":
+                case "OPENING_BALANCE":
+                    return {
+                        debit: amount,
+                        credit: 0
+                    };
+
+                case "SALE":
+                case "PAYMENT":
+                case "DEBIT_NOTE":
+                    return {
+                        debit: 0,
+                        credit: amount
+                    };
+
+                default:
+                    return {
+                        debit: Number(voucher.totalDebit || 0),
+                        credit: Number(voucher.totalCredit || 0)
+                    };
+            }
+        };
+
+        const voucherSummaryRows =
+            vouchers.map((voucher, index) => {
+                const sourceTxn =
+                    transactionSourceMap.get(voucher.sourceId);
+
+                const sourceJournal =
+                    journalSourceMap.get(voucher.sourceId);
+
+                const amounts =
+                    getSummaryAmounts(
+                        voucher,
+                        sourceTxn
+                    );
+
+                return {
+                    serialNo:
+                        index + 1,
+
+                    date:
+                        voucher.voucherDate,
+
+                    voucherNo:
+                        voucher.voucherNo,
+
+                    voucherType:
+                        formatVoucherType(
+                            String(voucher.voucherType)
+                        ),
+
+                    partyLedger:
+                        getVoucherParty(
+                            voucher,
+                            sourceTxn,
+                            sourceJournal
+                        ),
+
+                    referenceNo:
+                        getVoucherReference(
+                            sourceTxn,
+                            sourceJournal
+                        ),
+
+                    narration:
+                        voucher.narration ||
+                        sourceTxn?.remarks ||
+                        sourceJournal?.remarks ||
+                        voucher.entries[0]?.narration ||
+                        "",
+
+                    debit:
+                        amounts.debit,
+
+                    credit:
+                        amounts.credit,
+
+                    paymentMode:
+                        getPaymentMode(
+                            sourceTxn,
+                            sourceJournal
+                        ),
+
+                    createdBy:
+                        sourceTxn?.createdBy?.name ||
+                        sourceJournal?.createdBy?.name ||
+                        "System",
+
+                    status:
+                        "Posted",
+
+                    branch:
+                        branch.name
+                };
+            });
+
+        const doubleEntryRows =
+            vouchers.flatMap(voucher => {
+                const sourceTxn =
+                    transactionSourceMap.get(voucher.sourceId);
+
+                const sourceJournal =
+                    journalSourceMap.get(voucher.sourceId);
+
+                return voucher.entries.map(entry => ({
+                    date:
+                        voucher.voucherDate,
+
+                    voucherNo:
+                        voucher.voucherNo,
+
+                    voucherType:
+                        formatVoucherType(
+                            String(voucher.voucherType)
+                        ),
+
+                    ledgerCode:
+                        entry.ledger.code,
+
+                    ledgerAccount:
+                        entry.ledger.name,
+
+                    ledgerGroup:
+                        entry.ledger.group?.name ||
+                        String(entry.ledger.category || ""),
+
+                    particulars:
+                        getVoucherParty(
+                            voucher,
+                            sourceTxn,
+                            sourceJournal
+                        ),
+
+                    narration:
+                        entry.narration ||
+                        voucher.narration ||
+                        sourceTxn?.remarks ||
+                        sourceJournal?.remarks ||
+                        "",
+
+                    debit:
+                        entry.entryType === EntryType.DEBIT
+                            ? Number(entry.amount)
+                            : 0,
+
+                    credit:
+                        entry.entryType === EntryType.CREDIT
+                            ? Number(entry.amount)
+                            : 0,
+
+                    status:
+                        "Posted",
+
+                    createdBy:
+                        sourceTxn?.createdBy?.name ||
+                        sourceJournal?.createdBy?.name ||
+                        "System"
+                }));
             });
 
         const getTransactionDate = (txn: typeof transactions[number]) =>
@@ -854,7 +1208,7 @@ export class ReportingService {
                 runningBalance =
                     runningBalance + credit - debit;
 
-                    console.log("transaction ", txn);
+                    // console.log("transaction ", txn);
 
                     const transactionDate = getTransactionDate(txn);
 
@@ -996,7 +1350,11 @@ export class ReportingService {
                     Math.ceil(totalEntries / safeLimit)
                 )
             },
-            entries: paginatedEntries
+            entries: paginatedEntries,
+
+            voucherSummaryRows,
+
+            doubleEntryRows
         };
     }
 

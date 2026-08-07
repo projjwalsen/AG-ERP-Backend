@@ -1584,7 +1584,20 @@ export class TransactionService {
         const [transactions, total] = await Promise.all([
             prisma.transaction.findMany({
                 where,
-                include: { branch: true, agency: true, thirdPartyAgency: true, createdBy: true },
+                include: {
+                    branch: true,
+                    agency: true,
+                    thirdPartyAgency: true,
+                    sale: true,
+                    purchase: true,
+                    allocations: {
+                        include: {
+                            sale: true,
+                            purchase: true
+                        }
+                    },
+                    createdBy: true
+                },
                 orderBy: { createdAt: "desc" },
                 ...(query?.export ? {} : { skip, take: limit })
             }),
@@ -1615,7 +1628,20 @@ export class TransactionService {
 
         const transaction = await prisma.transaction.findUnique({
             where: { id: transactionId },
-            include: { branch: true, agency: true, thirdPartyAgency: true, createdBy: true }
+            include: {
+                branch: true,
+                agency: true,
+                thirdPartyAgency: true,
+                sale: true,
+                purchase: true,
+                allocations: {
+                    include: {
+                        sale: true,
+                        purchase: true
+                    }
+                },
+                createdBy: true
+            }
         });
         
         if (!transaction) {
@@ -1654,6 +1680,29 @@ export class TransactionService {
 
             if (transaction.status !== "PENDING") {
                 throw new ApiError("Only pending transactions can be approved", 400);
+            }
+
+            if (!transaction.suspenseAccount && !transaction.agencyId) {
+                throw new ApiError("Agency ID is required for non-suspense transactions", 400);
+            }
+
+            if (
+                !transaction.suspenseAccount &&
+                transaction.settlementType === SettlementType.INVOICE_TO_INVOICE
+            ) {
+                if (
+                    transaction.direction === TransactionDirection.INWARD &&
+                    !transaction.saleId
+                ) {
+                    throw new ApiError("Sale Invoice is required !", 400);
+                }
+
+                if (
+                    transaction.direction === TransactionDirection.OUTWARD &&
+                    !transaction.purchaseId
+                ) {
+                    throw new ApiError("Purchase Invoice is required !", 400);
+                }
             }
 
             /** Optimistic locking */

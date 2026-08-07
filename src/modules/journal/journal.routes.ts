@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as JournalController from "./journal.controller";
-import { authMiddleware } from "../../core/middleware/auth";
+import { authMiddleware, checkPermission } from "../../core/middleware/auth";
 
 const router = Router();
 router.use(authMiddleware);
@@ -37,7 +37,7 @@ router.use(authMiddleware);
  *       201:
  *         description: Journal Head created successfully
  */
-router.post("/head/create", JournalController.createJournalHead);
+router.post("/head/create", checkPermission("JOURNAL:WRITE"), JournalController.createJournalHead);
 
 
 /**
@@ -74,7 +74,7 @@ router.post("/head/create", JournalController.createJournalHead);
  *         description: Updated successfully
  */
 
-router.put("/head/:journalHeadId", JournalController.updateJournalHead);
+router.put("/head/:journalHeadId", checkPermission("JOURNAL:WRITE"), JournalController.updateJournalHead);
 
 
 /**
@@ -95,7 +95,7 @@ router.put("/head/:journalHeadId", JournalController.updateJournalHead);
  *         description: Deleted successfully
  */
 
-router.delete("/head/:journalHeadId", JournalController.deleteJournalHead);
+router.delete("/head/:journalHeadId", checkPermission("JOURNAL:WRITE"), JournalController.deleteJournalHead);
 
 
 /**
@@ -116,7 +116,7 @@ router.delete("/head/:journalHeadId", JournalController.deleteJournalHead);
  *         description: Journal Head
  */
 
-router.get("/head/:journalHeadId", JournalController.getJournalHeadById);
+router.get("/head/:journalHeadId", checkPermission("JOURNAL:VIEW"), JournalController.getJournalHeadById);
 
 
 /**
@@ -147,7 +147,7 @@ router.get("/head/:journalHeadId", JournalController.getJournalHeadById);
  *         description: Journal Heads List
  */
 
-router.get("/heads", JournalController.listJournalHeads);
+router.get("/heads", checkPermission("JOURNAL:VIEW"), JournalController.listJournalHeads);
 
 
 
@@ -208,7 +208,7 @@ router.get("/heads", JournalController.listJournalHeads);
  *         description: Journal created successfully
  */
 
-router.post("/create", JournalController.createJournal);
+router.post("/create", checkPermission("JOURNAL:WRITE"), JournalController.createJournal);
 
 /**
  * @openapi
@@ -261,7 +261,7 @@ router.post("/create", JournalController.createJournal);
  *         description: Journal List
  */
 
-router.get("/all", JournalController.listJournals);
+router.get("/all", checkPermission("JOURNAL:VIEW"), JournalController.listJournals);
 
 
 /**
@@ -304,7 +304,7 @@ router.get("/all", JournalController.listJournals);
  *         description: Updated successfully
  */
 
-router.put("/:journalId", JournalController.updateJournal);
+router.put("/:journalId", checkPermission("JOURNAL:WRITE"), JournalController.updateJournal);
 
 
 /**
@@ -325,7 +325,7 @@ router.put("/:journalId", JournalController.updateJournal);
  *         description: Journal Details
  */
 
-router.get("/:journalId", JournalController.getJournalById);
+router.get("/:journalId", checkPermission("JOURNAL:VIEW"), JournalController.getJournalById);
 
 
 
@@ -349,7 +349,7 @@ router.get("/:journalId", JournalController.getJournalById);
  *         description: Journal approved successfully
  */
 
-router.patch("/:journalId/approve", JournalController.approveJournal);
+router.patch("/:journalId/approve", checkPermission("JOURNAL:APPROVE"), JournalController.approveJournal);
 
 
 /**
@@ -380,7 +380,7 @@ router.patch("/:journalId/approve", JournalController.approveJournal);
  *         description: Journal rejected successfully
  */
 
-router.patch("/:journalId/reject", JournalController.rejectJournal);
+router.patch("/:journalId/reject", checkPermission("JOURNAL:APPROVE"), JournalController.rejectJournal);
 
 
 export default router;

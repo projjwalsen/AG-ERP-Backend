@@ -1389,6 +1389,25 @@ export class ExcelImportService {
                 if (!voucherNo)
                     return null;
 
+                const invoiceNo =
+                    String(
+                        this.getValue(
+                            row,
+                            "Supplier Invoice No",
+                            "Invoice No"
+                        ) || ""
+                    ).trim();
+
+                const otherReferenceNo =
+                    String(
+                        this.getValue(
+                            row,
+                            "Other References",
+                            "Other Reference",
+                            "Reference No"
+                        ) || ""
+                    ).trim();
+
                 const particulars =
                     String(
                         this.getValue(
@@ -1412,6 +1431,10 @@ export class ExcelImportService {
                         ),
 
                     voucherNo,
+
+                    invoiceNo,
+
+                    otherReferenceNo,
 
                     voucherType,
 

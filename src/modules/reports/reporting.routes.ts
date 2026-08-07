@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as ReportingController from "./reporting.controller";
-import { authMiddleware } from "../../core/middleware/auth";
+import { authMiddleware, checkPermission } from "../../core/middleware/auth";
 
 const router = Router();
 router.use(authMiddleware)
@@ -71,6 +71,7 @@ router.use(authMiddleware)
  */
 router.get(
     "/trial-balance",
+    checkPermission("TRIAL_BALANCE:VIEW"),
     ReportingController.getTrialBalanceReport
 )
 
@@ -167,6 +168,7 @@ router.get(
 
 router.get(
     "/branch/:branchId/day-book",
+    checkPermission("DAY_BOOK:VIEW"),
     ReportingController.getBranchDayBook
 )
 
@@ -236,6 +238,7 @@ router.get(
 
 router.get(
     "/gstr1",
+    checkPermission("GSTR1:VIEW"),
     ReportingController.getGSTR1Report
 )
 
@@ -310,6 +313,7 @@ router.get(
 
 router.get(
     "/gst-suspense-log",
+    checkPermission("GST_SUSPENSE_LOG:VIEW"),
     ReportingController.getGSTSuspenseAccountLog
 )
 
@@ -388,6 +392,7 @@ router.get(
 
 router.get(
     "/stock-inventory",
+    checkPermission("STOCK_INVENTORY:VIEW"),
     ReportingController.getStockInventoryReport
 );
 
@@ -456,6 +461,7 @@ router.get(
 
 router.get(
     "/outstanding-report",
+    checkPermission("OUTSTANDING_REPORT:VIEW"),
     ReportingController.getOutstandingReport
 );
 
@@ -551,6 +557,7 @@ router.get(
 
 router.get(
     "/outstanding-report/agency/export",
+    checkPermission("OUTSTANDING_REPORT:VIEW"),
     ReportingController.getOutstandingReport
 );
 
