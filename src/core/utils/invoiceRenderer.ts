@@ -39,6 +39,33 @@ export class InvoiceRenderer {
             await page.setContent(compiledHtml, {
                 waitUntil: "domcontentloaded"
             });
+
+            await page.evaluate(`
+                (async () => {
+                    await document.fonts.ready;
+
+                    await Promise.all(
+                        Array.from(document.images).map(image => {
+                            if (image.complete) {
+                                return Promise.resolve();
+                            }
+
+                            return new Promise(resolve => {
+                                image.addEventListener(
+                                    "load",
+                                    resolve,
+                                    { once: true }
+                                );
+                                image.addEventListener(
+                                    "error",
+                                    resolve,
+                                    { once: true }
+                                );
+                            });
+                        })
+                    );
+                })()
+            `);
     
             const pdf = await page.pdf({
                 format: "A4",

@@ -1,13 +1,17 @@
-import { ProductUnit } from "@prisma/client";
+import { ProductType, ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { convertKGToLTR } from "../../core/utils/density.utils";
+import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
+import { ManufacturingService } from "../manufacturing/manufacturing.service";
 
 type CreateProductPayload = {
     sku: string;
     name: string;
     category: string;
+    productType?: ProductType;
     description?: string;
+    disclaimer?: string;
 
     hsnNo?: string;
     applicableGST?: number;
@@ -16,8 +20,15 @@ type CreateProductPayload = {
 
     operationalUnit: ProductUnit;
     minimumStockKG?: number;
+    openingStockKG?: number;
 
     sellPricePerUnit: number;
+    recipe?: {
+        outputQuantity: number;
+        outputUnit: ProductUnit;
+        items: { productId: string; quantity: number; unit: ProductUnit }[];
+        remarks?: string;
+    };
 }
 
 type UpdateProductPayload = Partial<CreateProductPayload>;
@@ -42,9 +53,27 @@ export class ProductService {
                 400
             )
         }
-
-        const normalizedSKU = payload.sku.trim().toUpperCase();
         const normalizedPrice = Number(payload.sellPricePerUnit);
+        let sellPriceLTR: number | null = null;
+
+        if (
+            payload.density &&
+            (payload.baseUnit === ProductUnit.KG || payload.baseUnit === ProductUnit.MT)
+        ) {
+            const pricePerKG =
+                payload.baseUnit === ProductUnit.MT
+                    ? normalizedPrice / 1000
+                    : normalizedPrice;
+
+            sellPriceLTR =
+                Number(
+                    (
+                        pricePerKG *
+                        payload.density
+                    ).toFixed(2)
+                );
+        }
+        const normalizedSKU = payload.sku.trim().toUpperCase();
 
         const existingProduct = await prisma.product.findUnique({
             where: { sku: normalizedSKU }
@@ -69,7 +98,8 @@ export class ProductService {
          * density becomes mandatory
          */
         if (
-            (payload.baseUnit || "KG") === "KG" &&
+            ((payload.baseUnit || ProductUnit.KG) === ProductUnit.KG ||
+                (payload.baseUnit || ProductUnit.KG) === ProductUnit.MT) &&
             (payload.operationalUnit || "LTR") === "LTR" &&
             !payload.density
         ) {
@@ -90,41 +120,73 @@ export class ProductService {
          */
         const previewLTR = payload.density ? convertKGToLTR(1000, payload.density) : null;
 
-        const product = await prisma.product.create({
-            data: {
-                sku: normalizedSKU,
-                name: payload.name.trim(),
-                category: payload.category.trim(),
-                description: payload.description?.trim() || null,
-                hsnNo: payload.hsnNo,
-                applicableGST: payload.applicableGST,
-                baseUnit: payload.baseUnit || "KG",
-                density: payload.density,
-                operationalUnit: payload.operationalUnit || "LTR",
-                minimumStockKG: payload.minimumStockKG,
-                sellPricePerUnit: normalizedPrice,
-                isActive: true
-            },
-            select: {
-                id: true,
-                sku: true,
-                name: true,
-                category: true,
-                description: true,
-                baseUnit: true,
-                density: true,
-                hsnNo: true,
-                applicableGST: true,
-                operationalUnit: true,
-                minimumStockKG: true,
-                sellPricePerUnit: true,
-                isActive: true,
-                createdAt: true,
-            }
+        const productType = payload.productType || ProductType.PURCHASED;
+        const shouldCreateRecipe = productType === ProductType.MANUFACTURED || productType === ProductType.BOTH;
+
+        if (shouldCreateRecipe && !payload.recipe) {
+            throw new ApiError(
+                "Recipe payload is required for manufactured products",
+                400
+            );
+        }
+
+        const { product, recipe } = await prisma.$transaction(async tx => {
+            const product = await tx.product.create({
+                data: {
+                    sku: normalizedSKU,
+                    name: payload.name.trim(),
+                    category: payload.category.trim(),
+                    productType,
+                    description: payload.description?.trim() || null,
+                    disclaimer: payload.disclaimer?.trim() || null,
+                    hsnNo: payload.hsnNo,
+                    applicableGST: payload.applicableGST,
+                    baseUnit: payload.baseUnit || "KG",
+                    density: payload.density,
+                    operationalUnit: payload.operationalUnit || "LTR",
+                    minimumStockKG: payload.minimumStockKG,
+                    openingStockKG: payload.openingStockKG || 0,
+                    sellPricePerUnit: normalizedPrice,
+                    sellPriceLTR: sellPriceLTR,
+                    isActive: true
+                },
+                select: {
+                    id: true,
+                    sku: true,
+                    name: true,
+                    category: true,
+                    productType: true,
+                    description: true,
+                    disclaimer: true,
+                    baseUnit: true,
+                    density: true,
+                    hsnNo: true,
+                    applicableGST: true,
+                    operationalUnit: true,
+                    minimumStockKG: true,
+                    openingStockKG: true,
+                    sellPricePerUnit: true,
+                    sellPriceLTR: true,
+                    isActive: true,
+                    createdAt: true,
+                }
+            });
+
+            await ProductLedgerService.getOrCreateProductLedger(
+                product.id,
+                tx
+            );
+
+            const recipe = shouldCreateRecipe && payload.recipe
+                ? await ManufacturingService.createRecipeForProduct(actor, product.id, payload.recipe, tx, { autoApprove: true })
+                : null;
+
+            return { product, recipe };
         });
 
         return {
             ...product,
+            recipe,
             conversionPreview: payload.density ? {
                 sampleKg: 1000,
                 equivalentLtr: previewLTR!,
@@ -139,6 +201,7 @@ export class ProductService {
             category?: string;
             page?: number;
             limit?: number;
+            export?: boolean;
         }
     ) {
         if(!actor?.id){
@@ -166,42 +229,85 @@ export class ProductService {
             })
         };
 
-        const [products, total] = await Promise.all([
-            prisma.product.findMany({
+        const total = await prisma.product.count({
+            where,
+        });
+
+        const products =
+            await prisma.product.findMany({
                 where,
+
                 select: {
                     id: true,
                     sku: true,
                     name: true,
                     category: true,
+                    productType: true,
                     description: true,
+                    disclaimer: true,
                     baseUnit: true,
                     density: true,
                     hsnNo: true,
                     applicableGST: true,
                     operationalUnit: true,
                     minimumStockKG: true,
+                    openingStockKG: true,
                     sellPricePerUnit: true,
                     isActive: true,
                     createdAt: true,
+                    recipeOutputs: {
+                        include: {
+                            items: {
+                                include: {
+                                    product: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            sku: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
-                orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
-            }),
-            prisma.product.count({ where })
-        ]);
-        
+
+                orderBy: {
+                    createdAt: "desc",
+                },
+
+                ...(query?.export
+                    ? {}
+                    : {
+                        skip: (page - 1) * limit,
+                        take: limit,
+                    }),
+            });
+
         return {
             data: products,
+
             meta: {
                 total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-                hasNextPage: page < Math.ceil(total / limit),
-                hasPrevPage: page > 1,
-            }
+
+                page: query?.export ? 1 : page,
+
+                limit: query?.export
+                    ? total
+                    : limit,
+
+                totalPages: query?.export
+                    ? 1
+                    : Math.ceil(total / limit),
+
+                hasNextPage: query?.export
+                    ? false
+                    : page < Math.ceil(total / limit),
+
+                hasPrevPage: query?.export
+                    ? false
+                    : page > 1,
+            },
         };
     }
 
@@ -225,7 +331,9 @@ export class ProductService {
                 sku: true,
                 name: true,
                 category: true,
+                productType: true,
                 description: true,
+                disclaimer: true,
                 baseUnit: true,
                 density: true,
                 hsnNo: true,
@@ -236,6 +344,7 @@ export class ProductService {
                 isActive: true,                
                 createdAt: true,
                 updatedAt: true,
+                recipeOutputs: true
             }
         });
 
@@ -322,8 +431,8 @@ export class ProductService {
             payload.density ??
             Number(existingProduct.density);
         if (
-            payload.baseUnit === "KG" &&
-            operationalUnit === "LTR" &&
+            (baseUnit === ProductUnit.KG || baseUnit === ProductUnit.MT) &&
+            operationalUnit === ProductUnit.LTR &&
             !density
         ) {
             throw new ApiError(
@@ -339,27 +448,60 @@ export class ProductService {
             );
         }
 
+        const finalSellPrice =
+            normalizedPrice ??
+            Number(existingProduct.sellPricePerUnit);
+
+        const finalDensity =
+            density ??
+            Number(existingProduct.density);
+
+        let sellPriceLTR: number | null = null;
+
+        if (
+            finalDensity &&
+            (baseUnit === ProductUnit.KG || baseUnit === ProductUnit.MT)
+        ) {
+            const pricePerKG =
+                baseUnit === ProductUnit.MT
+                    ? finalSellPrice / 1000
+                    : finalSellPrice;
+
+            sellPriceLTR =
+                Number(
+                    (
+                        pricePerKG *
+                        finalDensity
+                    ).toFixed(2)
+                );
+        }
+
         const updatedProduct = await prisma.product.update({
             where: { id: productId },
             data: {
                 sku: normalizedSKU,
                 name: payload.name?.trim(),
                 category: payload.category?.trim(),
+                productType: payload.productType,
                 description: payload.description?.trim() || null,
+                disclaimer: payload.disclaimer?.trim() || null,
                 baseUnit: payload.baseUnit,
                 density: density,
                 hsnNo: payload.hsnNo,
                 applicableGST: payload.applicableGST,
                 operationalUnit: operationalUnit,
                 minimumStockKG: payload.minimumStockKG,
-                sellPricePerUnit: normalizedPrice,
+                sellPricePerUnit: finalSellPrice,
+                sellPriceLTR: sellPriceLTR,
             },
             select: {
                 id: true,
                 sku: true,
                 name: true,
                 category: true,
+                productType: true,
                 description: true,
+                disclaimer: true,
                 baseUnit: true,
                 density: true,
                 hsnNo: true,
@@ -367,6 +509,7 @@ export class ProductService {
                 operationalUnit: true,
                 minimumStockKG: true,
                 sellPricePerUnit: true,
+                sellPriceLTR: true,
                 isActive: true,
                 createdAt: true,
                 updatedAt: true,
@@ -445,23 +588,227 @@ export class ProductService {
     }
 
     static async getActiveProducts(
-        actor: any,   
-    ){
-        if(!actor?.id){
+        actor: any
+    ) {
+
+        if (!actor?.id) {
             throw new ApiError(
                 "Unauthorized",
                 401
-            )
+            );
         }
 
-        const products = await prisma.product.findMany({
-            where: {
-                isActive: true
-            },
-            orderBy: {
-                name: "asc"
+
+        /*
+         * ============================================================
+         * GET ACTIVE PRODUCTS
+         * ============================================================
+         */
+
+        const products =
+            await prisma.product.findMany({
+
+                where: {
+                    isActive: true
+                },
+
+                orderBy: {
+                    name: "asc"
+                }
+            });
+
+
+        if (products.length === 0) {
+            return [];
+        }
+
+
+        /*
+         * ============================================================
+         * GET ALL INVENTORY BATCHES FOR ACTIVE PRODUCTS
+         * ============================================================
+         *
+         * InventoryBatch stores:
+         *
+         * availableQtyKG
+         * availableQtyLTR
+         *
+         * There is no generic availableQuantity field.
+         * ============================================================
+         */
+
+        const inventoryBatches =
+            await prisma.inventoryBatch.findMany({
+
+                where: {
+
+                    productId: {
+                        in: products.map(
+                            product => product.id
+                        )
+                    },
+
+                    isActive: true
+                },
+
+                select: {
+                    productId: true,
+                    availableQtyKG: true,
+                    availableQtyLTR: true
+                }
+            });
+
+
+        /*
+         * ============================================================
+         * BUILD CUMULATIVE STOCK MAP
+         * ============================================================
+         *
+         * Stock is summed across ALL batches of the product.
+         * ============================================================
+         */
+
+        const stockMap =
+            new Map<
+                string,
+                {
+                    kg: number;
+                    ltr: number;
+                }
+            >();
+
+
+        for (const batch of inventoryBatches) {
+
+            const current =
+                stockMap.get(
+                    batch.productId
+                ) ?? {
+                    kg: 0,
+                    ltr: 0
+                };
+
+
+            current.kg +=
+                Number(
+                    batch.availableQtyKG ?? 0
+                );
+
+
+            current.ltr +=
+                Number(
+                    batch.availableQtyLTR ?? 0
+                );
+
+
+            stockMap.set(
+                batch.productId,
+                current
+            );
+        }
+
+
+        /*
+         * ============================================================
+         * ADD AVAILABLE STOCK BASED ON PRODUCT OPERATIONAL UNIT
+         * ============================================================
+         *
+         * KG  -> availableQtyKG
+         * LTR -> availableQtyLTR
+         * MT  -> availableQtyKG / 1000
+         * ============================================================
+         */
+
+        return products.map(
+            product => {
+
+                const stock =
+                    stockMap.get(
+                        product.id
+                    ) ?? {
+                        kg: 0,
+                        ltr: 0
+                    };
+
+
+                switch (product.operationalUnit) {
+
+                    /*
+                     * -----------------------------
+                     * KG PRODUCT
+                     * -----------------------------
+                     */
+
+                    case ProductUnit.KG:
+
+                        return {
+                            ...product,
+
+                            availableStockKG:
+                                Number(
+                                    stock.kg.toFixed(3)
+                                )
+                        };
+
+
+                    /*
+                     * -----------------------------
+                     * LTR PRODUCT
+                     * -----------------------------
+                     */
+
+                    case ProductUnit.LTR:
+
+                        return {
+                            ...product,
+
+                            availableStockLTR:
+                                Number(
+                                    stock.ltr.toFixed(3)
+                                )
+                        };
+
+
+                    /*
+                     * -----------------------------
+                     * MT PRODUCT
+                     * -----------------------------
+                     *
+                     * Inventory is stored in KG.
+                     *
+                     * 1000 KG = 1 MT
+                     */
+
+                    case ProductUnit.MT:
+
+                        return {
+                            ...product,
+
+                            availableStockMT:
+                                Number(
+                                    (stock.kg / 1000)
+                                        .toFixed(3)
+                                )
+                        };
+
+
+                    /*
+                     * Should never happen because
+                     * operationalUnit is ProductUnit.
+                     */
+
+                    default:
+
+                        return {
+                            ...product,
+
+                            availableStockKG:
+                                Number(
+                                    stock.kg.toFixed(3)
+                                )
+                        };
+                }
             }
-        });
-        return products;
+        );
     }
 }

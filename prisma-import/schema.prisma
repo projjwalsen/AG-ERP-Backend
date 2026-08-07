@@ -1,0 +1,1159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+enum BranchAccessType {
+  ALL
+  SELECTED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id        String @id @default(uuid())
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  name     String
+  email    String @unique
+  phone    String?
+  password String
+
+  status   UserStatus @default(ACTIVE)
+  isActive Boolean    @default(true)
+
+  branchAccessType BranchAccessType @default(SELECTED)
+
+  userRoles UserRole[]
+  purchasesCreated Purchase[] @relation("PurchaseCreatedBy")
+  purchasesApproved Purchase[] @relation("PurchaseApprovedBy")
+  salesCreated Sale[] @relation("SaleCreatedBy")
+  salesApproved Sale[] @relation("SaleApprovedBy")
+  transactionsCreated Transaction[] @relation("TransactionCreatedBy")
+  productLedgerEntries ProductLedgerEntry[]
+  ledgersCreated Ledger[] @relation("LedgerCreatedBy")
+
+  createdById  String?
+  createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers User[] @relation("UserCreatedBy")
+
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([branchId])
+  @@index([email])
+}
+
+
+model Branch {
+  id   String @id @default(uuid())
+
+  name String
+  code String @unique
+
+  gstin     String? @unique
+  stateCode String?
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  pinCode      String?
+  phnNumber     String?
+  email         String?
+
+  isActive Boolean @default(true)
+
+  users User[]
+  ledger Ledger[]
+  ledgerEntries LedgerEntry[]
+  agencies AgencyBranch[]
+  bankAccounts BankAccount[]
+  inventoryBatches InventoryBatch[]
+  purchases Purchase[]
+  sales Sale[]
+  inventories Inventory[]
+  transactions Transaction[]
+  outstanding AgencyOutstanding[]
+  vouchers Voucher[]
+  productLedgerEntries ProductLedgerEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gstin])
+}
+
+model BankAccount {
+  id String @id @default(uuid())
+
+  branchId String
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  accountNumber String
+
+  ifscCode String
+
+  bankName String
+
+  bankBranchName String
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agencies Agency[]
+  transactions Transaction[]
+
+  @@index([branchId])
+  @@index([accountNumber])
+  @@index([ifscCode])
+}
+
+model Role {
+  id String @id @default(uuid())
+
+  name String
+  code String @unique
+
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Permission {
+  id        String @id @default(uuid())
+
+  module    String
+  action    String
+  key       String @unique
+
+  description String?
+  isActive    Boolean @default(true)
+
+  rolePermissions RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([module, action])
+  @@index([module])
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+
+  roleId       String
+  role         Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+model UserRole {
+  id       String @id @default(uuid())
+
+  userId   String
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roleId   String
+  role     Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+  
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+enum AgencyType {
+  VENDOR
+  CLIENT
+  BOTH
+}
+
+model Agency {
+  id   String @id @default(uuid())
+
+  name String
+  type AgencyType
+
+  gstin     String? @unique
+
+  contactPerson String?
+  mobileNumber   String?
+  email         String?
+
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  stateCode    String?
+  pinCode      String?
+
+  isActive Boolean @default(true)
+
+  amountReceivable Decimal @default(0.00) @db.Decimal(18, 2)
+  amountPayable Decimal @default(0.00) @db.Decimal(18, 2)
+
+  bankAccountId String?
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
+  panNo        String?
+  cstNo        String?
+
+  ledger Ledger[]
+  branches  AgencyBranch[]
+  purchases Purchase[]
+  sales Sale[]
+  transactions Transaction[]
+  thirdPartyTransactions Transaction[] @relation("ThirdPartyAgencyTransactions")
+  outstanding AgencyOutstanding[]
+  productLedgerEntries ProductLedgerEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([gstin])
+  @@index([type])
+}
+
+model AgencyBranch {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  openingBalance Decimal @default(0.00) @db.Decimal(18, 3)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([agencyId, branchId])
+  @@index([agencyId])
+  @@index([branchId])
+}
+
+enum OutstandingType {
+  DEBIT
+  CREDIT
+}
+model AgencyOutstanding {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  type OutstandingType
+  amount Decimal @default(0.00) @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agencyId, branchId])
+  @@index([agencyId])
+  @@index([branchId])
+}
+
+enum ProductUnit {
+  KG
+  LTR
+}
+
+// ============================================
+// PRODUCT LEDGER ENUMS
+// ============================================
+enum ProductMovementType {
+  OPENING_BALANCE  // Initial stock entry when creating ledger
+  PURCHASE         // Stock received from vendor
+  SALE             // Stock sold to customer
+  RETURN_IN        // Stock returned from customer
+  RETURN_OUT       // Stock returned to vendor
+  ADJUSTMENT_IN    // Manual adjustment increase
+  ADJUSTMENT_OUT   // Manual adjustment decrease
+  DAMAGE           // Damaged/defective stock
+  TRANSFER_IN      // Stock transferred from another branch
+  TRANSFER_OUT     // Stock transferred to another branch
+}
+
+enum ProductMovementDirection {
+  CREDIT          // Stock increases (purchase, return_in, adjustment_in, transfer_in, opening)
+  DEBIT           // Stock decreases (sale, return_out, adjustment_out, damage, transfer_out)
+}
+
+model Product {
+  id    String @id @default(uuid())
+
+  sku   String @unique
+
+  name  String
+  category String?
+  description String?
+
+  hsnNo String?
+  applicableGST Decimal? @db.Decimal(5, 2)
+
+  baseUnit ProductUnit @default(KG)
+  density  Decimal? @db.Decimal(10, 4)
+
+  sellPricePerUnit Decimal @db.Decimal(18, 2)
+  sellPriceLTR Decimal? @db.Decimal(18, 2)
+
+  operationalUnit ProductUnit @default(LTR)
+  minimumStockKG Decimal? @db.Decimal(18, 3)
+
+  openingStockKG Decimal @default(0)
+
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inventories Inventory[]
+  inventoryBatches InventoryBatch[]
+  purchaseItems PurchaseItem[]
+  salesItems SalesItem[]
+  ledger Ledger[]
+  ledgerEntries LedgerEntry[]
+  productLedger ProductLedger?
+
+  @@index([sku])
+  @@index([name])
+  @@index([category])
+  @@index([hsnNo])
+}
+
+// ============================================
+// PRODUCT LEDGER - Inventory Tracking System
+// ============================================
+// GLOBAL: One ledger per product across ALL branches
+// Tracks: Stock movements (purchase/sale/adjustment)
+// Purpose: Complete product history + analytics
+// NOTE: Stock is cached in Inventory table (branch-wise)
+//       Global stock = SUM(Inventory.currentStockKG) for all branches
+
+model ProductLedger {
+  id                String   @id @default(cuid())
+  
+  // Product Reference (GLOBAL - ONE per product)
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Code Generation
+  code              String   @unique  // PROD-pr123456
+  
+  // Movement History (immutable)
+  entries           ProductLedgerEntry[]
+  
+  // Status
+  isActive          Boolean  @default(true)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([productId])
+  @@index([code])
+}
+
+model ProductLedgerEntry {
+  id                    String   @id @default(cuid())
+  
+  // Reference to Product Ledger
+  productLedgerId       String
+  productLedger         ProductLedger @relation(fields: [productLedgerId], references: [id], onDelete: Cascade)
+  
+  // Stock Movement Type & Direction (Enums - prevents data inconsistency)
+  movementType          ProductMovementType
+  direction             ProductMovementDirection
+  
+  // Quantity Details (IMMUTABLE - never modified)
+  quantityKG            Decimal  @db.Decimal(18, 3)
+  quantityLTR           Decimal? @db.Decimal(18, 3)
+  unit                  ProductUnit
+  
+  // Context (Where did this movement happen?)
+  branchId              String?
+  branch                Branch?  @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  
+  agencyId              String?  // For vendor/customer reference
+  agency                Agency?  @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+  
+  // Source Document References (Strong relationships)
+  purchaseId            String?  // For PURCHASE movements
+  purchase              Purchase? @relation("ProductLedgerFromPurchase", fields: [purchaseId], references: [id], onDelete: SetNull)
+  
+  saleId                String?  // For SALE movements
+  sale                  Sale? @relation("ProductLedgerFromSale", fields: [saleId], references: [id], onDelete: SetNull)
+  
+  // Batch Traceability (Mandatory for sales - FIFO tracking)
+  batchId               String?
+  batch                 InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  batchNo               String?
+  
+  // Invoice Reference
+  invoiceNo             String?
+  
+  // Cost Info (for analytics & FIFO weighted average)
+  unitCost              Decimal? @db.Decimal(18, 2)  // Purchase price per unit
+  totalCost             Decimal? @db.Decimal(18, 2)  // unitCost * quantity
+  
+  // Stock Entry Date (When stock physically entered warehouse)
+  entryDate             DateTime // Used for FIFO calculations and aging
+  
+  // Additional Info
+  remarks               String?
+  reference             String?  // Additional reference
+  
+  // Audit Trail
+  createdAt             DateTime @default(now())
+  createdById           String?
+  user                  User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  
+  @@index([productLedgerId])
+  @@index([purchaseId])
+  @@index([saleId])
+  @@index([branchId])
+  @@index([agencyId])
+  @@index([batchId])
+  @@index([entryDate])
+  @@index([createdAt])
+  @@index([movementType])
+}
+
+
+model Setting {
+  id    String @id @default(uuid())
+
+  allowNegativeInventory Boolean @default(false)
+
+  allowNegativeTransaction Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SalesStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model InventoryBatch {
+  id String @id @default(uuid())
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  batchNo String
+  purchasePrice Decimal @db.Decimal(18, 2)
+
+  availableQtyKG Decimal @default(0.000) @db.Decimal(18, 3)
+  availableQtyLTR Decimal @default(0.000) @db.Decimal(18, 3)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  purchaseItems PurchaseItem[]
+  salesItems SalesItem[]
+  productLedgerEntries ProductLedgerEntry[]
+
+  @@index([branchId])
+  @@index([productId])
+  @@index([batchNo])
+  @@unique([branchId, productId, batchNo])
+}
+
+/** Purchase Model Master **/
+model Purchase {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  invoiceNo String @unique
+
+  /** ---------------- Purchase Document ---------------- */
+  invoiceDate DateTime?          // Vendor Invoice Date
+  supplierInvoiceDate DateTime?  // If supplier invoice differs
+  voucherType VoucherType?       // PURCHASE by default
+  otherReference String?
+
+  /** ---------------- GST Amounts ---------------- */
+  subtotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalCGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalSGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalIGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  roundOffAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  grandTotal Decimal @default(0.00) @db.Decimal(18,2)
+
+  /** ---------------- Status ---------------- */
+  status   PurchaseStatus @default(PENDING)
+  remarks String?
+
+  /** ---------------- Audit ---------------- */
+  createdById  String?
+  createdBy    User?  @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  
+  approvedById String?
+  approvedBy   User?  @relation("PurchaseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  approvedAt DateTime?
+
+  items PurchaseItem[]
+  
+  // Product Ledger Entries (for product movement history)
+  productLedgerEntries ProductLedgerEntry[] @relation("ProductLedgerFromPurchase")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
+  transactions Transaction[]
+  transport PurchaseTransport[]
+  
+  @@index([agencyId])
+  @@index([branchId])
+  @@index([status])
+}
+
+model PurchaseTransport {
+  id String @id @default(uuid())
+
+  purchaseId String @unique
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  /** Purchase Order */
+
+  purchaseOrderNo String?
+
+  purchaseOrderDate DateTime?
+
+  /** Delivery */
+
+  termsOfDelivery String?
+
+  receiptNoteNo String?
+
+  receiptNoteDate DateTime?
+
+  /** Transport */
+
+  lrNo String?
+
+  dispatchThrough String?
+
+  destination String?
+
+  vehicleOrFlightNo String?
+
+  /** Import */
+
+  portOfLoading String?
+
+  portOfDischarge String?
+
+  countryTo String?
+
+  billOfEntryNo String?
+
+  billOfEntryDate DateTime?
+
+  portCode String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([purchaseOrderNo])
+
+  @@index([lrNo])
+
+  @@index([billOfEntryNo])
+}
+
+model PurchaseItem {
+  id String @id @default(uuid())
+
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  batchId String?
+  batch   InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  batchNo String
+  quantity Decimal @db.Decimal(18, 3)
+  unit ProductUnit
+
+  purchasePrice Decimal @db.Decimal(18, 2)
+
+  taxableAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  gstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  gstAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  createdAt DateTime @default(now())
+}
+
+
+/** Sale Model Master **/
+
+model Sale {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  invoiceNo String @unique
+
+  /** Invoice Meta Fields **/
+  invoiceDate DateTime @default(now())
+
+  voucherType VoucherType?
+  otherReference String?
+  roundOffAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  voucherNo    String?
+
+  status   SalesStatus @default(PENDING)
+  remarks String?
+
+  subTotalAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  totalCGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalSGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalIGSTAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  grandTotal Decimal @default(0.00) @db.Decimal(18,2)
+
+  createdById  String?
+  createdBy    User?  @relation("SaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  
+  approvedById String?
+  approvedBy   User?  @relation("SaleApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  approvedAt DateTime?
+
+  items SalesItem[]
+  
+  // Product Ledger Entries (for product movement history)
+  productLedgerEntries ProductLedgerEntry[] @relation("ProductLedgerFromSale")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
+  transactions Transaction[]
+  transport SaleTransport[]
+  
+  @@index([agencyId])
+  @@index([branchId])
+  @@index([status])
+}
+
+model SaleTransport {
+  id String @id @default(uuid())
+
+  saleId String @unique
+
+  sale Sale @relation(fields:[saleId],references:[id],onDelete:Cascade)
+
+  deliveryNote String?
+
+  buyerOrderNo String?
+
+  buyerOrderDate DateTime?
+
+  termsOfDelivery String?
+
+  despatchDocNo String?
+
+  despatchDocDate DateTime?
+
+  despatchThrough String?
+
+  destination String?
+
+  vehicleOrFlightNo String?
+
+  portOfLoading String?
+
+  portOfDischarge String?
+
+  countryTo String?
+
+  shippingNo String?
+
+  shippingDate DateTime?
+
+  portCode String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerOrderNo])
+
+  @@index([despatchDocNo])
+
+  @@index([shippingNo])
+}
+
+
+model SalesItem {
+  id String @id @default(uuid())
+
+  saleId String
+  sale   Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  batchId String
+  batch   InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  quantity Decimal @db.Decimal(18, 3)
+  unit ProductUnit
+
+  sellingPrice Decimal @db.Decimal(18, 2)
+
+  taxableAmount Decimal @default(0.00) @db.Decimal(18,2)
+  gstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  cgstPercent Decimal @default(0.00) @db.Decimal(5,2)
+  sgstPercent Decimal @default(0.00) @db.Decimal(5,2)
+  igstPercent Decimal @default(0.00) @db.Decimal(5,2)
+
+  cgstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  sgstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  igstAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  gstAmount Decimal @default(0.00) @db.Decimal(18,2)
+  totalAmount Decimal @default(0.00) @db.Decimal(18,2)
+
+  createdAt DateTime @default(now())
+}
+
+
+model Inventory {
+  id     String @id @default(uuid())
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  currentStockKG Decimal @default(0.000) @db.Decimal(18, 3)
+  currentStockLTR Decimal @default(0.000) @db.Decimal(18, 3)
+
+  createdAt DateTime @default(now())
+  lastUpdated  DateTime @updatedAt
+
+  @@unique([branchId, productId])
+
+  @@index([branchId])
+  @@index([productId])
+}
+
+enum TransactionDirection {
+  INWARD
+  OUTWARD
+}
+
+enum TransactionPaymentType {
+  NORMAL
+  THIRD_PARTY
+}
+
+enum SettlementType {
+  INVOICE_TO_INVOICE
+  LUMPSUM
+}
+
+enum PaymentMode {
+  ONLINE
+  OFFLINE
+}
+
+enum PaymentType {
+  //ONLINE
+  NEFT
+  RTGS
+  BANK_DEPOSIT
+  UPI
+
+  //OFFLINE
+  CHEQUE
+  DD
+  CASH
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Transaction {
+  id   String @id @default(uuid())
+
+  transactionNo String @unique
+
+  status  TransactionStatus @default(PENDING)
+
+  settlementType SettlementType @default(INVOICE_TO_INVOICE)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  direction TransactionDirection
+
+  suspenseAccount Boolean @default(false)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+
+  thirdPartyAgencyId String?
+  thirdPartyAgency   Agency? @relation("ThirdPartyAgencyTransactions", fields: [thirdPartyAgencyId], references: [id], onDelete: SetNull)
+
+  purchaseId String?
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  saleId String?
+  sale   Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  amount Decimal @db.Decimal(18, 2)
+
+  paymentMode PaymentMode?
+  paymentType TransactionPaymentType?
+
+  paymentThrough PaymentType?
+
+  transactionRefNo String? // NEFT/RTGS/UPI/BANK_DEPOSIT
+
+  referenceNo String? // CHEQUE/DD number
+
+  remarks String?
+
+  createdById  String?
+  createdBy    User?  @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  bankAccountId String?
+
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  allocations TransactionAllocation[]
+  voucher Voucher[]
+}
+
+enum AllocationSource {
+  SALE
+  PURCHASE
+}
+
+model TransactionAllocation {
+  id     String @id @default(uuid())
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  sourceType AllocationSource
+
+  saleId String?
+  sale   Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  purchaseId String?
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  allocatedAmount Decimal @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+}
+
+enum LedgerType {
+  CUSTOMER
+  VENDOR
+  BANK
+  CASH
+  GST
+  SALES
+  PURCHASE
+  PRODUCT
+  SUSPENSE
+  ROUND_OFF
+}
+
+enum LedgerNature {
+  DEBIT
+  CREDIT
+}
+
+model LedgerGroup {
+  id String @id @default(uuid())
+
+  code String @unique
+  name String
+
+  parentId String?
+  parent LedgerGroup? @relation("LedgerGroupTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children LedgerGroup[] @relation("LedgerGroupTree")
+
+  nature LedgerNature
+
+  ledgers Ledger[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([nature])
+}
+
+model Ledger {
+  id  String @id @default(uuid())
+
+  code String @unique
+  name String
+  category LedgerType
+
+  groupId String
+  group LedgerGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+
+  nature LedgerNature
+
+  gstApplicable Boolean @default(false)
+  gstin String?
+  pan String?
+
+  creditLimit Decimal? @db.Decimal(18, 2)
+
+  /**
+    OPTIONAL Context
+  **/
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  openingBalance Decimal @default(0.00) @db.Decimal(18, 2)
+
+  /** Only for performance caching **/
+  currentBalance Decimal @default(0.00) @db.Decimal(18, 2)
+
+  isActive Boolean @default(true)
+
+  createdById String?
+  createdBy User? @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries LedgerEntry[]
+
+  @@index([agencyId])
+  @@index([branchId])
+  @@index([productId])
+  @@index([category])
+  @@index([groupId])
+  @@index([nature])
+  @@index([gstin])
+  @@index([pan])
+  @@index([createdById])
+}
+
+
+enum VoucherType {
+  SALE
+  PURCHASE
+  RCM_PURCHASE
+  RECEIPT
+  PAYMENT
+
+  JOURNAL
+  CONTRA
+
+  OPENING_BALANCE
+}
+
+model Voucher {
+  id   String @id @default(uuid())
+
+  voucherNo String @unique
+
+  voucherType VoucherType
+
+  sourceId String @default(uuid())
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  narration String?
+
+  totalDebit Decimal @default(0.00) @db.Decimal(18, 2)
+  totalCredit Decimal @default(0.00) @db.Decimal(18, 2)
+
+  voucherDate DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  entries LedgerEntry[]
+  transaction Transaction[]
+
+  @@index([voucherType])
+  @@index([sourceId])
+  @@index([branchId])
+  @@unique([voucherType, sourceId])
+}
+
+enum EntryType {
+  DEBIT
+  CREDIT
+}
+
+model LedgerEntry {
+  id   String @id @default(uuid())
+
+  voucherId String
+  voucher   Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+
+  ledgerId String
+  ledger   Ledger @relation(fields: [ledgerId], references: [id], onDelete: Cascade)
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  entryType EntryType
+
+  amount Decimal @db.Decimal(18, 2)
+
+  narration String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ledgerId])
+  @@index([voucherId])
+
+  @@index([branchId])
+  @@index([productId])
+}
+
+
+enum ImportStatus {
+  PENDING
+  APPROVED
+  MERGED
+  FAILED
+}
+
+model ImportMetadata {
+
+  id String @id @default(uuid())
+
+  module String
+
+  entityId String
+
+  status ImportStatus
+
+  errorReason String?
+
+  errorMessage String?
+
+  retryCount Int @default(0)
+
+  mergedAt DateTime?
+
+  mergedById String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([module])
+  @@index([entityId])
+  @@index([status])
+
+}

@@ -41,7 +41,15 @@ router.use(authMiddleware);
  *                 type: string
  *               category:
  *                 type: string
+ *               productType:
+ *                 type: string
+ *                 enum:
+ *                  - PURCHASED
+ *                  - MANUFACTURED
+ *                  - BOTH
  *               description:
+ *                 type: string
+ *               disclaimer:
  *                 type: string
  *               hsnNo:
  *                 type: string
@@ -52,17 +60,48 @@ router.use(authMiddleware);
  *                 enum:
  *                   - KG
  *                   - LTR
+ *                   - MT
  *               operationalUnit:
  *                 type: string
  *                 enum:
  *                   - KG
  *                   - LTR
+ *                   - MT
  *               density:
  *                 type: number
  *               minimumStockKG:
  *                 type: number
  *               sellPricePerUnit:
  *                 type: number
+ *               recipe:
+ *                 type: object
+ *                 description: Required when productType is MANUFACTURED or BOTH
+ *                 properties:
+ *                   outputQuantity:
+ *                     type: number
+ *                   outputUnit:
+ *                     type: string
+ *                     enum:
+ *                       - KG
+ *                       - LTR
+ *                       - MT
+ *                   remarks:
+ *                     type: string
+ *                   items:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         productId:
+ *                           type: string
+ *                         quantity:
+ *                           type: number
+ *                         unit:
+ *                           type: string
+ *                           enum:
+ *                             - KG
+ *                             - LTR
+ *                             - MT
  *     responses:
  *       201:
  *         description: Product created successfully

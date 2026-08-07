@@ -2,6 +2,7 @@ import { AgencyType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { getGSTStateCode, isValidIndianPincode } from "../../core/utils/loc.utils";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 export type AgencyBranchInput = {
     branchId: string;
@@ -174,6 +175,21 @@ export class AgencyService {
                 });
             }
 
+            const ledgerBranchIds = payload.branches?.length
+                ? payload.branches.map((branch) => branch.branchId)
+                : actor.branchId
+                    ? [actor.branchId]
+                    : [];
+
+            if (ledgerBranchIds.length > 0) {
+                await LedgerService.ensureAgencyLedgers(
+                    tx,
+                    createdAgency.id,
+                    ledgerBranchIds,
+                    createdAgency.type
+                );
+            }
+
             return createdAgency;
         });
         return agency;
@@ -187,6 +203,7 @@ export class AgencyService {
             branch?: string;
             page?: number;
             limit?: number;
+            export?: boolean;
         }
     ) {
         if(!actor?.id) {
@@ -197,7 +214,7 @@ export class AgencyService {
         const branch = query?.branch?.trim();
         const type = query?.type;
         const page = query?.page || 1;
-        const limit = query?.limit || 10;
+        const limit = query?.limit || 100;
         const skip = (page - 1) * limit;
 
         const where = {
@@ -250,6 +267,7 @@ export class AgencyService {
                     branches: {
                         select: {
                             id: true,
+                            branchId: true,
                             openingBalance: true,
                             isActive: true,
                             branch: {
@@ -267,17 +285,19 @@ export class AgencyService {
                     }
                 },
                 orderBy: { createdAt: "desc" },
-                skip,
-                take: limit,
+                ...(query?.export ? {} : { skip, take: limit })
             }),
             prisma.agency.count({ where })
         ]);
+
+        console.log("Total Agencies:", agencies);
 
         return {
             data: agencies.map((agency) => ({
                 ...agency,
                 branches: agency.branches.map((ab) => ({
                     agencyBranchId: ab.id,
+                    branchId: ab.branchId,
                     openingBalance: ab.openingBalance,
                     isActive: ab.isActive,
                     branch: ab.branch,
@@ -519,6 +539,35 @@ export class AgencyService {
                     })),
                     skipDuplicates: true,
                 });
+            }
+
+            const existingBranches = payload.branches
+                ? []
+                : await tx.agencyBranch.findMany({
+                    where: {
+                        agencyId,
+                        isActive: true
+                    },
+                    select: {
+                        branchId: true
+                    }
+                });
+
+            const ledgerBranchIds = payload.branches?.length
+                ? payload.branches.map((branch) => branch.branchId)
+                : existingBranches.length > 0
+                    ? existingBranches.map((branch) => branch.branchId)
+                    : actor.branchId
+                        ? [actor.branchId]
+                        : [];
+
+            if (ledgerBranchIds.length > 0) {
+                await LedgerService.ensureAgencyLedgers(
+                    tx,
+                    agencyId,
+                    ledgerBranchIds,
+                    agency.type
+                );
             }
 
             return agency;

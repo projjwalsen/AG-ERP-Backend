@@ -1,0 +1,2 @@
+-- This migration was previously empty and has been fixed
+-- The actual schema changes are tracked in subsequent migrations

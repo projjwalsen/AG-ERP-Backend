@@ -15,7 +15,7 @@ const adapter = new PrismaPg(pool);// Using Prisma's PostgreSQL adapter with con
 export const prisma = new PrismaClient({
   adapter,
   transactionOptions: {
-    maxWait: 16000,// Adjusted to 16 seconds to accommodate longer transactions
-    timeout: 20000, // Adjusted to 20 seconds to prevent premature transaction failures
+    maxWait: 80000,// Adjusted to 16 seconds to accommodate longer transactions
+    timeout: 90000, // Adjusted to 20 seconds to prevent premature transaction failures
   },
 });

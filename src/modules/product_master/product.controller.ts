@@ -1,19 +1,23 @@
 import { Request, Response, NextFunction } from "express";
 import { ProductService } from "./product.service";
+import { ExcelService } from "../../core/utils/export.service";
+import { productColumns } from "../exports/products.export";
 
 export const createProduct = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
         const {
-            name, sku, category, description,
-            hsnNo, applicableGST, baseUnit, density, 
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            name, sku, category, description, disclaimer,
+            hsnNo, applicableGST, baseUnit, density, productType,
+            operationalUnit, minimumStockKG, openingStockKG, sellPricePerUnit,
+            recipe
         } = req.body;
 
         const product = await ProductService.createProduct(actor, {
-            name, sku, category, description,
-            hsnNo, applicableGST, baseUnit, density, 
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            name, sku, category, description, disclaimer,
+            hsnNo, applicableGST, baseUnit, density, productType,
+            operationalUnit, minimumStockKG, openingStockKG, sellPricePerUnit,
+            recipe
         });
 
         return res.status(201).json({
@@ -32,13 +36,37 @@ export const getAllProducts = async (req: Request, res: Response, next: NextFunc
         const { category, search } = (req as any).query;
         const page     = parseInt(req.query.page as string)     || 1;
         const limit    = parseInt(req.query.limit as string)    || 10;
+        const isExport = (req.query.export as string) === "true" || false;
 
         const result = await ProductService.getAllProducts(actor, { 
             search: search as string ,
             category: category as string,
             page,
-            limit
+            limit,
+            export: isExport
         });
+
+        if(isExport) {
+             return await ExcelService.export(
+                (res as any),
+                {
+                    filename: `products_${Date.now()}`,
+
+                    sheetName: "Products",
+
+                    title: "PRODUCTS",
+
+                    columns: productColumns,
+
+                    data: result.data,
+
+                    filters: {
+                        search,
+                        category
+                    }
+                }
+            );
+        }
 
         return res.status(200).json({
             success: true,
@@ -76,15 +104,15 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
         const { productId } = (req as any).params;
 
         const {
-            name, sku, category, description,
-            hsnNo, applicableGST, baseUnit, density, 
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            name, sku, category, description, disclaimer,
+            hsnNo, applicableGST, baseUnit, density, productType,
+            operationalUnit, minimumStockKG, sellPricePerUnit, openingStockKG
         } = req.body;
 
         const product = await ProductService.updateProduct(actor, productId, {
-            name, sku, category, description,
-            hsnNo, applicableGST, baseUnit, density, 
-            operationalUnit, minimumStockKG, sellPricePerUnit
+            name, sku, category, description, disclaimer,
+            hsnNo, applicableGST, baseUnit, density, productType,
+            operationalUnit, minimumStockKG, sellPricePerUnit, openingStockKG
         });
 
         return res.status(200).json({

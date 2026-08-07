@@ -1,6 +1,7 @@
 import { Prisma, ProductUnit } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
+import { getAvailableQuantityForUnit, getStockQuantities } from "../../core/utils/density.utils";
 
 type AddStockPayload = {
     branchId: string;
@@ -12,6 +13,7 @@ type AddStockPayload = {
     unit: ProductUnit;
 
     purchasePrice: number;
+    transactionDate?:Date;
 };
 
 type RemoveStockPayload = {
@@ -22,9 +24,51 @@ type RemoveStockPayload = {
 
     quantity: number;
     unit: ProductUnit;
+    transactionDate?:Date;
 };
 
 export class InventoryService {
+
+    static async allocateFIFO(
+        tx: Prisma.TransactionClient | typeof prisma,
+        payload: { branchId: string; productId: string; quantity: number; unit: ProductUnit }
+    ) {
+        const batches = await tx.inventoryBatch.findMany({
+            where: {
+                branchId: payload.branchId,
+                productId: payload.productId,
+                isActive: true,
+                ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT
+                    ? { availableQtyKG: { gt: 0 } }
+                    : { availableQtyLTR: { gt: 0 } })
+            },
+            orderBy: [{ createdAt: "asc" }, { id: "asc" }]
+        });
+
+        let remaining = payload.quantity;
+        const allocations: Array<{ batch: typeof batches[number]; quantity: number }> = [];
+
+        for (const batch of batches) {
+            if (remaining <= 0) break;
+            const available = getAvailableQuantityForUnit(
+                batch.availableQtyKG,
+                batch.availableQtyLTR,
+                payload.unit
+            );
+            const quantity = Math.min(available, remaining);
+            if (quantity > 0) {
+                allocations.push({ batch, quantity });
+                remaining = Number((remaining - quantity).toFixed(3));
+            }
+        }
+
+        return {
+            allocations,
+            required: payload.quantity,
+            available: Number((payload.quantity - remaining).toFixed(3)),
+            shortage: remaining
+        };
+    }
 
     static async addStock(
         tx: Prisma.TransactionClient | typeof prisma, 
@@ -65,62 +109,68 @@ export class InventoryService {
                 }
             });
 
-            // Quantity conversion
-        let quantityKG = 0;
-        let quantityLTR = 0;
+            const density = Number(product.density ?? 1);
+            const { quantityKG, quantityLTR } = getStockQuantities(
+                payload.quantity,
+                payload.unit,
+                density
+            );
 
-        if(payload.unit === ProductUnit.KG) {
-            quantityKG = payload.quantity;
+        /** Create / Update Batch */
+        if (!inventoryBatch) {
 
-            quantityLTR = product.density ? payload.quantity / Number(product.density) : 0;
+            inventoryBatch = await tx.inventoryBatch.create({
+                data: {
+                    branchId: payload.branchId,
+                    productId: payload.productId,
+                    batchNo: payload.batchNo,
+                    purchasePrice: payload.purchasePrice,
+
+                    availableQtyKG: quantityKG,
+                    availableQtyLTR: quantityLTR,
+                    createdAt: payload.transactionDate ?? new Date(),
+
+                    isActive: true
+                }
+            });
+
         } else {
-            quantityLTR = payload.quantity;
 
-            quantityKG = product.density ? payload.quantity * Number(product.density) : 0;
-        }
-
-        /** Create new Batch */
-        if(!inventoryBatch) {
-            inventoryBatch = 
-                await tx.inventoryBatch.create({
-                    data: {
-                        branchId: payload.branchId,
-                        productId: payload.productId,
-                        batchNo: payload.batchNo,
-                        purchasePrice: payload.purchasePrice,
-                        availableQtyKG: quantityKG,
-                        availableQtyLTR: quantityLTR,
-                        isActive: true
-                    }
-                })
-        } else {
-            /** Update existing Batch */
-            inventoryBatch = 
-                await tx.inventoryBatch.update({
-                    where: {
-                        id: inventoryBatch.id
+            inventoryBatch = await tx.inventoryBatch.update({
+                where: {
+                    id: inventoryBatch.id
+                },
+                data: {
+                    availableQtyKG: {
+                        increment: quantityKG
                     },
-                    data: {
-                        availableQtyKG: {
-                            increment: quantityKG
-                        },
-                        availableQtyLTR: {
-                            increment: quantityLTR
-                        },
-                        purchasePrice: payload.purchasePrice,
-                        isActive: true
-                    }
-                })
+                    availableQtyLTR: {
+                        increment: quantityLTR
+                    },
+                    purchasePrice: payload.purchasePrice,
+                    isActive: true
+                }
+            });
+
         }
 
-        /** Update inventory Summary */
+        /** Safety check */
+        if (!inventoryBatch) {
+            throw new ApiError(
+                `Failed to create inventory batch for Product ${payload.productId}`,
+                500
+            );
+        }
+
+        /** Update Inventory Summary */
         await this.updateInventorySummary(tx, {
             branchId: payload.branchId,
             productId: payload.productId,
-            quantityKG: quantityKG,
-            quantityLTR: quantityLTR,
+            quantityKG,
+            quantityLTR,
             operation: "ADD"
-        })
+        });
+
         return inventoryBatch;
     }
 
@@ -159,28 +209,43 @@ export class InventoryService {
             throw new ApiError("Inventory Batch not found", 404);
         }
 
-        // Quantity conversion
-        let quantityKG = 0;
-        let quantityLTR = 0;
-
         const settings = await tx.setting.findFirst();
 
-        const allowNegativeStock = settings?.allowNegativeInventory ?? false;
+        const allowNegativeStock =
+            settings?.allowNegativeInventory ?? false;
 
-        if(payload.unit === ProductUnit.KG) {
-            quantityKG = payload.quantity;
-            quantityLTR = product.density ? Number((payload.quantity / Number(product.density)).toFixed(3)) : 0;
+        const density =
+            Number(product.density ?? 1);
+        const { quantityKG, quantityLTR } = getStockQuantities(
+            payload.quantity,
+            payload.unit,
+            density
+        );
 
-            if(!allowNegativeStock && Number(inventoryBatch.availableQtyKG) < quantityKG) {
-                throw new ApiError("Insufficient stock in KG. Allow negativeInventory in settings..", 400);
+        if (payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT) {
+
+            if (
+                !allowNegativeStock &&
+                Number(inventoryBatch.availableQtyKG) < quantityKG
+            ) {
+                throw new ApiError(
+                    `Insufficient stock in ${payload.unit}. Allow negativeInventory in settings.`,
+                    400
+                );
             }
+
         } else {
-            quantityLTR = payload.quantity;
-            quantityKG = product.density ? Number((payload.quantity * Number(product.density)).toFixed(3)) : 0;
 
-            if(!allowNegativeStock && Number(inventoryBatch.availableQtyLTR) < quantityLTR) {
-                throw new ApiError("Insufficient stock in LTR. Allow negativeInventory in settings..", 400);
+            if (
+                !allowNegativeStock &&
+                Number(inventoryBatch.availableQtyLTR) < quantityLTR
+            ) {
+                throw new ApiError(
+                    "Insufficient stock in LTR. Allow negativeInventory in settings.",
+                    400
+                );
             }
+
         }
 
         /** Update Batch */
@@ -202,7 +267,7 @@ export class InventoryService {
             const updatedResult = await tx.inventoryBatch.updateMany({
                 where: {
                     id: inventoryBatch.id,
-                    ...(payload.unit === ProductUnit.KG
+                    ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT
                         ? {
                             availableQtyKG: {
                                 gte: quantityKG
@@ -276,122 +341,184 @@ export class InventoryService {
         }
     ) {
 
-        const existingInventory = await tx.inventory.findUnique({
-            where: {
-                branchId_productId: {
-                    branchId: payload.branchId,
-                    productId: payload.productId
-                }
-            }
-        });
-
         const settings = await tx.setting.findFirst();
 
-        const allowNegativeStock = settings?.allowNegativeInventory ?? false;
-        
-        if (!existingInventory) {
+        const allowNegativeStock =
+            settings?.allowNegativeInventory ?? false;
 
-            if (payload.operation === "REMOVE") {
+        let inventory =
+            await tx.inventory.findUnique({
+                where: {
+                    branchId_productId: {
+                        branchId: payload.branchId,
+                        productId: payload.productId
+                    }
+                }
+            });
 
-                if (!allowNegativeStock) {
-                    throw new ApiError(
-                        "Inventory record not found",
-                        400
-                    );
+        /**
+         * First stock for this product
+         */
+        if (!inventory) {
+
+            try {
+
+                inventory = await tx.inventory.create({
+
+                    data: {
+
+                        branchId: payload.branchId,
+
+                        productId: payload.productId,
+
+                        currentStockKG:
+                            payload.operation === "ADD"
+                                ? payload.quantityKG
+                                : -payload.quantityKG,
+
+                        currentStockLTR:
+                            payload.operation === "ADD"
+                                ? payload.quantityLTR
+                                : -payload.quantityLTR
+
+                    }
+
+                });
+
+                return inventory;
+
+            } catch (err: any) {
+
+                if (
+                    err.code === "P2002"
+                ) {
+
+                    inventory =
+                        await tx.inventory.findUnique({
+
+                            where: {
+
+                                branchId_productId: {
+
+                                    branchId: payload.branchId,
+
+                                    productId: payload.productId
+
+                                }
+
+                            }
+
+                        });
+
+                } else {
+
+                    throw err;
+
                 }
 
-                return await tx.inventory.create({
-                    data: {
-                        branchId: payload.branchId,
-                        productId: payload.productId,
-                        currentStockKG: -payload.quantityKG,
-                        currentStockLTR: -payload.quantityLTR
-                    }
-                });
             }
 
-            return await tx.inventory.create({
-                data: {
-                    branchId: payload.branchId,
-                    productId: payload.productId,
-                    currentStockKG: payload.quantityKG,
-                    currentStockLTR: payload.quantityLTR
-                }
-            });
         }
 
+        /**
+         * REMOVE
+         */
         if (payload.operation === "REMOVE") {
-            console.log("Inventory Summary Before Remove", {
-                inventoryId: existingInventory.id,
-                currentStockKG: Number(existingInventory.currentStockKG),
-                currentStockLTR: Number(existingInventory.currentStockLTR),
-                removeKG: payload.quantityKG,
-                removeLTR: payload.quantityLTR,
-            });
-            if(allowNegativeStock) {
-                await tx.inventory.update({
+
+            if (allowNegativeStock) {
+
+                return await tx.inventory.update({
+
                     where: {
-                        id: existingInventory.id
+                        id: inventory.id
                     },
+
                     data: {
+
                         currentStockKG: {
                             decrement: payload.quantityKG
                         },
+
                         currentStockLTR: {
                             decrement: payload.quantityLTR
                         }
+
                     }
+
                 });
 
-                return;
             }
-            // Else Negative stock not allowed - perform check before update
-            const updated = await tx.inventory.updateMany({
-                where: {
-                    id: existingInventory.id,
-                    ...(payload.quantityKG > 0 && {
-                        currentStockKG: {
-                            gte: payload.quantityKG
-                        }
-                    }),
 
-                    ...(payload.quantityLTR > 0 && {
-                        currentStockLTR: {
-                            gte: payload.quantityLTR
-                        }
-                    })
-                },
-                data: {
-                    currentStockKG: {
-                        decrement: payload.quantityKG
+            const updated =
+                await tx.inventory.updateMany({
+
+                    where: {
+
+                        id: inventory.id,
+
+                        ...(payload.quantityKG > 0 && {
+                            currentStockKG: {
+                                gte: payload.quantityKG
+                            }
+                        }),
+
+                        ...(payload.quantityLTR > 0 && {
+                            currentStockLTR: {
+                                gte: payload.quantityLTR
+                            }
+                        })
+
                     },
-                    currentStockLTR: {
-                        decrement: payload.quantityLTR
-                    }
-                }
-            });
 
-            if(updated.count === 0) {
-                throw new ApiError("Stock may have been modified by another transaction | NegativeInventory not allowed in settings", 409);
+                    data: {
+
+                        currentStockKG: {
+                            decrement: payload.quantityKG
+                        },
+
+                        currentStockLTR: {
+                            decrement: payload.quantityLTR
+                        }
+
+                    }
+
+                });
+
+            if (!updated.count) {
+
+                throw new ApiError(
+                    "Stock may have been modified by another transaction | NegativeInventory not allowed in settings",
+                    409
+                );
+
             }
 
             return;
         }
 
-        /** Update Inventory */
+        /**
+         * ADD
+         */
         return await tx.inventory.update({
+
             where: {
-                id: existingInventory.id
+                id: inventory.id
             },
+
             data: {
+
                 currentStockKG: {
                     increment: payload.quantityKG
                 },
+
                 currentStockLTR: {
                     increment: payload.quantityLTR
                 }
+
             }
+
         });
+
     }
 
     /**
@@ -486,6 +613,7 @@ export class InventoryService {
             productId?: string;
             search?: string;
             isActive?: boolean;
+            export?: boolean;
         }
     ){
         if(!actor?.id){
@@ -546,8 +674,12 @@ export class InventoryService {
                 orderBy: {
                     createdAt: "desc"
                 },
-                skip,
-                take: limit
+                ...(query?.export
+                    ? {}
+                    : {
+                        skip,
+                        take: limit
+                })
             }),
             prisma.inventoryBatch.count({ where })
         ]);
@@ -590,6 +722,7 @@ export class InventoryService {
             limit?: number;
             productId?: string;
             search?: string;
+            export?: boolean;
         } 
     ) {
         if(!actor?.id){
@@ -631,7 +764,13 @@ export class InventoryService {
                 take: limit,
                 orderBy: {
                     createdAt: "desc"
-                }
+                },
+                ...(query?.export
+                        ? {}
+                        : {
+                            skip,
+                            take: limit
+                    }),
             }),
             prisma.product.count({
                 where: productWhere
@@ -706,7 +845,7 @@ export class InventoryService {
 
     static async getProductBatchHistory(
         actor: any,
-        productId: string
+        productId: string,
     ){
         if(!actor?.id){
             throw new ApiError("Unauthorized", 401);

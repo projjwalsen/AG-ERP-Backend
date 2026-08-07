@@ -6,6 +6,82 @@ const router = Router();
 
 router.use(authMiddleware);
 
+
+/**
+ * @openapi
+ * /api/transactions/invoices:
+ *   get:
+ *     summary: Get Outstanding Invoices for Invoice Settlement
+ *     description: |
+ *       Returns all outstanding invoices for the selected agency and branch.
+ *       Used by the Invoice-to-Invoice settlement flow to populate the invoice selection dropdown.
+ *
+ *       - **INWARD** → Returns approved Sales invoices with pending outstanding.
+ *       - **OUTWARD** → Returns approved Purchase invoices with pending outstanding.
+ *
+ *     tags:
+ *       - Transactions
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Branch ID (required only for users having ALL branch access)
+ *
+ *       - in: query
+ *         name: agencyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Agency whose invoices should be fetched
+ *
+ *       - in: query
+ *         name: direction
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - INWARD
+ *             - OUTWARD
+ *         description: |
+ *           INWARD returns Sales invoices.
+ *           OUTWARD returns Purchase invoices.
+ *
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Search by invoice number
+ *
+ *     responses:
+ *       200:
+ *         description: Outstanding invoices fetched successfully
+ *
+ *       400:
+ *         description: Invalid request
+ *
+ *       401:
+ *         description: Unauthorized
+ *
+ *       404:
+ *         description: Agency or Branch not found
+ */
+
+router.get(
+    "/invoices",
+    TransactionController.getOutstandingInvoices
+);
+
+
+
+
+
 /**
  * @openapi
  * /api/transactions/create:
@@ -25,11 +101,13 @@ router.use(authMiddleware);
  *               - branchId
  *               - direction
  *               - suspense
- *               - paymentType
+ *               - settlementType
  *               - amount
  *               - paymentMode
  *             properties:
  *               branchId:
+ *                 type: string
+ *               bankAccountId:
  *                 type: string
  *               direction:
  *                 type: string
@@ -40,11 +118,11 @@ router.use(authMiddleware);
  *                 type: boolean
  *               agencyId:
  *                 type: string
- *               paymentType:
+ *               settlementType:
  *                 type: string
  *                 enum:
- *                   - NORMAL
- *                   - THIRD_PARTY
+ *                   - INVOICE_TO_INVOICE
+ *                   - LUMPSUM
  *               paymentThrough:
  *                 type: string
  *                 enum:
@@ -137,12 +215,12 @@ router.post(
  *             - OUTWARD
  *
  *       - in: query
- *         name: paymentType
+ *         name: settlementType
  *         schema:
  *           type: string
  *           enum:
- *             - NORMAL
- *             - THIRD_PARTY
+ *             - INVOICE_TO_INVOICE
+ *             - LUMPSUM
  *
  *       - in: query
  *         name: suspenseAccount
@@ -247,6 +325,9 @@ router.get(
  *             properties:
  *               branchId:
  *                 type: string
+ *               bankAccountId:
+ *                 type: string
+ *                 example: 1548c22a-8751-4de9-8161-df6baad75d95
  *               direction:
  *                 type: string
  *                 enum:
@@ -256,15 +337,14 @@ router.get(
  *                 type: boolean
  *               agencyId:
  *                 type: string
- *               paymentType:
+ *               settlementType:
  *                 type: string
  *                 enum:
- *                   - NORMAL
- *                   - THIRD_PARTY
+ *                   - INVOICE_TO_INVOICE
+ *                   - LUMPSUM
  *               paymentThrough:
  *                 type: string
  *                 enum:
- *                  - CASH
  *                  - CHEQUE
  *                  - DD
  *                  - NEFT
@@ -276,8 +356,6 @@ router.get(
  *                 type: string
  *               amount:
  *                 type: number
- *               paymentMode:
- *                 type: string
  *               transactionRefNo:
  *                 type: string
  *                 description: NEFT/RTGS/UPI/BANK_DEPOSIT reference number
@@ -360,6 +438,84 @@ router.patch(
     "/:transactionId/reject",
     checkPermission("TRANSACTION:APPROVE"),
     TransactionController.rejectTransaction
+);
+
+
+
+/**
+ * @openapi
+ * /api/transactions/preview-fifo:
+ *   post:
+ *     summary: Preview FIFO Invoice Allocation
+ *     description: |
+ *       Generates a FIFO allocation preview for a Lumpsum Settlement without creating any transaction.
+ *
+ *       The API simulates exactly how invoices will be settled on transaction approval.
+ *
+ *       - Oldest invoices are settled first (FIFO)
+ *       - Fully settled invoices are returned
+ *       - Partially settled invoice is returned
+ *       - Remaining outstanding is calculated
+ *       - Preview is generated for both the Primary Agency and Third Party Agency
+ *
+ *       This endpoint is intended to be called whenever the user enters a lump sum amount.
+ *
+ *     tags:
+ *       - Transactions
+ *
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - primaryAgencyId
+ *               - thirdPartyAgencyId
+ *               - branchId
+ *               - direction
+ *               - amount
+ *             properties:
+ *               primaryAgencyId:
+ *                 type: string
+ *                 example: "agency_primary_id"
+ *
+ *               thirdPartyAgencyId:
+ *                 type: string
+ *                 example: "agency_third_party_id"
+ *
+ *               branchId:
+ *                 type: string
+ *                 example: "branch_id"
+ *
+ *               direction:
+ *                 type: string
+ *                 enum:
+ *                   - INWARD
+ *                   - OUTWARD
+ *                 example: INWARD
+ *
+ *               amount:
+ *                 type: number
+ *                 example: 10000
+ *
+ *     responses:
+ *       200:
+ *         description: FIFO allocation preview generated successfully
+ *
+ *       400:
+ *         description: Invalid request or insufficient outstanding
+ *
+ *       401:
+ *         description: Unauthorized
+ */
+
+router.post(
+    "/preview-fifo",
+    TransactionController.previewFIFOAllocation
 );
 
 export default router;

@@ -128,7 +128,7 @@ export class BranchService {
         return branch;
     }
 
-    static async getAllBranches(actor: any, page: number = 1, limit: number = 10) {
+    static async getAllBranches(actor: any, page: number = 1, limit: number = 10, exp?: boolean) {
         if(!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
@@ -161,8 +161,10 @@ export class BranchService {
                 orderBy: {
                     createdAt: "desc"
                 },
-                skip,
-                take: limit
+                ...(exp ? {} : {
+                    skip,
+                    take: limit
+                }),
             }),
             prisma.branch.count()
         ]);

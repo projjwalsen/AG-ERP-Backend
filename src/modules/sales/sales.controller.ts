@@ -7,35 +7,59 @@ export const createSale = async (req: Request, res: Response, next: NextFunction
         const {
             agencyId,
             branchId,
-            remarks,
-            deliveryNote,
-            suppliersRef,
-            otherReference,
-            buyerOrderNo,
-            buyerOrderDate,
-            despatchDocNo,
-            despatchDocDate,
-            despatchThrough,
-            destination,
+
+            invoiceNo,
             invoiceDate,
+
+            remarks,
+
+            voucherType,
+
+            otherReference,
+
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
+
+            roundOffAmount,
+
+            transport,
+
             items
         } = req.body;
 
         const sale = await SalesService.createSale(actor, {
             agencyId,
+
             branchId,
-            remarks,
-            deliveryNote,
-            suppliersRef,
-            otherReference,
-            buyerOrderNo,
-            buyerOrderDate,
-            despatchDocNo,
-            despatchDocDate,
-            despatchThrough,
-            destination,
+
+            invoiceNo,
+
             invoiceDate,
-            items
+
+            remarks,
+
+            voucherType,
+
+            otherReference,
+
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
+
+            roundOffAmount,
+
+            transport,
+
+        items
         });
 
         return res.status(201).json({
@@ -137,32 +161,59 @@ export const updateSale = async (req: Request, res: Response, next: NextFunction
         const {
             agencyId,
             branchId,
+
+            invoiceNo,
+            invoiceDate,
+
             remarks,
-            deliveryNote,
-            suppliersRef,
+
+            voucherType,
+
             otherReference,
-            buyerOrderNo,
-            buyerOrderDate,
-            despatchDocNo,
-            despatchDocDate,
-            despatchThrough,
-            destination,
+
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
+
+            roundOffAmount,
+
+            transport,
+
             items
         } = req.body;
 
+
         const updatedSale = await SalesService.updateSale(actor, saleId, {
             agencyId,
+
             branchId,
+
+            invoiceNo,
+
+            invoiceDate,
+
             remarks,
-            deliveryNote,
-            suppliersRef,
+
+            voucherType,
+
             otherReference,
-            buyerOrderNo,
-            buyerOrderDate,
-            despatchDocNo,
-            despatchDocDate,
-            despatchThrough,
-            destination,
+
+            irn,
+            ackNo,
+            ackDate,
+            qrCodeImage,
+            modeOfPayment,
+            referenceNo,
+            referenceDate,
+
+            roundOffAmount,
+
+            transport,
+
             items
         });
 

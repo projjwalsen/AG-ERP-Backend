@@ -6,6 +6,9 @@ import { InventoryService } from "../inventory/inventory.service";
 import { SalesToInvMapper } from "../../core/utils/saleToInvMapper";
 import { InvoiceRenderer } from "../../core/utils/invoiceRenderer";
 import { randomUUID } from "crypto";
+import { ProductLedgerService } from "../accounting/productLedger/productLedger.service";
+import { LedgerService } from "../accounting/ledger/ledger.service";
+import { buildSaleNarration } from "../../core/utils/narration";
 
 type SalesItemPayload = {
     productId: string;
@@ -14,31 +17,97 @@ type SalesItemPayload = {
     quantity: number;
     unit: ProductUnit;
 
-    unitPrice?: number; // Optional, will auto fetch from product if not provided
+    unitPrice?: number;
+
+    taxableAmount?: number;
+
+    gstPercent?: number;
+
+    cgstAmount?: number;
+    sgstAmount?: number;
+    igstAmount?: number;
+
+    gstAmount?: number;
+
+    totalAmount?: number;
 }
 
-type CreateSalesPayload = {
-    agencyId: string;
-    branchId: string;
-    remarks?: string;
+type SaleTransportPayload = {
 
-    /** Invoice Metqadata */
-    invoiceDate?: string;
+    /** Delivery */
+
     deliveryNote?: string;
 
-    suppliersRef?: string;
-    otherReference?: string;
-
     buyerOrderNo?: string;
+
     buyerOrderDate?: string;
 
+    termsOfDelivery?: string;
+
+    /** Dispatch */
+
     despatchDocNo?: string;
+
     despatchDocDate?: string;
 
     despatchThrough?: string;
+
     destination?: string;
 
-    items: SalesItemPayload[];
+    vehicleOrFlightNo?: string;
+
+    billOfLadingNo?: string;
+
+    /** Export */
+
+    portOfLoading?: string;
+
+    portOfDischarge?: string;
+
+    countryTo?: string;
+
+    shippingNo?: string;
+
+    shippingDate?: string;
+
+    portCode?: string;
+};
+
+type CreateSalesPayload = {
+
+    agencyId:string;
+    branchId:string;
+
+    invoiceNo?:string;
+    remarks?:string;
+    invoiceDate?:string;
+
+    voucherType?: string;
+    otherReference?:string;
+
+    irn?: string;
+    ackNo?: string;
+    ackDate?: string;
+    qrCodeImage?: string;
+    modeOfPayment?: string;
+    referenceNo?: string;
+    referenceDate?: string;
+
+    transport?: SaleTransportPayload;
+    roundOffAmount?:number;
+    voucherDate?: string;
+    approvedAt?: string;
+
+    items:SalesItemPayload[];
+    importedTotals?: {
+        subTotal: number;
+        totalCGST: number;
+        totalSGST: number;
+        totalIGST: number;
+        totalGST: number;
+        roundOff: number;
+        grandTotal: number;
+    };
 }
 
 export class SalesService {
@@ -203,10 +272,15 @@ export class SalesService {
             const setting = await prisma.setting.findFirst();
             const allowNegativeStock = setting?.allowNegativeInventory ?? false;
 
-            if(item.unit === ProductUnit.KG){
+            if(item.unit === ProductUnit.KG || item.unit === ProductUnit.MT){
+                const requiredQtyKG =
+                    item.unit === ProductUnit.MT
+                        ? Number(item.quantity) * 1000
+                        : Number(item.quantity);
+
                 if( 
                     !allowNegativeStock &&
-                    Number(batch.availableQtyKG) < Number(item.quantity)
+                    Number(batch.availableQtyKG) < requiredQtyKG
                 ) {
                     throw new ApiError(
                         `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG. Allow negative stock setting.`,
@@ -254,14 +328,32 @@ export class SalesService {
             }
 
             /** GST calculation */
-            const taxableAmount = item.quantity * (item.unitPrice ? Number(item.unitPrice) : Number(batch.product.sellPricePerUnit));
-            const gstPercent = Number(batch.product.applicableGST) || 0;
+            const systemSellingPrice =
+                item.unit === ProductUnit.LTR
+                    ? Number(
+                        batch.product.sellPriceLTR ||
+                        batch.product.sellPricePerUnit
+                    )
+                    : item.unit === ProductUnit.MT
+                    ? Number(batch.product.sellPricePerUnit) * 1000
+                    : Number(
+                        batch.product.sellPricePerUnit
+                    );
 
-            /** GST Type Check */
-            const isSameState = 
-                branch.stateCode &&
-                agency.stateCode &&
-                branch.stateCode === agency.stateCode;
+            const sellingPrice =
+                item.unitPrice
+                    ? Number(item.unitPrice)
+                    : systemSellingPrice;
+
+            const gstPercent =
+                payload.importedTotals
+                    ? Number(item.gstPercent ?? 0)
+                    : Number(batch.product.applicableGST) || 0;
+
+            const taxableAmount =
+                payload.importedTotals
+                    ? Number(item.taxableAmount ?? 0)
+                    : Number(item.quantity) * sellingPrice;
 
             let cgstPercent = 0;
             let sgstPercent = 0;
@@ -271,26 +363,77 @@ export class SalesService {
             let sgstAmount = 0;
             let igstAmount = 0;
 
-            if(isSameState) {
-                cgstPercent = gstPercent / 2;
-                sgstPercent = gstPercent / 2;
+            let gstAmount = 0;
+            let totalAmount = 0;
 
-                cgstAmount = (taxableAmount * cgstPercent) / 100;
-                sgstAmount = (taxableAmount * sgstPercent) / 100;
+            if (payload.importedTotals) {
+
+                cgstAmount = Number(item.cgstAmount ?? 0);
+
+                sgstAmount = Number(item.sgstAmount ?? 0);
+
+                igstAmount = Number(item.igstAmount ?? 0);
+
+                gstAmount = Number(item.gstAmount ?? 0);
+
+                totalAmount = Number(item.totalAmount ?? 0);
+
+                if (gstPercent > 0) {
+
+                    if (cgstAmount > 0 || sgstAmount > 0) {
+
+                        cgstPercent = gstPercent / 2;
+                        sgstPercent = gstPercent / 2;
+
+                    } else {
+
+                        igstPercent = gstPercent;
+
+                    }
+
+                }
+
             } else {
-                igstPercent = gstPercent;
-                igstAmount = (taxableAmount * igstPercent) / 100;
-            }
 
-            const gstAmount = cgstAmount + sgstAmount + igstAmount;
-            const totalAmount = taxableAmount + gstAmount;
+                if (agency.stateCode === branch.stateCode) {
+
+                    cgstPercent = gstPercent / 2;
+                    sgstPercent = gstPercent / 2;
+
+                    cgstAmount =
+                        (taxableAmount * cgstPercent) / 100;
+
+                    sgstAmount =
+                        (taxableAmount * sgstPercent) / 100;
+
+                } else {
+
+                    igstPercent = gstPercent;
+
+                    igstAmount =
+                        (taxableAmount * igstPercent) / 100;
+
+                }
+
+                gstAmount =
+                    cgstAmount +
+                    sgstAmount +
+                    igstAmount;
+
+                totalAmount =
+                    taxableAmount +
+                    gstAmount;
+            }
 
             validatedItems.push({
                 item,
                 batch,
                 product: batch.product,
 
+                sellingPrice,
+
                 taxableAmount,
+
                 gstPercent,
 
                 cgstPercent,
@@ -303,15 +446,18 @@ export class SalesService {
 
                 gstAmount,
                 totalAmount
-            })
+            });
 
         }
 
         const firstItem = validatedItems[0];
-        const invoiceNo = await this.generateInvoiceNo(
-            firstItem.product.name,
-            firstItem.batch.batchNo
-        );
+        const invoiceNo =
+            payload.invoiceNo?.trim()
+                ??
+            await this.generateInvoiceNo(
+                firstItem.product.name,
+                firstItem.batch.batchNo
+            );
 
         let subtotalAmount = 0;
         let totalGSTAmount = 0;
@@ -322,16 +468,78 @@ export class SalesService {
 
         let grandTotal = 0;
 
+        const money = (value: number) =>
+            Math.round(Number(value || 0) * 100) / 100;
+
         for(const item of validatedItems) {
-            subtotalAmount += item.taxableAmount;
+            subtotalAmount =
+                money(subtotalAmount + item.taxableAmount);
 
-            totalGSTAmount += item.gstAmount;
+            totalGSTAmount =
+                money(totalGSTAmount + item.gstAmount);
 
-            totalCGSTAmount += item.cgstAmount;
-            totalSGSTAmount += item.sgstAmount;
-            totalIGSTAmount += item.igstAmount;
+            totalCGSTAmount =
+                money(totalCGSTAmount + item.cgstAmount);
+            totalSGSTAmount =
+                money(totalSGSTAmount + item.sgstAmount);
+            totalIGSTAmount =
+                money(totalIGSTAmount + item.igstAmount);
 
-            grandTotal += item.totalAmount;
+            grandTotal =
+                money(grandTotal + item.totalAmount);
+        }
+
+        if (payload.importedTotals) {
+            const expectedGrandTotal =
+                money(
+                    subtotalAmount +
+                    totalGSTAmount +
+                    (payload.roundOffAmount ?? 0)
+                );
+
+            if (
+                Math.abs(
+                    money(payload.importedTotals.subTotal) -
+                    subtotalAmount
+                ) > 0.01 ||
+                Math.abs(
+                    money(payload.importedTotals.totalGST) -
+                    totalGSTAmount
+                ) > 0.01 ||
+                Math.abs(
+                    money(payload.importedTotals.grandTotal) -
+                    expectedGrandTotal
+                ) > 0.01
+            ) {
+                throw new ApiError(
+                    `Sale import total mismatch for invoice ${invoiceNo}. Items ${subtotalAmount} + GST ${totalGSTAmount} + RoundOff ${payload.roundOffAmount ?? 0} = ${expectedGrandTotal}, but imported Grand Total is ${payload.importedTotals.grandTotal}`,
+                    400
+                );
+            }
+
+            subtotalAmount =
+                payload.importedTotals.subTotal;
+
+            totalCGSTAmount =
+                payload.importedTotals.totalCGST;
+
+            totalSGSTAmount =
+                payload.importedTotals.totalSGST;
+
+            totalIGSTAmount =
+                payload.importedTotals.totalIGST;
+
+            totalGSTAmount =
+                payload.importedTotals.totalGST;
+
+            grandTotal =
+                payload.importedTotals.grandTotal;
+
+        } else {
+
+            grandTotal +=
+                payload.roundOffAmount ?? 0;
+
         }
 
         /**
@@ -340,36 +548,131 @@ export class SalesService {
         const sale = await prisma.sale.create({
             data: {
                 agencyId: payload.agencyId,
+
                 branchId: payload.branchId,
+
                 invoiceNo,
-                remarks: payload.remarks?.trim(),
 
-                /** Invoice Metadata */
-                invoiceDate: payload.invoiceDate ? new Date(payload.invoiceDate) : new Date(),
-                deliveryNote: payload.deliveryNote?.trim(),
+                invoiceDate:
+                    payload.invoiceDate
+                    ? new Date(payload.invoiceDate)
+                    : new Date(),
 
-                suppliersRef: payload.suppliersRef?.trim(),
-                otherReference: payload.otherReference?.trim(),
+                voucherType:
+                    "SALE",
 
-                buyerOrderNo: payload.buyerOrderNo?.trim(),
-                buyerOrderDate: payload.buyerOrderDate ? new Date(payload.buyerOrderDate) : undefined,
-                
-                despatchDocNo: payload.despatchDocNo?.trim(),
-                despatchDocDate: payload.despatchDocDate ? new Date(payload.despatchDocDate) : undefined,
+                otherReference:
+                    payload.otherReference?.trim(),
 
-                despatchThrough: payload.despatchThrough?.trim(),
-                destination: payload.destination?.trim(),
+                irn:
+                    payload.irn?.trim(),
+
+                ackNo:
+                    payload.ackNo?.trim(),
+
+                ackDate:
+                    payload.ackDate
+                        ? new Date(payload.ackDate)
+                        : undefined,
+
+                qrCodeImage:
+                    payload.qrCodeImage?.trim(),
+
+                modeOfPayment:
+                    payload.modeOfPayment?.trim(),
+
+                referenceNo:
+                    payload.referenceNo?.trim(),
+
+                referenceDate:
+                    payload.referenceDate
+                        ? new Date(payload.referenceDate)
+                        : undefined,
+
+                roundOffAmount:
+                    payload.roundOffAmount ?? 0,
+
+                remarks:
+                    payload.remarks?.trim(),
 
                 createdById: actor.id,
+                createdAt: payload.voucherDate
+                    ? new Date(payload.voucherDate)
+                    : new Date(),
 
                 subTotalAmount: subtotalAmount,
+
                 totalGSTAmount,
 
                 totalCGSTAmount,
+
                 totalSGSTAmount,
+
                 totalIGSTAmount,
 
                 grandTotal,
+
+                transport:{
+
+                    create:{
+
+                        deliveryNote:
+                            payload.transport?.deliveryNote,
+
+                        buyerOrderNo:
+                            payload.transport?.buyerOrderNo,
+
+                        buyerOrderDate:
+                            payload.transport?.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : undefined,
+
+                        termsOfDelivery:
+                            payload.transport?.termsOfDelivery,
+
+                        despatchDocNo:
+                            payload.transport?.despatchDocNo,
+
+                        despatchDocDate:
+                            payload.transport?.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : undefined,
+
+                        despatchThrough:
+                            payload.transport?.despatchThrough,
+
+                        destination:
+                            payload.transport?.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport?.vehicleOrFlightNo,
+
+                        billOfLadingNo:
+                            payload.transport?.billOfLadingNo,
+
+                        portOfLoading:
+                            payload.transport?.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport?.portOfDischarge,
+
+                        countryTo:
+                            payload.transport?.countryTo,
+
+                        shippingNo:
+                            payload.transport?.shippingNo,
+
+                        shippingDate:
+                            payload.transport?.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : undefined,
+
+                        portCode:
+                            payload.transport?.portCode
+
+                    }
+
+                },
 
                 items: {
                     create: validatedItems.map((data) => ({
@@ -382,7 +685,7 @@ export class SalesService {
                          * AUTO FETCH SELL PRICE
                          */
                         sellingPrice:
-                            data.product.sellPricePerUnit,
+                            data.sellingPrice,
 
                         taxableAmount: data.taxableAmount,
                         gstPercent: data.gstPercent,
@@ -403,7 +706,8 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
-
+                transport: true,
+                transactions: true,
                 items: {
                     include: {
                         product: true,
@@ -413,7 +717,45 @@ export class SalesService {
             }
         });
 
-        return sale; 
+        const existingRemarks =
+            sale.remarks?.trim();
+
+        if (existingRemarks) {
+            return sale;
+        }
+
+        const narration =
+            buildSaleNarration(
+                sale
+            );
+
+        const updatedSale =
+            await prisma.sale.update({
+
+                where: {
+                    id: sale.id
+                },
+
+                data: {
+                    remarks: narration
+                },
+
+                include: {
+                    agency: true,
+                    branch: true,
+                    transport: true,
+                    transactions: true,
+
+                    items: {
+                        include: {
+                            product: true,
+                            batch: true
+                        }
+                    }
+                }
+            });
+
+        return updatedSale;
     }
 
     /**
@@ -455,7 +797,7 @@ export class SalesService {
                     branch: true,
                     createdBy: true,
                     approvedBy: true,
-
+                    transport: true,
                     items: {
                         include: {
                             product: true,
@@ -507,6 +849,7 @@ export class SalesService {
             include: {
                 agency: true,
                 branch: true,
+                transport: true,
                 createdBy: true,
                 approvedBy: true,
                 items: {
@@ -530,11 +873,11 @@ export class SalesService {
      * APPROVE SALE
      * =========================================
     */
-   static async approveSale(
-    actor: any,
-    saleId: string
-   ) {
-        if(!actor?.id){
+    static async approveSale(
+        actor: any,
+        saleId: string
+    ) {
+        if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
 
@@ -542,7 +885,7 @@ export class SalesService {
             actor.id,
             "SALE:APPROVE"
         );
-        if(!canApprove) {
+        if (!canApprove) {
             throw new ApiError("Forbidden", 403);
         }
 
@@ -555,11 +898,11 @@ export class SalesService {
             }
         });
 
-        if(!sale) {
+        if (!sale) {
             throw new ApiError("Sale not found", 404);
         }
 
-        if(sale.status !== "PENDING") {
+        if (sale.status !== "PENDING") {
             throw new ApiError("Only pending sales can be approved", 400);
         }
 
@@ -581,7 +924,7 @@ export class SalesService {
                 data: {
                     status: "APPROVED",
                     approvedById: actor.id,
-                    approvedAt: new Date()
+                    approvedAt: sale.createdAt
                 }
             });
 
@@ -596,7 +939,7 @@ export class SalesService {
                 );
             }
 
-             const lockedSale = await tx.sale.findUnique({
+            const lockedSale = await tx.sale.findUnique({
                 where: {
                     id: saleId
                 },
@@ -614,73 +957,155 @@ export class SalesService {
 
             /**
              * STEP 2:
-             * Deduct inventory
+             * Deduct inventory & Update Product Ledger
              */
             for (const item of lockedSale.items) {
 
+                // Deduct stock from inventory
                 await InventoryService.removeStock(tx, {
                     branchId: lockedSale.branchId,
                     productId: item.productId,
                     batchId: item.batchId,
                     quantity: Number(item.quantity),
-                    unit: item.unit
+                    unit: item.unit,
+                    transactionDate: lockedSale.createdAt
+                });
+
+                // ========================================================
+                // PRODUCT LEDGER: Create sale movement entry
+                // ========================================================
+                // Get or create ProductLedger for this product
+                const productLedger = await ProductLedgerService.getOrCreateProductLedger(
+                    item.productId,
+                    tx
+                );
+
+                // Get the batch details for FIFO traceability
+                const batch = await tx.inventoryBatch.findUnique({
+                    where: { id: item.batchId }
+                });
+
+                if (!batch) {
+                    throw new ApiError(`Batch not found for item ${item.productId}`, 404);
+                }
+
+                // Create immutable ledger entry for sale movement
+                // Batch ID is MANDATORY for FIFO traceability
+                await ProductLedgerService.createSaleMovement(tx, {
+                    productLedgerId: productLedger.id,
+                    sale: lockedSale,
+                    saleItem: item,
+                    batchId: item.batchId,
+                    batchNo: batch.batchNo
                 });
             }
 
             // ========================================================
-            // PERSISTENT OUTSTANDING STATE SYNCHRONIZATION HOOK
+            // STEP 3: Update Agency Outstanding
             // ========================================================
             // A sale creates an asset/receivable that a customer owes us.
             // We register this by executing an atomic positional check relative to CREDIT.
-            const existing = await tx.agencyOutstanding.findUnique({
-                where: {
-                    agencyId_branchId: {
-                        agencyId: lockedSale.agencyId,
-                        branchId: lockedSale.branchId
-                    }
-                }
-            });
+            // ========================================================
+            // STEP 3: Update Agency Outstanding (Race Safe)
+            // ========================================================
 
             const invoiceTotal = Number(lockedSale.grandTotal);
 
-            if (existing) {
-                let newAmount = Number(existing.amount);
-                let currentType = existing.type;
-
-                // Net positional shift calculation relative to CREDIT target
-                if (currentType === OutstandingType.CREDIT) {
-                    newAmount += invoiceTotal;
-                } else {
-                    newAmount -= invoiceTotal;
-                }
-
-                // If balance drops below zero, invert financial position layout
-                if (newAmount < 0) {
-                    newAmount = Math.abs(newAmount);
-                    currentType = currentType === OutstandingType.CREDIT ? OutstandingType.DEBIT : OutstandingType.CREDIT;
-                }
-
-                await tx.agencyOutstanding.update({
-                    where: { id: existing.id },
-                    data: {
-                        amount: newAmount,
-                        type: currentType
+            let existing =
+                await tx.agencyOutstanding.findUnique({
+                    where: {
+                        agencyId_branchId: {
+                            agencyId: lockedSale.agencyId,
+                            branchId: lockedSale.branchId
+                        }
                     }
                 });
-            } else {
-                // If it's a brand new relationship for this branch, insert standard CREDIT baseline
-                await tx.agencyOutstanding.create({
-                    data: {
-                        agencyId: lockedSale.agencyId,
-                        branchId: lockedSale.branchId,
-                        type: OutstandingType.CREDIT,
-                        amount: invoiceTotal
+
+            if (!existing) {
+
+                try {
+
+                    existing =
+                        await tx.agencyOutstanding.create({
+                            data: {
+                                agencyId: lockedSale.agencyId,
+                                branchId: lockedSale.branchId,
+                                type: OutstandingType.DEBIT,
+                                amount: invoiceTotal,
+                                createdAt: lockedSale.createdAt
+                            }
+                        });
+
+                } catch (err: any) {
+
+                    if (err.code === "P2002") {
+
+                        existing =
+                            await tx.agencyOutstanding.findUnique({
+                                where: {
+                                    agencyId_branchId: {
+                                        agencyId: lockedSale.agencyId,
+                                        branchId: lockedSale.branchId
+                                    }
+                                }
+                            });
+
+                    } else {
+
+                        throw err;
+
                     }
-                });
+
+                }
+
             }
 
+            if (!existing) {
+                throw new ApiError(
+                    "Unable to create Agency Outstanding",
+                    500
+                );
+            }
+
+            let newAmount = Number(existing.amount);
+            let currentType = existing.type;
+
+            if (currentType === OutstandingType.DEBIT) {
+
+                newAmount += invoiceTotal;
+
+            } else {
+
+                newAmount -= invoiceTotal;
+
+            }
+
+            if (newAmount < 0) {
+
+                newAmount = Math.abs(newAmount);
+
+                currentType =
+                    currentType === OutstandingType.DEBIT
+                        ? OutstandingType.CREDIT
+                        : OutstandingType.DEBIT;
+
+            }
+
+            await tx.agencyOutstanding.update({
+                where: {
+                    id: existing.id
+                },
+                data: {
+                    amount: newAmount,
+                    type: currentType,
+                    updatedAt: lockedSale.createdAt
+                }
+            });
+
+            await LedgerService.postSaleApproval(tx, lockedSale.id);
+
             /**
-             * STEP 3:
+             * STEP 4:
              * Return updated sale
              * Outstanding balance is calculated at runtime by getAgencyOutstanding()
              */
@@ -905,9 +1330,22 @@ export class SalesService {
                     /**
                      * GST calculations
                      */
-                    const sellingPrice = Number(
-                        batch.product.sellPricePerUnit
-                    );
+                    const systemSellingPrice =
+                        item.unit === ProductUnit.LTR
+                            ? Number(
+                                batch.product.sellPriceLTR ||
+                                batch.product.sellPricePerUnit
+                            )
+                            : item.unit === ProductUnit.MT
+                            ? Number(batch.product.sellPricePerUnit) * 1000
+                            : Number(
+                                batch.product.sellPricePerUnit
+                            );
+
+                    const sellingPrice =
+                        item.unitPrice
+                            ? Number(item.unitPrice)
+                            : systemSellingPrice;
 
                     const taxableAmount =
                         item.quantity * sellingPrice;
@@ -1005,11 +1443,13 @@ export class SalesService {
                     id: saleId
                 },
                 data: {
+
                     agency: {
                         connect: {
                             id: agencyId
                         }
                     },
+
                     branch: {
                         connect: {
                             id: branchId
@@ -1018,68 +1458,212 @@ export class SalesService {
 
                     remarks:
                         payload.remarks !== undefined
-                            ? payload.remarks?.trim()
+                            ? payload.remarks.trim()
                             : undefined,
 
-                    invoiceDate: payload.invoiceDate ? new Date(payload.invoiceDate) : new Date(),
-
-                    deliveryNote:
-                        payload.deliveryNote !== undefined
-                            ? payload.deliveryNote?.trim()
+                    invoiceDate:
+                        payload.invoiceDate
+                            ? new Date(payload.invoiceDate)
                             : undefined,
 
-                    suppliersRef:
-                        payload.suppliersRef !== undefined
-                            ? payload.suppliersRef?.trim()
-                            : undefined,
+                    voucherType:
+                        "SALE",
 
                     otherReference:
                         payload.otherReference !== undefined
-                            ? payload.otherReference?.trim()
+                            ? payload.otherReference.trim()
                             : undefined,
 
-                    buyerOrderNo:
-                        payload.buyerOrderNo !== undefined
-                            ? payload.buyerOrderNo?.trim()
+                    irn:
+                        payload.irn !== undefined
+                            ? payload.irn.trim()
                             : undefined,
 
-                    buyerOrderDate:
-                        payload.buyerOrderDate !== undefined
-                            ? new Date(payload.buyerOrderDate)
+                    ackNo:
+                        payload.ackNo !== undefined
+                            ? payload.ackNo.trim()
                             : undefined,
 
-                    despatchDocNo:
-                        payload.despatchDocNo !== undefined
-                            ? payload.despatchDocNo?.trim()
+                    ackDate:
+                        payload.ackDate !== undefined
+                            ? payload.ackDate
+                                ? new Date(payload.ackDate)
+                                : null
                             : undefined,
 
-                    despatchDocDate:
-                        payload.despatchDocDate !== undefined
-                            ? new Date(payload.despatchDocDate)
+                    qrCodeImage:
+                        payload.qrCodeImage !== undefined
+                            ? payload.qrCodeImage.trim()
                             : undefined,
 
-                    despatchThrough:
-                        payload.despatchThrough !== undefined
-                            ? payload.despatchThrough?.trim()
+                    modeOfPayment:
+                        payload.modeOfPayment !== undefined
+                            ? payload.modeOfPayment.trim()
                             : undefined,
 
-                    destination:
-                        payload.destination !== undefined
-                            ? payload.destination?.trim()
+                    referenceNo:
+                        payload.referenceNo !== undefined
+                            ? payload.referenceNo.trim()
                             : undefined,
+
+                    referenceDate:
+                        payload.referenceDate !== undefined
+                            ? payload.referenceDate
+                                ? new Date(payload.referenceDate)
+                                : null
+                            : undefined,
+
+                    roundOffAmount:
+                        payload.roundOffAmount,
 
                     ...(payload.items && {
+
                         subTotalAmount: subtotalAmount,
+
                         totalGSTAmount,
 
                         totalCGSTAmount,
+
                         totalSGSTAmount,
+
                         totalIGSTAmount,
 
                         grandTotal
+
                     })
+
                 }
             });
+
+            if (payload.transport) {
+
+                await tx.saleTransport.upsert({
+
+                    where: {
+                        saleId
+                    },
+
+                    update: {
+
+                        deliveryNote:
+                            payload.transport.deliveryNote,
+
+                        buyerOrderNo:
+                            payload.transport.buyerOrderNo,
+
+                        buyerOrderDate:
+                            payload.transport.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : null,
+
+                        termsOfDelivery:
+                            payload.transport.termsOfDelivery,
+
+                        despatchDocNo:
+                            payload.transport.despatchDocNo,
+
+                        despatchDocDate:
+                            payload.transport.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : null,
+
+                        despatchThrough:
+                            payload.transport.despatchThrough,
+
+                        destination:
+                            payload.transport.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport.vehicleOrFlightNo,
+
+                        billOfLadingNo:
+                            payload.transport.billOfLadingNo,
+
+                        portOfLoading:
+                            payload.transport.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport.portOfDischarge,
+
+                        countryTo:
+                            payload.transport.countryTo,
+
+                        shippingNo:
+                            payload.transport.shippingNo,
+
+                        shippingDate:
+                            payload.transport.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : null,
+
+                        portCode:
+                            payload.transport.portCode
+
+                    },
+
+                    create: {
+
+                        saleId,
+
+                        deliveryNote:
+                            payload.transport.deliveryNote,
+
+                        buyerOrderNo:
+                            payload.transport.buyerOrderNo,
+
+                        buyerOrderDate:
+                            payload.transport.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : undefined,
+
+                        termsOfDelivery:
+                            payload.transport.termsOfDelivery,
+
+                        despatchDocNo:
+                            payload.transport.despatchDocNo,
+
+                        despatchDocDate:
+                            payload.transport.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : undefined,
+
+                        despatchThrough:
+                            payload.transport.despatchThrough,
+
+                        destination:
+                            payload.transport.destination,
+
+                        vehicleOrFlightNo:
+                            payload.transport.vehicleOrFlightNo,
+
+                        billOfLadingNo:
+                            payload.transport.billOfLadingNo,
+
+                        portOfLoading:
+                            payload.transport.portOfLoading,
+
+                        portOfDischarge:
+                            payload.transport.portOfDischarge,
+
+                        countryTo:
+                            payload.transport.countryTo,
+
+                        shippingNo:
+                            payload.transport.shippingNo,
+
+                        shippingDate:
+                            payload.transport.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : undefined,
+
+                        portCode:
+                            payload.transport.portCode
+
+                    }
+
+                });
+
+            }
 
             /**
              * Replace items
@@ -1107,7 +1691,7 @@ export class SalesService {
                 include: {
                     agency: true,
                     branch: true,
-
+                    transport: true,
                     createdBy: {
                         select: {
                             id: true,
@@ -1138,6 +1722,56 @@ export class SalesService {
     }
 
 
+    private static async loadSaleForInvoice(
+        saleId: string,
+        approvedOnly: boolean
+    ) {
+        const [sale, invoiceSettings] = await Promise.all([
+            prisma.sale.findUnique({
+                where: {
+                    id: saleId,
+                    ...(approvedOnly && {
+                        status: "APPROVED"
+                    })
+                },
+                include: {
+                    agency: true,
+                    branch: {
+                        include: {
+                            bankAccounts: {
+                                where: {
+                                    isActive: true
+                                },
+                                orderBy: {
+                                    createdAt: "asc"
+                                }
+                            }
+                        }
+                    },
+                    transport: true,
+                    items: {
+                        include: {
+                            product: true,
+                            batch: true
+                        }
+                    }
+                }
+            }),
+            prisma.setting.findFirst({
+                orderBy: {
+                    createdAt: "asc"
+                }
+            })
+        ]);
+
+        return sale
+            ? {
+                ...sale,
+                invoiceSettings
+            }
+            : null;
+    }
+
     static async downloadInvoicePDF(
         actor: any,
         saleId: string
@@ -1146,22 +1780,11 @@ export class SalesService {
             throw new ApiError("Unauthorized", 401);
         }
 
-        const sale = await prisma.sale.findUnique({
-            where: {
-                id: saleId,
-                status: "APPROVED"
-            },
-            include: {
-                agency: true,
-                branch: true,
-                items: {
-                    include: {
-                        product: true,
-                        batch: true
-                    }
-                }
-            }
-        });
+        const sale =
+            await this.loadSaleForInvoice(
+                saleId,
+                true
+            );
 
         if(!sale){
             throw new ApiError("Sale not found or is Not Approved", 404);
@@ -1169,7 +1792,7 @@ export class SalesService {
 
         const invoiceData = SalesToInvMapper.map(sale);
 
-        const pdf = 
+        const pdf =
             await InvoiceRenderer.generatePdf(
                 invoiceData
             );
@@ -1185,21 +1808,15 @@ export class SalesService {
             throw new ApiError("Unauthorized", 401);
         }
 
-        const sale = await prisma.sale.findUnique({
-            where: {
-                id: saleId
-            },
-            include: {
-                agency: true,
-                branch: true,
-                items: {
-                    include: {
-                        product: true,
-                        batch: true
-                    }
-                }
-            }
-        });
+        const sale =
+            await this.loadSaleForInvoice(
+                saleId,
+                false
+            );
+
+        if (!sale) {
+            throw new ApiError("Sale not found", 404);
+        }
 
         const data = SalesToInvMapper.map(sale);
 
