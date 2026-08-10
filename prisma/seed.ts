@@ -1,0 +1,89 @@
+import { prisma } from "../src/config/db";
+
+const branches = [
+    {
+        name: "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
+        code: "A_G_ASHTAVINAYAKA_PETROCHEM_PVT_LTD_-_MAHARASHTRA",
+        gstin: "27AAKCA0034H1Z0",
+        stateCode: "27",
+        addressLine1: "SURVEY NO - 222, VILLAGE - HEDAVALI",
+        addressLine2: "Tl- SUDHAGAD, KHOPOLI - PALI ROAD, KHOPOLI",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pinCode: "400705",
+        isActive: true,
+        email: null,
+        phnNumber: null,
+        createdAt: new Date("2026-07-22T06:42:36.047Z"),
+        updatedAt: new Date("2026-07-22T13:27:19.590Z")
+    }
+];
+
+export async function mainBranchSeed() {
+    for (const branch of branches) {
+        const existing = await prisma.branch.findFirst({
+            where: {
+                OR: [
+                    { gstin: branch.gstin },
+                    { code: branch.code }
+                ]
+            }
+        });
+
+        if (existing) {
+            await prisma.branch.update({
+                where: {
+                    id: existing.id
+                },
+                data: {
+                    name: branch.name,
+                    code: branch.code,
+                    gstin: branch.gstin,
+                    stateCode: branch.stateCode,
+                    addressLine1: branch.addressLine1,
+                    addressLine2: branch.addressLine2,
+                    city: branch.city,
+                    state: branch.state,
+                    pinCode: branch.pinCode,
+                    isActive: branch.isActive,
+                    email: branch.email,
+                    phnNumber: branch.phnNumber,
+                    updatedAt: branch.updatedAt
+                }
+            });
+
+            console.log(`Updated branch: ${branch.name}`);
+            continue;
+        }
+
+        await prisma.branch.create({
+            data: {
+                name: branch.name,
+                code: branch.code,
+                gstin: branch.gstin,
+                stateCode: branch.stateCode,
+                addressLine1: branch.addressLine1,
+                addressLine2: branch.addressLine2,
+                city: branch.city,
+                state: branch.state,
+                pinCode: branch.pinCode,
+                isActive: branch.isActive,
+                email: branch.email,
+                phnNumber: branch.phnNumber,
+                createdAt: branch.createdAt,
+                updatedAt: branch.updatedAt
+            }
+        });
+
+        console.log(`Created branch: ${branch.name}`);
+    }
+}
+
+mainBranchSeed()
+    .catch(error => {
+        console.error(error);
+        process.exitCode = 1;
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

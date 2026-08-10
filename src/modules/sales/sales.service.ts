@@ -198,12 +198,20 @@ export class SalesService {
             salesKeys.add(key);
         }
 
-        /** Agency Validation */
-        const agency = await prisma.agency.findUnique({
-            where: {
-                id: payload.agencyId
-            }
-        });
+        /** Agency / Branch validation */
+        const [agency, branch] = await Promise.all([
+            prisma.agency.findUnique({
+                where: {
+                    id: payload.agencyId
+                }
+            }),
+            prisma.branch.findUnique({
+                where: {
+                    id: payload.branchId
+                }
+            })
+        ]);
+
         if(!agency) {
             throw new ApiError("Invalid Agency Id", 400);
         }
@@ -215,21 +223,34 @@ export class SalesService {
             throw new ApiError("Agency must be of type CLIENT or BOTH", 400);
         }
 
-        /** Branch Validation */
-        const branch = await prisma.branch.findUnique({
-            where: {
-                id: payload.branchId
-            }
-        });
         if(!branch) {
             throw new ApiError("Invalid Branch Id", 400);
         }
+
         if(!branch.isActive){
             throw new ApiError("Branch is not active", 400);
         }
 
+        const setting = await prisma.setting.findFirst();
+        const allowNegativeStock = setting?.allowNegativeInventory ?? false;
+
         /** Validate items */
         const validatedItems = [];
+        const batchIds = [...new Set(payload.items.map(item => item.batchId).filter(Boolean))];
+        const batches = await prisma.inventoryBatch.findMany({
+            where: {
+                id: {
+                    in: batchIds
+                }
+            },
+            include: {
+                product: true
+            }
+        });
+
+        const batchMap = new Map(
+            batches.map(batch => [batch.id, batch])
+        );
 
         for (const item of payload.items) {
 
@@ -253,14 +274,7 @@ export class SalesService {
                 );
             }
 
-            const batch = await prisma.inventoryBatch.findUnique({
-                where: {
-                    id: item.batchId
-                },
-                include: {
-                    product: true
-                }
-            });
+            const batch = batchMap.get(item.batchId);
 
             if (!batch) {
                 throw new ApiError(
@@ -268,9 +282,6 @@ export class SalesService {
                     400
                 );
             }
-
-            const setting = await prisma.setting.findFirst();
-            const allowNegativeStock = setting?.allowNegativeInventory ?? false;
 
             if(item.unit === ProductUnit.KG || item.unit === ProductUnit.MT){
                 const requiredQtyKG =
@@ -955,6 +966,19 @@ export class SalesService {
                 );
             }
 
+            const productLedgerCache = new Map<string, { id: string }>();
+            const batchIds = [...new Set(lockedSale.items.map(item => item.batchId))];
+            const batches = await tx.inventoryBatch.findMany({
+                where: {
+                    id: {
+                        in: batchIds
+                    }
+                }
+            });
+            const batchMap = new Map(
+                batches.map(batch => [batch.id, batch])
+            );
+
             /**
              * STEP 2:
              * Deduct inventory & Update Product Ledger
@@ -975,15 +999,19 @@ export class SalesService {
                 // PRODUCT LEDGER: Create sale movement entry
                 // ========================================================
                 // Get or create ProductLedger for this product
-                const productLedger = await ProductLedgerService.getOrCreateProductLedger(
-                    item.productId,
-                    tx
-                );
+                let productLedger = productLedgerCache.get(item.productId);
+
+                if (!productLedger) {
+                    productLedger = await ProductLedgerService.getOrCreateProductLedger(
+                        item.productId,
+                        tx
+                    );
+
+                    productLedgerCache.set(item.productId, productLedger);
+                }
 
                 // Get the batch details for FIFO traceability
-                const batch = await tx.inventoryBatch.findUnique({
-                    where: { id: item.batchId }
-                });
+                const batch = batchMap.get(item.batchId);
 
                 if (!batch) {
                     throw new ApiError(`Batch not found for item ${item.productId}`, 404);

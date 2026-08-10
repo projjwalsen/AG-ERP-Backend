@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node -r tsconfig-paths/register dist/server.js",
     "seed": "tsx prisma/seed.ts",
+    "delb": "tsx src/scripts/delete-branch.ts",
     "accounting:sync": "tsx src/scripts/backfill-ledger.ts"
   },
   "keywords": [],
