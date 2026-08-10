@@ -3,7 +3,10 @@ import {
     Response,
     NextFunction
 } from "express";
-import { ImportService } from "./multer.import";
+import {
+    getImportErrorReport,
+    ImportService
+} from "./multer.import";
 import { JournalImportService } from "./journalImport.service";
 import { ProductMasterImportService } from "./productImport.service";
 import { AgencyImportService } from "./agencyImport.service";
@@ -76,7 +79,15 @@ export const importWorkbook = async (
             + `data: ${JSON.stringify({
                 success: true,
                 message: `${type} Register imported successfully.`,
-                data: result
+                data: {
+                    ...result,
+                    ...(result.errorReport
+                        ? {
+                            errorReportUrl:
+                                `${req.baseUrl}/import/error-report/${result.errorReport.reportId}`
+                        }
+                        : {})
+                }
             })}\n\n`
         );
 
@@ -355,4 +366,36 @@ export const importJournalWorkbook = async (
         next(error);
     }
 
+};
+
+export const downloadImportErrorReport = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const report = getImportErrorReport(
+            (req as any).params.reportId
+        );
+
+        if (!report) {
+            return res.status(404).json({
+                success: false,
+                message: "Import error report not found or expired."
+            });
+        }
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${report.fileName}"`
+        );
+
+        return res.send(report.buffer);
+    } catch (error) {
+        next(error);
+    }
 };

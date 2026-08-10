@@ -83,6 +83,28 @@ export class ImportResolver {
 
     }
 
+    private static canonicalizeProductName(name: string): string {
+
+        const hsn =
+            String(name ?? "").match(/\((\d{4,8})\)/)?.[1]
+            ?? String(name ?? "").match(/\b(\d{4,8})\b/)?.[1];
+
+        let canonical = String(name ?? "")
+            .toUpperCase()
+            .replace(/\(\d{4,8}\)/g, "")
+            .replace(/\b(LTRS?|LITERS?|LITRES?)\b/gi, "LITER")
+            .replace(/\s+/g, " ")
+            .replace(/\s*-\s*$/g, "")
+            .trim();
+
+        if (hsn && !canonical.endsWith(hsn)) {
+            canonical += ` - ${hsn}`;
+        }
+
+        return canonical;
+
+    }
+
     // for agency master import only 
     static async resolveOrCreateAgencyMaster(
         dto: AgencyImportDTO
@@ -420,10 +442,22 @@ export class ImportResolver {
         createIfMissing = true
     ) {
 
-        const cacheKey =
-            dto.branchName
-                .trim()
-                .toLowerCase();
+        if (!dto.branchName?.trim()) {
+            throw new ApiError(
+                "Branch missing in Excel.",
+                400
+            );
+        }
+
+        const branchName = dto.branchName
+            .trim()
+            .replace(
+                /\s*\(from\s+\d{1,2}-[A-Za-z]{3}-\d{2,4}\)\s*$/i,
+                ""
+            )
+            .trim();
+
+        const cacheKey = branchName.toLowerCase();
 
         if (
             this.branchCache.has(cacheKey)
@@ -433,7 +467,7 @@ export class ImportResolver {
 
         }
 
-        if (!dto.branchName?.trim()) {
+        if (!branchName) {
             throw new ApiError(
                 "Branch missing in Excel.",
                 400
@@ -452,7 +486,7 @@ export class ImportResolver {
 
                     name: {
 
-                        equals: dto.branchName.trim(),
+                        equals: branchName,
 
                         mode: "insensitive"
 
@@ -506,7 +540,7 @@ export class ImportResolver {
 
         if (!createIfMissing) {
             throw new ApiError(
-                `Branch not found in master: ${dto.branchName}`,
+                `Branch not found in master: ${branchName}`,
                 404
             );
         }
@@ -519,9 +553,9 @@ export class ImportResolver {
 
                 data: {
 
-                    name: dto.branchName,
+                    name: branchName,
 
-                    code: dto.branchName
+                    code: branchName
                         .replace(/\s+/g, "_")
                         .toUpperCase(),
 
@@ -543,7 +577,7 @@ export class ImportResolver {
 
                 where: {
 
-                    code: dto.branchName
+                    code: branchName
                         .replace(/\s+/g, "_")
                         .toUpperCase()
 
@@ -622,6 +656,26 @@ export class ImportResolver {
                     }
 
                 });
+
+        }
+
+        if (!product) {
+
+            product = await prisma.product.findFirst({
+
+                where: {
+
+                    name: {
+
+                        contains: normalizedBaseName,
+
+                        mode: "insensitive"
+
+                    }
+
+                }
+
+            });
 
         }
 
@@ -1161,6 +1215,34 @@ export class ImportResolver {
 
             }
 
+            const baseNameProduct =
+                await prisma.product.findFirst({
+
+                    where: {
+
+                        name: {
+
+                            contains: normalizedBaseName,
+
+                            mode: "insensitive"
+
+                        }
+
+                    }
+
+                });
+
+            if (baseNameProduct) {
+
+                this.productCache.set(
+                    cacheKey,
+                    baseNameProduct
+                );
+
+                return baseNameProduct;
+
+            }
+
             const product =
                 await prisma.product.findFirst({
 
@@ -1270,7 +1352,9 @@ export class ImportResolver {
 
                         sku: crypto.randomUUID(),
 
-                        name: dto.particulars!.trim(),
+                        name: this.canonicalizeProductName(
+                            dto.particulars!
+                        ),
 
                         disclaimer: dto.disclaimer,
 
@@ -1623,7 +1707,7 @@ export class ImportResolver {
         const branch = 
             await this.resolveOrCreateBranch(
                 voucher,
-                false
+                true
             );
 
             const productRows = voucher.rows.filter(row =>

@@ -6,6 +6,188 @@ import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import multer from "multer";
 import pLimit from "p-limit";
+import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { randomUUID } from "crypto";
+
+type ImportErrorReport = {
+    buffer: Buffer;
+    fileName: string;
+    expiresAt: number;
+};
+
+type ImportSummary = {
+    total: number;
+    processed: number;
+    success: number;
+    failed: number;
+    percentage: number;
+    errors: any[];
+    errorReport?: {
+        reportId: string;
+        fileName: string;
+    };
+};
+
+const importErrorReports = new Map<string, ImportErrorReport>();
+
+function sourceRowValue(
+    row: Record<string, any>,
+    header: string
+) {
+    const normalizedHeader =
+        ExcelImportService.normalizeHeader(header);
+
+    const key = Object.keys(row).find(
+        value =>
+            ExcelImportService.normalizeHeader(value) === normalizedHeader
+    );
+
+    return key ? row[key] : undefined;
+}
+
+async function createImportErrorReport(
+    worksheet: XLSX.WorkSheet,
+    errors: any[]
+) {
+    const sourceRows = XLSX.utils.sheet_to_json<Record<string, any>>(
+        worksheet,
+        {
+            range: 2,
+            defval: "",
+            raw: false
+        }
+    );
+
+    const rowsByVoucher = new Map<string, Record<string, any>[]>();
+    let currentVoucher = "";
+
+    for (const row of sourceRows) {
+        const voucherNo = String(
+            sourceRowValue(row, "Voucher No") || ""
+        ).trim();
+
+        if (voucherNo) {
+            currentVoucher = voucherNo;
+        }
+
+        if (!currentVoucher) {
+            continue;
+        }
+
+        const rows = rowsByVoucher.get(currentVoucher) || [];
+        rows.push(row);
+        rowsByVoucher.set(currentVoucher, rows);
+    }
+
+    const selectedRows: Record<string, any>[] = [];
+
+    for (const error of errors) {
+        const rows =
+            rowsByVoucher.get(String(error.voucherNo).trim()) || [];
+
+        if (rows.length === 0) {
+            selectedRows.push({
+                "Voucher No": error.voucherNo,
+                "Invoice No": error.invoiceNo || "",
+                "Import Error": error.error || "Unknown import error",
+                "Error Code": error.code || "",
+                "Error Meta": error.meta
+                    ? JSON.stringify(error.meta)
+                    : ""
+            });
+            continue;
+        }
+
+        for (const row of rows) {
+            selectedRows.push({
+                ...row,
+                "Import Error": error.error || "Unknown import error",
+                "Error Code": error.code || "",
+                "Error Meta": error.meta
+                    ? JSON.stringify(error.meta)
+                    : ""
+            });
+        }
+    }
+
+    const columns: string[] = [];
+
+    for (const row of selectedRows) {
+        for (const key of Object.keys(row)) {
+            if (!columns.includes(key)) {
+                columns.push(key);
+            }
+        }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Import Errors");
+
+    sheet.columns = columns.map(key => ({
+        header: key,
+        key,
+        width: Math.min(
+            Math.max(key.length + 2, 14),
+            45
+        )
+    }));
+
+    sheet.addRows(
+        selectedRows.map(row =>
+            columns.map(column => row[column] ?? "")
+        )
+    );
+
+    const header = sheet.getRow(1);
+    //@ts-ignore
+    header.font = { bold: true, color: "FFFFFFFF" };
+    header.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1F4E78" }
+    };
+    header.alignment = { vertical: "middle" };
+
+    sheet.views = [{ state: "frozen", ySplit: 1 }];
+    sheet.autoFilter = {
+        from: "A1",
+        to: `${sheet.getColumn(columns.length).letter}1`
+    };
+
+    const errorColumn = columns.indexOf("Import Error") + 1;
+    if (errorColumn > 0) {
+        sheet.getColumn(errorColumn).width = 65;
+    }
+
+    const reportId = randomUUID();
+    const fileName = `sale-import-errors-${reportId}.xlsx`;
+    const buffer = Buffer.from(
+        await workbook.xlsx.writeBuffer()
+    );
+
+    importErrorReports.set(reportId, {
+        buffer,
+        fileName,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000
+    });
+
+    return {
+        reportId,
+        fileName
+    };
+}
+
+export function getImportErrorReport(reportId: string) {
+    const report = importErrorReports.get(reportId);
+
+    if (!report || report.expiresAt < Date.now()) {
+        importErrorReports.delete(reportId);
+        return undefined;
+    }
+
+    return report;
+}
 
 export class ImportService {
     
@@ -29,6 +211,8 @@ export class ImportService {
             ExcelImportService.getWorkSheet(
                 workbook
             );
+
+        const sourceWorksheet = worksheet;
 
         const rawRows =
             ExcelImportService.readRows(
@@ -88,7 +272,7 @@ console.log("Rows To Import:", rowsToImport.length);
                         return true;
                     });
         console.log("VOUCHERS =", uniqueVouchers.length);
-        const summary = {
+        const summary: ImportSummary = {
 
             total: uniqueVouchers.length,
 
@@ -100,7 +284,14 @@ console.log("Rows To Import:", rowsToImport.length);
 
             percentage: 0,
 
-            errors: [] as any[]
+            errors: [] as any[],
+
+            errorReport: undefined as
+                | {
+                    reportId: string;
+                    fileName: string;
+                }
+                | undefined
 
         };
 
@@ -254,6 +445,14 @@ console.log("Rows To Import:", rowsToImport.length);
 
             );
 
+
+        if (type === "SALE" && summary.errors.length > 0) {
+            summary.errorReport =
+                await createImportErrorReport(
+                    sourceWorksheet,
+                    summary.errors
+                );
+        }
 
         return summary;
 
