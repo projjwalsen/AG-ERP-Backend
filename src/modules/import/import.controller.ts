@@ -355,7 +355,15 @@ export const importJournalWorkbook = async (
                 success: true,
                 message:
                     "Journal imported successfully.",
-                data: result
+                data: {
+                    ...result,
+                    ...(result.errorReport
+                        ? {
+                            errorReportUrl:
+                                `${req.baseUrl}/import/error-report/${result.errorReport.reportId}`
+                        }
+                        : {})
+                }
             })}\n\n`
         );
 

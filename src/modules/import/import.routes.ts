@@ -93,9 +93,10 @@ router.post(
  * @openapi
  * /api/migration/import/error-report/{reportId}:
  *   get:
- *     summary: Download Sale Import Error Report
+ *     summary: Download Import Error Report
  *     description: |
- *       Downloads an Excel report containing the failed sale-import rows.
+ *       Downloads an Excel report containing failed purchase, sale, journal,
+ *       or transaction-import rows.
  *       The report preserves the original import columns and adds Import Error,
  *       Error Code, and Error Meta columns.
  *

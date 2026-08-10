@@ -46,14 +46,16 @@ function sourceRowValue(
     return key ? row[key] : undefined;
 }
 
-async function createImportErrorReport(
+export async function createImportErrorReport(
     worksheet: XLSX.WorkSheet,
-    errors: any[]
+    errors: any[],
+    headerRow = 3,
+    filePrefix = "import"
 ) {
     const sourceRows = XLSX.utils.sheet_to_json<Record<string, any>>(
         worksheet,
         {
-            range: 2,
+            range: headerRow - 1,
             defval: "",
             raw: false
         }
@@ -161,7 +163,7 @@ async function createImportErrorReport(
     }
 
     const reportId = randomUUID();
-    const fileName = `sale-import-errors-${reportId}.xlsx`;
+    const fileName = `${filePrefix}-import-errors-${reportId}.xlsx`;
     const buffer = Buffer.from(
         await workbook.xlsx.writeBuffer()
     );
@@ -446,11 +448,13 @@ console.log("Rows To Import:", rowsToImport.length);
             );
 
 
-        if (type === "SALE" && summary.errors.length > 0) {
+        if (summary.errors.length > 0) {
             summary.errorReport =
                 await createImportErrorReport(
                     sourceWorksheet,
-                    summary.errors
+                    summary.errors,
+                    3,
+                    type.toLowerCase()
                 );
         }
 
