@@ -143,14 +143,26 @@ export class PurchaseService {
             batchKeys.add(key);
         }
 
-        /**
-         * Agency validation
-         */
-        const agency = await prisma.agency.findUnique({
-            where: {
-                id: payload.agencyId
-            }
-        });
+        /** Agency / Branch / Invoice validation */
+        const [agency, branch, existingInvoice] = await Promise.all([
+            prisma.agency.findUnique({
+                where: {
+                    id: payload.agencyId
+                }
+            }),
+            prisma.branch.findUnique({
+                where: {
+                    id: payload.branchId
+                }
+            }),
+            prisma.purchase.findFirst({
+                where: {
+                    branchId: payload.branchId,
+                    agencyId: payload.agencyId,
+                    invoiceNo: normalizedInvoiceNo
+                }
+            })
+        ]);
 
         if (!agency) {
             throw new ApiError("Agency not found", 404);
@@ -165,14 +177,6 @@ export class PurchaseService {
                 400
             );
         }
-        /**
-         * Branch validation
-         */
-        const branch = await prisma.branch.findUnique({
-            where: {
-                id: payload.branchId
-            }
-        });
 
         if (!branch) {
             throw new ApiError("Branch not found", 404);
@@ -184,14 +188,6 @@ export class PurchaseService {
                 400
             );
         }
-        /** Invoice validation */
-        const existingInvoice = await prisma.purchase.findFirst({
-            where: {
-                branchId: payload.branchId,
-                agencyId: payload.agencyId,
-                invoiceNo: normalizedInvoiceNo
-            }
-        });
 
         if (existingInvoice) {
             throw new ApiError(
@@ -219,6 +215,18 @@ export class PurchaseService {
         const processedItems = [];
         const money = (v: number) =>
             Math.round(v * 100) / 100;
+        const productIds = [...new Set(payload.items.map(item => item.productId))];
+        const products = await prisma.product.findMany({
+            where: {
+                id: {
+                    in: productIds
+                }
+            }
+        });
+
+        const productMap = new Map(
+            products.map(product => [product.id, product])
+        );
 
         for(const item of payload.items){
             if(!item.productId || !item.batchNo){
@@ -234,11 +242,7 @@ export class PurchaseService {
             }
 
 
-            const product = await prisma.product.findUnique({
-                where: {
-                    id: item.productId
-                }
-            });
+            const product = productMap.get(item.productId);
 
             if(!product){
                 throw new ApiError(`Product not found for ID ${item.productId}`, 404);
@@ -882,6 +886,8 @@ export class PurchaseService {
                 throw new ApiError("Purchase not found after locking", 404);
             }
 
+            const productLedgerCache = new Map<string, { id: string }>();
+
             // ========================================================
             // STEP 1: Update Inventory & Product Ledger
             // ========================================================
@@ -902,10 +908,16 @@ export class PurchaseService {
                 // PRODUCT LEDGER: Create inventory movement entry
                 // ========================================================
                 // Get or create ProductLedger for this product
-                const productLedger = await ProductLedgerService.getOrCreateProductLedger(
-                    item.productId,
-                    tx
-                );
+                let productLedger = productLedgerCache.get(item.productId);
+
+                if (!productLedger) {
+                    productLedger = await ProductLedgerService.getOrCreateProductLedger(
+                        item.productId,
+                        tx
+                    );
+
+                    productLedgerCache.set(item.productId, productLedger);
+                }
 
                 // Create immutable ledger entry for purchase movement
                 await ProductLedgerService.createPurchaseMovement(tx, {

@@ -3,6 +3,30 @@ import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { getAvailableQuantityForUnit, getStockQuantities } from "../../core/utils/density.utils";
 
+type InventoryTxCache = {
+    productById: Map<string, any>;
+    setting: any | null;
+};
+
+const inventoryTxCache = new WeakMap<object, InventoryTxCache>();
+
+function getInventoryTxCache(tx: Prisma.TransactionClient | typeof prisma): InventoryTxCache {
+    const existing = inventoryTxCache.get(tx as object);
+
+    if (existing) {
+        return existing;
+    }
+
+    const created = {
+        productById: new Map<string, any>(),
+        setting: null
+    };
+
+    inventoryTxCache.set(tx as object, created);
+
+    return created;
+}
+
 type AddStockPayload = {
     branchId: string;
     productId: string;
@@ -86,12 +110,21 @@ export class InventoryService {
             throw new ApiError("Quantity must be greater than 0", 400);
         }
 
-        // Implementation for adding stock
-        const product = await tx.product.findUnique({
-            where: {
-                id: payload.productId
+        const cache = getInventoryTxCache(tx);
+
+        let product = cache.productById.get(payload.productId);
+
+        if (!product) {
+            product = await tx.product.findUnique({
+                where: {
+                    id: payload.productId
+                }
+            });
+
+            if (product) {
+                cache.productById.set(payload.productId, product);
             }
-        });
+        }
 
         if(!product) {
             throw new ApiError("Product not found", 404);
@@ -188,11 +221,21 @@ export class InventoryService {
         if(payload.quantity <= 0) {
             throw new ApiError("Quantity must be greater than 0", 400);
         }
-        const product = await tx.product.findUnique({
-            where: {
-                id: payload.productId
+        const cache = getInventoryTxCache(tx);
+
+        let product = cache.productById.get(payload.productId);
+
+        if (!product) {
+            product = await tx.product.findUnique({
+                where: {
+                    id: payload.productId
+                }
+            });
+
+            if (product) {
+                cache.productById.set(payload.productId, product);
             }
-        });
+        }
         if(!product) {
             throw new ApiError("Product not found", 404);
         }
@@ -209,7 +252,12 @@ export class InventoryService {
             throw new ApiError("Inventory Batch not found", 404);
         }
 
-        const settings = await tx.setting.findFirst();
+        let settings = cache.setting;
+
+        if (settings === null) {
+            settings = await tx.setting.findFirst();
+            cache.setting = settings;
+        }
 
         const allowNegativeStock =
             settings?.allowNegativeInventory ?? false;
@@ -341,7 +389,14 @@ export class InventoryService {
         }
     ) {
 
-        const settings = await tx.setting.findFirst();
+        const cache = getInventoryTxCache(tx);
+
+        let settings = cache.setting;
+
+        if (settings === null) {
+            settings = await tx.setting.findFirst();
+            cache.setting = settings;
+        }
 
         const allowNegativeStock =
             settings?.allowNegativeInventory ?? false;

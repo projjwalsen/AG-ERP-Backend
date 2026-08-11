@@ -3,6 +3,7 @@ import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import pLimit from "p-limit";
 import { Express } from "express";
+import { createImportErrorReport } from "./multer.import";
 
 export class JournalImportService {
 
@@ -123,7 +124,7 @@ export class JournalImportService {
 
             });
 
-        const summary = {
+        const summary: any = {
 
             total: data.length,
 
@@ -261,6 +262,18 @@ export class JournalImportService {
             )
 
         );
+
+        if (summary.errors.length > 0) {
+            summary.errorReport =
+                await createImportErrorReport(
+                    worksheet,
+                    summary.errors,
+                    8,
+                    `journal-${type.toLowerCase()}`
+                );
+        }
+
+        return summary;
 
     }
 

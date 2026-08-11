@@ -1,7 +1,13 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
 import { importExcel } from "./multer.import";
-import { importAgencyWorkbook, importJournalWorkbook, importProductWorkbook, importWorkbook } from "./import.controller";
+import {
+    downloadImportErrorReport,
+    importAgencyWorkbook,
+    importJournalWorkbook,
+    importProductWorkbook,
+    importWorkbook
+} from "./import.controller";
 
 const router = Router();
 
@@ -82,6 +88,49 @@ router.post(
     importExcel.single("file"),
     importWorkbook
 )
+
+/**
+ * @openapi
+ * /api/migration/import/error-report/{reportId}:
+ *   get:
+ *     summary: Download Import Error Report
+ *     description: |
+ *       Downloads an Excel report containing failed purchase, sale, journal,
+ *       or transaction-import rows.
+ *       The report preserves the original import columns and adds Import Error,
+ *       Error Code, and Error Meta columns.
+ *
+ *       Reports are stored temporarily and expire after 24 hours.
+ *     tags:
+ *       - Import
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         description: Error report identifier returned in the completed import event.
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Sale import error report Excel file.
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         description: Unauthorized.
+ *       404:
+ *         description: Report not found or expired.
+ */
+router.get(
+    "/import/error-report/:reportId",
+    authMiddleware,
+    downloadImportErrorReport
+);
 
 
 /**
