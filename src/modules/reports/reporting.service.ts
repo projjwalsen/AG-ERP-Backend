@@ -498,6 +498,9 @@ export class ReportingService {
                     parentGroup:
                         ledger.group.name,
 
+                    groupCode:
+                        ledger.group.code,
+
                     groupId:
                         ledger.groupId,
 
@@ -518,11 +521,24 @@ export class ReportingService {
                         null,
 
                     /**
-                     * Period movement
+                     * Trial balance columns show the closing balance.
+                     * Period movement is retained for diagnostics.
                      */
-                    debit,
+                    debit:
+                        Number(
+                            closingDebit.toFixed(2)
+                        ),
 
-                    credit,
+                    credit:
+                        Number(
+                            closingCredit.toFixed(2)
+                        ),
+
+                    periodDebit:
+                        debit,
+
+                    periodCredit:
+                        credit,
 
                     /**
                      * Numeric closing balance
@@ -559,9 +575,7 @@ export class ReportingService {
 
                 return (
                     row.debit !== 0 ||
-                    row.credit !== 0 ||
-                    row.closingDebit !== 0 ||
-                    row.closingCredit !== 0
+                    row.credit !== 0
                 );
             });
 
@@ -605,11 +619,11 @@ export class ReportingService {
                     total.totalCredit +=
                         row.credit;
 
-                    total.totalClosingDebit +=
-                        row.closingDebit;
+                    total.totalPeriodDebit +=
+                        row.periodDebit;
 
-                    total.totalClosingCredit +=
-                        row.closingCredit;
+                    total.totalPeriodCredit +=
+                        row.periodCredit;
 
                     return total;
                 },
@@ -617,7 +631,9 @@ export class ReportingService {
                     totalDebit: 0,
                     totalCredit: 0,
                     totalClosingDebit: 0,
-                    totalClosingCredit: 0
+                    totalClosingCredit: 0,
+                    totalPeriodDebit: 0,
+                    totalPeriodCredit: 0
                 }
             );
 
@@ -631,29 +647,35 @@ export class ReportingService {
                 summary.totalCredit.toFixed(2)
             );
 
-        summary.totalClosingDebit =
+        summary.totalPeriodDebit =
             Number(
-                summary.totalClosingDebit.toFixed(2)
+                summary.totalPeriodDebit.toFixed(2)
             );
 
-        summary.totalClosingCredit =
+        summary.totalPeriodCredit =
             Number(
-                summary.totalClosingCredit.toFixed(2)
+                summary.totalPeriodCredit.toFixed(2)
             );
+
+        summary.totalClosingDebit =
+            summary.totalDebit;
+
+        summary.totalClosingCredit =
+            summary.totalCredit;
 
         const periodDifference =
             Number(
                 (
-                    summary.totalDebit -
-                    summary.totalCredit
+                    summary.totalPeriodDebit -
+                    summary.totalPeriodCredit
                 ).toFixed(2)
             );
 
         const closingDifference =
             Number(
                 (
-                    summary.totalClosingDebit -
-                    summary.totalClosingCredit
+                    summary.totalDebit -
+                    summary.totalCredit
                 ).toFixed(2)
             );
 
@@ -694,9 +716,6 @@ export class ReportingService {
                     ) < 0.01,
 
                 isBalanced:
-                    Math.abs(
-                        periodDifference
-                    ) < 0.01 &&
                     Math.abs(
                         closingDifference
                     ) < 0.01

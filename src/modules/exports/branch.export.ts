@@ -125,21 +125,15 @@ export const branchDayBookColumns = [
 
 export const trialBalanceColumns = [
     {
-        header: "Sr. No.",
-        key: "srNo",
-        width: 10
+        header: "Account Number",
+        key: "ledgerCode",
+        width: 20
     },
 
     {
-        header: "Account",
+        header: "Account Name",
         key: "account",
         width: 42
-    },
-
-    {
-        header: "Parent Group",
-        key: "parentGroup",
-        width: 30
     },
 
     {
@@ -152,12 +146,6 @@ export const trialBalanceColumns = [
         header: "Credit",
         key: "credit",
         width: 20
-    },
-
-    {
-        header: "Closing Balance",
-        key: "closingBalance",
-        width: 24
     }
 ];
 
