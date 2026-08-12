@@ -455,6 +455,11 @@ export class ImportResolver {
                 /\s*\(from\s+\d{1,2}-[A-Za-z]{3}-\d{2,4}\)\s*$/i,
                 ""
             )
+            .replace(
+                /\s*-\s*\d{2,4}\s*-\s*\d{2,4}\s*$/i,
+                ""
+            )
+            .replace(/\s+/g, " ")
             .trim();
 
         const cacheKey = branchName.toLowerCase();
