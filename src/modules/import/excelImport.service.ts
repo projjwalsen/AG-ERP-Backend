@@ -886,7 +886,8 @@ export class ExcelImportService {
 
     static groupAndValidateVouchers(
         rows: ExcelRowDTO[],
-        type: "PURCHASE" | "SALE" = "PURCHASE"
+        type: "PURCHASE" | "SALE" = "PURCHASE",
+        validationErrors: any[] = []
     ): GroupedVoucherDTO[] {
 
         const voucherMap =
@@ -1004,7 +1005,10 @@ export class ExcelImportService {
         for (const voucher of vouchers) {
 
             const itemRows =
-                voucher.rows.filter(row => !row.isTotalRow);
+                voucher.rows.filter(row =>
+                    !row.isTotalRow &&
+                    Boolean(row.particulars?.trim())
+                );
 
             const parsedRoundOff =
                 this.firstNonZeroAmount(
@@ -1130,6 +1134,28 @@ export class ExcelImportService {
             }
 
             if (itemRows.length === 0) {
+
+                if (type === "SALE") {
+
+                    validationErrors.push({
+
+                        voucherNo:
+                            voucher.voucherNo,
+
+                        invoiceNo:
+                            voucher.invoiceNo,
+
+                        error:
+                            `No importable item row found in Voucher ${voucher.voucherNo}. The second row has no Particulars; the voucher was skipped.`,
+
+                        code:
+                            "MISSING_SALE_PARTICULARS"
+
+                    });
+
+                    continue;
+
+                }
 
                 throw new Error(
                     `No importable item rows found in Voucher ${voucher.voucherNo}. Gross Total/Grand Total rows are ignored.`

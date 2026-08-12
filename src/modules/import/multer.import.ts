@@ -250,11 +250,14 @@ console.log(
 console.log("Rows To Import:", rowsToImport.length);
 
 
+        const validationErrors: any[] = [];
+
         const vouchers =
             ExcelImportService
                 .groupAndValidateVouchers(
                     rowsToImport,
-                    type
+                    type,
+                    validationErrors
                 );
 
                 const seen = new Set<string>();
@@ -276,17 +279,19 @@ console.log("Rows To Import:", rowsToImport.length);
         console.log("VOUCHERS =", uniqueVouchers.length);
         const summary: ImportSummary = {
 
-            total: uniqueVouchers.length,
+            total:
+                uniqueVouchers.length +
+                validationErrors.length,
 
-            processed: 0,
+            processed: validationErrors.length,
 
             success: 0,
 
-            failed: 0,
+            failed: validationErrors.length,
 
             percentage: 0,
 
-            errors: [] as any[],
+            errors: validationErrors,
 
             errorReport: undefined as
                 | {
@@ -296,6 +301,25 @@ console.log("Rows To Import:", rowsToImport.length);
                 | undefined
 
         };
+
+        if (validationErrors.length > 0) {
+            onProgress?.({
+                processed: summary.processed,
+                total: summary.total,
+                success: summary.success,
+                failed: summary.failed,
+                percentage: Number(
+                    (
+                        summary.processed /
+                        summary.total *
+                        100
+                    ).toFixed(2)
+                ),
+                currentVoucher:
+                    validationErrors[validationErrors.length - 1]
+                        .voucherNo
+            });
+        }
 
 
             const limit = pLimit(1); // trying 2
