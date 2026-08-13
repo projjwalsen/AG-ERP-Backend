@@ -1364,16 +1364,19 @@ export class ExcelImportService {
             const openingRate =
                 this.toNumber(row.openingBalanceRate);
 
-            if (openingQty <= 0 && openingRate <= 0)
-                continue;
-
             products.set(productName.toUpperCase(), {
 
                 productName,
 
-                openingStockKG: openingQty,
+                openingStockKG:
+                    openingQty > 0
+                        ? openingQty
+                        : undefined,
 
-                sellPrice: openingRate,
+                sellPrice:
+                    openingRate > 0
+                        ? openingRate
+                        : undefined,
 
                 density: 1
 

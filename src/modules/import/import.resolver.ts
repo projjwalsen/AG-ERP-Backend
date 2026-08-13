@@ -765,7 +765,14 @@ export class ImportResolver {
 
         const density = dto.density || 1;
 
-        const openingKG = dto.openingStockKG || 0;
+        const hasOpeningBalance =
+            dto.openingStockKG != null &&
+            dto.openingStockKG > 0;
+
+        const openingKG =
+            hasOpeningBalance
+                ? Number(dto.openingStockKG)
+                : 0;
 
         const openingLTR = openingKG / density;
 
@@ -836,7 +843,10 @@ export class ImportResolver {
                                     )
                                     : null,
 
-                            minimumStockKG: openingKG,
+                            minimumStockKG:
+                                hasOpeningBalance
+                                    ? openingKG
+                                    : null,
 
                             hsnNo:
                                 dto.hsn?.trim(),
@@ -850,37 +860,43 @@ export class ImportResolver {
             }
             else {
 
-                product =
-                    await tx.product.update({
+                    const updateData: any = {
+
+                        name: normalizedName,
+                        density,
+
+                        sellPricePerUnit:
+                            dto.sellPrice ??
+                            product.sellPricePerUnit,
+
+                        sellPriceLTR:
+                            dto.sellPrice
+                                ? Number(
+                                    (
+                                        dto.sellPrice *
+                                        density
+                                    ).toFixed(2)
+                                )
+                                : product.sellPriceLTR,
+
+                        hsnNo:
+                            dto.hsn ??
+                            product.hsnNo
+
+                    };
+
+                    if (hasOpeningBalance) {
+                        updateData.openingStockKG = openingKG;
+                        updateData.minimumStockKG = openingKG;
+                    }
+
+                    product =
+                        await tx.product.update({
                         where: {
                             id: product.id
                         },
 
-                        data: {
-                            name: normalizedName,
-                            density,
-                            openingStockKG: openingKG,
-
-                            sellPricePerUnit:
-                                dto.sellPrice ??
-                                product.sellPricePerUnit,
-
-                            sellPriceLTR:
-                                dto.sellPrice
-                                    ? Number(
-                                        (
-                                            dto.sellPrice *
-                                            density
-                                        ).toFixed(2)
-                                    )
-                                    : product.sellPriceLTR,
-
-                            hsnNo:
-                                dto.hsn ??
-                                product.hsnNo,
-
-                            minimumStockKG: openingKG
-                        }
+                        data: updateData
                     });
             }
 
