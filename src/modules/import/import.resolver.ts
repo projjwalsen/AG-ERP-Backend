@@ -1712,7 +1712,7 @@ export class ImportResolver {
         const branch = 
             await this.resolveOrCreateBranch(
                 voucher,
-                true
+                false
             );
 
             const productRows = voucher.rows.filter(row =>

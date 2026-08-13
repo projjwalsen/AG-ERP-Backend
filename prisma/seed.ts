@@ -3,19 +3,19 @@ import { prisma } from "../src/config/db";
 const branches = [
     {
         name: "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
-        code: "A_G_ASHTAVINAYAKA_PETROCHEM_PVT_LTD_-_MAHARASHTRA",
+        code: "AG_ASHTAVINAYAKA_PETROCHEM-MH",
         gstin: "27AAKCA0034H1Z0",
         stateCode: "27",
         addressLine1: "SURVEY NO - 222, VILLAGE - HEDAVALI",
-        addressLine2: "Tl- SUDHAGAD, KHOPOLI - PALI ROAD, KHOPOLI",
-        city: "Mumbai",
+        addressLine2: "Tl- SUDHAGAD, KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD",
+        city: "KHOPOLI",
         state: "Maharashtra",
         pinCode: "400705",
         isActive: true,
-        email: null,
+        email: "info@ashtvinayakapetrochem.com",
         phnNumber: null,
-        createdAt: new Date("2026-07-22T06:42:36.047Z"),
-        updatedAt: new Date("2026-07-22T13:27:19.590Z")
+        createdAt: new Date(),
+        updatedAt: new Date()
     }
 ];
 
@@ -24,8 +24,13 @@ export async function mainBranchSeed() {
         const existing = await prisma.branch.findFirst({
             where: {
                 OR: [
-                    { gstin: branch.gstin },
-                    { code: branch.code }
+                    { code: branch.code },
+                    {
+                        name: "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra"
+                    },
+                    {
+                        code: "A_G_ASHTAVINAYAKA_PETROCHEM_PVT_LTD_-_MAHARASHTRA"
+                    }
                 ]
             }
         });
