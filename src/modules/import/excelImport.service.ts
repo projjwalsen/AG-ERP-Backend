@@ -1260,11 +1260,6 @@ export class ExcelImportService {
                     )
                 );
 
-            // Skip agencies having no opening balance
-            if (openingBalance <= 0) {
-                continue;
-            }
-
             const key =
                 gstin ||
                 agencyName.toUpperCase();
