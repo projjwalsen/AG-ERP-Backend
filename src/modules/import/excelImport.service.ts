@@ -334,13 +334,43 @@ export class ExcelImportService {
                         this.getValue(row, "Value")
                     );
 
+                const currentProduct = String(
+                    this.getValue(currentVoucherRow, "Particulars") || ""
+                )
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase();
+
+                const normalizedContinuationProduct =
+                    continuationProduct
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .toUpperCase();
+
+                const currentQuantity =
+                    this.toNumber(
+                        this.getValue(currentVoucherRow, "Quantity")
+                    );
+
+                const currentValue =
+                    this.toNumber(
+                        this.getValue(currentVoucherRow, "Value")
+                    );
+
+                const isRepeatedItemRow =
+                    currentProduct &&
+                    currentProduct === normalizedContinuationProduct &&
+                    currentQuantity === continuationQuantity &&
+                    currentValue === continuationValue;
+
                 if (
                     continuationProduct &&
                     (
                         continuationQuantity > 0 ||
                         continuationRate > 0 ||
                         continuationValue > 0
-                    )
+                    ) &&
+                    !isRepeatedItemRow
                 ) {
 
                     const inheritedRow = {
