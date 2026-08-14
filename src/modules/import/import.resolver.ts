@@ -1620,7 +1620,9 @@ export class ImportResolver {
         branchId: string,
         productId: string,
         quantity: number,
-        unit: ProductUnit
+        unit: ProductUnit,
+        productName?: string,
+        allowInsufficient = false
     ) {
 
         let remainingQty = quantity;
@@ -1643,18 +1645,6 @@ export class ImportResolver {
                     productId,
 
                     isActive: true,
-
-                    ...(unit === ProductUnit.KG
-                        ? {
-                            availableQtyKG: {
-                                gt: 0
-                            }
-                        }
-                        : {
-                            availableQtyLTR: {
-                                gt: 0
-                            }
-                        })
 
                 },
 
@@ -1700,11 +1690,33 @@ export class ImportResolver {
 
         }
 
+        if (remainingQty > 0 && allowInsufficient) {
+
+            const fallbackBatch =
+                batches[batches.length - 1];
+
+            if (fallbackBatch) {
+                allocations.push({
+                    batchId: fallbackBatch.id,
+                    quantity: remainingQty
+                });
+
+                return {
+                    allocations,
+                    insufficientStock: {
+                        productName:
+                            productName || productId,
+                        remainingQty
+                    }
+                };
+            }
+        }
+
         if (remainingQty > 0) {
 
             throw new ApiError(
 
-                `Insufficient stock for Product ${productId}. Remaining Qty ${remainingQty}`,
+                `Insufficient stock for Product '${productName || productId}'. Remaining Qty ${remainingQty}`,
 
                 400
 
@@ -1712,7 +1724,9 @@ export class ImportResolver {
 
         }
 
-        return allocations;
+        return {
+            allocations
+        };
 
     }
 
@@ -1910,6 +1924,7 @@ export class ImportResolver {
         }
 
         const items: any[] = [];
+        const stockWarnings: any[] = [];
 
         const productRows = voucher.rows.filter(row =>
             !row.isTotalRow &&
@@ -1927,13 +1942,24 @@ export class ImportResolver {
             /**
              * Resolve FIFO batches
              */
-            const allocations =
+            const allocationResult =
                 await this.resolveBatchFIFO(
                     branch.id,
                     product.id,
                     row.quantity!,
-                    row.unit as ProductUnit
+                    row.unit as ProductUnit,
+                    row.particulars,
+                    true
                 );
+
+            const allocations =
+                allocationResult.allocations;
+
+            if (allocationResult.insufficientStock) {
+                stockWarnings.push(
+                    allocationResult.insufficientStock
+                );
+            }
 
             /**
              * Flatten allocations
@@ -2132,7 +2158,14 @@ export class ImportResolver {
                 voucher.otherReferenceNo,
 
             remarks:
-                voucher.narration,
+                stockWarnings.length > 0
+                    ? `[PENDING STOCK] ${voucher.narration || ""}`.trim()
+                    : voucher.narration,
+
+            hasInsufficientStock:
+                stockWarnings.length > 0,
+
+            stockWarnings,
 
             roundOffAmount:
                 voucher.importedTotals?.roundOff ??

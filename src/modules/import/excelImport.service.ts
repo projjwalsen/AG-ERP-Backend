@@ -409,6 +409,11 @@ export class ExcelImportService {
 
             const disclaimer = "";
 
+            const particulars = String(
+                this.getValue(row, "Particulars") || ""
+            ).trim();
+
+            const disclaimer = "";
 
             const voucherNo = explicitVoucherNo || String(
                 this.getValue(row, "Voucher No") || ""
@@ -1409,7 +1414,7 @@ export class ExcelImportService {
         }
 
         return [...products.values()];
-    }
+    };
 
     static parseJournalRows(
         rows: Record<string, any>[]
