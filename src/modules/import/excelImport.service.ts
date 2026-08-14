@@ -302,7 +302,7 @@ export class ExcelImportService {
 
         let currentVoucherRow: Record<string, any> | undefined;
 
-        return rows.map(row => {
+        return rows.map((row, index) => {
 
             const explicitVoucherNo = String(
                 this.getValue(row, "Voucher No") || ""
@@ -310,9 +310,41 @@ export class ExcelImportService {
 
             if (explicitVoucherNo) {
                 currentVoucherRow = row;
+
+                if (type === "PURCHASE") {
+
+                    const nextRow = rows[index + 1] || {};
+                    const nextProduct = String(
+                        this.getValue(nextRow, "Particulars") || ""
+                    ).trim();
+
+                    if (
+                        !this.getValue(nextRow, "Voucher No") &&
+                        nextProduct &&
+                        (
+                            this.toNumber(this.getValue(nextRow, "Quantity")) > 0 ||
+                            this.toNumber(this.getValue(nextRow, "Rate")) > 0 ||
+                            this.toNumber(this.getValue(nextRow, "Value")) > 0
+                        )
+                    ) {
+                        const inheritedRow = { ...row };
+
+                        for (const [key, value] of Object.entries(nextRow)) {
+                            if (
+                                value !== undefined &&
+                                value !== null &&
+                                String(value).trim() !== ""
+                            ) {
+                                inheritedRow[key] = value;
+                            }
+                        }
+
+                        row = inheritedRow;
+                    }
+                }
             } else if (
                 currentVoucherRow &&
-                (type === "SALE" || type === "PURCHASE")
+                type === "SALE"
             ) {
 
                 const continuationProduct = String(
@@ -320,19 +352,29 @@ export class ExcelImportService {
                 ).trim();
 
                 const continuationQuantity =
-                    this.toNumber(
-                        this.getValue(row, "Quantity")
-                    );
+                    this.toNumber(this.getValue(row, "Quantity"));
 
                 const continuationRate =
-                    this.toNumber(
-                        this.getValue(row, "Rate")
-                    );
+                    this.toNumber(this.getValue(row, "Rate"));
 
                 const continuationValue =
-                    this.toNumber(
-                        this.getValue(row, "Value")
-                    );
+                    this.toNumber(this.getValue(row, "Value"));
+
+                const currentProduct = String(
+                    this.getValue(currentVoucherRow, "Particulars") || ""
+                )
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase();
+
+                const isRepeatedItemRow =
+                    currentProduct &&
+                    currentProduct === continuationProduct
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .toUpperCase() &&
+                    this.toNumber(this.getValue(currentVoucherRow, "Quantity")) === continuationQuantity &&
+                    this.toNumber(this.getValue(currentVoucherRow, "Value")) === continuationValue;
 
                 if (
                     continuationProduct &&
@@ -340,12 +382,10 @@ export class ExcelImportService {
                         continuationQuantity > 0 ||
                         continuationRate > 0 ||
                         continuationValue > 0
-                    )
+                    ) &&
+                    !isRepeatedItemRow
                 ) {
-
-                    const inheritedRow = {
-                        ...currentVoucherRow
-                    };
+                    const inheritedRow = { ...currentVoucherRow };
 
                     for (const [key, value] of Object.entries(row)) {
                         if (
@@ -358,11 +398,8 @@ export class ExcelImportService {
                     }
 
                     row = inheritedRow;
-
                 } else {
-
                     return null as any;
-
                 }
             }
 
@@ -372,6 +409,11 @@ export class ExcelImportService {
 
             const disclaimer = "";
 
+            const particulars = String(
+                this.getValue(row, "Particulars") || ""
+            ).trim();
+
+            const disclaimer = "";
 
             const voucherNo = explicitVoucherNo || String(
                 this.getValue(row, "Voucher No") || ""
