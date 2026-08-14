@@ -1372,7 +1372,7 @@ export class ExcelImportService {
         }
 
         return [...products.values()];
-    }
+    };
 
     static parseJournalRows(
         rows: Record<string, any>[]
