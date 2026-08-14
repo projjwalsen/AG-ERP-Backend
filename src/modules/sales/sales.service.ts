@@ -108,6 +108,8 @@ type CreateSalesPayload = {
         roundOff: number;
         grandTotal: number;
     };
+
+    deferStockValidation?: boolean;
 }
 
 export class SalesService {
@@ -291,6 +293,7 @@ export class SalesService {
 
                 if( 
                     !allowNegativeStock &&
+                    !payload.deferStockValidation &&
                     Number(batch.availableQtyKG) < requiredQtyKG
                 ) {
                     throw new ApiError(
@@ -301,6 +304,7 @@ export class SalesService {
             } else {
                 if(
                     !allowNegativeStock &&
+                    !payload.deferStockValidation &&
                     Number(batch.availableQtyLTR) < Number(item.quantity)
                 ) {
                     throw new ApiError(
