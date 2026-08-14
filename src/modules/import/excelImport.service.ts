@@ -300,89 +300,118 @@ export class ExcelImportService {
         type: "PURCHASE" | "SALE" = "PURCHASE"
     ): ExcelRowDTO[] {
 
+        let currentVoucherRow: Record<string, any> | undefined;
+
         return rows.map((row, index) => {
 
-            let effectiveRow = row;
+            const explicitVoucherNo = String(
+                this.getValue(row, "Voucher No") || ""
+            ).trim();
 
-            let particulars = String(
-                this.getValue(row, "Particulars") || ""
-            );
+            if (explicitVoucherNo) {
+                currentVoucherRow = row;
 
-            let disclaimer = "";
+                if (type === "PURCHASE") {
 
-            if (
-                type === "SALE" ||
-                type === "PURCHASE"
-            ) {
-
-                const nextRow = rows[index + 1];
-
-                if (nextRow) {
-
-                    const nextVoucher = String(
-                        this.getValue(nextRow, "Voucher No") || ""
-                    ).trim();
-
+                    const nextRow = rows[index + 1] || {};
                     const nextProduct = String(
                         this.getValue(nextRow, "Particulars") || ""
                     ).trim();
 
-                    const nextRate = this.toNumber(
-                        this.getValue(nextRow, "Rate")
-                    );
-
                     if (
-                        !nextVoucher &&
+                        !this.getValue(nextRow, "Voucher No") &&
                         nextProduct &&
-                        (nextRate > 0 || nextProduct)
+                        (
+                            this.toNumber(this.getValue(nextRow, "Quantity")) > 0 ||
+                            this.toNumber(this.getValue(nextRow, "Rate")) > 0 ||
+                            this.toNumber(this.getValue(nextRow, "Value")) > 0
+                        )
                     ) {
+                        const inheritedRow = { ...row };
 
-                        effectiveRow = nextRow;
-
-                        particulars = nextProduct;
-
-                        const disclaimerLines: string[] = [];
-
-                        let i = index + 2;
-
-                        while (i < rows.length) {
-
-                            const currentRow = rows[i];
-
-                            if (!currentRow) {
-                                break;
+                        for (const [key, value] of Object.entries(nextRow)) {
+                            if (
+                                value !== undefined &&
+                                value !== null &&
+                                String(value).trim() !== ""
+                            ) {
+                                inheritedRow[key] = value;
                             }
-
-                            const voucher = String(
-                                this.getValue(currentRow, "Voucher No") || ""
-                            ).trim();
-
-                            if (voucher) {
-                                break;
-                            }
-
-                            const text = String(
-                                this.getValue(currentRow, "Particulars") || ""
-                            ).trim();
-
-                            if (text) {
-                                disclaimerLines.push(text);
-                            }
-
-                            i++;
                         }
 
-                        disclaimer = disclaimerLines.join("\n");
+                        row = inheritedRow;
                     }
+                }
+            } else if (
+                currentVoucherRow &&
+                type === "SALE"
+            ) {
+
+                const continuationProduct = String(
+                    this.getValue(row, "Particulars") || ""
+                ).trim();
+
+                const continuationQuantity =
+                    this.toNumber(this.getValue(row, "Quantity"));
+
+                const continuationRate =
+                    this.toNumber(this.getValue(row, "Rate"));
+
+                const continuationValue =
+                    this.toNumber(this.getValue(row, "Value"));
+
+                const currentProduct = String(
+                    this.getValue(currentVoucherRow, "Particulars") || ""
+                )
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase();
+
+                const isRepeatedItemRow =
+                    currentProduct &&
+                    currentProduct === continuationProduct
+                        .replace(/\s+/g, " ")
+                        .trim()
+                        .toUpperCase() &&
+                    this.toNumber(this.getValue(currentVoucherRow, "Quantity")) === continuationQuantity &&
+                    this.toNumber(this.getValue(currentVoucherRow, "Value")) === continuationValue;
+
+                if (
+                    continuationProduct &&
+                    (
+                        continuationQuantity > 0 ||
+                        continuationRate > 0 ||
+                        continuationValue > 0
+                    ) &&
+                    !isRepeatedItemRow
+                ) {
+                    const inheritedRow = { ...currentVoucherRow };
+
+                    for (const [key, value] of Object.entries(row)) {
+                        if (
+                            value !== undefined &&
+                            value !== null &&
+                            String(value).trim() !== ""
+                        ) {
+                            inheritedRow[key] = value;
+                        }
+                    }
+
+                    row = inheritedRow;
+                } else {
+                    return null as any;
                 }
             }
 
+            const particulars = String(
+                this.getValue(row, "Particulars") || ""
+            ).trim();
 
-            const voucherNo = String(
-                this.getValue(
-                    row,
-                    "Voucher No"
-                ) || ""
+            const disclaimer = "";
+
+
+            const voucherNo = explicitVoucherNo || String(
+                this.getValue(row, "Voucher No") || ""
             ).trim();
 
             /**
@@ -528,7 +557,7 @@ export class ExcelImportService {
             const rateText =
                 String(
                     this.getValue(
-                        effectiveRow,
+                        row,
                         "Rate"
                     ) || ""
                 );

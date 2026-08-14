@@ -2308,7 +2308,7 @@ export class ImportResolver {
         const voucherType = dto.voucherType.trim().toUpperCase();
 
         const cacheKey =
-            `${voucherType}_${type}`;
+            voucherType;
 
         const cached =
             this.journalHeadCache.get(cacheKey);
@@ -2327,9 +2327,7 @@ export class ImportResolver {
 
                         mode: "insensitive"
 
-                    },
-
-                    type
+                    }
 
                 }
 
