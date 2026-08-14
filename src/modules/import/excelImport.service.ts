@@ -407,14 +407,6 @@ export class ExcelImportService {
                 this.getValue(row, "Particulars") || ""
             ).trim();
 
-            const disclaimer = "";
-
-            const particulars = String(
-                this.getValue(row, "Particulars") || ""
-            ).trim();
-
-            const disclaimer = "";
-
             const voucherNo = explicitVoucherNo || String(
                 this.getValue(row, "Voucher No") || ""
             ).trim();
@@ -767,8 +759,6 @@ export class ExcelImportService {
                     ),
 
                 particulars: productName,
-
-                disclaimer,
 
                 hsnNo,
 
