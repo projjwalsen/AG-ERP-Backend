@@ -60,6 +60,8 @@ export class ExcelImportService {
             .replace(/Cr/gi, "")
 
             // remove every unit variation
+            .replace(/\/?\s*KLR\.?/gi, "")
+            .replace(/\/?\s*KL\.?/gi, "")
             .replace(/\/?\s*KGS?\.?/gi, "")
             .replace(/\/?\s*KG\.?/gi, "")
             .replace(/\/?\s*LTRS?\.?/gi, "")
@@ -367,7 +369,24 @@ export class ExcelImportService {
                     .trim()
                     .toUpperCase();
 
+                const currentAgency = String(
+                    this.getValue(
+                        currentVoucherRow,
+                        "Supplier",
+                        "Buyer"
+                    ) || ""
+                )
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase();
+
+                const currentRowIsPartyHeader =
+                    currentProduct &&
+                    currentAgency &&
+                    currentProduct === currentAgency;
+
                 const isRepeatedItemRow =
+                    !currentRowIsPartyHeader &&
                     currentProduct &&
                     currentProduct === continuationProduct
                         .replace(/\s+/g, " ")
@@ -511,7 +530,15 @@ export class ExcelImportService {
              */
             let unit = "KG";
 
-            if (/MTS?|MT/i.test(quantityText)) {
+            if (/KLR|KL\b/i.test(quantityText)) {
+
+                quantity *= 1000;
+
+                unit = "LTR";
+
+            }
+
+            else if (/MTS?|MT/i.test(quantityText)) {
 
                 quantity *= 1000;
 
@@ -536,7 +563,7 @@ export class ExcelImportService {
              */
 
             if (
-                !/KG|LTR|MT/i.test(quantityText)
+                !/KG|LTR|KLR|KL|MT/i.test(quantityText)
             ) {
 
                 if (/LTR/i.test(productName))
@@ -562,7 +589,13 @@ export class ExcelImportService {
             let rate =
                 this.toNumber(rateText);
 
-            if (/\/MT/i.test(rateText)) {
+            if (/\/(?:KLR|KL)\b/i.test(rateText)) {
+
+                rate /= 1000;
+
+            }
+
+            else if (/\/MT/i.test(rateText)) {
 
                 rate /= 1000;
 
@@ -935,21 +968,17 @@ export class ExcelImportService {
                 continue;
             }
 
-            /**
-             * Ignore RCM Purchase
-             */
-            if (
+            const isRcmPurchase =
+                type === "PURCHASE" &&
                 row.voucherType
                     .toUpperCase()
-                    .includes("RCM PURCHASE")
-            ) {
-                continue;
-            }
+                    .includes("RCM PURCHASE");
 
             /**
              * Purchase & Tax Invoice only
              */
             if (
+                !isRcmPurchase &&
                 ![
                     "PURCHASE",
                     "TAX INVOICE"
@@ -1028,11 +1057,29 @@ export class ExcelImportService {
 
         for (const voucher of vouchers) {
 
+            const isRcmPurchase =
+                type === "PURCHASE" &&
+                voucher.voucherType
+                    .toUpperCase()
+                    .includes("RCM PURCHASE");
+
             const itemRows =
                 voucher.rows.filter(row =>
                     !row.isTotalRow &&
                     Boolean(row.particulars?.trim())
                 );
+
+            const financialRows = isRcmPurchase
+                ? voucher.rows.filter(row =>
+                    !row.isTotalRow &&
+                    (
+                        (row.taxableAmount || 0) !== 0 ||
+                        (row.cgst || 0) !== 0 ||
+                        (row.sgst || 0) !== 0 ||
+                        (row.igst || 0) !== 0
+                    )
+                )
+                : itemRows;
 
             const parsedRoundOff =
                 this.firstNonZeroAmount(
@@ -1046,7 +1093,7 @@ export class ExcelImportService {
 
             const subTotal =
                 this.money(
-                    itemRows.reduce(
+                    financialRows.reduce(
                         (sum, row) =>
                             sum + (row.taxableAmount || 0),
                         0
@@ -1055,7 +1102,7 @@ export class ExcelImportService {
 
             const totalCGST =
                 this.money(
-                    itemRows.reduce(
+                    financialRows.reduce(
                         (sum, row) =>
                             sum + (row.cgst || 0),
                         0
@@ -1064,7 +1111,7 @@ export class ExcelImportService {
 
             const totalSGST =
                 this.money(
-                    itemRows.reduce(
+                    financialRows.reduce(
                         (sum, row) =>
                             sum + (row.sgst || 0),
                         0
@@ -1073,7 +1120,7 @@ export class ExcelImportService {
 
             const totalIGST =
                 this.money(
-                    itemRows.reduce(
+                    financialRows.reduce(
                         (sum, row) =>
                             sum + (row.igst || 0),
                         0
@@ -1087,18 +1134,29 @@ export class ExcelImportService {
                     totalIGST
                 );
 
+            const accountingSubTotal =
+                isRcmPurchase &&
+                subTotal === 0 &&
+                explicitGrandTotal > 0
+                    ? this.money(
+                        explicitGrandTotal -
+                        totalGST -
+                        parsedRoundOff
+                    )
+                    : subTotal;
+
             const effectiveRoundOff =
                 explicitGrandTotal
                     ? this.money(
                         explicitGrandTotal -
-                        subTotal -
+                        accountingSubTotal -
                         totalGST
                     )
                     : parsedRoundOff;
 
             const computedGrandTotal =
                 this.money(
-                    subTotal +
+                    accountingSubTotal +
                     totalGST +
                     effectiveRoundOff
                 );
@@ -1106,7 +1164,7 @@ export class ExcelImportService {
             voucher.importedTotals = {
 
                 subTotal:
-                    subTotal,
+                    accountingSubTotal,
 
                 totalCGST:
                     totalCGST,
@@ -1136,7 +1194,7 @@ export class ExcelImportService {
                 ) > 0.01
             ) {
                 throw new Error(
-                    `Voucher ${voucher.voucherNo} total mismatch. Items ${subTotal} + GST ${totalGST} + RoundOff ${effectiveRoundOff} = ${computedGrandTotal}, but Excel Grand Total is ${explicitGrandTotal}`
+                    `Voucher ${voucher.voucherNo} total mismatch. Items ${accountingSubTotal} + GST ${totalGST} + RoundOff ${effectiveRoundOff} = ${computedGrandTotal}, but Excel Grand Total is ${explicitGrandTotal}`
                 );
             }
 
@@ -1158,6 +1216,10 @@ export class ExcelImportService {
             }
 
             if (itemRows.length === 0) {
+
+                if (isRcmPurchase) {
+                    continue;
+                }
 
                 if (type === "SALE") {
 
