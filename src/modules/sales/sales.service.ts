@@ -115,6 +115,44 @@ type CreateSalesPayload = {
 export class SalesService {
 
     /**
+     * Collapse repeated lines for the same product and batch.
+     * A sale item represents a product/batch allocation, so repeated lines
+     * are safely combined before validation and persistence.
+     */
+    private static mergeDuplicateBatchItems(
+        items: SalesItemPayload[]
+    ): SalesItemPayload[] {
+        const merged = new Map<string, SalesItemPayload>();
+        const sumFields: (keyof SalesItemPayload)[] = [
+            "quantity",
+            "taxableAmount",
+            "cgstAmount",
+            "sgstAmount",
+            "igstAmount",
+            "gstAmount",
+            "totalAmount"
+        ];
+
+        for (const item of items) {
+            const key = `${item.productId}-${item.batchId}-${item.unit}`;
+            const existing = merged.get(key);
+
+            if (!existing) {
+                merged.set(key, { ...item });
+                continue;
+            }
+
+            for (const field of sumFields) {
+                const current = Number(existing[field] || 0);
+                const incoming = Number(item[field] || 0);
+                (existing as any)[field] = current + incoming;
+            }
+        }
+
+        return [...merged.values()];
+    }
+
+    /**
      * ===========================
      * Auto generate sales invoice number
      * 
@@ -174,30 +212,13 @@ export class SalesService {
             throw new ApiError("Agency & Branch Id are required", 400);
         }
 
+        payload.items = this.mergeDuplicateBatchItems(payload.items || []);
+
         if(
             !payload.items ||
             payload.items.length === 0
         ) {
             throw new ApiError("At least one sales item is required", 400);
-        }
-
-        /**
-         * Prevent duplicate batch entries
-         */
-        const salesKeys = new Set();
-
-        for (const item of payload.items) {
-
-            const key = `${item.productId}-${item.batchId}`;
-
-            if (salesKeys.has(key)) {
-                throw new ApiError(
-                    "Duplicate batch for same product",
-                    400
-                );
-            }
-
-            salesKeys.add(key);
         }
 
         /** Agency / Branch validation */
@@ -297,7 +318,7 @@ export class SalesService {
                     Number(batch.availableQtyKG) < requiredQtyKG
                 ) {
                     throw new ApiError(
-                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG. Allow negative stock setting.`,
+                        `Insufficient stock for product ${batch.product.name} in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG. Allow negative stock setting.`,
                         400
                     )
                 }
@@ -308,7 +329,7 @@ export class SalesService {
                     Number(batch.availableQtyLTR) < Number(item.quantity)
                 ) {
                     throw new ApiError(
-                        `Insufficient stock in batch ${batch.batchNo}, Available : ${batch.availableQtyLTR} LTR. Allow negative stock setting.`,
+                        `Insufficient stock for product ${batch.product.name} in batch ${batch.batchNo}, Available : ${batch.availableQtyLTR} LTR. Allow negative stock setting.`,
                         400
                     )
                 }
@@ -1257,24 +1278,7 @@ export class SalesService {
             }
         }
 
-        /**
-         * Prevent duplicate batches
-         */
-        const salesKeys = new Set();
-
-        for (const item of payload.items || []) {
-
-            const key = `${item.productId}-${item.batchId}`;
-
-            if (salesKeys.has(key)) {
-                throw new ApiError(
-                    "Duplicate batch for same product",
-                    400
-                );
-            }
-
-            salesKeys.add(key);
-        }
+        payload.items = this.mergeDuplicateBatchItems(payload.items || []);
 
         const updatedSale = await prisma.$transaction(async (tx) => {
 
