@@ -1680,9 +1680,8 @@ export class ImportResolver {
 
             );
 
-            // A voucher can contain the same product on multiple rows.
-            // Keep earlier allocations in this voucher out of the next
-            // FIFO lookup so the same product/batch pair is not emitted twice.
+            // Stock is not deducted until the sale is created. Reserve
+            // earlier allocations from this voucher during FIFO resolution.
             const available =
                 availableInDatabase -
                 (reservedByBatch.get(batch.id) || 0);
@@ -1919,9 +1918,8 @@ export class ImportResolver {
 
         const items: any[] = [];
 
-        // Tracks FIFO quantities already assigned within this voucher.
-        // Database stock is updated only after the sale is created, so the
-        // resolver must reserve these quantities in memory between rows.
+        // Prevent repeated rows for the same product from reusing one batch
+        // before the sale transaction deducts its stock.
         const reservedByBatch = new Map<string, number>();
 
         const productRows = voucher.rows.filter(row =>
