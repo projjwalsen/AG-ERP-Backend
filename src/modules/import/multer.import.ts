@@ -220,7 +220,7 @@ export class ImportService {
             ExcelImportService.readRows(worksheet, {
                 // Keep the existing purchase layout. The attached sales
                 // register has its headers on row 8.
-                headerRow: type === "SALE" ? 8 : 3
+                headerRow: type === "SALE" ? 3 : 3
             });
 
             console.log("RAW ROWS =", rawRows.length);
