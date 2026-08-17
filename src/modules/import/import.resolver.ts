@@ -1621,8 +1621,7 @@ export class ImportResolver {
         productId: string,
         quantity: number,
         unit: ProductUnit,
-        productName?: string,
-        allowInsufficient = false
+        reservedByBatch: Map<string, number> = new Map()
     ) {
 
         let remainingQty = quantity;
@@ -1646,6 +1645,18 @@ export class ImportResolver {
 
                     isActive: true,
 
+                    ...(unit === ProductUnit.KG
+                        ? {
+                            availableQtyKG: {
+                                gt: 0
+                            }
+                        }
+                        : {
+                            availableQtyLTR: {
+                                gt: 0
+                            }
+                        })
+
                 },
 
                 orderBy: {
@@ -1661,13 +1672,19 @@ export class ImportResolver {
             if (remainingQty <= 0)
                 break;
 
-            const available = Number(
+            const availableInDatabase = Number(
 
                 unit === ProductUnit.KG
                     ? batch.availableQtyKG
                     : batch.availableQtyLTR
 
             );
+
+            // Stock is not deducted until the sale is created. Reserve
+            // earlier allocations from this voucher during FIFO resolution.
+            const available =
+                availableInDatabase -
+                (reservedByBatch.get(batch.id) || 0);
 
             if (available <= 0)
                 continue;
@@ -1690,33 +1707,11 @@ export class ImportResolver {
 
         }
 
-        if (remainingQty > 0 && allowInsufficient) {
-
-            const fallbackBatch =
-                batches[batches.length - 1];
-
-            if (fallbackBatch) {
-                allocations.push({
-                    batchId: fallbackBatch.id,
-                    quantity: remainingQty
-                });
-
-                return {
-                    allocations,
-                    insufficientStock: {
-                        productName:
-                            productName || productId,
-                        remainingQty
-                    }
-                };
-            }
-        }
-
         if (remainingQty > 0) {
 
             throw new ApiError(
 
-                `Insufficient stock for Product '${productName || productId}'. Remaining Qty ${remainingQty}`,
+                `Insufficient stock for Product ${productId}. Remaining Qty ${remainingQty}`,
 
                 400
 
@@ -1724,9 +1719,7 @@ export class ImportResolver {
 
         }
 
-        return {
-            allocations
-        };
+        return allocations;
 
     }
 
@@ -1924,7 +1917,10 @@ export class ImportResolver {
         }
 
         const items: any[] = [];
-        const stockWarnings: any[] = [];
+
+        // Prevent repeated rows for the same product from reusing one batch
+        // before the sale transaction deducts its stock.
+        const reservedByBatch = new Map<string, number>();
 
         const productRows = voucher.rows.filter(row =>
             !row.isTotalRow &&
@@ -1942,22 +1938,20 @@ export class ImportResolver {
             /**
              * Resolve FIFO batches
              */
-            const allocationResult =
+            const allocations =
                 await this.resolveBatchFIFO(
                     branch.id,
                     product.id,
                     row.quantity!,
                     row.unit as ProductUnit,
-                    row.particulars,
-                    true
+                    reservedByBatch
                 );
 
-            const allocations =
-                allocationResult.allocations;
-
-            if (allocationResult.insufficientStock) {
-                stockWarnings.push(
-                    allocationResult.insufficientStock
+            for (const allocation of allocations) {
+                reservedByBatch.set(
+                    allocation.batchId,
+                    (reservedByBatch.get(allocation.batchId) || 0) +
+                    allocation.quantity
                 );
             }
 
@@ -2158,14 +2152,7 @@ export class ImportResolver {
                 voucher.otherReferenceNo,
 
             remarks:
-                stockWarnings.length > 0
-                    ? `[PENDING STOCK] ${voucher.narration || ""}`.trim()
-                    : voucher.narration,
-
-            hasInsufficientStock:
-                stockWarnings.length > 0,
-
-            stockWarnings,
+                voucher.narration,
 
             roundOffAmount:
                 voucher.importedTotals?.roundOff ??
