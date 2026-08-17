@@ -1621,7 +1621,8 @@ export class ImportResolver {
         productId: string,
         quantity: number,
         unit: ProductUnit,
-        reservedByBatch: Map<string, number> = new Map()
+        reservedByBatch: Map<string, number> = new Map(),
+        productName?: string
     ) {
 
         let remainingQty = quantity;
@@ -1711,7 +1712,7 @@ export class ImportResolver {
 
             throw new ApiError(
 
-                `Insufficient stock for Product ${productId}. Remaining Qty ${remainingQty}`,
+                `Insufficient stock for Product ${productName || productId}. Remaining Qty ${remainingQty}`,
 
                 400
 
@@ -1745,7 +1746,7 @@ export class ImportResolver {
             );
 
         const items = await Promise.all(
-            productRows.map(async (row, index) => {
+            productRows.map(async row => {
                 const product = 
                     await this.resolveOrCreateProduct(
                         row
@@ -1756,7 +1757,7 @@ export class ImportResolver {
                     productId: product.id,
 
                     batchNo:
-                        `${voucher.invoiceNo || voucher.voucherNo}-${index + 1}`,
+                        voucher.invoiceNo || voucher.voucherNo,
 
                     quantity:
                         row.quantity!,
@@ -1924,8 +1925,8 @@ export class ImportResolver {
 
         const productRows = voucher.rows.filter(row =>
             !row.isTotalRow &&
-            row.quantity > 0 &&
-            row.taxableAmount > 0
+            Boolean(row.particulars?.trim()) &&
+            row.quantity > 0
         );
 
         for (const row of productRows) {
@@ -1934,6 +1935,11 @@ export class ImportResolver {
                 await this.resolveProduct(
                     row
                 );
+
+            const rowTaxableAmount =
+                Number(row.taxableAmount || 0) > 0
+                    ? Number(row.taxableAmount)
+                    : Number(row.quantity || 0) * Number(row.rate || 0);
 
             /**
              * Resolve FIFO batches
@@ -1944,7 +1950,8 @@ export class ImportResolver {
                     product.id,
                     row.quantity!,
                     row.unit as ProductUnit,
-                    reservedByBatch
+                    reservedByBatch,
+                    row.particulars
                 );
 
             for (const allocation of allocations) {
@@ -2012,11 +2019,11 @@ export class ImportResolver {
                 const taxableAmount =
                     isLast
                         ? money(
-                            Number(row.taxableAmount || 0) -
+                            rowTaxableAmount -
                             allocatedTaxable
                         )
                         : money(
-                            Number(row.taxableAmount || 0) *
+                            rowTaxableAmount *
                             ratio
                         );
 
