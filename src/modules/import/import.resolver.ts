@@ -1620,7 +1620,8 @@ export class ImportResolver {
         branchId: string,
         productId: string,
         quantity: number,
-        unit: ProductUnit
+        unit: ProductUnit,
+        reservedByBatch: Map<string, number> = new Map()
     ) {
 
         let remainingQty = quantity;
@@ -1671,13 +1672,20 @@ export class ImportResolver {
             if (remainingQty <= 0)
                 break;
 
-            const available = Number(
+            const availableInDatabase = Number(
 
                 unit === ProductUnit.KG
                     ? batch.availableQtyKG
                     : batch.availableQtyLTR
 
             );
+
+            // A voucher can contain the same product on multiple rows.
+            // Keep earlier allocations in this voucher out of the next
+            // FIFO lookup so the same product/batch pair is not emitted twice.
+            const available =
+                availableInDatabase -
+                (reservedByBatch.get(batch.id) || 0);
 
             if (available <= 0)
                 continue;
@@ -1911,6 +1919,11 @@ export class ImportResolver {
 
         const items: any[] = [];
 
+        // Tracks FIFO quantities already assigned within this voucher.
+        // Database stock is updated only after the sale is created, so the
+        // resolver must reserve these quantities in memory between rows.
+        const reservedByBatch = new Map<string, number>();
+
         const productRows = voucher.rows.filter(row =>
             !row.isTotalRow &&
             row.quantity > 0 &&
@@ -1932,8 +1945,17 @@ export class ImportResolver {
                     branch.id,
                     product.id,
                     row.quantity!,
-                    row.unit as ProductUnit
+                    row.unit as ProductUnit,
+                    reservedByBatch
                 );
+
+            for (const allocation of allocations) {
+                reservedByBatch.set(
+                    allocation.batchId,
+                    (reservedByBatch.get(allocation.batchId) || 0) +
+                    allocation.quantity
+                );
+            }
 
             /**
              * Flatten allocations
