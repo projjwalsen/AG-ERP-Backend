@@ -4286,13 +4286,14 @@ export class LedgerService {
         // });
 
         return this.createVoucher({
-            voucherType: VoucherType.PURCHASE,
+            voucherType:
+                purchase.voucherType ?? VoucherType.PURCHASE,
             sourceId: purchase.id,
             branchId: purchase.branchId,
             voucherDate: purchase.approvedAt,
 
             narration:
-                `PURCHASE|${purchase.invoiceNo}|${purchase.agency.name}`,
+                `${purchase.voucherType ?? VoucherType.PURCHASE}|${purchase.invoiceNo}|${purchase.agency.name}`,
 
             entries: [
 

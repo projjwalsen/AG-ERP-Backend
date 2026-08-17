@@ -619,6 +619,18 @@ export class ImportResolver {
 
         if (this.productCache.has(cacheKey)) {
 
+            console.log("[IMPORT_PRODUCT_CACHE]", {
+                voucherNo: dto.voucherNo,
+                particulars: dto.particulars,
+                rawQuantity: dto.raw?.quantity,
+                quantity: dto.quantity,
+                rawRate: dto.raw?.rate,
+                unit: dto.unit,
+                cacheKey,
+                productId: this.productCache.get(cacheKey)?.id,
+                cacheHit: true
+            });
+
             return this.productCache.get(cacheKey);
 
         }
@@ -741,6 +753,18 @@ export class ImportResolver {
             cacheKey,
             product
         );
+
+        console.log("[IMPORT_PRODUCT_CACHE]", {
+            voucherNo: dto.voucherNo,
+            particulars: dto.particulars,
+            rawQuantity: dto.raw?.quantity,
+            quantity: dto.quantity,
+            rawRate: dto.raw?.rate,
+            unit: dto.unit,
+            cacheKey,
+            productId: product.id,
+            cacheHit: false
+        });
 
         return product;
 
@@ -1727,7 +1751,12 @@ export class ImportResolver {
     static async buildPurchasePayload(
         voucher: GroupedVoucherDTO
     ): Promise<any> {
-        const agency = 
+        const isRcmPurchase =
+            voucher.voucherType
+                .toUpperCase()
+                .includes("RCM PURCHASE");
+
+        const agency =
             await this.resolveOrCreateAgency(
                 voucher,
                 AgencyType.VENDOR
@@ -1739,7 +1768,9 @@ export class ImportResolver {
                 false
             );
 
-            const productRows = voucher.rows.filter(row =>
+        const productRows = isRcmPurchase
+            ? []
+            : voucher.rows.filter(row =>
                 !row.isTotalRow &&
                 row.quantity > 0 &&
                 row.taxableAmount > 0
@@ -1819,7 +1850,9 @@ export class ImportResolver {
                 voucher.invoiceDate,
 
             voucherType:
-                VoucherType.PURCHASE,
+                isRcmPurchase
+                    ? VoucherType.RCM_PURCHASE
+                    : VoucherType.PURCHASE,
 
             otherReference:
                 voucher.otherReferenceNo,

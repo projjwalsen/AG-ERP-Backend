@@ -103,13 +103,18 @@ export class PurchaseService {
             throw new ApiError("Unauthorized", 401);
         }
         const normalizedInvoiceNo = payload.invoiceNo.trim().toUpperCase();
+        const isRcmPurchase =
+            payload.voucherType === VoucherType.RCM_PURCHASE;
 
         if(!payload?.agencyId || !payload?.branchId || !payload?.invoiceNo ){
             throw new ApiError("Missing required purchase fields", 400);
         }
 
-        if(!payload?.items || payload?.items.length === 0){
+        if(!isRcmPurchase && (!payload?.items || payload?.items.length === 0)){
             throw new ApiError("Purchase items are required", 400);
+        }
+        if(isRcmPurchase && payload?.items?.length){
+            throw new ApiError("RCM Purchase cannot contain inventory items", 400);
         }
         /** Validate each items */
         for(const item of payload.items){
@@ -352,7 +357,14 @@ export class PurchaseService {
             });
         }
 
-        if (payload.importedTotals) {
+        if (payload.importedTotals && isRcmPurchase) {
+            subTotalAmount = payload.importedTotals.subTotal;
+            totalCGSTAmount = payload.importedTotals.totalCGST;
+            totalSGSTAmount = payload.importedTotals.totalSGST;
+            totalIGSTAmount = payload.importedTotals.totalIGST;
+            totalGSTAmount = payload.importedTotals.totalGST;
+            grandTotal = payload.importedTotals.grandTotal;
+        } else if (payload.importedTotals) {
             const expectedGrandTotal =
                 money(
                     subTotalAmount +
@@ -465,7 +477,8 @@ export class PurchaseService {
                     ? new Date(payload.supplierInvoiceDate)
                     : undefined,
 
-                voucherType:"PURCHASE",
+                voucherType:
+                    payload.voucherType ?? VoucherType.PURCHASE,
 
                 otherReference:
                     payload.otherReference,
@@ -1341,7 +1354,9 @@ export class PurchaseService {
                             : undefined,
 
                     voucherType:
-                        "PURCHASE",
+                        payload.voucherType ??
+                        existingPurchase.voucherType ??
+                        VoucherType.PURCHASE,
 
                     otherReference:
                         payload.otherReference,

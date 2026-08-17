@@ -49,13 +49,13 @@ function sourceRowValue(
 export async function createImportErrorReport(
     worksheet: XLSX.WorkSheet,
     errors: any[],
-    headerRow = 3,
+    headerRow?: number,
     filePrefix = "import"
 ) {
     const sourceRows = XLSX.utils.sheet_to_json<Record<string, any>>(
         worksheet,
         {
-            range: headerRow - 1,
+            range: (headerRow || 3) - 1,
             defval: "",
             raw: false
         }
@@ -217,11 +217,11 @@ export class ImportService {
         const sourceWorksheet = worksheet;
 
         const rawRows =
-            ExcelImportService.readRows(
-                worksheet, {
-                    headerRow: 3
-                }
-            );
+            ExcelImportService.readRows(worksheet, {
+                // Keep the existing purchase layout. The attached sales
+                // register has its headers on row 8.
+                headerRow: type === "SALE" ? 8 : 3
+            });
 
             console.log("RAW ROWS =", rawRows.length);
 
@@ -508,7 +508,7 @@ console.log("Rows To Import:", rowsToImport.length);
                 await createImportErrorReport(
                     sourceWorksheet,
                     summary.errors,
-                    3,
+                    type === "SALE" ? 8 : 3,
                     type.toLowerCase()
                 );
         }
