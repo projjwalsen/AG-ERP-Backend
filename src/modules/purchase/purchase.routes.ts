@@ -29,7 +29,6 @@ router.use(authMiddleware);
  *               - branchId
  *               - invoiceNo
  *               - invoiceDate
- *               - items
  *
  *             properties:
  * 
@@ -53,6 +52,12 @@ router.use(authMiddleware);
  *                 type: string
  *                 format: date-time
  *                 example: 2026-07-06T00:00:00.000Z
+ *
+ *               voucherType:
+ *                 type: string
+ *                 enum: [PURCHASE, RCM_PURCHASE]
+ *                 default: PURCHASE
+ *                 description: RCM_PURCHASE creates a purchase without inventory items.
  *
  *               supplierInvoiceDate:
  *                 type: string
@@ -228,6 +233,13 @@ router.post(
  *         name: branchId
  *         schema:
  *           type: string
+
+ *       - in: query
+ *         name: voucherType
+ *         schema:
+ *           type: string
+ *           enum: [PURCHASE, RCM_PURCHASE]
+ *         description: Filter normal or RCM purchases.
  *
  *     responses:
  *       200:

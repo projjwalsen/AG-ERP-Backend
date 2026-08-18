@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { VoucherType } from "@prisma/client";
 import { PurchaseService } from "./purchase.service";
 
 export const createPurchase = async (req: Request, res: Response, next: NextFunction) => {
@@ -11,10 +12,17 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
 
             invoiceDate,
             supplierInvoiceDate,
+            voucherType,
 
             otherReference,
 
             roundOffAmount,
+            subtotalAmount,
+            totalCGSTAmount,
+            totalSGSTAmount,
+            totalIGSTAmount,
+            totalGSTAmount,
+            grandTotal,
 
             remarks,
 
@@ -29,8 +37,15 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
             invoiceNo,
             invoiceDate,
             supplierInvoiceDate,
+            voucherType: voucherType || VoucherType.PURCHASE,
             otherReference,
             roundOffAmount,
+            subtotalAmount,
+            totalCGSTAmount,
+            totalSGSTAmount,
+            totalIGSTAmount,
+            totalGSTAmount,
+            grandTotal,
             remarks,
             transport,
             items,
@@ -50,13 +65,14 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
 export const getAllPurchases = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { page, limit, branchId, status } = (req as any).query;
+        const { page, limit, branchId, status, voucherType } = (req as any).query;
 
         const purchases = await PurchaseService.getAllPurchases(actor, { 
             page: Number(page) || 1,
             limit: Number(limit) || 10,
             branchId,
-            status
+            status,
+            voucherType: voucherType as VoucherType
         });
 
         return res.status(200).json({
