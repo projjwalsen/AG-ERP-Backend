@@ -78,6 +78,12 @@ type createPurchasePayload = {
     remarks?: string;
 
     roundOffAmount?: number;
+    subtotalAmount?: number;
+    totalCGSTAmount?: number;
+    totalSGSTAmount?: number;
+    totalIGSTAmount?: number;
+    totalGSTAmount?: number;
+    grandTotal?: number;
     transport?: PurchaseTransportPayload;
 
     items: PurchaseItemPayload[];
@@ -103,8 +109,21 @@ export class PurchaseService {
             throw new ApiError("Unauthorized", 401);
         }
         const normalizedInvoiceNo = payload.invoiceNo.trim().toUpperCase();
+        const voucherType =
+            payload.voucherType ?? VoucherType.PURCHASE;
         const isRcmPurchase =
-            payload.voucherType === VoucherType.RCM_PURCHASE;
+            voucherType === VoucherType.RCM_PURCHASE;
+
+        if (
+            voucherType !== VoucherType.PURCHASE &&
+            voucherType !== VoucherType.RCM_PURCHASE
+        ) {
+            throw new ApiError(
+                "Purchase voucher type must be PURCHASE or RCM_PURCHASE",
+                400
+            );
+        }
+        payload.voucherType = voucherType;
 
         if(!payload?.agencyId || !payload?.branchId || !payload?.invoiceNo ){
             throw new ApiError("Missing required purchase fields", 400);
@@ -116,6 +135,7 @@ export class PurchaseService {
         if(isRcmPurchase && payload?.items?.length){
             throw new ApiError("RCM Purchase cannot contain inventory items", 400);
         }
+        payload.items = payload.items ?? [];
         /** Validate each items */
         for(const item of payload.items){
             if(!item?.productId || !item?.batchNo){
@@ -357,13 +377,39 @@ export class PurchaseService {
             });
         }
 
-        if (payload.importedTotals && isRcmPurchase) {
-            subTotalAmount = payload.importedTotals.subTotal;
-            totalCGSTAmount = payload.importedTotals.totalCGST;
-            totalSGSTAmount = payload.importedTotals.totalSGST;
-            totalIGSTAmount = payload.importedTotals.totalIGST;
-            totalGSTAmount = payload.importedTotals.totalGST;
-            grandTotal = payload.importedTotals.grandTotal;
+        const hasRcmTotals =
+            isRcmPurchase &&
+            (
+                payload.importedTotals ||
+                payload.subtotalAmount !== undefined ||
+                payload.totalCGSTAmount !== undefined ||
+                payload.totalSGSTAmount !== undefined ||
+                payload.totalIGSTAmount !== undefined ||
+                payload.totalGSTAmount !== undefined ||
+                payload.grandTotal !== undefined
+            );
+
+        if (hasRcmTotals) {
+            subTotalAmount = Number(
+                payload.importedTotals?.subTotal ?? payload.subtotalAmount ?? 0
+            );
+            totalCGSTAmount = Number(
+                payload.importedTotals?.totalCGST ?? payload.totalCGSTAmount ?? 0
+            );
+            totalSGSTAmount = Number(
+                payload.importedTotals?.totalSGST ?? payload.totalSGSTAmount ?? 0
+            );
+            totalIGSTAmount = Number(
+                payload.importedTotals?.totalIGST ?? payload.totalIGSTAmount ?? 0
+            );
+            totalGSTAmount = Number(
+                payload.importedTotals?.totalGST ?? payload.totalGSTAmount ?? 0
+            );
+            grandTotal = Number(
+                payload.importedTotals?.grandTotal ??
+                payload.grandTotal ??
+                money(subTotalAmount + totalGSTAmount + roundOffAmount)
+            );
         } else if (payload.importedTotals) {
             const expectedGrandTotal =
                 money(
@@ -613,6 +659,7 @@ export class PurchaseService {
             limit?: number;
             status?: "PENDING" | "APPROVED" | "REJECTED";
             branchId?: string;
+            voucherType?: VoucherType;
         }
     ) {
         if(!actor?.id){
@@ -630,6 +677,9 @@ export class PurchaseService {
             }),
             ...(query?.branchId && {
                 branchId: query.branchId
+            }),
+            ...(query?.voucherType && {
+                voucherType: query.voucherType
             })
         }
         

@@ -314,7 +314,6 @@ export class ExcelImportService {
                 currentVoucherRow = row;
 
                 if (type === "PURCHASE") {
-
                     const nextRow = rows[index + 1] || {};
                     const nextProduct = String(
                         this.getValue(nextRow, "Particulars") || ""
@@ -344,47 +343,32 @@ export class ExcelImportService {
                         row = inheritedRow;
                     }
                 }
-            } else if (
-                currentVoucherRow &&
-                type === "SALE"
-            ) {
-
+            } else if (currentVoucherRow && type === "SALE") {
                 const continuationProduct = String(
                     this.getValue(row, "Particulars") || ""
                 ).trim();
-
                 const continuationQuantity =
                     this.toNumber(this.getValue(row, "Quantity"));
-
                 const continuationRate =
                     this.toNumber(this.getValue(row, "Rate"));
-
                 const continuationValue =
                     this.toNumber(this.getValue(row, "Value"));
-
                 const currentProduct = String(
                     this.getValue(currentVoucherRow, "Particulars") || ""
                 )
                     .replace(/\s+/g, " ")
                     .trim()
                     .toUpperCase();
-
                 const currentAgency = String(
-                    this.getValue(
-                        currentVoucherRow,
-                        "Supplier",
-                        "Buyer"
-                    ) || ""
+                    this.getValue(currentVoucherRow, "Supplier", "Buyer") || ""
                 )
                     .replace(/\s+/g, " ")
                     .trim()
                     .toUpperCase();
-
                 const currentRowIsPartyHeader =
                     currentProduct &&
                     currentAgency &&
                     currentProduct === currentAgency;
-
                 const isRepeatedItemRow =
                     !currentRowIsPartyHeader &&
                     currentProduct &&
@@ -397,15 +381,10 @@ export class ExcelImportService {
 
                 if (
                     continuationProduct &&
-                    (
-                        continuationQuantity > 0 ||
-                        continuationRate > 0 ||
-                        continuationValue > 0
-                    ) &&
+                    (continuationQuantity > 0 || continuationRate > 0 || continuationValue > 0) &&
                     !isRepeatedItemRow
                 ) {
                     const inheritedRow = { ...currentVoucherRow };
-
                     for (const [key, value] of Object.entries(row)) {
                         if (
                             value !== undefined &&
@@ -415,7 +394,6 @@ export class ExcelImportService {
                             inheritedRow[key] = value;
                         }
                     }
-
                     row = inheritedRow;
                 } else {
                     return null as any;
@@ -470,6 +448,10 @@ export class ExcelImportService {
                     row,
                     productName
                 );
+
+            if (isTotalRow) {
+                return null as any;
+            }
 
             /**
              * Ignore party/header rows in Sales Register.
@@ -1436,7 +1418,10 @@ export class ExcelImportService {
             const productName =
                 String(row.particulars || "").trim();
 
-            if (!productName)
+            if (
+                !productName ||
+                this.isTotalRow(row, productName)
+            )
                 continue;
 
             const openingQty =
