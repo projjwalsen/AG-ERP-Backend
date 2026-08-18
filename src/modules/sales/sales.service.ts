@@ -806,6 +806,7 @@ export class SalesService {
             limit?: number;
             status?: "PENDING"| "APPROVED" | "REJECTED";
             branchId?: string;
+            search?: string;
         }
     ){
         if(!actor?.id){
@@ -816,12 +817,34 @@ export class SalesService {
         const limit = query?.limit || 10;
         const skip = (page - 1) * limit;
 
+        const search = query?.search?.trim();
+
         const where: any = {
             ...(
                 query?.status && { status: query.status }
             ),
             ...(
                 query?.branchId && { branchId: query.branchId }
+            ),
+            ...(
+                search && {
+                    OR: [
+                        {
+                            invoiceNo: {
+                                contains: search,
+                                mode: "insensitive"
+                            }
+                        },
+                        {
+                            agency: {
+                                name: {
+                                    contains: search,
+                                    mode: "insensitive"
+                                }
+                            }
+                        }
+                    ]
+                }
             )
         };
 

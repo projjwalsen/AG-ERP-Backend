@@ -1,4 +1,4 @@
-import { OutstandingType, ProductUnit, VoucherType } from "@prisma/client";
+import { OutstandingType, ProductUnit, VoucherType, Prisma } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { RBACService } from "../rbac/rbac.service";
@@ -660,6 +660,7 @@ export class PurchaseService {
             status?: "PENDING" | "APPROVED" | "REJECTED";
             branchId?: string;
             voucherType?: VoucherType;
+            search?: string;
         }
     ) {
         if(!actor?.id){
@@ -671,7 +672,9 @@ export class PurchaseService {
 
         const skip = (page - 1) * limit;
 
-        const where = {
+        const search = query?.search?.trim();
+
+        const where: Prisma.PurchaseWhereInput = {
             ...(query?.status && {
                 status: query.status
             }),
@@ -680,6 +683,24 @@ export class PurchaseService {
             }),
             ...(query?.voucherType && {
                 voucherType: query.voucherType
+            }),
+            ...(search && {
+                OR: [
+                    {
+                        invoiceNo: {
+                            contains: search,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        agency: {
+                            name: {
+                                contains: search,
+                                mode: "insensitive"
+                            }
+                        }
+                    }
+                ]
             })
         }
         
