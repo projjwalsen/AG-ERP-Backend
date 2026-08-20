@@ -332,8 +332,6 @@ console.log("Rows To Import:", rowsToImport.length);
 
                         try {
 
-                            let pendingStockSale = false;
-
                             if (type === "PURCHASE") {
 
                                 const payload =
@@ -395,44 +393,18 @@ console.log("Rows To Import:", rowsToImport.length);
                                         actor,
                                         {
                                             ...payload,
-                                            deferStockValidation:
-                                                payload.hasInsufficientStock
+                                            deferStockValidation: true
                                         }
                                     );
 
-                                if (payload.hasInsufficientStock) {
-
-                                    pendingStockSale = true;
-
-                                    summary.failed++;
-
-                                    for (const warning of payload.stockWarnings || []) {
-                                        summary.errors.push({
-                                            voucherNo:
-                                                voucher.voucherNo,
-                                            invoiceNo:
-                                                voucher.invoiceNo,
-                                            code:
-                                                "INSUFFICIENT_STOCK",
-                                            error:
-                                                `Insufficient stock for Product '${warning.productName}'. Remaining Qty ${warning.remainingQty}`
-                                        });
-                                    }
-
-                                } else {
-
-                                    await SalesService.approveSale(
-                                        actor,
-                                        sale.id
-                                    );
-
-                                }
+                                await SalesService.approveSale(
+                                    actor,
+                                    sale.id
+                                );
 
                             }
 
-                            if (!pendingStockSale) {
-                                summary.success++;
-                            }
+                            summary.success++;
 
                         } catch (error: any) {
 

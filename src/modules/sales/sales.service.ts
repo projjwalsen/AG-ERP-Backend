@@ -306,33 +306,28 @@ export class SalesService {
                 );
             }
 
-            if(item.unit === ProductUnit.KG || item.unit === ProductUnit.MT){
-                const requiredQtyKG =
-                    item.unit === ProductUnit.MT
+            if (
+                !allowNegativeStock &&
+                Number(batch.availableQtyKG) <
+                    (item.unit === ProductUnit.MT
                         ? Number(item.quantity) * 1000
-                        : Number(item.quantity);
+                        : Number(item.quantity))
+            ) {
+                throw new ApiError(
+                    `Insufficient stock for product ${batch.product.name} in batch ${batch.batchNo}`,
+                    400
+                );
+            }
 
-                if( 
-                    !allowNegativeStock &&
-                    !payload.deferStockValidation &&
-                    Number(batch.availableQtyKG) < requiredQtyKG
-                ) {
-                    throw new ApiError(
-                        `Insufficient stock for product ${batch.product.name} in batch ${batch.batchNo}, Available : ${batch.availableQtyKG} KG. Allow negative stock setting.`,
-                        400
-                    )
-                }
-            } else {
-                if(
-                    !allowNegativeStock &&
-                    !payload.deferStockValidation &&
-                    Number(batch.availableQtyLTR) < Number(item.quantity)
-                ) {
-                    throw new ApiError(
-                        `Insufficient stock for product ${batch.product.name} in batch ${batch.batchNo}, Available : ${batch.availableQtyLTR} LTR. Allow negative stock setting.`,
-                        400
-                    )
-                }
+            if (
+                !allowNegativeStock &&
+                item.unit === ProductUnit.LTR &&
+                Number(batch.availableQtyLTR) < Number(item.quantity)
+            ) {
+                throw new ApiError(
+                    `Insufficient stock for product ${batch.product.name} in batch ${batch.batchNo}`,
+                    400
+                );
             }
 
             if (!batch) {
@@ -1015,6 +1010,8 @@ export class SalesService {
             }
 
             const productLedgerCache = new Map<string, { id: string }>();
+            const setting = await tx.setting.findFirst();
+            const allowNegativeStock = setting?.allowNegativeInventory ?? false;
             const batchIds = [...new Set(lockedSale.items.map(item => item.batchId))];
             const batches = await tx.inventoryBatch.findMany({
                 where: {
@@ -1040,7 +1037,8 @@ export class SalesService {
                     batchId: item.batchId,
                     quantity: Number(item.quantity),
                     unit: item.unit,
-                    transactionDate: lockedSale.createdAt
+                    transactionDate: lockedSale.createdAt,
+                    allowNegativeStock
                 });
 
                 // ========================================================
