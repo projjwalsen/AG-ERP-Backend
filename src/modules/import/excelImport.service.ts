@@ -256,6 +256,50 @@ export class ExcelImportService {
 
     }
 
+    /**
+     * Detect the header row in Tally registers. Sales exports commonly have
+     * report/title rows before the actual column headers, while purchase
+     * exports may start at a different row.
+     */
+    static detectHeaderRow(
+        worksheet: XLSX.WorkSheet,
+        type: "PURCHASE" | "SALE"
+    ): number {
+        const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, {
+            header: 1,
+            defval: "",
+            raw: false,
+            range: 0,
+        });
+
+        const requiredHeaders = [
+            "voucher no",
+            "particulars",
+            "quantity",
+            "value"
+        ];
+
+        for (let index = 0; index < Math.min(rows.length, 50); index++) {
+            const normalized = new Set(
+                (rows[index] || []).map((cell: any) =>
+                    this.normalizeHeader(cell)
+                )
+            );
+
+            const matchedHeaders = requiredHeaders.filter(header =>
+                normalized.has(header)
+            ).length;
+
+            if (matchedHeaders >= 3) {
+                return index + 1;
+            }
+        }
+
+        // Preserve the established layouts if the export uses unexpected
+        // header labels and automatic detection cannot identify the row.
+        return type === "SALE" ? 8 : 3;
+    }
+
     static readProductRows(
         worksheet: XLSX.WorkSheet
     ): Record<string, any>[] {
