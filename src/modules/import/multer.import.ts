@@ -216,16 +216,21 @@ export class ImportService {
 
         const sourceWorksheet = worksheet;
 
+        const headerRow =
+            ExcelImportService.detectHeaderRow(
+                worksheet,
+                type
+            );
+
         const rawRows =
             ExcelImportService.readRows(worksheet, {
-                // Keep the existing purchase layout. The attached sales
-                // register has its headers on row 8.
-                headerRow: type === "SALE" ? 3 : 3
+                headerRow
             });
 
-            console.log("RAW ROWS =", rawRows.length);
+        console.log("Detected header row =", headerRow);
+        console.log("RAW ROWS =", rawRows.length);
 
-            console.log(rawRows[0]);
+        console.log(rawRows[0]);
 
         const parsedRows =
             ExcelImportService.parseRows(
@@ -480,7 +485,7 @@ console.log("Rows To Import:", rowsToImport.length);
                 await createImportErrorReport(
                     sourceWorksheet,
                     summary.errors,
-                    type === "SALE" ? 8 : 3,
+                    headerRow,
                     type.toLowerCase()
                 );
         }
