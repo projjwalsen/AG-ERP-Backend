@@ -1646,7 +1646,8 @@ export class ImportResolver {
         quantity: number,
         unit: ProductUnit,
         reservedByBatch: Map<string, number> = new Map(),
-        productName?: string
+        productName?: string,
+        allowInsufficientStock = false
     ) {
 
         let remainingQty = quantity;
@@ -1659,7 +1660,7 @@ export class ImportResolver {
 
         }[] = [];
 
-        const batches =
+        let batches =
             await prisma.inventoryBatch.findMany({
 
                 where: {
@@ -1670,7 +1671,9 @@ export class ImportResolver {
 
                     isActive: true,
 
-                    ...(unit === ProductUnit.KG
+                    ...(allowInsufficientStock
+                        ? {}
+                        : (unit === ProductUnit.KG || unit === ProductUnit.MT)
                         ? {
                             availableQtyKG: {
                                 gt: 0
@@ -1692,6 +1695,22 @@ export class ImportResolver {
 
             });
 
+        if (allowInsufficientStock && batches.length === 0) {
+            const fallbackBatch = await prisma.inventoryBatch.create({
+                data: {
+                    branchId,
+                    productId,
+                    batchNo: `NEGATIVE-STOCK-${productId}-${Date.now()}`,
+                    purchasePrice: 0,
+                    availableQtyKG: 0,
+                    availableQtyLTR: 0,
+                    isActive: true
+                }
+            });
+
+            batches = [fallbackBatch];
+        }
+
         for (const batch of batches) {
 
             if (remainingQty <= 0)
@@ -1699,7 +1718,7 @@ export class ImportResolver {
 
             const availableInDatabase = Number(
 
-                unit === ProductUnit.KG
+                unit === ProductUnit.KG || unit === ProductUnit.MT
                     ? batch.availableQtyKG
                     : batch.availableQtyLTR
 
@@ -1711,14 +1730,17 @@ export class ImportResolver {
                 availableInDatabase -
                 (reservedByBatch.get(batch.id) || 0);
 
-            if (available <= 0)
+            if (available <= 0 && !allowInsufficientStock)
                 continue;
 
             const allocateQty =
                 Math.min(
                     remainingQty,
-                    available
+                    Math.max(available, 0)
                 );
+
+            if (allocateQty <= 0)
+                continue;
 
             allocations.push({
 
@@ -1730,6 +1752,20 @@ export class ImportResolver {
 
             remainingQty -= allocateQty;
 
+        }
+
+        if (remainingQty > 0) {
+
+            if (allowInsufficientStock && batches.length > 0) {
+                const fallbackBatch = batches[batches.length - 1];
+
+                allocations.push({
+                    batchId: fallbackBatch.id,
+                    quantity: remainingQty
+                });
+
+                remainingQty = 0;
+            }
         }
 
         if (remainingQty > 0) {
@@ -1984,7 +2020,8 @@ export class ImportResolver {
                     row.quantity!,
                     row.unit as ProductUnit,
                     reservedByBatch,
-                    row.particulars
+                    row.particulars,
+                    true
                 );
 
             for (const allocation of allocations) {

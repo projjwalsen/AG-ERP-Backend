@@ -638,7 +638,12 @@ export class ProductLedgerService {
                 client.productLedgerEntry.count({ where })
             ]);
 
-            let runningStockKG = openingStockKG;
+            // When no start date is supplied, the actual OPENING_BALANCE
+            // entry is included in `entries`, so replay must begin at zero.
+            // For a date-filtered report, `openingStockKG` is the balance
+            // carried forward from entries before the selected period.
+            const initialRunningStockKG = startDate ? openingStockKG : 0;
+            let runningStockKG = initialRunningStockKG;
 
             const movementRows: any[] = [];
 

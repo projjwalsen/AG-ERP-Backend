@@ -49,6 +49,7 @@ type RemoveStockPayload = {
     quantity: number;
     unit: ProductUnit;
     transactionDate?:Date;
+    allowNegativeStock?: boolean;
 };
 
 export class InventoryService {
@@ -260,6 +261,7 @@ export class InventoryService {
         }
 
         const allowNegativeStock =
+            payload.allowNegativeStock ??
             settings?.allowNegativeInventory ?? false;
 
         const density =
@@ -372,7 +374,8 @@ export class InventoryService {
             productId: payload.productId,
             quantityKG: quantityKG,
             quantityLTR: quantityLTR,
-            operation: "REMOVE"
+            operation: "REMOVE",
+            allowNegativeStock
         });
 
         return updatedBatch;
@@ -386,6 +389,7 @@ export class InventoryService {
             quantityKG: number;
             quantityLTR: number;
             operation: "ADD" | "REMOVE";
+            allowNegativeStock?: boolean;
         }
     ) {
 
@@ -399,6 +403,7 @@ export class InventoryService {
         }
 
         const allowNegativeStock =
+            payload.allowNegativeStock ??
             settings?.allowNegativeInventory ?? false;
 
         let inventory =

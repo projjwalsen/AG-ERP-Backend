@@ -3143,6 +3143,10 @@ export class ExcelService {
                 account: string;
                 parentGroup: string;
                 groupCode?: string;
+                reportParentCode?: string;
+                reportParentName?: string;
+                reportChildCode?: string;
+                reportChildName?: string;
                 debit: number;
                 credit: number;
                 closingDebit: number;
@@ -3365,30 +3369,53 @@ export class ExcelService {
         const getGroup = (item: typeof options.data[number]) => {
             const code = String(item.groupCode || "").toUpperCase();
 
+            if (item.reportParentCode) {
+                return {
+                    parentKey: item.reportParentCode,
+                    parentLabel: item.reportParentName || item.reportParentCode,
+                    childKey: item.reportChildCode || code,
+                    childLabel: item.reportChildName || item.account,
+                    label: item.reportChildName || item.account,
+                    order: 999
+                };
+            }
+
             if (code.startsWith("INPUT_GST_")) {
                 return {
-                    key: "GST_INPUT",
+                    parentKey: "ASSETS",
+                    parentLabel: "Assets",
+                    childKey: "GST_INPUT",
+                    childLabel: "GST Input",
                     ...groupDefinitions.GST_INPUT
                 };
             }
 
             if (code.startsWith("OUTPUT_GST_")) {
                 return {
-                    key: "GST_OUTPUT",
+                    parentKey: "LIABILITIES",
+                    parentLabel: "Liabilities",
+                    childKey: "GST_OUTPUT",
+                    childLabel: "GST Output",
                     ...groupDefinitions.GST_OUTPUT
                 };
             }
 
             return {
-                key: code || item.parentGroup,
+                parentKey: code || item.parentGroup,
+                parentLabel: item.parentGroup,
+                childKey: code || item.parentGroup,
+                childLabel: item.account,
                 ...(groupDefinitions[code] || {
-                    label: item.parentGroup,
+                    label: item.account,
                     order: 999
                 })
             };
         };
 
         const grouped = new Map<string, {
+            parentKey: string;
+            parentLabel: string;
+            childKey: string;
             label: string;
             order: number;
             items: typeof options.data;
@@ -3396,20 +3423,55 @@ export class ExcelService {
 
         for (const item of options.data) {
             const group = getGroup(item);
-            const current = grouped.get(group.key) || {
+            const key = `${group.parentKey}:${group.childKey}`;
+            const current = grouped.get(key) || {
+                parentKey: group.parentKey,
+                parentLabel: group.parentLabel,
+                childKey: group.childKey,
                 label: group.label,
                 order: group.order,
                 items: []
             };
 
             current.items.push(item);
-            grouped.set(group.key, current);
+            grouped.set(key, current);
         }
 
         const sortedGroups = [...grouped.values()]
-            .sort((a, b) => a.order - b.order);
+            .sort((a, b) =>
+                a.parentKey.localeCompare(b.parentKey) ||
+                a.order - b.order ||
+                a.childKey.localeCompare(b.childKey)
+            );
+
+        let previousParentKey: string | null = null;
 
         for (const group of sortedGroups) {
+            if (group.parentKey !== previousParentKey) {
+                const parentRow = worksheet.addRow([
+                    group.parentLabel,
+                    "",
+                    "",
+                    ""
+                ]);
+
+                worksheet.mergeCells(
+                    parentRow.number,
+                    1,
+                    parentRow.number,
+                    4
+                );
+
+                parentRow.font = { bold: true, size: 12 };
+                parentRow.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFB4C7E7" }
+                };
+
+                previousParentKey = group.parentKey;
+            }
+
             const groupRow = worksheet.addRow([
                 group.label,
                 "",
