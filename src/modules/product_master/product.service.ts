@@ -198,6 +198,7 @@ export class ProductService {
         actor: any,
         query?: {
             search?: string;
+            productName?: string;
             category?: string;
             page?: number;
             limit?: number;
@@ -212,6 +213,7 @@ export class ProductService {
         }
 
         const search = query?.search?.trim();
+        const productName = query?.productName?.trim();
         const category = query?.category?.trim();
         const page     = query?.page  || 1;
         const limit    = query?.limit || 10;
@@ -220,6 +222,9 @@ export class ProductService {
         const where = {
             ...(category && {
                 category: { contains: category, mode: "insensitive" as const }
+            }),
+            ...(productName && {
+                name: { contains: productName, mode: "insensitive" as const }
             }),
             ...(search && {
                 OR: [

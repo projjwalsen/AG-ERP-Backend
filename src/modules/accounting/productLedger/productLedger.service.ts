@@ -554,8 +554,10 @@ export class ProductLedgerService {
             }
             : null;
 
-        let openingStockKG =
-            Number(product.openingStockKG || 0);
+        // The ledger entry is the source of truth for opening stock. Starting
+        // from Product.openingStockKG and then processing OPENING_BALANCE would
+        // count the same stock twice.
+        let openingStockKG = 0;
 
         if (ledger && priorWhere) {
 
@@ -581,15 +583,28 @@ export class ProductLedgerService {
                             ? total + qty
                             : total - qty;
 
-                }, openingStockKG);
+                }, 0);
         }
 
         // 3. Stock + analytics (safe even without ledger)
-        const [globalStock, branchWiseStock, analytics] = await Promise.all([
+        const [globalStock, branchWiseStock, analytics, openingBalance] = await Promise.all([
             this.getGlobalProductStock(productId),
             this.getBranchWiseStock(productId),
             this.getProductAnalytics(productId),
+            ledger
+                ? client.productLedgerEntry.aggregate({
+                    where: {
+                        productLedgerId: ledger.id,
+                        movementType: ProductMovementType.OPENING_BALANCE,
+                        ...(query?.branchId && { branchId: query.branchId })
+                    },
+                    _sum: { quantityKG: true }
+                })
+                : Promise.resolve(null),
         ]);
+
+        const recordedOpeningStockKG =
+            Number(openingBalance?._sum.quantityKG || 0);
 
         let closingStockKG = openingStockKG;
         // 4. Movements ONLY if ledger exists
@@ -790,7 +805,7 @@ export class ProductLedgerService {
                 openingStockKG:
                     startDate
                         ? openingStockKG
-                        : Number(product.openingStockKG || 0),
+                        : recordedOpeningStockKG,
 
                 closingStockKG:
                     startDate

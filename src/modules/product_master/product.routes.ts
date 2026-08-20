@@ -129,6 +129,11 @@ router.post(
  *           type: string
  *         description: Search by product name or SKU
  *       - in: query
+ *         name: productName
+ *         schema:
+ *           type: string
+ *         description: Search by product name only
+ *       - in: query
  *         name: category
  *         schema:
  *           type: string
