@@ -65,14 +65,15 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
 export const getAllPurchases = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { page, limit, branchId, status, voucherType } = (req as any).query;
+        const { page, limit, branchId, status, voucherType, search } = (req as any).query;
 
         const purchases = await PurchaseService.getAllPurchases(actor, { 
             page: Number(page) || 1,
             limit: Number(limit) || 10,
             branchId,
             status,
-            voucherType: voucherType as VoucherType
+            voucherType: voucherType as VoucherType,
+            search
         });
 
         return res.status(200).json({

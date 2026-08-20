@@ -258,6 +258,12 @@ router.post(
  *         name: branchId
  *         schema:
  *           type: string
+
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by invoice number or agency name.
  *
  *     responses:
  *       200:
