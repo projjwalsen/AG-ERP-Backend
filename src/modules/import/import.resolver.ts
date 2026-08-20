@@ -83,6 +83,18 @@ export class ImportResolver {
 
     }
 
+    /**
+     * Product-master rows represent distinct catalog products even when
+     * their names differ only by unit or HSN text. Keep the source label
+     * intact for product-master imports; the sales-import normalizer above is
+     * intentionally not used here.
+     */
+    private static normalizeProductMasterName(name: string): string {
+        return String(name ?? "")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
     private static canonicalizeProductName(name: string): string {
 
         const hsn =
@@ -777,11 +789,11 @@ export class ImportResolver {
     ) {
 
         const normalizedName =
-            this.normalizeProductName(
+            this.normalizeProductMasterName(
                 dto.productName
             );
 
-        const cacheKey = normalizedName;
+        const cacheKey = normalizedName.toUpperCase();
 
         if (this.productCache.has(cacheKey)) {
             return this.productCache.get(cacheKey);

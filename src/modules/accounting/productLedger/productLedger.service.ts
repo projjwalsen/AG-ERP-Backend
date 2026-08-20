@@ -497,7 +497,15 @@ export class ProductLedgerService {
         const endDate =
             query?.endDate
                 ? parseDate(query.endDate, "endDate")
-                : new Date();
+                : undefined;
+
+        const hasDateFilter = Boolean(
+            query?.startDate || query?.endDate
+        );
+
+        const hideOpeningBalanceInUnfilteredView =
+            !hasDateFilter &&
+            query?.movementType === undefined;
 
         
         // 1. Get product (ALWAYS REQUIRED)
@@ -522,6 +530,12 @@ export class ProductLedgerService {
 
                     ...(query?.movementType && {
                         movementType: query.movementType
+                    }),
+
+                    ...(hideOpeningBalanceInUnfilteredView && {
+                        movementType: {
+                            not: ProductMovementType.OPENING_BALANCE
+                        }
                     }),
 
                     ...(query?.branchId && {
@@ -638,11 +652,14 @@ export class ProductLedgerService {
                 client.productLedgerEntry.count({ where })
             ]);
 
-            // When no start date is supplied, the actual OPENING_BALANCE
-            // entry is included in `entries`, so replay must begin at zero.
-            // For a date-filtered report, `openingStockKG` is the balance
-            // carried forward from entries before the selected period.
-            const initialRunningStockKG = startDate ? openingStockKG : 0;
+            // The unfiltered view hides the stored OPENING_BALANCE movement
+            // and starts from its recorded quantity. For a date-filtered
+            // report, `openingStockKG` is carried forward from prior entries.
+            const initialRunningStockKG = startDate
+                ? openingStockKG
+                : query?.movementType === ProductMovementType.OPENING_BALANCE
+                    ? 0
+                    : recordedOpeningStockKG;
             let runningStockKG = initialRunningStockKG;
 
             const movementRows: any[] = [];
