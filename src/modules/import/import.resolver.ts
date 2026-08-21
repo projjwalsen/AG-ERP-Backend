@@ -2237,6 +2237,9 @@ export class ImportResolver {
                 voucher.invoiceNo ||
                 voucher.voucherNo,
 
+            voucherNo:
+                voucher.voucherNo,
+
             invoiceDate:
                 voucher.invoiceDate ??
                 voucher.voucherDate,
