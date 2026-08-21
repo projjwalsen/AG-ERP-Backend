@@ -2336,7 +2336,7 @@ export class ImportResolver {
 
         // Skip already imported journals
         const importKey =
-            `${dto.voucherType.trim().toUpperCase()}_${dto.voucherNo}`;
+            `${dto.voucherType.trim().toUpperCase()}_${dto.voucherNo}_${dto.importIndex ?? 0}`;
 
         const existing =
             await prisma.journal.findUnique({
