@@ -1737,7 +1737,7 @@ export class ExcelImportService {
 
         return rows
 
-            .map(row => {
+            .map((row, index) => {
 
                 const voucherType =
                     String(
@@ -1794,6 +1794,9 @@ export class ExcelImportService {
                 }
 
                 return {
+
+                    importIndex:
+                        index + 1,
 
                     date:
                         this.toDate(

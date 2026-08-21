@@ -1117,21 +1117,31 @@ export class ProductLedgerService {
         const page = query?.page || 1;
         const limit = query?.limit || 20;
         const skip = (page - 1) * limit;
+        const search = query?.search?.trim();
 
         const where: any = {
             isActive: true,
-            ...(query?.search && {
-                product: {
-                    OR: [
-                        { name: { contains: query.search, mode: "insensitive" } },
-                        { sku: { contains: query.search, mode: "insensitive" } },
-                    ]
-                }
-            }),
-            ...(query?.category && {
-                product: {
-                    category: { contains: query.category, mode: "insensitive" }
-                }
+            ...((search || query?.category) && {
+                AND: [
+                    ...(search ? [{
+                        OR: [
+                            { code: { contains: search, mode: "insensitive" } },
+                            {
+                                product: {
+                                    OR: [
+                                        { name: { contains: search, mode: "insensitive" } },
+                                        { sku: { contains: search, mode: "insensitive" } },
+                                    ]
+                                }
+                            }
+                        ]
+                    }] : []),
+                    ...(query?.category ? [{
+                        product: {
+                            category: { contains: query.category, mode: "insensitive" }
+                        }
+                    }] : [])
+                ]
             })
         };
 

@@ -22,6 +22,10 @@ type TransactionPayload = {
     remarks?: string;
 }
 
+type TransactionOperationOptions = {
+    allowImportOverSettlement?: boolean;
+};
+
 type FIFOAllocation = {
     invoiceId: string;
     invoiceNo: string;
@@ -368,7 +372,8 @@ export class TransactionService {
 
     private static async validateInvoiceSettlement(
         tx: Prisma.TransactionClient,
-        payload: TransactionPayload
+        payload: TransactionPayload,
+        allowImportOverSettlement = false
     ) {
         if(payload.thirdPartyAgencyId) {
             throw new ApiError("Third Party not allowed -- Invoice to Invoice Settlement", 400);
@@ -430,23 +435,25 @@ export class TransactionService {
             );
         }
 
-        if(
-            invoice.outstandings <= 0
-        ) {
-            throw new ApiError(
-                "Invoice is already fully settled",
-                400
-            )
-        }
+        if (!allowImportOverSettlement) {
+            if (
+                invoice.outstandings <= 0
+            ) {
+                throw new ApiError(
+                    "Invoice is already fully settled",
+                    400
+                )
+            }
 
-        if (
-            invoice.outstandings !==
-            payload.amount
-        ) {
-            throw new ApiError(
-                `Outstanding amount is ${invoice.outstandings}. Invoice settlement must be full.`,
-                400
-            )
+            if (
+                invoice.outstandings !==
+                payload.amount
+            ) {
+                throw new ApiError(
+                    `Outstanding amount is ${invoice.outstandings}. Invoice settlement must be full.`,
+                    400
+                )
+            }
         }
 
         if(
@@ -605,7 +612,8 @@ export class TransactionService {
 
     private static async allocateInvoice(
         tx: Prisma.TransactionClient,
-        transaction: Transaction
+        transaction: Transaction,
+        allowImportOverSettlement = false
     ) {
         const invoice = await this.getInvoiceOutstanding(
             tx,
@@ -616,7 +624,10 @@ export class TransactionService {
             }
         );
 
-        if (invoice.outstandings !== Number(transaction.amount)) {
+        if (
+            !allowImportOverSettlement &&
+            invoice.outstandings !== Number(transaction.amount)
+        ) {
             throw new ApiError(
                 "Invoice outstanding has changed. Please refresh.",
                 409
@@ -651,7 +662,8 @@ export class TransactionService {
 
     private static async settleInvToInvPayment(
         tx: Prisma.TransactionClient,
-        transaction: Transaction
+        transaction: Transaction,
+        allowImportOverSettlement = false
     ) {
         const amount = Number(transaction.amount);
 
@@ -668,7 +680,8 @@ export class TransactionService {
 
         await this.allocateInvoice(
             tx,
-            transaction
+            transaction,
+            allowImportOverSettlement
         )
 
 
@@ -1273,7 +1286,11 @@ export class TransactionService {
 
     }
 
-    static async createTransaction(actor: any, payload: TransactionPayload) {
+    static async createTransaction(
+        actor: any,
+        payload: TransactionPayload,
+        options: TransactionOperationOptions = {}
+    ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
@@ -1353,7 +1370,8 @@ export class TransactionService {
                     case SettlementType.INVOICE_TO_INVOICE:
                         await this.validateInvoiceSettlement(
                             tx,
-                            payload
+                            payload,
+                            options.allowImportOverSettlement
                         );
                         break;
 
@@ -1659,7 +1677,11 @@ export class TransactionService {
         return transaction;
     }
 
-    static async approveTransaction(actor: any, transactionId: string) {
+    static async approveTransaction(
+        actor: any,
+        transactionId: string,
+        options: TransactionOperationOptions = {}
+    ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
@@ -1735,8 +1757,9 @@ export class TransactionService {
             switch (transaction.settlementType) {
                 case SettlementType.INVOICE_TO_INVOICE:
                     await this.settleInvToInvPayment(
-                        tx, 
-                        transaction
+                        tx,
+                        transaction,
+                        options.allowImportOverSettlement
                     );
                     break;
 
