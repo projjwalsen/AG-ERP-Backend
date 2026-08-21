@@ -793,7 +793,7 @@ export class ImportResolver {
 
                             sku: crypto.randomUUID(),
 
-                            name: normalizedName,
+                            name: dto.productName.trim(),
 
                             density,
 
@@ -835,7 +835,7 @@ export class ImportResolver {
 
                     const updateData: any = {
 
-                        name: normalizedName,
+                        name: dto.productName.trim(),
                         density,
 
                         sellPricePerUnit:
@@ -1346,7 +1346,7 @@ export class ImportResolver {
 
                         sku: crypto.randomUUID(),
 
-                        name: this.normalizeProductMasterName(
+                        name: this.canonicalizeProductName(
                             dto.particulars!
                         ),
 
@@ -2085,31 +2085,10 @@ export class ImportResolver {
 
         for (const row of productRows) {
 
-            let product;
-            if (row.lineKind === "SCRAP") {
-                try {
-                    product = await this.resolveProduct(row);
-                } catch (error: any) {
-                    if (!String(error?.message || "").toLowerCase().includes("product not found")) {
-                        throw error;
-                    }
-                    product = await this.resolveOrCreateProduct({
-                        ...row,
-                        particulars: `Unknown - ${row.particulars}`
-                    });
-                }
-            } else {
-                product = await this.resolveProduct(row);
-            }
-
-            if (row.lineKind === "SCRAP") {
-                await this.ensureSyntheticOpeningStock(
-                    branch.id,
-                    product,
-                    Number(row.quantity || 0),
-                    voucher
+            const product =
+                await this.resolveProduct(
+                    row
                 );
-            }
 
             const rowTaxableAmount =
                 Number(row.taxableAmount || 0) > 0
@@ -2324,6 +2303,9 @@ export class ImportResolver {
                 voucher.invoiceNo ||
                 voucher.voucherNo,
 
+            voucherNo:
+                voucher.voucherNo,
+
             invoiceDate:
                 voucher.invoiceDate ??
                 voucher.voucherDate,
@@ -2423,6 +2405,7 @@ export class ImportResolver {
 
         // Skip already imported journals
         const importKey =
+            dto.importKey ||
             `${dto.voucherType.trim().toUpperCase()}_${dto.voucherNo}_${dto.importIndex ?? 0}`;
 
         const existing =
@@ -2477,6 +2460,8 @@ export class ImportResolver {
             branchId: branch.id,
 
             journalHeadId: journalHead.id,
+
+            saleId: dto.saleId,
 
             importKey,
 

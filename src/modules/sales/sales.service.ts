@@ -79,6 +79,7 @@ type CreateSalesPayload = {
     branchId:string;
 
     invoiceNo?:string;
+    voucherNo?:string;
     remarks?:string;
     invoiceDate?:string;
 
@@ -1168,6 +1169,119 @@ export class SalesService {
         }
 
         return sale;
+    }
+
+    /**
+     * Creates a service-only sale during register import.
+     *
+     * Service invoices have financial totals but no inventory item or batch,
+     * so they must not go through the manual inventory-sale validation path.
+     */
+    static async createImportedServiceSale(
+        actor: any,
+        payload: CreateSalesPayload
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        if (!payload.agencyId || !payload.branchId) {
+            throw new ApiError("Agency & Branch Id are required", 400);
+        }
+
+        if (payload.items?.length) {
+            throw new ApiError(
+                "Service-only sale cannot contain inventory items",
+                400
+            );
+        }
+
+        const totals = payload.importedTotals;
+
+        if (!payload.invoiceNo?.trim() || !totals) {
+            throw new ApiError(
+                "Imported service sale requires invoice number and financial totals",
+                400
+            );
+        }
+
+        const [agency, branch] = await Promise.all([
+            prisma.agency.findUnique({ where: { id: payload.agencyId } }),
+            prisma.branch.findUnique({ where: { id: payload.branchId } })
+        ]);
+
+        if (!agency) {
+            throw new ApiError("Invalid Agency Id", 400);
+        }
+
+        if (agency.type !== "CLIENT" && agency.type !== "BOTH") {
+            throw new ApiError("Agency must be of type CLIENT or BOTH", 400);
+        }
+
+        if (!branch || !branch.isActive) {
+            throw new ApiError("Invalid or inactive Branch Id", 400);
+        }
+
+        return prisma.sale.create({
+            data: {
+                agencyId: payload.agencyId,
+                branchId: payload.branchId,
+                invoiceNo: payload.invoiceNo.trim(),
+                voucherNo: payload.voucherNo?.trim(),
+                invoiceDate: payload.invoiceDate
+                    ? new Date(payload.invoiceDate)
+                    : new Date(),
+                voucherType: "SALE",
+                otherReference: payload.otherReference?.trim(),
+                roundOffAmount: totals.roundOff ?? 0,
+                remarks: payload.remarks?.trim(),
+                createdById: actor.id,
+                createdAt: payload.voucherDate
+                    ? new Date(payload.voucherDate)
+                    : new Date(),
+                subTotalAmount: totals.subTotal,
+                totalGSTAmount: totals.totalGST,
+                totalCGSTAmount: totals.totalCGST,
+                totalSGSTAmount: totals.totalSGST,
+                totalIGSTAmount: totals.totalIGST,
+                grandTotal: totals.grandTotal,
+                transport: payload.transport
+                    ? {
+                        create: {
+                            deliveryNote: payload.transport.deliveryNote,
+                            buyerOrderNo: payload.transport.buyerOrderNo,
+                            buyerOrderDate: payload.transport.buyerOrderDate
+                                ? new Date(payload.transport.buyerOrderDate)
+                                : undefined,
+                            termsOfDelivery: payload.transport.termsOfDelivery,
+                            despatchDocNo: payload.transport.despatchDocNo,
+                            despatchDocDate: payload.transport.despatchDocDate
+                                ? new Date(payload.transport.despatchDocDate)
+                                : undefined,
+                            despatchThrough: payload.transport.despatchThrough,
+                            destination: payload.transport.destination,
+                            vehicleOrFlightNo: payload.transport.vehicleOrFlightNo,
+                            billOfLadingNo: payload.transport.billOfLadingNo,
+                            portOfLoading: payload.transport.portOfLoading,
+                            portOfDischarge: payload.transport.portOfDischarge,
+                            countryTo: payload.transport.countryTo,
+                            shippingNo: payload.transport.shippingNo,
+                            shippingDate: payload.transport.shippingDate
+                                ? new Date(payload.transport.shippingDate)
+                                : undefined,
+                            portCode: payload.transport.portCode
+                        }
+                    }
+                    : undefined
+            },
+            include: {
+                agency: true,
+                branch: true,
+                transport: true,
+                transactions: true,
+                items: true
+            }
+        });
     }
 
     /**

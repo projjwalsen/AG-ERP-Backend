@@ -562,7 +562,7 @@ model Purchase {
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
-  invoiceNo String @unique
+  invoiceNo String
   
   purchaseOrderId String?
   purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId],references: [id],onDelete: SetNull)
@@ -627,6 +627,7 @@ model Purchase {
   @@index([branchId])
   @@index([purchaseOrderId])
   @@index([status])
+  @@unique([branchId, agencyId, invoiceNo])
 }
 
 model PurchaseTransport {
@@ -788,6 +789,7 @@ model Sale {
   transactions     Transaction[]
   transport        SaleTransport[]
   debitCreditNotes DebitCreditNote[]
+  hiringJournal    Journal? @relation("SaleHiringJournal")
 
   @@index([agencyId])
   @@index([branchId])
@@ -1445,6 +1447,9 @@ model Journal {
   voucherId String?
 
   voucher Voucher? @relation(fields: [voucherId], references: [id])
+
+  saleId String? @unique
+  sale   Sale? @relation("SaleHiringJournal", fields: [saleId], references: [id], onDelete: SetNull)
 
   createdById String?
 

@@ -59,6 +59,7 @@ export interface ExcelRowDTO {
 
     sourceParticulars?: string;
 
+
     isTotalRow?: boolean;
 
     narration?: string;
@@ -220,6 +221,10 @@ export interface JournalImportDTO {
     date?: Date;
 
     importIndex?: number;
+
+    importKey?: string;
+
+    saleId?: string;
 
     voucherNo: string;
 

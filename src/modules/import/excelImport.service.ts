@@ -395,7 +395,7 @@ export class ExcelImportService {
 
     private static getNarrationLineKind(row: Record<string, any>): "HIRING_CHARGE" | "SCRAP" | undefined {
         const text = String(this.getValue(row, "Narration") || "").replace(/\s+/g, " ").trim();
-        if (/\bHIRING\s+CHARGES?\b/i.test(text)) return "HIRING_CHARGE";
+        if (/\bHIRING\s+CHARGES?\b/i.test(text) || /\b(?:STORAGE|WAREHOUSE)\s+(?:&\s*)?(?:WAREHOUSE\s+)?RENT\b/i.test(text)) return "HIRING_CHARGE";
         if (/\b(?:SCRAP|WASTE|WASTAGE)\b/i.test(text)) return "SCRAP";
         return undefined;
     }
@@ -404,20 +404,31 @@ export class ExcelImportService {
         const narration = String(this.getValue(row, "Narration") || "").replace(/\s+/g, " ").trim();
         const kind = this.getNarrationLineKind(row);
         if (!kind) return undefined;
-
+        const accountingProduct = Object.keys(row).find(key =>
+            /\b(?:SCRAP|WASTE|WASTAGE|HIRING|STORAGE|RENT)\b/i.test(key) &&
+            this.toNumber(row[key]) !== 0
+        );
         const quantityMatch = narration.match(/\b(?:QTY|QNTY|QUANTITY)\s*[:=-]?\s*([\d,.]+)\s*(MT|MTS|LTR|LITRE|LITRES|KG|KGS|NOS|NO\.?S?)/i)
             || narration.match(/\b([\d,.]+)\s*(MT|MTS|LTR|LITRE|LITRES|KG|KGS|NOS|NO\.?S?)(?:\s|@|$)/i);
+        const tallyQuantityMatch = narration.match(/\(\s*(NOS|NO\.?S?|KG|KGS|LTR|LITRE|LITRES)\s*([\d,.]+)\s*\*\s*([\d,.]+)/i);
         const rateMatch = narration.match(/@\s*([\d,.]+)/i);
-        const quantity = quantityMatch ? this.toNumber(quantityMatch[1]) : 0;
-        const unit = quantityMatch?.[2]?.toUpperCase() || "KG";
-
-        if (kind === "HIRING_CHARGE") {
-            return { kind, productName: "Hiring Charges", quantity: 0, unit, rate: rateMatch ? this.toNumber(rateMatch[1]) : 0 };
-        }
-
-        const scrapMatch = narration.match(/\b(?:SALE\s+)?((?:SCRAP|WASTE|WASTAGE)[^@]*?)(?:\s+Q(?:TY|NTY)|\s+QUANTITY|\s+@|$)/i);
-        const productName = (scrapMatch?.[1] || "Unknown Scrap/Waste").replace(/[,:;.-]+$/, "").replace(/\s+/g, " ").trim();
-        return { kind, productName, quantity, unit, rate: rateMatch ? this.toNumber(rateMatch[1]) : 0 };
+        const quantity = quantityMatch
+            ? this.toNumber(quantityMatch[1])
+            : tallyQuantityMatch
+                ? this.toNumber(tallyQuantityMatch[2])
+                : 0;
+        const unit = (quantityMatch?.[2] || tallyQuantityMatch?.[1] || "KG").toUpperCase();
+        const derivedRate = rateMatch
+            ? this.toNumber(rateMatch[1])
+            : tallyQuantityMatch
+                ? this.toNumber(tallyQuantityMatch[3])
+                : 0;
+        const accountingAmount = accountingProduct ? this.toNumber(row[accountingProduct]) : 0;
+        if (kind === "HIRING_CHARGE") return { kind, productName: "Hiring Charges", quantity: 0, unit, rate: derivedRate, amount: accountingAmount };
+        const scrapMatch = narration.match(/\b(?:SALE\s+)?((?:SCRAP|WASTE|WASTAGE)[^@()]*?)(?:\s+Q(?:TY|NTY)|\s+QUANTITY|\s+@|\s*\(|$)/i);
+        const productName = (accountingProduct || scrapMatch?.[1] || "SCRAP/WASTE")
+            .replace(/[,:;.-]+$/, "").replace(/\s+/g, " ").trim();
+        return { kind, productName, quantity, unit, rate: derivedRate, amount: accountingAmount };
     }
 
     private static mergeSalesContinuationRow(
@@ -590,13 +601,20 @@ export class ExcelImportService {
             const rawParticulars = String(
                 this.getValue(row, "Particulars") || ""
             ).trim();
-
-            const rowParty = this.getValue(row, "Supplier", "Buyer", "Consignee");
-            const isPartyLikeRow = Boolean(rawParticulars) &&
-                this.normalizePartyHeader(rawParticulars) === this.normalizePartyHeader(rowParty);
-            const narrationItem = type === "SALE" && (isPartyLikeRow || !rawParticulars)
-                ? this.extractNarrationItem(row)
-                : undefined;
+            const rowParty = this.getValue(
+                row,
+                "Supplier",
+                "Buyer",
+                "Consignee"
+            );
+            const isPartyLikeRow =
+                Boolean(rawParticulars) &&
+                this.normalizePartyHeader(rawParticulars) ===
+                    this.normalizePartyHeader(rowParty);
+            const narrationItem =
+                type === "SALE" && (isPartyLikeRow || !rawParticulars)
+                    ? this.extractNarrationItem(row)
+                    : undefined;
             const particulars = narrationItem?.productName || rawParticulars;
 
             const voucherNo = explicitVoucherNo || String(
@@ -665,13 +683,6 @@ export class ExcelImportService {
                     this.normalizePartyHeader(agencyName) &&
                 !narrationItem
             ) {
-                parseErrors.push({
-                    voucherNo,
-                    invoiceNo: this.getValue(row, "Supplier Invoice No", "Invoice No"),
-                    error: `Sale voucher ${voucherNo} was not imported because no product/detail row was found.`,
-                    code: "MISSING_SALE_PARTICULARS",
-                    meta: { particulars: rawParticulars, narration: this.getValue(row, "Narration"), raw: row }
-                });
                 return null as any;
             }
 
@@ -696,13 +707,17 @@ export class ExcelImportService {
                 quantityText = `${narrationItem.quantity} ${narrationItem.unit}`;
             }
 
-            const value =
+            let value =
                 this.toNumber(
                     this.getValue(
                         row,
                         "Value"
                     )
                 );
+
+            if (value <= 0 && narrationItem?.amount) {
+                value = narrationItem.amount;
+            }
 
 
 
@@ -725,9 +740,13 @@ export class ExcelImportService {
             /**
              * Unit
              */
-            let unit = narrationItem?.kind === "SCRAP"
-                ? (narrationItem.unit === "NOS" || narrationItem.unit.startsWith("NO") ? "KG" : narrationItem.unit)
-                : "KG";
+            let unit =
+                narrationItem?.kind === "SCRAP" &&
+                /^(?:NOS|NO\.?S?)$/i.test(narrationItem.unit)
+                    ? "KG"
+                    : narrationItem?.kind === "SCRAP"
+                        ? narrationItem.unit
+                        : "KG";
 
             if (/KLR|KL\b/i.test(quantityText)) {
 
@@ -808,10 +827,6 @@ export class ExcelImportService {
             console.log({
                 voucher: this.getValue(row, "Voucher No"),
                 particulars: productName,
-
-                sourceParticulars: rawParticulars,
-
-                lineKind: narrationItem?.kind || "PRODUCT",
                 quantityText,
                 quantity,
                 rateText,
@@ -895,15 +910,18 @@ export class ExcelImportService {
                     )
                 );
 
+            const taxableAmountWithNarration =
+                taxableAmount || (narrationItem?.amount || 0);
+
             const gstAmount =
                 cgst + sgst + igst;
 
             const gstPercent =
-                taxableAmount > 0
+                taxableAmountWithNarration > 0
                     ? Number(
                         (
                             gstAmount /
-                            taxableAmount *
+                            taxableAmountWithNarration *
                             100
                         ).toFixed(2)
                     )
@@ -911,7 +929,7 @@ export class ExcelImportService {
 
             console.log({
                 particulars: productName,
-                taxableAmount,
+                taxableAmount: taxableAmountWithNarration,
                 cgst,
                 sgst,
                 igst,
@@ -920,7 +938,7 @@ export class ExcelImportService {
             });
 
 
-            const dto: ExcelRowDTO = {
+                const dto: ExcelRowDTO = {
 
                 voucherDate:
                     this.toDate(
@@ -1013,7 +1031,7 @@ export class ExcelImportService {
 
                 rate,
 
-                taxableAmount,
+                taxableAmount: taxableAmountWithNarration,
 
                 cgst,
 
@@ -1212,8 +1230,19 @@ export class ExcelImportService {
                 continue;
             }
 
+            const supplierKey =
+                type === "PURCHASE"
+                    ? (
+                        row.agencyGSTIN?.trim().toUpperCase() ||
+                        row.agencyName?.trim().toUpperCase() ||
+                        ""
+                    )
+                    : "";
+
             const key =
-                `${row.voucherType}_${row.voucherNo}`;
+                type === "PURCHASE"
+                    ? `${row.voucherType.trim().toUpperCase()}_${supplierKey}_${row.voucherNo}_${row.invoiceNo || ""}`
+                    : `${row.voucherType}_${row.voucherNo}`;
 
             if (!voucherMap.has(key)) {
 
@@ -1441,7 +1470,7 @@ export class ExcelImportService {
 
             if (!voucher.agencyName) {
 
-                if (type === "SALE" && !voucher.isHiringCharge) {
+                if (type === "SALE") {
                     if (!voucher.isCancelled) {
                         validationErrors.push({
                             voucherNo: voucher.voucherNo,
@@ -1478,7 +1507,7 @@ export class ExcelImportService {
                 // RCM Purchase has no inventory items.
                 // Financial values are handled through financialRows.
 
-            } else if (itemRows.length === 0) {
+            } else if (itemRows.length === 0 && !voucher.isHiringCharge) {
 
                 if (type === "SALE") {
 
@@ -1493,7 +1522,8 @@ export class ExcelImportService {
                             `No importable item row found in Voucher ${voucher.voucherNo}. The second row has no Particulars; the voucher was skipped.`,
 
                         code:
-                            "MISSING_SALE_PARTICULARS"
+                            "MISSING_SALE_PARTICULARS",
+                        meta: { sourceRows: voucher.rows.map(row => row.raw), narration: voucher.narration }
                     });
 
                     continue;

@@ -2,6 +2,7 @@ import { prisma } from "../../config/db";
 import { Express } from "express";
 import { PurchaseService } from "../purchase/purchase.service";
 import { SalesService } from "../sales/sales.service";
+import { JournalService } from "../journal/journal.service";
 import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import multer from "multer";
@@ -227,11 +228,6 @@ export class ImportService {
                 headerRow
             });
 
-        console.log("Detected header row =", headerRow);
-        console.log("RAW ROWS =", rawRows.length);
-
-        console.log(rawRows[0]);
-
         const validationErrors: any[] = [];
 
         const parsedRows =
@@ -271,8 +267,17 @@ console.log("Rows To Import:", rowsToImport.length);
                 const uniqueVouchers =
                     vouchers.filter(v => {
 
+                        const supplierKey =
+                            type === "PURCHASE"
+                                ? (
+                                    v.agencyGSTIN?.trim().toUpperCase() ||
+                                    v.agencyName?.trim().toUpperCase() ||
+                                    ""
+                                )
+                                : "";
+
                         const key =
-                            `${v.invoiceNo}|${v.voucherNo}`;
+                            `${supplierKey}|${v.invoiceNo}|${v.voucherNo}`;
 
                         if (seen.has(key)) {
                             console.log("Duplicate voucher skipped", key);
@@ -346,7 +351,8 @@ console.log("Rows To Import:", rowsToImport.length);
                                 const purchase =
                                     await PurchaseService.createPurchase(
                                         actor,
-                                        payload
+                                        payload,
+                                        { importMode: true }
                                     );
 
                                 await PurchaseService.approvePurchase(
@@ -358,15 +364,6 @@ console.log("Rows To Import:", rowsToImport.length);
 
                                 if (voucher.isCancelled) {
                                     await ImportResolver.createCancelledSaleRecord(
-                                        actor,
-                                        voucher
-                                    );
-                                    summary.success++;
-                                    return;
-                                }
-
-                                if (voucher.isHiringCharge) {
-                                    await ImportResolver.importHiringChargeVoucher(
                                         actor,
                                         voucher
                                     );
@@ -404,18 +401,40 @@ console.log("Rows To Import:", rowsToImport.length);
                                 }
 
                                 const sale =
-                                    await SalesService.createSale(
-                                        actor,
-                                        {
-                                            ...payload,
-                                            deferStockValidation: true
-                                        }
-                                    );
+                                    payload.items.length === 0
+                                        ? await SalesService.createImportedServiceSale(
+                                            actor,
+                                            payload
+                                        )
+                                        : await SalesService.createSale(
+                                            actor,
+                                            {
+                                                ...payload,
+                                                deferStockValidation: true
+                                            }
+                                        );
 
                                 await SalesService.approveSale(
                                     actor,
                                     sale.id
                                 );
+
+                                if (voucher.isHiringCharge) {
+                                    const journalPayload =
+                                        await ImportResolver.buildJournalPayload(actor, {
+                                            voucherNo: voucher.voucherNo,
+                                            invoiceNo: voucher.invoiceNo,
+                                            voucherType: "HIRING CHARGES",
+                                            date: voucher.voucherDate,
+                                            particulars: voucher.narration || "Hiring Charges",
+                                            debitAmount: 0,
+                                            creditAmount: voucher.importedTotals?.grandTotal || 0,
+                                            saleId: sale.id,
+                                            importKey: `HIRING_CHARGES_SALE_${sale.id}`
+                                        });
+                                    const journal = await JournalService.createJournal(actor, journalPayload);
+                                    await JournalService.approveJournal(actor, journal.id);
+                                }
 
                             }
 
