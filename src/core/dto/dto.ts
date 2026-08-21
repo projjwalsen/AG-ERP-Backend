@@ -211,6 +211,8 @@ export interface JournalImportDTO {
 
     date?: Date;
 
+    importIndex?: number;
+
     voucherNo: string;
 
     invoiceNo?: string;
