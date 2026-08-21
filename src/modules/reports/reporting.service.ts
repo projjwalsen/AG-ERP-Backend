@@ -561,13 +561,147 @@ export class ReportingService {
             });
 
         /**
+         * Keep the detailed ledger and GST postings intact, but present the
+         * requested consolidated accounting heads in the trial balance.
+         */
+        const consolidatedAccount = (row: typeof rawRows[number]) => {
+            if (row.ledgerCategory === LedgerType.CASH) {
+                return {
+                    key: "CASH_GLOBAL",
+                    ledgerCode: "CASH_GLOBAL",
+                    account: "Cash in Hand",
+                    parentGroup: "Cash-in-Hand",
+                    groupCode: "CASH_IN_HAND",
+                    ledgerCategory: LedgerType.CASH,
+                    ledgerNature: LedgerNature.DEBIT,
+                };
+            }
+
+            return null;
+        };
+
+        const consolidatedRowsByKey = new Map<string, any>();
+
+        for (const row of rawRows) {
+            const account = consolidatedAccount(row);
+            const key = account?.key || row.ledgerId;
+            const existing = consolidatedRowsByKey.get(key);
+
+            if (existing) {
+                existing.periodDebit += row.periodDebit;
+                existing.periodCredit += row.periodCredit;
+                existing.closingSigned += row.closingSigned;
+                continue;
+            }
+
+            consolidatedRowsByKey.set(key, {
+                ...row,
+                ...(account || {}),
+                ledgerId: account ? null : row.ledgerId,
+                groupId: account ? null : row.groupId,
+                branchId: account ? branchId || null : row.branchId,
+                branchName: account ? branch?.name || null : row.branchName,
+            });
+        }
+
+        const consolidatedRows =
+            Array.from(consolidatedRowsByKey.values())
+                .map(row => {
+                    const closingSigned = Number(row.closingSigned.toFixed(2));
+                    const closingDebit = closingSigned > 0 ? closingSigned : 0;
+                    const closingCredit = closingSigned < 0 ? Math.abs(closingSigned) : 0;
+
+                    return {
+                        ...row,
+                        periodDebit: Number(row.periodDebit.toFixed(2)),
+                        periodCredit: Number(row.periodCredit.toFixed(2)),
+                        closingSigned,
+                        debit: Number(closingDebit.toFixed(2)),
+                        credit: Number(closingCredit.toFixed(2)),
+                        closingDebit: Number(closingDebit.toFixed(2)),
+                        closingCredit: Number(closingCredit.toFixed(2)),
+                    };
+                });
+
+        const getHierarchy = (row: typeof consolidatedRows[number]) => {
+            const code = String(row.groupCode || "").toUpperCase();
+
+            if (code === "CASH_IN_HAND" || code === "BANK_ACCOUNTS" || code === "SUNDRY_DEBTORS" || code === "ASSETS") {
+                return { parentCode: "CURRENT_ASSETS", parentName: "Current Assets", childCode: code, childName: row.account };
+            }
+
+            if (code === "SUNDRY_CREDITORS" || code === "LOANS" || code === "SUSPENSE_ACCOUNT") {
+                return { parentCode: "CURRENT_LIABILITIES", parentName: "Current Liabilities", childCode: code, childName: row.account };
+            }
+
+            if (code === "PURCHASE" || code.startsWith("INPUT_GST_")) {
+                return { parentCode: "PURCHASE_ACCOUNT", parentName: "Purchase Account", childCode: code, childName: row.account };
+            }
+
+            if (code === "SALES" || code.startsWith("OUTPUT_GST_")) {
+                return { parentCode: "SALES_ACCOUNT", parentName: "Sales Account", childCode: code, childName: row.account };
+            }
+
+            if (code === "DIRECT_EXPENSE" || code === "INDIRECT_EXPENSE") {
+                return { parentCode: "EXPENSES", parentName: "Expenses", childCode: code, childName: row.account };
+            }
+
+            if (code === "DIRECT_INCOME" || code === "INDIRECT_INCOME") {
+                return { parentCode: "INCOME", parentName: "Income", childCode: code, childName: row.account };
+            }
+
+            return {
+                parentCode: String(row.parentGroup || "OTHER").toUpperCase().replace(/\s+/g, "_"),
+                parentName: row.parentGroup || "Other",
+                childCode: code || row.ledgerCode,
+                childName: row.account,
+            };
+        };
+
+        const rowsWithHierarchy = consolidatedRows.map(row => ({
+            ...row,
+            ...(() => {
+                const hierarchy = getHierarchy(row);
+                return {
+                    reportParentCode: hierarchy.parentCode,
+                    reportParentName: hierarchy.parentName,
+                    reportChildCode: hierarchy.childCode,
+                    reportChildName: hierarchy.childName,
+                };
+            })(),
+        }));
+
+        const accountGroups = Array.from(
+            rowsWithHierarchy.reduce((groups, row) => {
+                const key = row.reportParentCode;
+                const current = groups.get(key) || {
+                    code: row.reportParentCode,
+                    name: row.reportParentName,
+                    rows: [],
+                    debit: 0,
+                    credit: 0,
+                };
+
+                current.rows.push(row);
+                current.debit += row.debit;
+                current.credit += row.credit;
+                groups.set(key, current);
+                return groups;
+            }, new Map<string, any>()).values()
+        ).map((group: any) => ({
+            ...group,
+            debit: Number(group.debit.toFixed(2)),
+            credit: Number(group.credit.toFixed(2)),
+        }));
+
+        /**
          * ============================================================
          * 9. REMOVE ZERO ACCOUNTS
          * ============================================================
          */
 
         const filteredRows =
-            rawRows.filter(row => {
+            rowsWithHierarchy.filter(row => {
 
                 if (query?.includeZero) {
                     return true;
@@ -586,7 +720,7 @@ export class ReportingService {
          */
 
         const rows =
-            filteredRows.map(
+                filteredRows.map(
                 (row, index) => ({
                     srNo:
                         index + 1,
@@ -721,7 +855,8 @@ export class ReportingService {
                     ) < 0.01
             },
 
-            rows
+            rows,
+            accountGroups
         };
     }
 

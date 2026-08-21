@@ -256,6 +256,50 @@ export class ExcelImportService {
 
     }
 
+    /**
+     * Detect the header row in Tally registers. Sales exports commonly have
+     * report/title rows before the actual column headers, while purchase
+     * exports may start at a different row.
+     */
+    static detectHeaderRow(
+        worksheet: XLSX.WorkSheet,
+        type: "PURCHASE" | "SALE"
+    ): number {
+        const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, {
+            header: 1,
+            defval: "",
+            raw: false,
+            range: 0,
+        });
+
+        const requiredHeaders = [
+            "voucher no",
+            "particulars",
+            "quantity",
+            "value"
+        ];
+
+        for (let index = 0; index < Math.min(rows.length, 50); index++) {
+            const normalized = new Set(
+                (rows[index] || []).map((cell: any) =>
+                    this.normalizeHeader(cell)
+                )
+            );
+
+            const matchedHeaders = requiredHeaders.filter(header =>
+                normalized.has(header)
+            ).length;
+
+            if (matchedHeaders >= 3) {
+                return index + 1;
+            }
+        }
+
+        // Preserve the established layouts if the export uses unexpected
+        // header labels and automatic detection cannot identify the row.
+        return type === "SALE" ? 8 : 3;
+    }
+
     static readProductRows(
         worksheet: XLSX.WorkSheet
     ): Record<string, any>[] {
@@ -297,6 +341,109 @@ export class ExcelImportService {
         return result;
     }
 
+    private static normalizePartyHeader(value: any): string {
+        return String(value ?? "")
+            .replace(/[–—−]/g, "-")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase()
+            .replace(/\s+(?:DRS?|CR)\s*$/i, "")
+            .trim();
+    }
+
+    private static isSalesPartyHeaderRow(
+        row: Record<string, any>,
+        nextRow: Record<string, any>
+    ): boolean {
+        const particulars = String(
+            this.getValue(row, "Particulars") || ""
+        ).trim();
+
+        const parties = [
+            this.getValue(row, "Buyer"),
+            this.getValue(row, "Consignee"),
+            this.getValue(row, "Supplier")
+        ]
+            .filter(Boolean)
+            .map(value => this.normalizePartyHeader(value));
+
+        const normalizedParticulars =
+            this.normalizePartyHeader(particulars);
+
+        const nextProduct = String(
+            this.getValue(nextRow, "Particulars") || ""
+        ).trim();
+
+        const nextQuantity = this.toNumber(
+            this.getValue(nextRow, "Quantity")
+        );
+        const nextRate = this.toNumber(
+            this.getValue(nextRow, "Rate")
+        );
+        const nextValue = this.toNumber(
+            this.getValue(nextRow, "Value")
+        );
+
+        return Boolean(
+            normalizedParticulars &&
+            parties.includes(normalizedParticulars) &&
+            !this.getValue(nextRow, "Voucher No", "Vch No") &&
+            nextProduct &&
+            (nextQuantity > 0 || nextRate > 0 || nextValue > 0)
+        );
+    }
+
+    private static mergeSalesContinuationRow(
+        headerRow: Record<string, any>,
+        detailRow: Record<string, any>
+    ): Record<string, any> {
+        const inheritedRow = { ...headerRow };
+
+        const lineFields = [
+            "particulars",
+            "quantity",
+            "rate",
+            "value",
+            "input cgst 9%",
+            "output cgst 9%",
+            "input sgst 9%",
+            "output sgst 9%",
+            "input igst 18%",
+            "output igst 18%",
+            "input cgst",
+            "output cgst",
+            "input sgst",
+            "output sgst",
+            "input igst",
+            "output igst",
+            "cgst itc not reflected in gstr-2b",
+            "r/off",
+            "gross total",
+            "grand total"
+        ];
+
+        for (const field of Object.keys(inheritedRow)) {
+            if (
+                lineFields.includes(field) ||
+                /(cgst|sgst|igst|gst|gross total|grand total|r\/off|round)/i.test(field)
+            ) {
+                inheritedRow[field] = "";
+            }
+        }
+
+        for (const [key, value] of Object.entries(detailRow)) {
+            if (
+                value !== undefined &&
+                value !== null &&
+                String(value).trim() !== ""
+            ) {
+                inheritedRow[key] = value;
+            }
+        }
+
+        return inheritedRow;
+    }
+
     static parseRows(
         rows: Record<string, any>[],
         type: "PURCHASE" | "SALE" = "PURCHASE"
@@ -320,6 +467,16 @@ export class ExcelImportService {
 
             if (explicitVoucherNo) {
                 currentVoucherRow = row;
+
+                if (
+                    type === "SALE" &&
+                    this.isSalesPartyHeaderRow(
+                        row,
+                        rows[index + 1] || {}
+                    )
+                ) {
+                    return null as any;
+                }
 
                 if (type === "PURCHASE" && !isRcmPurchase) {
                     const nextRow = rows[index + 1] || {};
@@ -392,17 +549,10 @@ export class ExcelImportService {
                     (continuationQuantity > 0 || continuationRate > 0 || continuationValue > 0) &&
                     !isRepeatedItemRow
                 ) {
-                    const inheritedRow = { ...currentVoucherRow };
-                    for (const [key, value] of Object.entries(row)) {
-                        if (
-                            value !== undefined &&
-                            value !== null &&
-                            String(value).trim() !== ""
-                        ) {
-                            inheritedRow[key] = value;
-                        }
-                    }
-                    row = inheritedRow;
+                    row = this.mergeSalesContinuationRow(
+                        currentVoucherRow,
+                        row
+                    );
                 } else {
                     return null as any;
                 }
@@ -428,7 +578,8 @@ export class ExcelImportService {
              * Product Name
              */
             const hsnNo =
-                particulars.match(/\((\d{4,8})\)/)?.[1];
+                particulars.match(/\((\d{4,8})\)/)?.[1]
+                ?? particulars.match(/\b(\d{4,8})\b/)?.[1];
 
             const agencyName =
                 String(
@@ -445,11 +596,14 @@ export class ExcelImportService {
                 particulars
                     .trim();
 
+            const isCancelled =
+                /\bcancell?ed\b/i.test(productName) ||
+                Object.values(row).some(value =>
+                    /\bcancell?ed\b/i.test(String(value ?? ""))
+                );
+
             const normalizedProduct =
-                productName
-                    .replace(/\s+/g, " ")
-                    .trim()
-                    .toUpperCase();
+                this.normalizePartyHeader(productName);
 
             const isTotalRow =
                 this.isTotalRow(
@@ -469,7 +623,8 @@ export class ExcelImportService {
             if (
                 normalizedProduct &&
                 agencyName &&
-                normalizedProduct === agencyName
+                normalizedProduct ===
+                    this.normalizePartyHeader(agencyName)
             ) {
                 return null as any;
             }
@@ -819,6 +974,8 @@ export class ExcelImportService {
                         )
                     ),
 
+                isCancelled,
+
                 isTotalRow,
 
                 narration:
@@ -954,8 +1111,16 @@ export class ExcelImportService {
             }
             if (
                 type === "SALE" &&
-                !row.agencyName
+                !row.agencyName &&
+                !row.isCancelled
             ) {
+                validationErrors.push({
+                    voucherNo: row.voucherNo,
+                    invoiceNo: row.invoiceNo,
+                    error: `Sale voucher ${row.voucherNo} could not be imported because the agency/customer was missing.`,
+                    code: "MISSING_SALE_AGENCY",
+                    meta: { particulars: row.particulars, raw: row.raw }
+                });
                 continue;
             }
 
@@ -1027,7 +1192,8 @@ export class ExcelImportService {
                     narration:
                         row.narration,
 
-                    rows: []
+                    rows: [],
+                    isCancelled: row.isCancelled
 
                 });
 
@@ -1207,6 +1373,15 @@ export class ExcelImportService {
             if (!voucher.agencyName) {
 
                 if (type === "SALE") {
+                    if (!voucher.isCancelled) {
+                        validationErrors.push({
+                            voucherNo: voucher.voucherNo,
+                            invoiceNo: voucher.invoiceNo,
+                            error: `Sale voucher ${voucher.voucherNo} could not be imported because the agency/customer was missing.`,
+                            code: "MISSING_SALE_AGENCY",
+                            meta: { sourceRows: voucher.rows.map(row => row.raw) }
+                        });
+                    }
                     continue;
                 }
 
@@ -1215,6 +1390,15 @@ export class ExcelImportService {
             if (!voucher.branchName) {
 
                 if (type === "SALE") {
+                    if (!voucher.isCancelled) {
+                        validationErrors.push({
+                            voucherNo: voucher.voucherNo,
+                            invoiceNo: voucher.invoiceNo,
+                            error: `Sale voucher ${voucher.voucherNo} could not be imported because the branch was missing.`,
+                            code: "MISSING_SALE_BRANCH",
+                            meta: { sourceRows: voucher.rows.map(row => row.raw) }
+                        });
+                    }
                     continue;
                 }
 

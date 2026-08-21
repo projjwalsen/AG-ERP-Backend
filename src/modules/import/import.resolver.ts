@@ -1,4 +1,4 @@
-import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, VoucherType } from "@prisma/client";
+import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -83,6 +83,18 @@ export class ImportResolver {
 
     }
 
+    /**
+     * Product-master rows represent distinct catalog products even when
+     * their names differ only by unit or HSN text. Keep the source label
+     * intact for product-master imports; the sales-import normalizer above is
+     * intentionally not used here.
+     */
+    private static normalizeProductMasterName(name: string): string {
+        return String(name ?? "")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
     private static canonicalizeProductName(name: string): string {
 
         const hsn =
@@ -91,8 +103,10 @@ export class ImportResolver {
 
         let canonical = String(name ?? "")
             .toUpperCase()
+            .replace(/[–—−]/g, "-")
             .replace(/\(\d{4,8}\)/g, "")
             .replace(/\b(LTRS?|LITERS?|LITRES?)\b/gi, "LITER")
+            .replace(/\s*-\s*/g, " - ")
             .replace(/\s+/g, " ")
             .replace(/\s*-\s*$/g, "")
             .trim();
@@ -609,13 +623,13 @@ export class ImportResolver {
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
 
-        const normalizedBaseName =
-            this.normalizeProductBaseName(dto.particulars!);
-
         const cacheKey =
             dto.hsnNo
                 ? `${dto.hsnNo}_${normalizedName}`
                 : normalizedName;
+
+        const canonicalName =
+            this.canonicalizeProductName(dto.particulars!);
 
         if (this.productCache.has(cacheKey)) {
 
@@ -635,106 +649,52 @@ export class ImportResolver {
 
         }
 
-        let product = null;
-
-        if (dto.hsnNo) {
-
-            product =
-                await prisma.product.findFirst({
-
-                    where: {
-
-                        hsnNo: dto.hsnNo,
-
-                        OR: [
-
-                            {
-                                name: {
-
-                                    contains: normalizedName,
-
-                                    mode: "insensitive"
-
-                                }
-                            },
-
-                            {
-                                name: {
-
-                                    contains: normalizedBaseName,
-
-                                    mode: "insensitive"
-
-                                }
-                            }
-
-                        ]
-
+        let product = await prisma.product.findFirst({
+            where: {
+                OR: [
+                    {
+                        name: {
+                            equals: dto.particulars,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        name: {
+                            equals: normalizedName,
+                            mode: "insensitive"
+                        }
                     }
-
-                });
-
-        }
+                ]
+            }
+        });
 
         if (!product) {
+            const firstLookupToken =
+                canonicalName.split(" ")[0];
 
-            product = await prisma.product.findFirst({
-
+            const candidates = await prisma.product.findMany({
                 where: {
-
-                    name: {
-
-                        contains: normalizedBaseName,
-
-                        mode: "insensitive"
-
-                    }
-
+                    OR: [
+                        ...(dto.hsnNo
+                            ? [{ hsnNo: dto.hsnNo }]
+                            : []),
+                        {
+                            name: {
+                                contains: firstLookupToken,
+                                mode: "insensitive"
+                            }
+                        }
+                    ]
                 }
-
             });
 
-        }
-
-        if (!product) {
-
-            product =
-                await prisma.product.findFirst({
-
-                    where: {
-
-                        OR: [
-
-                            {
-
-                                name: {
-
-                                    equals: dto.particulars,
-
-                                    mode: "insensitive"
-
-                                }
-
-                            },
-
-                            {
-
-                                name: {
-
-                                    equals: normalizedName,
-
-                                    mode: "insensitive"
-
-                                }
-
-                            }
-
-                        ]
-
-                    }
-
-                });
-
+            product = candidates.find(candidate =>
+                this.canonicalizeProductName(candidate.name) ===
+                canonicalName &&
+                (!dto.hsnNo ||
+                    !candidate.hsnNo ||
+                    candidate.hsnNo === dto.hsnNo)
+            ) || null;
         }
 
         if (!product) {
@@ -777,11 +737,11 @@ export class ImportResolver {
     ) {
 
         const normalizedName =
-            this.normalizeProductName(
+            this.normalizeProductMasterName(
                 dto.productName
             );
 
-        const cacheKey = normalizedName;
+        const cacheKey = normalizedName.toUpperCase();
 
         if (this.productCache.has(cacheKey)) {
             return this.productCache.get(cacheKey);
@@ -1646,7 +1606,8 @@ export class ImportResolver {
         quantity: number,
         unit: ProductUnit,
         reservedByBatch: Map<string, number> = new Map(),
-        productName?: string
+        productName?: string,
+        allowInsufficientStock = false
     ) {
 
         let remainingQty = quantity;
@@ -1659,7 +1620,7 @@ export class ImportResolver {
 
         }[] = [];
 
-        const batches =
+        let batches =
             await prisma.inventoryBatch.findMany({
 
                 where: {
@@ -1670,7 +1631,9 @@ export class ImportResolver {
 
                     isActive: true,
 
-                    ...(unit === ProductUnit.KG
+                    ...(allowInsufficientStock
+                        ? {}
+                        : (unit === ProductUnit.KG || unit === ProductUnit.MT)
                         ? {
                             availableQtyKG: {
                                 gt: 0
@@ -1692,6 +1655,22 @@ export class ImportResolver {
 
             });
 
+        if (allowInsufficientStock && batches.length === 0) {
+            const fallbackBatch = await prisma.inventoryBatch.create({
+                data: {
+                    branchId,
+                    productId,
+                    batchNo: `NEGATIVE-STOCK-${productId}-${Date.now()}`,
+                    purchasePrice: 0,
+                    availableQtyKG: 0,
+                    availableQtyLTR: 0,
+                    isActive: true
+                }
+            });
+
+            batches = [fallbackBatch];
+        }
+
         for (const batch of batches) {
 
             if (remainingQty <= 0)
@@ -1699,7 +1678,7 @@ export class ImportResolver {
 
             const availableInDatabase = Number(
 
-                unit === ProductUnit.KG
+                unit === ProductUnit.KG || unit === ProductUnit.MT
                     ? batch.availableQtyKG
                     : batch.availableQtyLTR
 
@@ -1711,14 +1690,17 @@ export class ImportResolver {
                 availableInDatabase -
                 (reservedByBatch.get(batch.id) || 0);
 
-            if (available <= 0)
+            if (available <= 0 && !allowInsufficientStock)
                 continue;
 
             const allocateQty =
                 Math.min(
                     remainingQty,
-                    available
+                    Math.max(available, 0)
                 );
+
+            if (allocateQty <= 0)
+                continue;
 
             allocations.push({
 
@@ -1730,6 +1712,20 @@ export class ImportResolver {
 
             remainingQty -= allocateQty;
 
+        }
+
+        if (remainingQty > 0) {
+
+            if (allowInsufficientStock && batches.length > 0) {
+                const fallbackBatch = batches[batches.length - 1];
+
+                allocations.push({
+                    batchId: fallbackBatch.id,
+                    quantity: remainingQty
+                });
+
+                remainingQty = 0;
+            }
         }
 
         if (remainingQty > 0) {
@@ -1920,6 +1916,65 @@ export class ImportResolver {
         }
     }
 
+    static async createCancelledSaleRecord(
+        actor: any,
+        voucher: GroupedVoucherDTO
+    ) {
+        const invoiceNo =
+            voucher.invoiceNo?.trim() ||
+            voucher.voucherNo.trim();
+
+        const existing = await prisma.sale.findUnique({
+            where: { invoiceNo }
+        });
+
+        if (existing) return existing;
+
+        const branch = await prisma.branch.findFirst({
+            where: actor?.branchId
+                ? { id: actor.branchId }
+                : { isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+
+        if (!branch) {
+            throw new ApiError(
+                `Unable to store cancelled sale ${invoiceNo}: no branch is configured`,
+                400
+            );
+        }
+
+        const agencyName = "Cancelled Sales - Unassigned";
+        let agency = await prisma.agency.findFirst({
+            where: { name: agencyName }
+        });
+
+        if (!agency) {
+            agency = await prisma.agency.create({
+                data: {
+                    name: agencyName,
+                    type: AgencyType.CLIENT,
+                    isActive: true
+                }
+            });
+        }
+
+        return prisma.sale.create({
+            data: {
+                agencyId: agency.id,
+                branchId: branch.id,
+                invoiceNo,
+                voucherNo: voucher.voucherNo,
+                invoiceDate: voucher.invoiceDate || voucher.voucherDate || new Date(),
+                voucherType: VoucherType.SALE,
+                status: SalesStatus.REJECTED,
+                remarks: `Cancelled sale imported from Excel: ${voucher.narration || voucher.voucherNo}`,
+                createdById: actor?.id,
+                createdAt: voucher.voucherDate || new Date()
+            }
+        });
+    }
+
     static async buildSalePayload(
         voucher: GroupedVoucherDTO
     ): Promise<any> {
@@ -1984,7 +2039,8 @@ export class ImportResolver {
                     row.quantity!,
                     row.unit as ProductUnit,
                     reservedByBatch,
-                    row.particulars
+                    row.particulars,
+                    true
                 );
 
             for (const allocation of allocations) {
@@ -2432,6 +2488,10 @@ export class ImportResolver {
                 ?.trim()
                 .toUpperCase();
 
+        if (/\bcancell?ed\b/i.test(dto.particulars || "")) {
+            return this.createCancelledSaleTransaction(actor, dto);
+        }
+
         if (voucherType === "TAX INVOICE") {
 
             const payload =
@@ -2477,6 +2537,67 @@ export class ImportResolver {
         }
 
         throw new Error("Unsupported Voucher Type");
+    }
+
+    private static async createCancelledSaleTransaction(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+        const candidates = this.journalInvoiceCandidates(dto);
+        const sale = await prisma.sale.findFirst({
+            where: {
+                OR: candidates.flatMap(candidate => [
+                    { invoiceNo: { equals: candidate, mode: "insensitive" as const } },
+                    { voucherNo: { equals: candidate, mode: "insensitive" as const } }
+                ])
+            }
+        });
+
+        if (!sale) {
+            throw new Error(
+                `Cancelled sale not found for transaction voucher ${dto.voucherNo}`
+            );
+        }
+
+        const branch = sale?.branchId
+            ? { id: sale.branchId }
+            : await prisma.branch.findFirst({
+                where: actor?.branchId
+                    ? { id: actor.branchId }
+                    : { isActive: true },
+                orderBy: { createdAt: "asc" }
+            });
+
+        if (!branch) {
+            throw new ApiError(
+                `Unable to import cancelled transaction ${dto.voucherNo}: no branch is configured`,
+                400
+            );
+        }
+
+        const transactionNo = `CANCELLED-${dto.voucherNo}`;
+        const existing = await prisma.transaction.findUnique({
+            where: { transactionNo }
+        });
+
+        if (existing) return existing;
+
+        return prisma.transaction.create({
+            data: {
+                transactionNo,
+                status: TransactionStatus.REJECTED,
+                settlementType: SettlementType.INVOICE_TO_INVOICE,
+                branchId: branch.id,
+                direction: TransactionDirection.INWARD,
+                suspenseAccount: false,
+                agencyId: sale?.agencyId,
+                saleId: sale?.id,
+                amount: 0,
+                remarks: `Cancelled sale transaction imported: ${dto.voucherNo}`,
+                createdById: actor?.id,
+                createdAt: ExcelImportService.toDate(dto.date) || new Date()
+            }
+        });
     }
 
     static async buildSaleTransactionPayload(
