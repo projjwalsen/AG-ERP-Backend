@@ -1,4 +1,4 @@
-import { ProductUnit } from "@prisma/client";
+import { ProductType, ProductUnit } from "@prisma/client";
 import { prisma } from "../config/db";
 import { InventoryService } from "../modules/inventory/inventory.service";
 import { ProductLedgerService } from "../modules/accounting/productLedger/productLedger.service";
@@ -16,18 +16,38 @@ import { ProductLedgerService } from "../modules/accounting/productLedger/produc
  * combined 2,000 KG required by the two invoices.
  */
 
-const PRODUCT_ID = "6b24522a-735f-4e5d-8416-c8c681ebf64b";
+const PRODUCT_NAME = "SCRAP DRUMS";
+const PRODUCT_SKU = "SCRAP-DRUMS-SEED-2026";
 const INVOICES = ["APM/G2526/2332", "APM/G2526/3078"];
 const FALLBACK_QUANTITY_KG = 2_000;
 const SEED_REFERENCE_PREFIX = "SEED_SCRAP_DRUMS_SALE_IMPORT_2026";
 
 async function main() {
-    const product = await prisma.product.findUnique({
-        where: { id: PRODUCT_ID }
+    let product = await prisma.product.findFirst({
+        where: {
+            name: {
+                equals: PRODUCT_NAME,
+                mode: "insensitive"
+            }
+        }
     });
 
     if (!product) {
-        throw new Error(`SCRAP DRUMS product ${PRODUCT_ID} was not found.`);
+        product = await prisma.product.create({
+            data: {
+                sku: PRODUCT_SKU,
+                name: PRODUCT_NAME,
+                productType: ProductType.PURCHASED,
+                baseUnit: ProductUnit.KG,
+                operationalUnit: ProductUnit.KG,
+                density: 1,
+                applicableGST: 0,
+                openingStockKG: 0,
+                sellPricePerUnit: 0,
+                isActive: true
+            }
+        });
+        console.log(`Created product: ${PRODUCT_NAME}.`);
     }
 
     const sales = await prisma.sale.findMany({
@@ -37,7 +57,7 @@ async function main() {
         },
         include: {
             items: {
-                where: { productId: PRODUCT_ID },
+                where: { productId: product.id },
                 select: {
                     batchId: true,
                     quantity: true,
@@ -77,7 +97,7 @@ async function main() {
             where: {
                 branchId_productId_batchNo: {
                     branchId: branch.id,
-                    productId: PRODUCT_ID,
+                    productId: product.id,
                     batchNo
                 }
             }
@@ -93,7 +113,7 @@ async function main() {
             await prisma.$transaction(async tx => {
                 const created = await InventoryService.addStock(tx, {
                     branchId: branch.id,
-                    productId: PRODUCT_ID,
+                    productId: product.id,
                     batchNo,
                     quantity: FALLBACK_QUANTITY_KG,
                     unit: ProductUnit.KG,
@@ -101,7 +121,7 @@ async function main() {
                     transactionDate: new Date("2026-01-01T00:00:00.000Z")
                 });
 
-                const ledger = await ProductLedgerService.getOrCreateProductLedger(PRODUCT_ID, tx);
+                const ledger = await ProductLedgerService.getOrCreateProductLedger(product.id, tx);
                 await tx.productLedgerEntry.create({
                     data: {
                         productLedgerId: ledger.id,
@@ -122,7 +142,7 @@ async function main() {
                     }
                 });
                 await tx.product.update({
-                    where: { id: PRODUCT_ID },
+                    where: { id: product.id },
                     data: { openingStockKG: { increment: FALLBACK_QUANTITY_KG } }
                 });
             });
@@ -149,7 +169,7 @@ async function main() {
 
             await InventoryService.addStock(tx, {
                 branchId: allocation.branchId,
-                productId: PRODUCT_ID,
+                productId: product.id,
                 batchNo: batch.batchNo,
                 quantity: allocation.quantityKG,
                 unit: ProductUnit.KG,
@@ -157,7 +177,7 @@ async function main() {
                 transactionDate: allocation.date
             });
 
-            const ledger = await ProductLedgerService.getOrCreateProductLedger(PRODUCT_ID, tx);
+            const ledger = await ProductLedgerService.getOrCreateProductLedger(product.id, tx);
             await tx.productLedgerEntry.create({
                 data: {
                     productLedgerId: ledger.id,
@@ -178,7 +198,7 @@ async function main() {
                 }
             });
             await tx.product.update({
-                where: { id: PRODUCT_ID },
+                where: { id: product.id },
                 data: { openingStockKG: { increment: allocation.quantityKG } }
             });
         });
