@@ -152,6 +152,178 @@ export class SalesService {
         return [...merged.values()];
     }
 
+    private static normalizeDecimalValue(
+        value: number | undefined,
+        field: string,
+        scale: 2 | 3 | 0,
+        invoiceNo?: string,
+        required = false
+    ): number | undefined {
+        if (value === undefined || value === null) {
+            if (required) {
+                throw new ApiError(
+                    `Invalid numeric value for ${field} in invoice ${invoiceNo || "unknown"}`,
+                    400
+                );
+            }
+
+            return undefined;
+        }
+
+        const numericValue = Number(value);
+
+        if (!Number.isFinite(numericValue)) {
+            throw new ApiError(
+                `Invalid numeric value for ${field} in invoice ${invoiceNo || "unknown"}: ${String(value)}`,
+                400
+            );
+        }
+
+        const roundedValue = Number(numericValue.toFixed(scale));
+        const maximumValue =
+            scale === 3
+                ? 999999999999999.999
+                : scale === 2
+                    ? 9999999999999999.99
+                    : 99999;
+
+        if (Math.abs(roundedValue) > maximumValue) {
+            throw new ApiError(
+                `Value out of range for ${field} in invoice ${invoiceNo || "unknown"}: ${numericValue}`,
+                400
+            );
+        }
+
+        return roundedValue;
+    }
+
+    private static normalizeSaleNumericFields(
+        payload: CreateSalesPayload
+    ) {
+        const invoiceNo = payload.invoiceNo;
+
+        payload.items = payload.items.map((item, index) => ({
+            ...item,
+            quantity: this.normalizeDecimalValue(
+                item.quantity,
+                `items[${index}].quantity`,
+                3,
+                invoiceNo,
+                true
+            )!,
+            unitPrice: this.normalizeDecimalValue(
+                item.unitPrice,
+                `items[${index}].unitPrice`,
+                2,
+                invoiceNo
+            ),
+            taxableAmount: this.normalizeDecimalValue(
+                item.taxableAmount,
+                `items[${index}].taxableAmount`,
+                2,
+                invoiceNo
+            ),
+            gstPercent: this.normalizeDecimalValue(
+                item.gstPercent,
+                `items[${index}].gstPercent`,
+                2,
+                invoiceNo
+            ),
+            cgstAmount: this.normalizeDecimalValue(
+                item.cgstAmount,
+                `items[${index}].cgstAmount`,
+                2,
+                invoiceNo
+            ),
+            sgstAmount: this.normalizeDecimalValue(
+                item.sgstAmount,
+                `items[${index}].sgstAmount`,
+                2,
+                invoiceNo
+            ),
+            igstAmount: this.normalizeDecimalValue(
+                item.igstAmount,
+                `items[${index}].igstAmount`,
+                2,
+                invoiceNo
+            ),
+            gstAmount: this.normalizeDecimalValue(
+                item.gstAmount,
+                `items[${index}].gstAmount`,
+                2,
+                invoiceNo
+            ),
+            totalAmount: this.normalizeDecimalValue(
+                item.totalAmount,
+                `items[${index}].totalAmount`,
+                2,
+                invoiceNo
+            )
+        }));
+
+        payload.roundOffAmount = this.normalizeDecimalValue(
+            payload.roundOffAmount ?? 0,
+            "roundOffAmount",
+            2,
+            invoiceNo,
+            true
+        );
+
+        if (payload.importedTotals) {
+            payload.importedTotals = {
+                subTotal: this.normalizeDecimalValue(
+                    payload.importedTotals.subTotal,
+                    "importedTotals.subTotal",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                totalCGST: this.normalizeDecimalValue(
+                    payload.importedTotals.totalCGST,
+                    "importedTotals.totalCGST",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                totalSGST: this.normalizeDecimalValue(
+                    payload.importedTotals.totalSGST,
+                    "importedTotals.totalSGST",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                totalIGST: this.normalizeDecimalValue(
+                    payload.importedTotals.totalIGST,
+                    "importedTotals.totalIGST",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                totalGST: this.normalizeDecimalValue(
+                    payload.importedTotals.totalGST,
+                    "importedTotals.totalGST",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                roundOff: this.normalizeDecimalValue(
+                    payload.importedTotals.roundOff,
+                    "importedTotals.roundOff",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                grandTotal: this.normalizeDecimalValue(
+                    payload.importedTotals.grandTotal,
+                    "importedTotals.grandTotal",
+                    2,
+                    invoiceNo,
+                    true
+                )!
+            };
+        }
+    }
+
     /**
      * ===========================
      * Auto generate sales invoice number
@@ -212,7 +384,10 @@ export class SalesService {
             throw new ApiError("Agency & Branch Id are required", 400);
         }
 
-        payload.items = this.mergeDuplicateBatchItems(payload.items || []);
+        payload.items = payload.items || [];
+        this.normalizeSaleNumericFields(payload);
+        payload.items = this.mergeDuplicateBatchItems(payload.items);
+        this.normalizeSaleNumericFields(payload);
 
         if(
             !payload.items ||
@@ -572,6 +747,79 @@ export class SalesService {
                 payload.roundOffAmount ?? 0;
 
         }
+
+        for (const [index, data] of validatedItems.entries()) {
+            data.item.quantity = this.normalizeDecimalValue(
+                Number(data.item.quantity), `items[${index}].quantity`, 3,
+                invoiceNo, true
+            )!;
+            data.sellingPrice = this.normalizeDecimalValue(
+                data.sellingPrice, `items[${index}].sellingPrice`, 2,
+                invoiceNo, true
+            )!;
+            data.taxableAmount = this.normalizeDecimalValue(
+                data.taxableAmount, `items[${index}].taxableAmount`, 2,
+                invoiceNo, true
+            )!;
+            data.gstPercent = this.normalizeDecimalValue(
+                data.gstPercent, `items[${index}].gstPercent`, 2,
+                invoiceNo, true
+            )!;
+            data.cgstPercent = this.normalizeDecimalValue(
+                data.cgstPercent, `items[${index}].cgstPercent`, 2,
+                invoiceNo, true
+            )!;
+            data.sgstPercent = this.normalizeDecimalValue(
+                data.sgstPercent, `items[${index}].sgstPercent`, 2,
+                invoiceNo, true
+            )!;
+            data.igstPercent = this.normalizeDecimalValue(
+                data.igstPercent, `items[${index}].igstPercent`, 2,
+                invoiceNo, true
+            )!;
+            data.cgstAmount = this.normalizeDecimalValue(
+                data.cgstAmount, `items[${index}].cgstAmount`, 2,
+                invoiceNo, true
+            )!;
+            data.sgstAmount = this.normalizeDecimalValue(
+                data.sgstAmount, `items[${index}].sgstAmount`, 2,
+                invoiceNo, true
+            )!;
+            data.igstAmount = this.normalizeDecimalValue(
+                data.igstAmount, `items[${index}].igstAmount`, 2,
+                invoiceNo, true
+            )!;
+            data.gstAmount = this.normalizeDecimalValue(
+                data.gstAmount, `items[${index}].gstAmount`, 2,
+                invoiceNo, true
+            )!;
+            data.totalAmount = this.normalizeDecimalValue(
+                data.totalAmount, `items[${index}].totalAmount`, 2,
+                invoiceNo, true
+            )!;
+        }
+
+        payload.roundOffAmount = this.normalizeDecimalValue(
+            payload.roundOffAmount ?? 0, "roundOffAmount", 2, invoiceNo, true
+        )!;
+        subtotalAmount = this.normalizeDecimalValue(
+            subtotalAmount, "subTotalAmount", 2, invoiceNo, true
+        )!;
+        totalGSTAmount = this.normalizeDecimalValue(
+            totalGSTAmount, "totalGSTAmount", 2, invoiceNo, true
+        )!;
+        totalCGSTAmount = this.normalizeDecimalValue(
+            totalCGSTAmount, "totalCGSTAmount", 2, invoiceNo, true
+        )!;
+        totalSGSTAmount = this.normalizeDecimalValue(
+            totalSGSTAmount, "totalSGSTAmount", 2, invoiceNo, true
+        )!;
+        totalIGSTAmount = this.normalizeDecimalValue(
+            totalIGSTAmount, "totalIGSTAmount", 2, invoiceNo, true
+        )!;
+        grandTotal = this.normalizeDecimalValue(
+            grandTotal, "grandTotal", 2, invoiceNo, true
+        )!;
 
         /**
          * Create sales record

@@ -341,6 +341,109 @@ export class ExcelImportService {
         return result;
     }
 
+    private static normalizePartyHeader(value: any): string {
+        return String(value ?? "")
+            .replace(/[–—−]/g, "-")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase()
+            .replace(/\s+(?:DRS?|CR)\s*$/i, "")
+            .trim();
+    }
+
+    private static isSalesPartyHeaderRow(
+        row: Record<string, any>,
+        nextRow: Record<string, any>
+    ): boolean {
+        const particulars = String(
+            this.getValue(row, "Particulars") || ""
+        ).trim();
+
+        const parties = [
+            this.getValue(row, "Buyer"),
+            this.getValue(row, "Consignee"),
+            this.getValue(row, "Supplier")
+        ]
+            .filter(Boolean)
+            .map(value => this.normalizePartyHeader(value));
+
+        const normalizedParticulars =
+            this.normalizePartyHeader(particulars);
+
+        const nextProduct = String(
+            this.getValue(nextRow, "Particulars") || ""
+        ).trim();
+
+        const nextQuantity = this.toNumber(
+            this.getValue(nextRow, "Quantity")
+        );
+        const nextRate = this.toNumber(
+            this.getValue(nextRow, "Rate")
+        );
+        const nextValue = this.toNumber(
+            this.getValue(nextRow, "Value")
+        );
+
+        return Boolean(
+            normalizedParticulars &&
+            parties.includes(normalizedParticulars) &&
+            !this.getValue(nextRow, "Voucher No", "Vch No") &&
+            nextProduct &&
+            (nextQuantity > 0 || nextRate > 0 || nextValue > 0)
+        );
+    }
+
+    private static mergeSalesContinuationRow(
+        headerRow: Record<string, any>,
+        detailRow: Record<string, any>
+    ): Record<string, any> {
+        const inheritedRow = { ...headerRow };
+
+        const lineFields = [
+            "particulars",
+            "quantity",
+            "rate",
+            "value",
+            "input cgst 9%",
+            "output cgst 9%",
+            "input sgst 9%",
+            "output sgst 9%",
+            "input igst 18%",
+            "output igst 18%",
+            "input cgst",
+            "output cgst",
+            "input sgst",
+            "output sgst",
+            "input igst",
+            "output igst",
+            "cgst itc not reflected in gstr-2b",
+            "r/off",
+            "gross total",
+            "grand total"
+        ];
+
+        for (const field of Object.keys(inheritedRow)) {
+            if (
+                lineFields.includes(field) ||
+                /(cgst|sgst|igst|gst|gross total|grand total|r\/off|round)/i.test(field)
+            ) {
+                inheritedRow[field] = "";
+            }
+        }
+
+        for (const [key, value] of Object.entries(detailRow)) {
+            if (
+                value !== undefined &&
+                value !== null &&
+                String(value).trim() !== ""
+            ) {
+                inheritedRow[key] = value;
+            }
+        }
+
+        return inheritedRow;
+    }
+
     static parseRows(
         rows: Record<string, any>[],
         type: "PURCHASE" | "SALE" = "PURCHASE"
@@ -364,6 +467,16 @@ export class ExcelImportService {
 
             if (explicitVoucherNo) {
                 currentVoucherRow = row;
+
+                if (
+                    type === "SALE" &&
+                    this.isSalesPartyHeaderRow(
+                        row,
+                        rows[index + 1] || {}
+                    )
+                ) {
+                    return null as any;
+                }
 
                 if (type === "PURCHASE" && !isRcmPurchase) {
                     const nextRow = rows[index + 1] || {};
@@ -436,17 +549,10 @@ export class ExcelImportService {
                     (continuationQuantity > 0 || continuationRate > 0 || continuationValue > 0) &&
                     !isRepeatedItemRow
                 ) {
-                    const inheritedRow = { ...currentVoucherRow };
-                    for (const [key, value] of Object.entries(row)) {
-                        if (
-                            value !== undefined &&
-                            value !== null &&
-                            String(value).trim() !== ""
-                        ) {
-                            inheritedRow[key] = value;
-                        }
-                    }
-                    row = inheritedRow;
+                    row = this.mergeSalesContinuationRow(
+                        currentVoucherRow,
+                        row
+                    );
                 } else {
                     return null as any;
                 }
@@ -472,7 +578,8 @@ export class ExcelImportService {
              * Product Name
              */
             const hsnNo =
-                particulars.match(/\((\d{4,8})\)/)?.[1];
+                particulars.match(/\((\d{4,8})\)/)?.[1]
+                ?? particulars.match(/\b(\d{4,8})\b/)?.[1];
 
             const agencyName =
                 String(
@@ -490,10 +597,7 @@ export class ExcelImportService {
                     .trim();
 
             const normalizedProduct =
-                productName
-                    .replace(/\s+/g, " ")
-                    .trim()
-                    .toUpperCase();
+                this.normalizePartyHeader(productName);
 
             const isTotalRow =
                 this.isTotalRow(
@@ -513,7 +617,8 @@ export class ExcelImportService {
             if (
                 normalizedProduct &&
                 agencyName &&
-                normalizedProduct === agencyName
+                normalizedProduct ===
+                    this.normalizePartyHeader(agencyName)
             ) {
                 return null as any;
             }
