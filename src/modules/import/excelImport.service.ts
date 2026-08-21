@@ -512,7 +512,8 @@ export class ExcelImportService {
                     this.isSalesPartyHeaderRow(
                         row,
                         rows[index + 1] || {}
-                    )
+                    ) &&
+                    !this.getNarrationLineKind(row)
                 ) {
                     return null as any;
                 }
@@ -600,9 +601,20 @@ export class ExcelImportService {
             const rawParticulars = String(
                 this.getValue(row, "Particulars") || ""
             ).trim();
-            const rowParty = this.getValue(row, "Supplier", "Buyer", "Consignee");
-            const isPartyLikeRow = Boolean(rawParticulars) && this.normalizePartyHeader(rawParticulars) === this.normalizePartyHeader(rowParty);
-            const narrationItem = type === "SALE" && (isPartyLikeRow || !rawParticulars) ? this.extractNarrationItem(row) : undefined;
+            const rowParty = this.getValue(
+                row,
+                "Supplier",
+                "Buyer",
+                "Consignee"
+            );
+            const isPartyLikeRow =
+                Boolean(rawParticulars) &&
+                this.normalizePartyHeader(rawParticulars) ===
+                    this.normalizePartyHeader(rowParty);
+            const narrationItem =
+                type === "SALE" && (isPartyLikeRow || !rawParticulars)
+                    ? this.extractNarrationItem(row)
+                    : undefined;
             const particulars = narrationItem?.productName || rawParticulars;
 
             const voucherNo = explicitVoucherNo || String(
@@ -671,7 +683,6 @@ export class ExcelImportService {
                     this.normalizePartyHeader(agencyName) &&
                 !narrationItem
             ) {
-                parseErrors.push({ voucherNo, invoiceNo: this.getValue(row, "Supplier Invoice No", "Invoice No"), error: `Sale voucher ${voucherNo} was not imported because no product/detail row was found.`, code: "MISSING_SALE_PARTICULARS", meta: { particulars: rawParticulars, narration: this.getValue(row, "Narration"), raw: row } });
                 return null as any;
             }
 
@@ -729,7 +740,13 @@ export class ExcelImportService {
             /**
              * Unit
              */
-            let unit = narrationItem?.kind === "SCRAP" && (narrationItem.unit === "NOS" || narrationItem.unit.startsWith("NO")) ? "KG" : (narrationItem?.kind === "SCRAP" ? narrationItem.unit : "KG");
+            let unit =
+                narrationItem?.kind === "SCRAP" &&
+                /^(?:NOS|NO\.?S?)$/i.test(narrationItem.unit)
+                    ? "KG"
+                    : narrationItem?.kind === "SCRAP"
+                        ? narrationItem.unit
+                        : "KG";
 
             if (/KLR|KL\b/i.test(quantityText)) {
 
@@ -810,9 +827,6 @@ export class ExcelImportService {
             console.log({
                 voucher: this.getValue(row, "Voucher No"),
                 particulars: productName,
-
-                sourceParticulars: rawParticulars,
-                lineKind: narrationItem?.kind || "PRODUCT",
                 quantityText,
                 quantity,
                 rateText,
@@ -1534,7 +1548,13 @@ export class ExcelImportService {
                     item.quantity <= 0 &&
                     item.taxableAmount > 0
                 ) {
-
+                    validationErrors.push({
+                        voucherNo: voucher.voucherNo,
+                        invoiceNo: voucher.invoiceNo,
+                        error: `Product row "${item.particulars}" has taxable value ${item.taxableAmount} but no positive quantity.`,
+                        code: "INVALID_PRODUCT_QUANTITY",
+                        meta: { particulars: item.particulars, narration: item.narration, raw: item.raw }
+                    });
                     continue;
 
                 }

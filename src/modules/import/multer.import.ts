@@ -230,11 +230,6 @@ export class ImportService {
 
         const validationErrors: any[] = [];
 
-        console.log("Detected header row =", headerRow);
-        console.log("RAW ROWS =", rawRows.length);
-
-        console.log(rawRows[0]);
-
         const parsedRows =
             ExcelImportService.parseRows(
                 rawRows,
@@ -376,39 +371,6 @@ console.log("Rows To Import:", rowsToImport.length);
                                     return;
                                 }
 
-                                if (voucher.isHiringCharge) {
-                                    const payload =
-                                        await ImportResolver.buildSalePayload(voucher);
-
-                                    const existingSale = await prisma.sale.findUnique({
-                                        where: { invoiceNo: payload.invoiceNo }
-                                    });
-
-                                    if (existingSale) {
-                                        throw new Error(`Invoice ${payload.invoiceNo} was not imported because it already exists in the system.`);
-                                    }
-
-                                    const sale = await SalesService.createImportedServiceSale(actor, payload);
-                                    await SalesService.approveSale(actor, sale.id);
-
-                                    const journalPayload =
-                                        await ImportResolver.buildJournalPayload(actor, {
-                                            voucherNo: voucher.voucherNo,
-                                            invoiceNo: voucher.invoiceNo,
-                                            voucherType: "HIRING CHARGES",
-                                            date: voucher.voucherDate,
-                                            particulars: voucher.narration || "Hiring Charges",
-                                            debitAmount: voucher.importedTotals?.grandTotal || 0,
-                                            creditAmount: 0,
-                                            saleId: sale.id,
-                                            importKey: `HIRING_CHARGES_SALE_${sale.id}`
-                                        });
-                                    const journal = await JournalService.createJournal(actor, journalPayload);
-                                    await JournalService.approveJournal(actor, journal.id);
-                                    summary.success++;
-                                    return;
-                                }
-
                                 const payload =
                                     await ImportResolver.buildSalePayload(voucher);
 
@@ -457,6 +419,23 @@ console.log("Rows To Import:", rowsToImport.length);
                                     sale.id
                                 );
 
+                                if (voucher.isHiringCharge) {
+                                    const journalPayload =
+                                        await ImportResolver.buildJournalPayload(actor, {
+                                            voucherNo: voucher.voucherNo,
+                                            invoiceNo: voucher.invoiceNo,
+                                            voucherType: "HIRING CHARGES",
+                                            date: voucher.voucherDate,
+                                            particulars: voucher.narration || "Hiring Charges",
+                                            debitAmount: 0,
+                                            creditAmount: voucher.importedTotals?.grandTotal || 0,
+                                            saleId: sale.id,
+                                            importKey: `HIRING_CHARGES_SALE_${sale.id}`
+                                        });
+                                    const journal = await JournalService.createJournal(actor, journalPayload);
+                                    await JournalService.approveJournal(actor, journal.id);
+                                }
+
                             }
 
                             summary.success++;
@@ -487,7 +466,18 @@ console.log("Rows To Import:", rowsToImport.length);
 
                                 code: error.code,
 
-                                meta: error.meta,
+                                meta: error.meta || {
+                                    agencyName: voucher.agencyName,
+                                    narration: voucher.narration,
+                                    rows: voucher.rows.map(row => ({
+                                        particulars: row.particulars,
+                                        sourceParticulars: row.sourceParticulars,
+                                        quantity: row.quantity,
+                                        unit: row.unit,
+                                        rate: row.rate,
+                                        raw: row.raw
+                                    }))
+                                },
 
                                 error: error.message
 

@@ -997,34 +997,16 @@ export class ReportingService {
 
         const voucherWhere: Prisma.VoucherWhereInput = {
             branchId,
-            voucherDate: periodDateFilter,
-
-            ...(query?.bankAccountId
-                ? {
-                    sourceId: {
-                        in: transactions.map(txn => txn.id)
-                    }
-                }
-                : {})
+            voucherDate: periodDateFilter
         };
 
-        const vouchers =
+        const transactionSourceIds = new Set(
+            transactions.map(transaction => transaction.id)
+        );
+
+        const voucherHeaders =
             await prisma.voucher.findMany({
                 where: voucherWhere,
-                include: {
-                    entries: {
-                        include: {
-                            ledger: {
-                                include: {
-                                    group: true
-                                }
-                            }
-                        },
-                        orderBy: {
-                            createdAt: "asc"
-                        }
-                    }
-                },
                 orderBy: [
                     {
                         voucherDate: "asc"
@@ -1035,6 +1017,53 @@ export class ReportingService {
                 ]
             });
 
+        const filteredVoucherHeaders = query?.bankAccountId
+            ? voucherHeaders.filter(voucher =>
+                transactionSourceIds.has(voucher.sourceId)
+            )
+            : voucherHeaders;
+
+        // Do not load all nested ledger entries through one relation query.
+        // Large day-book ranges can exceed the database parameter limit.
+        const voucherEntries: any[] = [];
+        const voucherIds = filteredVoucherHeaders.map(voucher => voucher.id);
+        const entryBatchSize = 250;
+
+        for (let index = 0; index < voucherIds.length; index += entryBatchSize) {
+            const batchIds = voucherIds.slice(index, index + entryBatchSize);
+            const batchEntries = await prisma.ledgerEntry.findMany({
+                where: {
+                    voucherId: {
+                        in: batchIds
+                    }
+                },
+                include: {
+                    ledger: {
+                        include: {
+                            group: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: "asc"
+                }
+            });
+
+            voucherEntries.push(...batchEntries);
+        }
+
+        const entriesByVoucher = new Map<string, any[]>();
+        for (const entry of voucherEntries) {
+            const entries = entriesByVoucher.get(entry.voucherId) || [];
+            entries.push(entry);
+            entriesByVoucher.set(entry.voucherId, entries);
+        }
+
+        const vouchers = filteredVoucherHeaders.map(voucher => ({
+            ...voucher,
+            entries: entriesByVoucher.get(voucher.id) || []
+        }));
+
         const sourceIds =
             Array.from(
                 new Set(
@@ -1044,52 +1073,51 @@ export class ReportingService {
                 )
             );
 
-        const [
-            sourceTransactions,
-            sourceJournals
-        ] =
-            sourceIds.length
-                ? await Promise.all([
-                    prisma.transaction.findMany({
-                        where: {
-                            id: {
-                                in: sourceIds
-                            }
-                        },
-                        include: {
-                            agency: true,
-                            thirdPartyAgency: true,
-                            bankAccount: true,
-                            sale: true,
-                            purchase: true,
-                            createdBy: {
-                                select: {
-                                    name: true
-                                }
-                            }
-                        }
-                    }),
+        const sourceTransactions: any[] = [];
+        const sourceJournals: any[] = [];
 
-                    prisma.journal.findMany({
-                        where: {
-                            id: {
-                                in: sourceIds
-                            }
-                        },
-                        include: {
-                            journalHead: true,
-                            createdBy: {
-                                select: {
-                                    name: true
-                                }
+        for (let index = 0; index < sourceIds.length; index += entryBatchSize) {
+            const sourceIdBatch = sourceIds.slice(index, index + entryBatchSize);
+            const [transactionBatch, journalBatch] = await Promise.all([
+                prisma.transaction.findMany({
+                    where: {
+                        id: {
+                            in: sourceIdBatch
+                        }
+                    },
+                    include: {
+                        agency: true,
+                        thirdPartyAgency: true,
+                        bankAccount: true,
+                        sale: true,
+                        purchase: true,
+                        createdBy: {
+                            select: {
+                                name: true
                             }
                         }
-                    })
-                ])
-                : [
-                    [],
-                    []
-                ];
+                    }
+                }),
+                prisma.journal.findMany({
+                    where: {
+                        id: {
+                            in: sourceIdBatch
+                        }
+                    },
+                    include: {
+                        journalHead: true,
+                        createdBy: {
+                            select: {
+                                name: true
+                            }
+                        }
+                    }
+                })
+            ]);
+
+            sourceTransactions.push(...transactionBatch);
+            sourceJournals.push(...journalBatch);
+        }
 
         const transactionSourceMap =
             new Map(
