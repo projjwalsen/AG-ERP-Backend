@@ -394,13 +394,18 @@ console.log("Rows To Import:", rowsToImport.length);
                                 }
 
                                 const sale =
-                                    await SalesService.createSale(
-                                        actor,
-                                        {
-                                            ...payload,
-                                            deferStockValidation: true
-                                        }
-                                    );
+                                    payload.items.length === 0
+                                        ? await SalesService.createImportedServiceSale(
+                                            actor,
+                                            payload
+                                        )
+                                        : await SalesService.createSale(
+                                            actor,
+                                            {
+                                                ...payload,
+                                                deferStockValidation: true
+                                            }
+                                        );
 
                                 await SalesService.approveSale(
                                     actor,
