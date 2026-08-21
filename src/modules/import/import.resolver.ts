@@ -2503,12 +2503,14 @@ export class ImportResolver {
             const transaction =
                 await TransactionService.createTransaction(
                     actor,
-                    payload
+                    payload,
+                    { allowImportOverSettlement: true }
                 );
 
             await TransactionService.approveTransaction(
                 actor,
-                transaction.id
+                transaction.id,
+                { allowImportOverSettlement: true }
             );
 
             return;
@@ -2525,12 +2527,14 @@ export class ImportResolver {
             const transaction =
                 await TransactionService.createTransaction(
                     actor,
-                    payload
+                    payload,
+                    { allowImportOverSettlement: true }
                 );
 
             await TransactionService.approveTransaction(
                 actor,
-                transaction.id
+                transaction.id,
+                { allowImportOverSettlement: true }
             );
 
             return;
@@ -2618,39 +2622,6 @@ export class ImportResolver {
 
         }
 
-        const alreadyImported =
-            await prisma.transaction.findFirst({
-
-                where: {
-
-                    settlementType:
-                        SettlementType.INVOICE_TO_INVOICE,
-
-                    OR: [
-                        {
-                            saleId:
-                                sale.id
-                        },
-                        {
-                            remarks:
-                                this.journalTransactionImportRemark(
-                                    dto
-                                )
-                        }
-                    ]
-
-                }
-
-            });
-
-        if (alreadyImported) {
-
-            throw new Error(
-                "SKIP_ALREADY_IMPORTED"
-            );
-
-        }
-
         const agency =
             await prisma.agency.findUnique({
 
@@ -2729,39 +2700,6 @@ export class ImportResolver {
 
             throw new Error(
                 `Purchase not found : ${dto.voucherNo}`
-            );
-
-        }
-
-        const alreadyImported =
-            await prisma.transaction.findFirst({
-
-                where: {
-
-                    settlementType:
-                        SettlementType.INVOICE_TO_INVOICE,
-
-                    OR: [
-                        {
-                            purchaseId:
-                                purchase.id
-                        },
-                        {
-                            remarks:
-                                this.journalTransactionImportRemark(
-                                    dto
-                                )
-                        }
-                    ]
-
-                }
-
-            });
-
-        if (alreadyImported) {
-
-            throw new Error(
-                "SKIP_ALREADY_IMPORTED"
             );
 
         }
