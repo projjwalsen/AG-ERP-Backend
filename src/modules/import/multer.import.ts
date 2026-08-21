@@ -270,8 +270,17 @@ console.log("Rows To Import:", rowsToImport.length);
                 const uniqueVouchers =
                     vouchers.filter(v => {
 
+                        const supplierKey =
+                            type === "PURCHASE"
+                                ? (
+                                    v.agencyGSTIN?.trim().toUpperCase() ||
+                                    v.agencyName?.trim().toUpperCase() ||
+                                    ""
+                                )
+                                : "";
+
                         const key =
-                            `${v.invoiceNo}|${v.voucherNo}`;
+                            `${supplierKey}|${v.invoiceNo}|${v.voucherNo}`;
 
                         if (seen.has(key)) {
                             console.log("Duplicate voucher skipped", key);
@@ -345,7 +354,8 @@ console.log("Rows To Import:", rowsToImport.length);
                                 const purchase =
                                     await PurchaseService.createPurchase(
                                         actor,
-                                        payload
+                                        payload,
+                                        { importMode: true }
                                     );
 
                                 await PurchaseService.approvePurchase(
