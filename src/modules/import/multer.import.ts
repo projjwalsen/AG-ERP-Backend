@@ -237,6 +237,17 @@ export class ImportService {
                 validationErrors
             );
 
+        if (
+            type === "SALE" &&
+            parsedRows.some(row =>
+                /\b(?:SCRAP|WASTE|WASTAGE)\b/i.test(
+                    String(row?.particulars || "")
+                )
+            )
+        ) {
+            await ImportResolver.ensureScrapDrumsProduct();
+        }
+
             console.log("Parsed Rows:", parsedRows.length);
 
 console.log(

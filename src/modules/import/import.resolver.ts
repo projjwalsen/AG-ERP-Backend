@@ -38,6 +38,48 @@ export class ImportResolver {
 
     }
 
+    /**
+     * Sales-import-only product bootstrap for scrap rows.
+     * The lookup is intentionally case-insensitive and idempotent so a
+     * repeated import reuses the same product instead of creating another.
+     */
+    static async ensureScrapDrumsProduct() {
+        const cacheKey = "SCRAP DRUMS";
+
+        if (this.productCache.has(cacheKey)) {
+            return this.productCache.get(cacheKey);
+        }
+
+        const existing = await prisma.product.findFirst({
+            where: {
+                name: {
+                    equals: cacheKey,
+                    mode: "insensitive"
+                },
+                isActive: true
+            }
+        });
+
+        const product = existing || await prisma.product.create({
+            data: {
+                sku: crypto.randomUUID(),
+                name: cacheKey,
+                density: 1,
+                baseUnit: ProductUnit.KG,
+                operationalUnit: ProductUnit.KG,
+                sellPricePerUnit: 0,
+                sellPriceLTR: null,
+                minimumStockKG: null,
+                openingStockKG: 0,
+                applicableGST: 0,
+                isActive: true
+            }
+        });
+
+        this.productCache.set(cacheKey, product);
+        return product;
+    }
+
     private static normalizeProductName(name: string): string {
 
         const hsn =
