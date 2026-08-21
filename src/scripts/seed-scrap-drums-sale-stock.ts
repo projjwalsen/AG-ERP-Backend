@@ -1,26 +1,194 @@
-import { ProductType, ProductUnit } from "@prisma/client";
+import { AgencyType, ProductType, ProductUnit } from "@prisma/client";
 import { prisma } from "../config/db";
 import { InventoryService } from "../modules/inventory/inventory.service";
 import { ProductLedgerService } from "../modules/accounting/productLedger/productLedger.service";
+import { SalesService } from "../modules/sales/sales.service";
 
 /**
- * Supplies opening stock for the two SCRAP DRUMS sales imported from
- * saleerrorlatest3.0.xlsx. Run this after the sale import and before retrying
- * approval for the invoices.
+ * Backfills the two SCRAP DRUM sales that failed during the Excel import.
  *
- * The importer initially assigns an empty fallback batch when stock is absent.
- * This seed adds stock to that same batch, so the pending sale keeps its FIFO
- * allocation and can be approved without editing its sale items.
+ * It creates the product and opening stock when needed, then creates and
+ * approves each missing sale through SalesService. Approval is deliberate:
+ * it consumes stock, creates the product-ledger SALE movement, updates the
+ * customer outstanding balance, and creates the normal accounting sale voucher.
  *
- * If run before the sale import, it creates a normal opening batch with the
- * combined 2,000 KG required by the two invoices.
+ * Existing pending sales from a prior import are repaired and approved instead
+ * of being duplicated.
  */
 
-const PRODUCT_NAME = "SCRAP DRUMS";
-const PRODUCT_SKU = "SCRAP-DRUMS-SEED-2026";
+const PRODUCT_NAME = "SCRAP DRUM";
+const PRODUCT_SKU = "SCRAP-DRUM-SEED-2026";
 const INVOICES = ["APM/G2526/2332", "APM/G2526/3078"];
 const FALLBACK_QUANTITY_KG = 2_000;
 const SEED_REFERENCE_PREFIX = "SEED_SCRAP_DRUMS_SALE_IMPORT_2026";
+
+const SALES = [
+    {
+        invoiceNo: "APM/G2526/2332",
+        invoiceDate: "2026-01-31T00:00:00.000Z",
+        despatchDocNo: "352",
+        destination: "MEHSANA, GUJARAT",
+        vehicleNo: "GJ02BT9969",
+        narration: "BEING SALE SCRAP DRUM QTY 1000 NOS @ 180 AGST INVOICE NO. APM/G2526/2332 DTD 31/01/2026 VEHICLE NO GJ02BT9969 TCS CHARGE @212400*1%=2124/-"
+    },
+    {
+        invoiceNo: "APM/G2526/3078",
+        invoiceDate: "2026-03-19T00:00:00.000Z",
+        despatchDocNo: "360",
+        destination: "MEHSANA",
+        vehicleNo: "GJ02ZZ8469",
+        narration: "BEING SALE SCRAP DRUMS 1000 NOS @180/- AGST INV NO APM/G2526/3078 DATE: 19/03/2026 VEHICLE NO GJ02ZZ8469 TCS CHARGE 212400=2124/-"
+    }
+] as const;
+
+async function resolveSeedActor() {
+    const actor = await prisma.user.findFirst({
+        where: {
+            isActive: true,
+            status: "ACTIVE",
+            userRoles: {
+                some: {
+                    role: {
+                        isActive: true,
+                        rolePermissions: {
+                            some: {
+                                permission: {
+                                    key: "SALE:APPROVE",
+                                    isActive: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        select: { id: true, name: true }
+    });
+
+    if (!actor) {
+        throw new Error("No active user with SALE:APPROVE permission was found.");
+    }
+
+    return actor;
+}
+
+async function resolveClient() {
+    const existing = await prisma.agency.findFirst({
+        where: {
+            OR: [
+                { gstin: "24CBRPP0420M1ZG" },
+                { name: { equals: "M.N.TRADERS", mode: "insensitive" } }
+            ]
+        }
+    });
+
+    const data = {
+        name: "M.N.TRADERS",
+        gstin: "24CBRPP0420M1ZG",
+        panNo: "CBRPP0420M",
+        addressLine1: "220, Chadasana, Kadi",
+        addressLine2: "Mehsana",
+        city: "MEHSANA",
+        state: "Gujarat",
+        stateCode: "24",
+        pinCode: "382715",
+        isActive: true
+    };
+
+    if (!existing) {
+        return prisma.agency.create({ data: { ...data, type: AgencyType.CLIENT } });
+    }
+
+    return prisma.agency.update({
+        where: { id: existing.id },
+        data: {
+            ...data,
+            type: existing.type === AgencyType.VENDOR ? AgencyType.BOTH : existing.type
+        }
+    });
+}
+
+async function createOrApproveSales(productId: string) {
+    const [actor, agency, branch] = await Promise.all([
+        resolveSeedActor(),
+        resolveClient(),
+        prisma.branch.findFirst({ where: { isActive: true } })
+    ]);
+    if (!branch) throw new Error("No active branch found for the sales backfill.");
+
+    for (const record of SALES) {
+        const existing = await prisma.sale.findUnique({ where: { invoiceNo: record.invoiceNo } });
+        if (existing?.status === "APPROVED") {
+            console.log(`Skipped ${record.invoiceNo}: sale is already approved.`);
+            continue;
+        }
+        if (existing) {
+            await SalesService.approveSale(actor, existing.id);
+            console.log(`Approved existing pending sale ${record.invoiceNo}.`);
+            continue;
+        }
+
+        const fifo = await InventoryService.allocateFIFO(prisma, {
+            branchId: branch.id,
+            productId,
+            quantity: 1_000,
+            unit: ProductUnit.KG
+        });
+        if (fifo.shortage > 0) {
+            throw new Error(`Insufficient SCRAP DRUM stock for ${record.invoiceNo}: shortage ${fifo.shortage} KG.`);
+        }
+
+        const items = fifo.allocations.map(({ batch, quantity }) => {
+            const taxableAmount = quantity * 180;
+            const igstAmount = taxableAmount * 0.18;
+            return {
+                productId,
+                batchId: batch.id,
+                quantity,
+                unit: ProductUnit.KG,
+                unitPrice: 180,
+                taxableAmount,
+                gstPercent: 18,
+                cgstAmount: 0,
+                sgstAmount: 0,
+                igstAmount,
+                gstAmount: igstAmount,
+                totalAmount: taxableAmount + igstAmount
+            };
+        });
+
+        const sale = await SalesService.createSale(actor, {
+            agencyId: agency.id,
+            branchId: branch.id,
+            invoiceNo: record.invoiceNo,
+            voucherNo: record.invoiceNo,
+            invoiceDate: record.invoiceDate,
+            voucherDate: record.invoiceDate,
+            approvedAt: record.invoiceDate,
+            remarks: record.narration,
+            roundOffAmount: 2124,
+            transport: {
+                despatchDocNo: record.despatchDocNo,
+                despatchThrough: "ROYAL ROADLINES",
+                destination: record.destination,
+                vehicleOrFlightNo: record.vehicleNo
+            },
+            importedTotals: {
+                subTotal: 180000,
+                totalCGST: 0,
+                totalSGST: 0,
+                totalIGST: 32400,
+                totalGST: 32400,
+                roundOff: 2124,
+                grandTotal: 214524
+            },
+            items
+        });
+
+        await SalesService.approveSale(actor, sale.id);
+        console.log(`Created and approved ${record.invoiceNo}.`);
+    }
+}
 
 async function main() {
     let product = await prisma.product.findFirst({
@@ -147,7 +315,6 @@ async function main() {
                 });
             });
             console.log(`Created ${FALLBACK_QUANTITY_KG} KG opening stock in ${batchNo}.`);
-            return;
         }
     }
 
@@ -208,6 +375,7 @@ async function main() {
     }
 
     console.log(`Completed. Seeded ${seededQuantity} KG for ${sales.length} pending sale(s).`);
+    await createOrApproveSales(product.id);
 }
 
 main()
