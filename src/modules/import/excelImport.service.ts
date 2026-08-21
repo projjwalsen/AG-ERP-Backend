@@ -307,13 +307,21 @@ export class ExcelImportService {
         return rows.map((row, index) => {
 
             const explicitVoucherNo = String(
-                this.getValue(row, "Voucher No") || ""
+                this.getValue(row, "Voucher No", "Vch No") || ""
             ).trim();
+
+            const rowVoucherType = String(
+                this.getValue(row, "Voucher Type", "Vch Type") || ""
+            ).trim();
+
+            const isRcmPurchase =
+                type === "PURCHASE" &&
+                rowVoucherType.toUpperCase().includes("RCM PURCHASE");
 
             if (explicitVoucherNo) {
                 currentVoucherRow = row;
 
-                if (type === "PURCHASE") {
+                if (type === "PURCHASE" && !isRcmPurchase) {
                     const nextRow = rows[index + 1] || {};
                     const nextProduct = String(
                         this.getValue(nextRow, "Particulars") || ""
@@ -500,7 +508,8 @@ export class ExcelImportService {
             if (
                 quantity === 0 &&
                 value === 0 &&
-                !productName
+                !productName &&
+                !isRcmPurchase
             ) {
 
                 return null as any;
@@ -1045,12 +1054,25 @@ export class ExcelImportService {
                     .toUpperCase()
                     .includes("RCM PURCHASE");
 
-            const itemRows =
-                voucher.rows.filter(row =>
+            /**
+             * RCM Purchase does NOT contain inventory items.
+             *
+             * Particulars may contain the supplier/party name,
+             * e.g. SANJAY ROADLINES.
+             *
+             * That must NOT be treated as an inventory item.
+             */
+            const itemRows = isRcmPurchase
+                ? []
+                : voucher.rows.filter(row =>
                     !row.isTotalRow &&
                     Boolean(row.particulars?.trim())
                 );
 
+            /**
+             * RCM Purchase is calculated from its financial values.
+             * Normal Purchase uses inventory item rows.
+             */
             const financialRows = isRcmPurchase
                 ? voucher.rows.filter(row =>
                     !row.isTotalRow &&
@@ -1058,7 +1080,8 @@ export class ExcelImportService {
                         (row.taxableAmount || 0) !== 0 ||
                         (row.cgst || 0) !== 0 ||
                         (row.sgst || 0) !== 0 ||
-                        (row.igst || 0) !== 0
+                        (row.igst || 0) !== 0 ||
+                        (row.grandTotal || 0) !== 0
                     )
                 )
                 : itemRows;
@@ -1197,16 +1220,16 @@ export class ExcelImportService {
 
             }
 
-            if (itemRows.length === 0) {
+            if (isRcmPurchase) {
 
-                if (isRcmPurchase) {
-                    continue;
-                }
+                // RCM Purchase has no inventory items.
+                // Financial values are handled through financialRows.
+
+            } else if (itemRows.length === 0) {
 
                 if (type === "SALE") {
 
                     validationErrors.push({
-
                         voucherNo:
                             voucher.voucherNo,
 
@@ -1218,17 +1241,14 @@ export class ExcelImportService {
 
                         code:
                             "MISSING_SALE_PARTICULARS"
-
                     });
 
                     continue;
-
                 }
 
                 throw new Error(
                     `No importable item rows found in Voucher ${voucher.voucherNo}. Gross Total/Grand Total rows are ignored.`
                 );
-
             }
 
             for (const item of itemRows) {

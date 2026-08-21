@@ -1574,10 +1574,14 @@ export class TransactionService {
             where.suspenseAccount = query.suspenseAccount;
         }
 
-        if (query?.search) {
+        const search = query?.search?.trim();
+
+        if (search) {
             where.OR = [
-                { transactionNo: { contains: query.search, mode: "insensitive" } },
-                { transactionRefNo: { contains: query.search, mode: "insensitive" } },
+                { transactionNo: { contains: search, mode: "insensitive" } },
+                { transactionRefNo: { contains: search, mode: "insensitive" } },
+                { agency: { name: { contains: search, mode: "insensitive" } } },
+                { thirdPartyAgency: { name: { contains: search, mode: "insensitive" } } }
             ];
         }
 

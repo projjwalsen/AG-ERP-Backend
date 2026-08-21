@@ -33,13 +33,14 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 export const getAllProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { category, search } = (req as any).query;
+        const { category, search, productName } = (req as any).query;
         const page     = parseInt(req.query.page as string)     || 1;
         const limit    = parseInt(req.query.limit as string)    || 10;
         const isExport = (req.query.export as string) === "true" || false;
 
         const result = await ProductService.getAllProducts(actor, { 
             search: search as string ,
+            productName: productName as string,
             category: category as string,
             page,
             limit,
