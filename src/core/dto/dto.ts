@@ -54,6 +54,9 @@ export interface ExcelRowDTO {
 
     isCancelled?: boolean;
 
+    lineKind?: "PRODUCT" | "HIRING_CHARGE" | "SCRAP";
+    sourceParticulars?: string;
+
     isTotalRow?: boolean;
 
     narration?: string;
@@ -145,6 +148,9 @@ export interface GroupedVoucherDTO {
 
     isCancelled?: boolean;
 
+    isHiringCharge?: boolean;
+    isScrap?: boolean;
+
 }
 
 export interface ParsedAddressDTO {
@@ -212,6 +218,10 @@ export interface JournalImportDTO {
     date?: Date;
 
     importIndex?: number;
+
+    importKey?: string;
+
+    saleId?: string;
 
     voucherNo: string;
 

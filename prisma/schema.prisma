@@ -789,6 +789,7 @@ model Sale {
   transactions     Transaction[]
   transport        SaleTransport[]
   debitCreditNotes DebitCreditNote[]
+  hiringJournal    Journal? @relation("SaleHiringJournal")
 
   @@index([agencyId])
   @@index([branchId])
@@ -1446,6 +1447,9 @@ model Journal {
   voucherId String?
 
   voucher Voucher? @relation(fields: [voucherId], references: [id])
+
+  saleId String? @unique
+  sale   Sale? @relation("SaleHiringJournal", fields: [saleId], references: [id], onDelete: SetNull)
 
   createdById String?
 

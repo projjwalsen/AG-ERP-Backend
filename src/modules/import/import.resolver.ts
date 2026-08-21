@@ -804,7 +804,7 @@ export class ImportResolver {
 
                             sku: crypto.randomUUID(),
 
-                            name: normalizedName,
+                            name: dto.productName.trim(),
 
                             density,
 
@@ -846,7 +846,7 @@ export class ImportResolver {
 
                     const updateData: any = {
 
-                        name: normalizedName,
+                        name: dto.productName.trim(),
                         density,
 
                         sellPricePerUnit:
@@ -1357,9 +1357,7 @@ export class ImportResolver {
 
                         sku: crypto.randomUUID(),
 
-                        name: this.canonicalizeProductName(
-                            dto.particulars!
-                        ),
+                        name: dto.particulars!.trim(),
 
                         disclaimer: dto.disclaimer,
 
@@ -2019,10 +2017,35 @@ export class ImportResolver {
 
         for (const row of productRows) {
 
-            const product =
-                await this.resolveProduct(
-                    row
+            let product: any;
+            let createdScrapProduct = false;
+
+            try {
+                product = await this.resolveProduct(row);
+            } catch (error) {
+                if (row.lineKind !== "SCRAP") throw error;
+                product = await this.resolveOrCreateProduct(row);
+                createdScrapProduct = true;
+            }
+
+            // Scrap rows can be valid single-line invoices with no prior stock.
+            // Seed exactly the converted quantity in a dedicated opening batch so
+            // the normal sale approval/FIFO path can process them.
+            if (row.lineKind === "SCRAP" && createdScrapProduct) {
+                product = await this.resolveOrCreateProductMaster(
+                    branch.id,
+                    {
+                        productName: product.name,
+                        openingStockKG: row.quantity,
+                        density: 1,
+                        branchName: branch.name,
+                        date: row.voucherDate,
+                        batchNo: `SCRAP-OPENING-${voucher.voucherNo}`,
+                        sellPrice: row.rate,
+                        hsn: row.hsnNo
+                    }
                 );
+            }
 
             const rowTaxableAmount =
                 Number(row.taxableAmount || 0) > 0
@@ -2339,6 +2362,7 @@ export class ImportResolver {
 
         // Skip already imported journals
         const importKey =
+            dto.importKey ||
             `${dto.voucherType.trim().toUpperCase()}_${dto.voucherNo}_${dto.importIndex ?? 0}`;
 
         const existing =
@@ -2393,6 +2417,8 @@ export class ImportResolver {
             branchId: branch.id,
 
             journalHeadId: journalHead.id,
+
+            saleId: dto.saleId,
 
             importKey,
 

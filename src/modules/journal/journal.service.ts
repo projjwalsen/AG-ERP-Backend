@@ -35,6 +35,8 @@ export interface CreateJournalDto {
 
     journalHeadId: string;
 
+    saleId?: string;
+
     amount: number;
 
     importKey?: string;
@@ -505,6 +507,9 @@ export class JournalService {
 
                 journalHeadId:
                     dto.journalHeadId,
+
+                saleId:
+                    dto.saleId ?? null,
 
                 paymentMode:
                     dto.paymentMode,

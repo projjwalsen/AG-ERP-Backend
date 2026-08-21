@@ -2,6 +2,7 @@ import { prisma } from "../../config/db";
 import { Express } from "express";
 import { PurchaseService } from "../purchase/purchase.service";
 import { SalesService } from "../sales/sales.service";
+import { JournalService } from "../journal/journal.service";
 import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
 import multer from "multer";
@@ -227,6 +228,8 @@ export class ImportService {
                 headerRow
             });
 
+        const validationErrors: any[] = [];
+
         console.log("Detected header row =", headerRow);
         console.log("RAW ROWS =", rawRows.length);
 
@@ -235,7 +238,8 @@ export class ImportService {
         const parsedRows =
             ExcelImportService.parseRows(
                 rawRows,
-                type
+                type,
+                validationErrors
             );
 
             console.log("Parsed Rows:", parsedRows.length);
@@ -254,8 +258,6 @@ console.log(
 
 console.log("Rows To Import:", rowsToImport.length);
 
-
-        const validationErrors: any[] = [];
 
         const vouchers =
             ExcelImportService
@@ -370,6 +372,39 @@ console.log("Rows To Import:", rowsToImport.length);
                                         actor,
                                         voucher
                                     );
+                                    summary.success++;
+                                    return;
+                                }
+
+                                if (voucher.isHiringCharge) {
+                                    const payload =
+                                        await ImportResolver.buildSalePayload(voucher);
+
+                                    const existingSale = await prisma.sale.findUnique({
+                                        where: { invoiceNo: payload.invoiceNo }
+                                    });
+
+                                    if (existingSale) {
+                                        throw new Error(`Invoice ${payload.invoiceNo} was not imported because it already exists in the system.`);
+                                    }
+
+                                    const sale = await SalesService.createImportedServiceSale(actor, payload);
+                                    await SalesService.approveSale(actor, sale.id);
+
+                                    const journalPayload =
+                                        await ImportResolver.buildJournalPayload(actor, {
+                                            voucherNo: voucher.voucherNo,
+                                            invoiceNo: voucher.invoiceNo,
+                                            voucherType: "HIRING CHARGES",
+                                            date: voucher.voucherDate,
+                                            particulars: voucher.narration || "Hiring Charges",
+                                            debitAmount: voucher.importedTotals?.grandTotal || 0,
+                                            creditAmount: 0,
+                                            saleId: sale.id,
+                                            importKey: `HIRING_CHARGES_SALE_${sale.id}`
+                                        });
+                                    const journal = await JournalService.createJournal(actor, journalPayload);
+                                    await JournalService.approveJournal(actor, journal.id);
                                     summary.success++;
                                     return;
                                 }
