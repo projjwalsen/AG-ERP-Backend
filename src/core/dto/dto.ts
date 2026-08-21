@@ -52,6 +52,8 @@ export interface ExcelRowDTO {
 
     grandTotal?: number;
 
+    isCancelled?: boolean;
+
     isTotalRow?: boolean;
 
     narration?: string;
@@ -140,6 +142,8 @@ export interface GroupedVoucherDTO {
     rows: ExcelRowDTO[];
 
     importedTotals?: ImportedTotalsDTO;
+
+    isCancelled?: boolean;
 
 }
 

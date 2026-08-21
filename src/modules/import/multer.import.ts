@@ -355,6 +355,15 @@ console.log("Rows To Import:", rowsToImport.length);
 
                             } else {
 
+                                if (voucher.isCancelled) {
+                                    await ImportResolver.createCancelledSaleRecord(
+                                        actor,
+                                        voucher
+                                    );
+                                    summary.success++;
+                                    return;
+                                }
+
                                 const payload =
                                     await ImportResolver.buildSalePayload(voucher);
 
@@ -366,15 +375,9 @@ console.log("Rows To Import:", rowsToImport.length);
                                     });
 
                                 if (exists) {
-
-                                    console.log(
-                                        "Skipping existing invoice",
-                                        payload.invoiceNo
+                                    throw new Error(
+                                        `Invoice ${payload.invoiceNo} was not imported because it already exists in the system.`
                                     );
-
-                                    summary.success++;
-
-                                    return;
                                 }
 
                                 const existingSale =
@@ -385,12 +388,9 @@ console.log("Rows To Import:", rowsToImport.length);
                                     });
 
                                 if (existingSale) {
-
-                                    console.log(
-                                        `Skipping duplicate invoice ${payload.invoiceNo}`
+                                    throw new Error(
+                                        `Invoice ${payload.invoiceNo} was not imported because it is a duplicate.`
                                     );
-
-                                    return;
                                 }
 
                                 const sale =
