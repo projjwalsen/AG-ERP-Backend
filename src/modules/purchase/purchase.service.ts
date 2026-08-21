@@ -99,11 +99,16 @@ type createPurchasePayload = {
         grandTotal: number;
     };
 }
+
+type PurchaseCreateOptions = {
+    importMode?: boolean;
+};
 export class PurchaseService {
 
     static async createPurchase(
         actor: any,
-        payload: createPurchasePayload
+        payload: createPurchasePayload,
+        options: PurchaseCreateOptions = {}
     ) {
         if(!actor?.id){
             throw new ApiError("Unauthorized", 401);
@@ -182,9 +187,15 @@ export class PurchaseService {
             }),
             prisma.purchase.findFirst({
                 where: {
-                    branchId: payload.branchId,
-                    agencyId: payload.agencyId,
-                    invoiceNo: normalizedInvoiceNo
+                    ...(options.importMode
+                        ? {
+                            branchId: payload.branchId,
+                            agencyId: payload.agencyId,
+                            invoiceNo: normalizedInvoiceNo
+                        }
+                        : {
+                            invoiceNo: normalizedInvoiceNo
+                        })
                 }
             })
         ]);

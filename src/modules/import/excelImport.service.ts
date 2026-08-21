@@ -1146,8 +1146,19 @@ export class ExcelImportService {
                 continue;
             }
 
+            const supplierKey =
+                type === "PURCHASE"
+                    ? (
+                        row.agencyGSTIN?.trim().toUpperCase() ||
+                        row.agencyName?.trim().toUpperCase() ||
+                        ""
+                    )
+                    : "";
+
             const key =
-                `${row.voucherType}_${row.voucherNo}`;
+                type === "PURCHASE"
+                    ? `${row.voucherType.trim().toUpperCase()}_${supplierKey}_${row.voucherNo}_${row.invoiceNo || ""}`
+                    : `${row.voucherType}_${row.voucherNo}`;
 
             if (!voucherMap.has(key)) {
 
