@@ -103,8 +103,10 @@ export class ImportResolver {
 
         let canonical = String(name ?? "")
             .toUpperCase()
+            .replace(/[–—−]/g, "-")
             .replace(/\(\d{4,8}\)/g, "")
             .replace(/\b(LTRS?|LITERS?|LITRES?)\b/gi, "LITER")
+            .replace(/\s*-\s*/g, " - ")
             .replace(/\s+/g, " ")
             .replace(/\s*-\s*$/g, "")
             .trim();
@@ -621,13 +623,13 @@ export class ImportResolver {
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
 
-        const normalizedBaseName =
-            this.normalizeProductBaseName(dto.particulars!);
-
         const cacheKey =
             dto.hsnNo
                 ? `${dto.hsnNo}_${normalizedName}`
                 : normalizedName;
+
+        const canonicalName =
+            this.canonicalizeProductName(dto.particulars!);
 
         if (this.productCache.has(cacheKey)) {
 
@@ -647,106 +649,52 @@ export class ImportResolver {
 
         }
 
-        let product = null;
-
-        if (dto.hsnNo) {
-
-            product =
-                await prisma.product.findFirst({
-
-                    where: {
-
-                        hsnNo: dto.hsnNo,
-
-                        OR: [
-
-                            {
-                                name: {
-
-                                    contains: normalizedName,
-
-                                    mode: "insensitive"
-
-                                }
-                            },
-
-                            {
-                                name: {
-
-                                    contains: normalizedBaseName,
-
-                                    mode: "insensitive"
-
-                                }
-                            }
-
-                        ]
-
+        let product = await prisma.product.findFirst({
+            where: {
+                OR: [
+                    {
+                        name: {
+                            equals: dto.particulars,
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        name: {
+                            equals: normalizedName,
+                            mode: "insensitive"
+                        }
                     }
-
-                });
-
-        }
+                ]
+            }
+        });
 
         if (!product) {
+            const firstLookupToken =
+                canonicalName.split(" ")[0];
 
-            product = await prisma.product.findFirst({
-
+            const candidates = await prisma.product.findMany({
                 where: {
-
-                    name: {
-
-                        contains: normalizedBaseName,
-
-                        mode: "insensitive"
-
-                    }
-
+                    OR: [
+                        ...(dto.hsnNo
+                            ? [{ hsnNo: dto.hsnNo }]
+                            : []),
+                        {
+                            name: {
+                                contains: firstLookupToken,
+                                mode: "insensitive"
+                            }
+                        }
+                    ]
                 }
-
             });
 
-        }
-
-        if (!product) {
-
-            product =
-                await prisma.product.findFirst({
-
-                    where: {
-
-                        OR: [
-
-                            {
-
-                                name: {
-
-                                    equals: dto.particulars,
-
-                                    mode: "insensitive"
-
-                                }
-
-                            },
-
-                            {
-
-                                name: {
-
-                                    equals: normalizedName,
-
-                                    mode: "insensitive"
-
-                                }
-
-                            }
-
-                        ]
-
-                    }
-
-                });
-
+            product = candidates.find(candidate =>
+                this.canonicalizeProductName(candidate.name) ===
+                canonicalName &&
+                (!dto.hsnNo ||
+                    !candidate.hsnNo ||
+                    candidate.hsnNo === dto.hsnNo)
+            ) || null;
         }
 
         if (!product) {
