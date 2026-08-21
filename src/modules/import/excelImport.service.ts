@@ -658,6 +658,7 @@ export class ExcelImportService {
              * Buyer == Particulars
              */
             if (
+                type === "SALE" &&
                 normalizedProduct &&
                 agencyName &&
                 normalizedProduct ===
