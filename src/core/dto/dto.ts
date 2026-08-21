@@ -54,6 +54,11 @@ export interface ExcelRowDTO {
 
     isCancelled?: boolean;
 
+    /** Import-only classification for rows without a normal stock item. */
+    lineKind?: "PRODUCT" | "HIRING_CHARGE" | "SCRAP";
+
+    sourceParticulars?: string;
+
     isTotalRow?: boolean;
 
     narration?: string;
@@ -144,6 +149,9 @@ export interface GroupedVoucherDTO {
     importedTotals?: ImportedTotalsDTO;
 
     isCancelled?: boolean;
+
+    isHiringCharge?: boolean;
+    isScrap?: boolean;
 
 }
 

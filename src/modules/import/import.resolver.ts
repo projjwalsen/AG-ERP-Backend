@@ -649,7 +649,7 @@ export class ImportResolver {
 
         }
 
-        let product = await prisma.product.findFirst({
+        const exactProducts = await prisma.product.findMany({
             where: {
                 OR: [
                     {
@@ -668,24 +668,13 @@ export class ImportResolver {
             }
         });
 
-        if (!product) {
-            const firstLookupToken =
-                canonicalName.split(" ")[0];
+        let product = exactProducts.find(candidate =>
+            !dto.hsnNo || !candidate.hsnNo || candidate.hsnNo === dto.hsnNo
+        ) || null;
 
+        if (!product) {
             const candidates = await prisma.product.findMany({
-                where: {
-                    OR: [
-                        ...(dto.hsnNo
-                            ? [{ hsnNo: dto.hsnNo }]
-                            : []),
-                        {
-                            name: {
-                                contains: firstLookupToken,
-                                mode: "insensitive"
-                            }
-                        }
-                    ]
-                }
+                where: dto.hsnNo ? { hsnNo: dto.hsnNo } : undefined
             });
 
             product = candidates.find(candidate =>
@@ -1357,7 +1346,7 @@ export class ImportResolver {
 
                         sku: crypto.randomUUID(),
 
-                        name: this.canonicalizeProductName(
+                        name: this.normalizeProductMasterName(
                             dto.particulars!
                         ),
 
@@ -1744,6 +1733,83 @@ export class ImportResolver {
 
     }
 
+    private static async ensureSyntheticOpeningStock(
+        branchId: string,
+        product: any,
+        quantityKG: number,
+        voucher: GroupedVoucherDTO
+    ) {
+        const quantity = Math.round(Number(quantityKG || 0) * 1000) / 1000;
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            throw new ApiError(
+                `Invalid scrap opening quantity for voucher ${voucher.voucherNo}`,
+                400
+            );
+        }
+
+        return prisma.$transaction(async tx => {
+            await tx.product.update({
+                where: { id: product.id },
+                data: { openingStockKG: { increment: quantity } }
+            });
+
+            const inventory = await tx.inventory.findUnique({
+                where: { branchId_productId: { branchId, productId: product.id } }
+            });
+            if (inventory) {
+                await tx.inventory.update({
+                    where: { id: inventory.id },
+                    data: { currentStockKG: { increment: quantity } }
+                });
+            } else {
+                await tx.inventory.create({
+                    data: { branchId, productId: product.id, currentStockKG: quantity, currentStockLTR: 0 }
+                });
+            }
+
+            const batchNo = `SCRAP-OPENING-${voucher.voucherNo}`;
+            const batch = await tx.inventoryBatch.create({
+                data: {
+                    branchId,
+                    productId: product.id,
+                    batchNo,
+                    purchasePrice: 0,
+                    availableQtyKG: quantity,
+                    availableQtyLTR: 0,
+                    isActive: true
+                }
+            });
+
+            let ledger = await tx.productLedger.findUnique({ where: { productId: product.id } });
+            if (!ledger) {
+                ledger = await tx.productLedger.create({
+                    data: { code: `PROD-${product.sku.substring(0, 8)}`, productId: product.id }
+                });
+            }
+
+            await tx.productLedgerEntry.create({
+                data: {
+                    productLedgerId: ledger.id,
+                    movementType: "OPENING_BALANCE",
+                    direction: "CREDIT",
+                    quantityKG: quantity,
+                    quantityLTR: 0,
+                    unit: ProductUnit.KG,
+                    branchId,
+                    batchId: batch.id,
+                    batchNo,
+                    invoiceNo: "OPENING STOCK",
+                    unitCost: 0,
+                    totalCost: 0,
+                    entryDate: voucher.voucherDate || new Date(),
+                    remarks: `Automatic scrap opening stock - ${voucher.voucherNo}`
+                }
+            });
+
+            return batch;
+        });
+    }
+
     static async buildPurchasePayload(
         voucher: GroupedVoucherDTO
     ): Promise<any> {
@@ -2019,10 +2085,31 @@ export class ImportResolver {
 
         for (const row of productRows) {
 
-            const product =
-                await this.resolveProduct(
-                    row
+            let product;
+            if (row.lineKind === "SCRAP") {
+                try {
+                    product = await this.resolveProduct(row);
+                } catch (error: any) {
+                    if (!String(error?.message || "").toLowerCase().includes("product not found")) {
+                        throw error;
+                    }
+                    product = await this.resolveOrCreateProduct({
+                        ...row,
+                        particulars: `Unknown - ${row.particulars}`
+                    });
+                }
+            } else {
+                product = await this.resolveProduct(row);
+            }
+
+            if (row.lineKind === "SCRAP") {
+                await this.ensureSyntheticOpeningStock(
+                    branch.id,
+                    product,
+                    Number(row.quantity || 0),
+                    voucher
                 );
+            }
 
             const rowTaxableAmount =
                 Number(row.taxableAmount || 0) > 0
@@ -2411,17 +2498,47 @@ export class ImportResolver {
 
     }
 
+    static async importHiringChargeVoucher(
+        actor: any,
+        voucher: GroupedVoucherDTO
+    ) {
+        const amount = Number(voucher.importedTotals?.subTotal || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new ApiError(
+                `Hiring Charges voucher ${voucher.voucherNo} has no valid taxable amount`,
+                400
+            );
+        }
+
+        const dto: JournalImportDTO = {
+            date: voucher.voucherDate,
+            voucherNo: voucher.voucherNo,
+            invoiceNo: voucher.invoiceNo,
+            voucherType: "HIRING CHARGES",
+            particulars: voucher.narration || voucher.rows[0]?.sourceParticulars || "Hiring Charges",
+            debitAmount: 0,
+            creditAmount: amount,
+            raw: voucher.rows[0]?.raw
+        };
+
+        const payload = await this.buildJournalPayload(actor, dto);
+        const journal = await JournalService.createJournal(actor, payload);
+        return JournalService.approveJournal(actor, journal.id);
+    }
+
     public static async resolveOrCreateJournalHead(
         actor: any,
         dto: JournalImportDTO
     ) {
 
+        const voucherType = dto.voucherType.trim().toUpperCase();
+        const isHiringCharge = voucherType === "HIRING CHARGES";
         const type =
-            dto.debitAmount > 0
+            isHiringCharge
+                ? "OUTWARD"
+                : dto.debitAmount > 0
                 ? "INWARD"
                 : "OUTWARD";
-
-        const voucherType = dto.voucherType.trim().toUpperCase();
 
         const cacheKey =
             voucherType;
@@ -2452,7 +2569,9 @@ export class ImportResolver {
         if (!journalHead) {
 
             const groupCode =
-                dto.debitAmount > 0
+                isHiringCharge
+                    ? "INDIRECT_EXPENSE"
+                    : dto.debitAmount > 0
                     ? "INDIRECT_EXPENSE"
                     : "INDIRECT_INCOME";
 
@@ -2478,7 +2597,7 @@ export class ImportResolver {
 
     }
 
-        static async importInvoiceTransaction(
+    static async importInvoiceTransaction(
         actor: any,
         dto: JournalImportDTO
     ) {
@@ -2490,6 +2609,10 @@ export class ImportResolver {
 
         if (/\bcancell?ed\b/i.test(dto.particulars || "")) {
             return this.createCancelledSaleTransaction(actor, dto);
+        }
+
+        if (this.isHiringChargeImportRow(dto)) {
+            return this.importHiringChargeTransaction(actor, dto);
         }
 
         if (voucherType === "TAX INVOICE") {
@@ -2537,6 +2660,33 @@ export class ImportResolver {
         }
 
         throw new Error("Unsupported Voucher Type");
+    }
+
+    private static isHiringChargeImportRow(dto: JournalImportDTO) {
+        return /\bHIRING\s+CHARGES?\b/i.test(
+            [dto.particulars, ...Object.values(dto.raw || {})].join(" ")
+        );
+    }
+
+    private static async importHiringChargeTransaction(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new Error(`Hiring Charges voucher ${dto.voucherNo} has no valid amount`);
+        }
+
+        const journalDto: JournalImportDTO = {
+            ...dto,
+            voucherType: "HIRING CHARGES",
+            debitAmount: 0,
+            creditAmount: amount,
+            particulars: dto.particulars || "Hiring Charges"
+        };
+        const payload = await this.buildJournalPayload(actor, journalDto);
+        const journal = await JournalService.createJournal(actor, payload);
+        return JournalService.approveJournal(actor, journal.id);
     }
 
     private static async createCancelledSaleTransaction(

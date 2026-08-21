@@ -232,10 +232,13 @@ export class ImportService {
 
         console.log(rawRows[0]);
 
+        const validationErrors: any[] = [];
+
         const parsedRows =
             ExcelImportService.parseRows(
                 rawRows,
-                type
+                type,
+                validationErrors
             );
 
             console.log("Parsed Rows:", parsedRows.length);
@@ -254,8 +257,6 @@ console.log(
 
 console.log("Rows To Import:", rowsToImport.length);
 
-
-        const validationErrors: any[] = [];
 
         const vouchers =
             ExcelImportService
@@ -364,6 +365,15 @@ console.log("Rows To Import:", rowsToImport.length);
                                     return;
                                 }
 
+                                if (voucher.isHiringCharge) {
+                                    await ImportResolver.importHiringChargeVoucher(
+                                        actor,
+                                        voucher
+                                    );
+                                    summary.success++;
+                                    return;
+                                }
+
                                 const payload =
                                     await ImportResolver.buildSalePayload(voucher);
 
@@ -437,7 +447,18 @@ console.log("Rows To Import:", rowsToImport.length);
 
                                 code: error.code,
 
-                                meta: error.meta,
+                                meta: error.meta || {
+                                    agencyName: voucher.agencyName,
+                                    narration: voucher.narration,
+                                    rows: voucher.rows.map(row => ({
+                                        particulars: row.particulars,
+                                        sourceParticulars: row.sourceParticulars,
+                                        quantity: row.quantity,
+                                        unit: row.unit,
+                                        rate: row.rate,
+                                        raw: row.raw
+                                    }))
+                                },
 
                                 error: error.message
 

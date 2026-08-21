@@ -393,6 +393,33 @@ export class ExcelImportService {
         );
     }
 
+    private static getNarrationLineKind(row: Record<string, any>): "HIRING_CHARGE" | "SCRAP" | undefined {
+        const text = String(this.getValue(row, "Narration") || "").replace(/\s+/g, " ").trim();
+        if (/\bHIRING\s+CHARGES?\b/i.test(text)) return "HIRING_CHARGE";
+        if (/\b(?:SCRAP|WASTE|WASTAGE)\b/i.test(text)) return "SCRAP";
+        return undefined;
+    }
+
+    private static extractNarrationItem(row: Record<string, any>) {
+        const narration = String(this.getValue(row, "Narration") || "").replace(/\s+/g, " ").trim();
+        const kind = this.getNarrationLineKind(row);
+        if (!kind) return undefined;
+
+        const quantityMatch = narration.match(/\b(?:QTY|QNTY|QUANTITY)\s*[:=-]?\s*([\d,.]+)\s*(MT|MTS|LTR|LITRE|LITRES|KG|KGS|NOS|NO\.?S?)/i)
+            || narration.match(/\b([\d,.]+)\s*(MT|MTS|LTR|LITRE|LITRES|KG|KGS|NOS|NO\.?S?)(?:\s|@|$)/i);
+        const rateMatch = narration.match(/@\s*([\d,.]+)/i);
+        const quantity = quantityMatch ? this.toNumber(quantityMatch[1]) : 0;
+        const unit = quantityMatch?.[2]?.toUpperCase() || "KG";
+
+        if (kind === "HIRING_CHARGE") {
+            return { kind, productName: "Hiring Charges", quantity: 0, unit, rate: rateMatch ? this.toNumber(rateMatch[1]) : 0 };
+        }
+
+        const scrapMatch = narration.match(/\b(?:SALE\s+)?((?:SCRAP|WASTE|WASTAGE)[^@]*?)(?:\s+Q(?:TY|NTY)|\s+QUANTITY|\s+@|$)/i);
+        const productName = (scrapMatch?.[1] || "Unknown Scrap/Waste").replace(/[,:;.-]+$/, "").replace(/\s+/g, " ").trim();
+        return { kind, productName, quantity, unit, rate: rateMatch ? this.toNumber(rateMatch[1]) : 0 };
+    }
+
     private static mergeSalesContinuationRow(
         headerRow: Record<string, any>,
         detailRow: Record<string, any>
@@ -446,7 +473,8 @@ export class ExcelImportService {
 
     static parseRows(
         rows: Record<string, any>[],
-        type: "PURCHASE" | "SALE" = "PURCHASE"
+        type: "PURCHASE" | "SALE" = "PURCHASE",
+        parseErrors: any[] = []
     ): ExcelRowDTO[] {
 
         let currentVoucherRow: Record<string, any> | undefined;
@@ -473,7 +501,8 @@ export class ExcelImportService {
                     this.isSalesPartyHeaderRow(
                         row,
                         rows[index + 1] || {}
-                    )
+                    ) &&
+                    !this.getNarrationLineKind(row)
                 ) {
                     return null as any;
                 }
@@ -558,9 +587,17 @@ export class ExcelImportService {
                 }
             }
 
-            const particulars = String(
+            const rawParticulars = String(
                 this.getValue(row, "Particulars") || ""
             ).trim();
+
+            const rowParty = this.getValue(row, "Supplier", "Buyer", "Consignee");
+            const isPartyLikeRow = Boolean(rawParticulars) &&
+                this.normalizePartyHeader(rawParticulars) === this.normalizePartyHeader(rowParty);
+            const narrationItem = type === "SALE" && (isPartyLikeRow || !rawParticulars)
+                ? this.extractNarrationItem(row)
+                : undefined;
+            const particulars = narrationItem?.productName || rawParticulars;
 
             const voucherNo = explicitVoucherNo || String(
                 this.getValue(row, "Voucher No") || ""
@@ -624,8 +661,16 @@ export class ExcelImportService {
                 normalizedProduct &&
                 agencyName &&
                 normalizedProduct ===
-                    this.normalizePartyHeader(agencyName)
+                    this.normalizePartyHeader(agencyName) &&
+                !narrationItem
             ) {
+                parseErrors.push({
+                    voucherNo,
+                    invoiceNo: this.getValue(row, "Supplier Invoice No", "Invoice No"),
+                    error: `Sale voucher ${voucherNo} was not imported because no product/detail row was found.`,
+                    code: "MISSING_SALE_PARTICULARS",
+                    meta: { particulars: rawParticulars, narration: this.getValue(row, "Narration"), raw: row }
+                });
                 return null as any;
             }
 
@@ -634,7 +679,7 @@ export class ExcelImportService {
             /**
              * Quantity
              */
-            const quantityText =
+            let quantityText =
                 String(
                     this.getValue(
                         row,
@@ -644,6 +689,11 @@ export class ExcelImportService {
 
             let quantity =
                 this.toNumber(quantityText);
+
+            if (narrationItem?.kind === "SCRAP" && quantity <= 0) {
+                quantity = narrationItem.quantity;
+                quantityText = `${narrationItem.quantity} ${narrationItem.unit}`;
+            }
 
             const value =
                 this.toNumber(
@@ -674,7 +724,9 @@ export class ExcelImportService {
             /**
              * Unit
              */
-            let unit = "KG";
+            let unit = narrationItem?.kind === "SCRAP"
+                ? (narrationItem.unit === "NOS" || narrationItem.unit.startsWith("NO") ? "KG" : narrationItem.unit)
+                : "KG";
 
             if (/KLR|KL\b/i.test(quantityText)) {
 
@@ -724,7 +776,7 @@ export class ExcelImportService {
              * Rate
              */
 
-            const rateText =
+            let rateText =
                 String(
                     this.getValue(
                         row,
@@ -734,6 +786,11 @@ export class ExcelImportService {
 
             let rate =
                 this.toNumber(rateText);
+
+            if (rate <= 0 && narrationItem?.rate) {
+                rate = narrationItem.rate;
+                rateText = String(narrationItem.rate);
+            }
 
             if (/\/(?:KLR|KL)\b/i.test(rateText)) {
 
@@ -750,6 +807,10 @@ export class ExcelImportService {
             console.log({
                 voucher: this.getValue(row, "Voucher No"),
                 particulars: productName,
+
+                sourceParticulars: rawParticulars,
+
+                lineKind: narrationItem?.kind || "PRODUCT",
                 quantityText,
                 quantity,
                 rateText,
@@ -938,6 +999,10 @@ export class ExcelImportService {
                     ),
 
                 particulars: productName,
+
+                sourceParticulars: rawParticulars,
+
+                lineKind: narrationItem?.kind || "PRODUCT",
 
                 hsnNo,
 
@@ -1193,7 +1258,9 @@ export class ExcelImportService {
                         row.narration,
 
                     rows: [],
-                    isCancelled: row.isCancelled
+                    isCancelled: row.isCancelled,
+                    isHiringCharge: row.lineKind === "HIRING_CHARGE",
+                    isScrap: row.lineKind === "SCRAP"
 
                 });
 
@@ -1232,6 +1299,7 @@ export class ExcelImportService {
                 ? []
                 : voucher.rows.filter(row =>
                     !row.isTotalRow &&
+                    row.lineKind !== "HIRING_CHARGE" &&
                     Boolean(row.particulars?.trim())
                 );
 
@@ -1239,7 +1307,7 @@ export class ExcelImportService {
              * RCM Purchase is calculated from its financial values.
              * Normal Purchase uses inventory item rows.
              */
-            const financialRows = isRcmPurchase
+            const financialRows = isRcmPurchase || voucher.isHiringCharge
                 ? voucher.rows.filter(row =>
                     !row.isTotalRow &&
                     (
@@ -1372,7 +1440,7 @@ export class ExcelImportService {
 
             if (!voucher.agencyName) {
 
-                if (type === "SALE") {
+                if (type === "SALE" && !voucher.isHiringCharge) {
                     if (!voucher.isCancelled) {
                         validationErrors.push({
                             voucherNo: voucher.voucherNo,
@@ -1449,7 +1517,13 @@ export class ExcelImportService {
                     item.quantity <= 0 &&
                     item.taxableAmount > 0
                 ) {
-
+                    validationErrors.push({
+                        voucherNo: voucher.voucherNo,
+                        invoiceNo: voucher.invoiceNo,
+                        error: `Product row "${item.particulars}" has taxable value ${item.taxableAmount} but no positive quantity.`,
+                        code: "INVALID_PRODUCT_QUANTITY",
+                        meta: { particulars: item.particulars, narration: item.narration, raw: item.raw }
+                    });
                     continue;
 
                 }
