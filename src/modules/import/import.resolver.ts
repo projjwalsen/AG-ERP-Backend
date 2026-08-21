@@ -1,4 +1,4 @@
-import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, VoucherType } from "@prisma/client";
+import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -1916,6 +1916,65 @@ export class ImportResolver {
         }
     }
 
+    static async createCancelledSaleRecord(
+        actor: any,
+        voucher: GroupedVoucherDTO
+    ) {
+        const invoiceNo =
+            voucher.invoiceNo?.trim() ||
+            voucher.voucherNo.trim();
+
+        const existing = await prisma.sale.findUnique({
+            where: { invoiceNo }
+        });
+
+        if (existing) return existing;
+
+        const branch = await prisma.branch.findFirst({
+            where: actor?.branchId
+                ? { id: actor.branchId }
+                : { isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+
+        if (!branch) {
+            throw new ApiError(
+                `Unable to store cancelled sale ${invoiceNo}: no branch is configured`,
+                400
+            );
+        }
+
+        const agencyName = "Cancelled Sales - Unassigned";
+        let agency = await prisma.agency.findFirst({
+            where: { name: agencyName }
+        });
+
+        if (!agency) {
+            agency = await prisma.agency.create({
+                data: {
+                    name: agencyName,
+                    type: AgencyType.CLIENT,
+                    isActive: true
+                }
+            });
+        }
+
+        return prisma.sale.create({
+            data: {
+                agencyId: agency.id,
+                branchId: branch.id,
+                invoiceNo,
+                voucherNo: voucher.voucherNo,
+                invoiceDate: voucher.invoiceDate || voucher.voucherDate || new Date(),
+                voucherType: VoucherType.SALE,
+                status: SalesStatus.REJECTED,
+                remarks: `Cancelled sale imported from Excel: ${voucher.narration || voucher.voucherNo}`,
+                createdById: actor?.id,
+                createdAt: voucher.voucherDate || new Date()
+            }
+        });
+    }
+
     static async buildSalePayload(
         voucher: GroupedVoucherDTO
     ): Promise<any> {
@@ -2429,6 +2488,10 @@ export class ImportResolver {
                 ?.trim()
                 .toUpperCase();
 
+        if (/\bcancell?ed\b/i.test(dto.particulars || "")) {
+            return this.createCancelledSaleTransaction(actor, dto);
+        }
+
         if (voucherType === "TAX INVOICE") {
 
             const payload =
@@ -2474,6 +2537,67 @@ export class ImportResolver {
         }
 
         throw new Error("Unsupported Voucher Type");
+    }
+
+    private static async createCancelledSaleTransaction(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+        const candidates = this.journalInvoiceCandidates(dto);
+        const sale = await prisma.sale.findFirst({
+            where: {
+                OR: candidates.flatMap(candidate => [
+                    { invoiceNo: { equals: candidate, mode: "insensitive" as const } },
+                    { voucherNo: { equals: candidate, mode: "insensitive" as const } }
+                ])
+            }
+        });
+
+        if (!sale) {
+            throw new Error(
+                `Cancelled sale not found for transaction voucher ${dto.voucherNo}`
+            );
+        }
+
+        const branch = sale?.branchId
+            ? { id: sale.branchId }
+            : await prisma.branch.findFirst({
+                where: actor?.branchId
+                    ? { id: actor.branchId }
+                    : { isActive: true },
+                orderBy: { createdAt: "asc" }
+            });
+
+        if (!branch) {
+            throw new ApiError(
+                `Unable to import cancelled transaction ${dto.voucherNo}: no branch is configured`,
+                400
+            );
+        }
+
+        const transactionNo = `CANCELLED-${dto.voucherNo}`;
+        const existing = await prisma.transaction.findUnique({
+            where: { transactionNo }
+        });
+
+        if (existing) return existing;
+
+        return prisma.transaction.create({
+            data: {
+                transactionNo,
+                status: TransactionStatus.REJECTED,
+                settlementType: SettlementType.INVOICE_TO_INVOICE,
+                branchId: branch.id,
+                direction: TransactionDirection.INWARD,
+                suspenseAccount: false,
+                agencyId: sale?.agencyId,
+                saleId: sale?.id,
+                amount: 0,
+                remarks: `Cancelled sale transaction imported: ${dto.voucherNo}`,
+                createdById: actor?.id,
+                createdAt: ExcelImportService.toDate(dto.date) || new Date()
+            }
+        });
     }
 
     static async buildSaleTransactionPayload(

@@ -212,17 +212,6 @@ export class JournalImportService {
 
                     catch (error: any) {
 
-                        if (
-                            error.message ===
-                            "SKIP_ALREADY_IMPORTED"
-                        ) {
-
-                            summary.success++;
-
-                            return;
-
-                        }
-
                         summary.failed++;
 
                         summary.errors.push({
@@ -230,11 +219,17 @@ export class JournalImportService {
                             voucherNo:
                                 dto.voucherNo,
 
+                            invoiceNo:
+                                dto.invoiceNo,
+
                             voucherType:
                                 dto.voucherType,
 
                             error:
-                                error.message
+                                error.message,
+
+                            meta:
+                                dto
 
                         });
 

@@ -596,6 +596,12 @@ export class ExcelImportService {
                 particulars
                     .trim();
 
+            const isCancelled =
+                /\bcancell?ed\b/i.test(productName) ||
+                Object.values(row).some(value =>
+                    /\bcancell?ed\b/i.test(String(value ?? ""))
+                );
+
             const normalizedProduct =
                 this.normalizePartyHeader(productName);
 
@@ -968,6 +974,8 @@ export class ExcelImportService {
                         )
                     ),
 
+                isCancelled,
+
                 isTotalRow,
 
                 narration:
@@ -1103,8 +1111,16 @@ export class ExcelImportService {
             }
             if (
                 type === "SALE" &&
-                !row.agencyName
+                !row.agencyName &&
+                !row.isCancelled
             ) {
+                validationErrors.push({
+                    voucherNo: row.voucherNo,
+                    invoiceNo: row.invoiceNo,
+                    error: `Sale voucher ${row.voucherNo} could not be imported because the agency/customer was missing.`,
+                    code: "MISSING_SALE_AGENCY",
+                    meta: { particulars: row.particulars, raw: row.raw }
+                });
                 continue;
             }
 
@@ -1176,7 +1192,8 @@ export class ExcelImportService {
                     narration:
                         row.narration,
 
-                    rows: []
+                    rows: [],
+                    isCancelled: row.isCancelled
 
                 });
 
@@ -1356,6 +1373,15 @@ export class ExcelImportService {
             if (!voucher.agencyName) {
 
                 if (type === "SALE") {
+                    if (!voucher.isCancelled) {
+                        validationErrors.push({
+                            voucherNo: voucher.voucherNo,
+                            invoiceNo: voucher.invoiceNo,
+                            error: `Sale voucher ${voucher.voucherNo} could not be imported because the agency/customer was missing.`,
+                            code: "MISSING_SALE_AGENCY",
+                            meta: { sourceRows: voucher.rows.map(row => row.raw) }
+                        });
+                    }
                     continue;
                 }
 
@@ -1364,6 +1390,15 @@ export class ExcelImportService {
             if (!voucher.branchName) {
 
                 if (type === "SALE") {
+                    if (!voucher.isCancelled) {
+                        validationErrors.push({
+                            voucherNo: voucher.voucherNo,
+                            invoiceNo: voucher.invoiceNo,
+                            error: `Sale voucher ${voucher.voucherNo} could not be imported because the branch was missing.`,
+                            code: "MISSING_SALE_BRANCH",
+                            meta: { sourceRows: voucher.rows.map(row => row.raw) }
+                        });
+                    }
                     continue;
                 }
 
