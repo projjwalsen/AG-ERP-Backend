@@ -796,6 +796,17 @@ export class ProductService {
                                 )
                         };
 
+                    case ProductUnit.NOS:
+
+                        return {
+                            ...product,
+
+                            availableStockNOS:
+                                Number(
+                                    stock.kg.toFixed(3)
+                                )
+                        };
+
 
                     /*
                      * Should never happen because

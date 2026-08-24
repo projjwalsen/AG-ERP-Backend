@@ -63,7 +63,7 @@ export class InventoryService {
                 branchId: payload.branchId,
                 productId: payload.productId,
                 isActive: true,
-                ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT
+                ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT || payload.unit === ProductUnit.NOS
                     ? { availableQtyKG: { gt: 0 } }
                     : { availableQtyLTR: { gt: 0 } })
             },
@@ -272,7 +272,7 @@ export class InventoryService {
             density
         );
 
-        if (payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT) {
+        if (payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT || payload.unit === ProductUnit.NOS) {
 
             if (
                 !allowNegativeStock &&
@@ -317,7 +317,7 @@ export class InventoryService {
             const updatedResult = await tx.inventoryBatch.updateMany({
                 where: {
                     id: inventoryBatch.id,
-                    ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT
+                    ...(payload.unit === ProductUnit.KG || payload.unit === ProductUnit.MT || payload.unit === ProductUnit.NOS
                         ? {
                             availableQtyKG: {
                                 gte: quantityKG

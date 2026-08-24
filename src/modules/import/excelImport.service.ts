@@ -427,13 +427,18 @@ export class ExcelImportService {
         const accountingAmount = accountingProduct ? this.toNumber(row[accountingProduct]) : 0;
         if (kind === "HIRING_CHARGE") return { kind, productName: "Hiring Charges", quantity: 0, unit, rate: derivedRate, amount: accountingAmount };
         const scrapMatch = narration.match(/\b(?:SALE\s+)?((?:SCRAP|WASTE|WASTAGE)[^@()]*?)(?:\s+Q(?:TY|NTY)|\s+QUANTITY|\s+@|\s*\(|$)/i);
-        const productName = (scrapMatch?.[1] || "SCRAP/WASTE")
+        const extractedProductName = (scrapMatch?.[1] || "SCRAP/WASTE")
             .replace(/^SALE\s+/i, "")
             .replace(/\s*\(\s*INTERSTATE\s+SALES?\s*\)$/i, "")
             .replace(/[,:;.-]+$/, "")
             .replace(/\s+/g, " ")
             .trim()
             .toUpperCase();
+        // Sale narrations use both "SCRAP DRUM" and "SCRAP DRUMS 1000 NOS".
+        // NOS is the quantity's unit, not part of the product master name.
+        const productName = /\bSCRAP\s+DRUMS?\b/i.test(extractedProductName)
+            ? "SCRAP DRUM"
+            : extractedProductName;
         return { kind, productName, quantity, unit, rate: derivedRate, amount: accountingAmount };
     }
 
