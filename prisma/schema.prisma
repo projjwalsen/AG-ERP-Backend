@@ -311,6 +311,7 @@ enum ProductUnit {
   KG
   LTR
   MT
+  NOS
 }
 
 enum ProductType {

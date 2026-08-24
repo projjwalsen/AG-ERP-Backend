@@ -69,6 +69,7 @@ export class ExcelImportService {
             .replace(/\/?\s*LITRES?\.?/gi, "")
             .replace(/\/?\s*MTS?\.?/gi, "")
             .replace(/\/?\s*MT\.?/gi, "")
+            .replace(/\/?\s*NOS?\.?/gi, "")
 
             .replace(/,/g, "")
 

@@ -100,11 +100,14 @@ export class JournalImportService {
                         .trim()
                         .toUpperCase();
 
+                const isCancelled =
+                    /\bcancell?ed\b/i.test(dto.particulars || "");
+
                 const isTransaction =
                     [
                         "PURCHASE",
                         "TAX INVOICE"
-                    ].includes(voucherType);
+                    ].includes(voucherType) || isCancelled;
 
                 switch (type) {
 
@@ -154,6 +157,7 @@ export class JournalImportService {
                                 .toUpperCase();
 
                         const isTransaction =
+                            /\bcancell?ed\b/i.test(dto.particulars || "") ||
                             [
                                 "PURCHASE",
                                 "TAX INVOICE"
