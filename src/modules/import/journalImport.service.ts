@@ -101,7 +101,7 @@ export class JournalImportService {
                         .toUpperCase();
 
                 const isCancelled =
-                    /\bcancell?ed\b/i.test(dto.particulars || "");
+                    ImportResolver.isCancelledOutwardCreditNoteImportRow(dto);
 
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
@@ -162,7 +162,7 @@ export class JournalImportService {
                                 .toUpperCase();
 
                         const isTransaction =
-                            /\bcancell?ed\b/i.test(dto.particulars || "") ||
+                            ImportResolver.isCancelledOutwardCreditNoteImportRow(dto) ||
                             ImportResolver.isDebitCreditNoteImportRow(dto) ||
                             [
                                 "PURCHASE",
@@ -209,7 +209,11 @@ export class JournalImportService {
                             isTransaction
                         ) {
 
-                            if (ImportResolver.isDebitCreditNoteImportRow(dto)) {
+                            if (
+                                ImportResolver.isCancelledOutwardCreditNoteImportRow(dto)
+                            ) {
+                                await ImportResolver.importInvoiceTransaction(actor, dto);
+                            } else if (ImportResolver.isDebitCreditNoteImportRow(dto)) {
                                 await ImportResolver.importDebitCreditNote(actor, dto);
                             } else {
                                 await ImportResolver.importInvoiceTransaction(actor, dto);
