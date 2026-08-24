@@ -100,11 +100,19 @@ export class JournalImportService {
                         .trim()
                         .toUpperCase();
 
+                const isCancelled =
+                    /\bcancell?ed\b/i.test(dto.particulars || "");
+
+                const isDebitCreditNote =
+                    ImportResolver.isDebitCreditNoteImportRow(dto);
+
                 const isTransaction =
                     [
                         "PURCHASE",
                         "TAX INVOICE"
-                    ].includes(voucherType);
+                    ].includes(voucherType) ||
+                    isCancelled ||
+                    isDebitCreditNote;
 
                 switch (type) {
 
@@ -154,6 +162,8 @@ export class JournalImportService {
                                 .toUpperCase();
 
                         const isTransaction =
+                            /\bcancell?ed\b/i.test(dto.particulars || "") ||
+                            ImportResolver.isDebitCreditNoteImportRow(dto) ||
                             [
                                 "PURCHASE",
                                 "TAX INVOICE"
@@ -199,10 +209,11 @@ export class JournalImportService {
                             isTransaction
                         ) {
 
-                            await ImportResolver.importInvoiceTransaction(
-                                actor,
-                                dto
-                            );
+                            if (ImportResolver.isDebitCreditNoteImportRow(dto)) {
+                                await ImportResolver.importDebitCreditNote(actor, dto);
+                            } else {
+                                await ImportResolver.importInvoiceTransaction(actor, dto);
+                            }
 
                         }
 
