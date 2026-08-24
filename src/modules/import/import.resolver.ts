@@ -1,4 +1,4 @@
-import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -7,9 +7,68 @@ import { LocationService } from "../meta/meta.loc.service";
 import { City, State } from "country-state-city";
 import { ExcelImportService } from "./excelImport.service";
 import { JournalService } from "../journal/journal.service";
+import { DebitCreditNoteService } from "../debitCreditNote/debitCreditNote.service";
 import { TransactionService } from "../transaction/transac.service";
 
 export class ImportResolver {
+
+    static isDebitCreditNoteImportRow(dto: JournalImportDTO) {
+        const voucherType = (dto.voucherType || "").trim().toUpperCase();
+        return voucherType === "INWARD DEBIT NOTE" ||
+            voucherType === "OUTWARD CREDIT NOTE";
+    }
+
+    static async importDebitCreditNote(actor: any, dto: JournalImportDTO) {
+        const voucherType = dto.voucherType.trim().toUpperCase();
+        const isInwardDebitNote = voucherType === "INWARD DEBIT NOTE";
+        const sourceType = isInwardDebitNote
+            ? DebitCreditNoteSourceType.PURCHASE
+            : DebitCreditNoteSourceType.SALE;
+        const noteType = isInwardDebitNote
+            ? DebitCreditNoteType.DEBIT_NOTE
+            : DebitCreditNoteType.CREDIT_NOTE;
+        const candidates = this.journalInvoiceCandidates(dto);
+        const amount = dto.debitAmount > 0 ? dto.debitAmount : dto.creditAmount;
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new Error(`${voucherType} voucher ${dto.voucherNo} has no valid amount`);
+        }
+
+        const invoice = sourceType === DebitCreditNoteSourceType.SALE
+            ? await prisma.sale.findFirst({
+                where: { OR: candidates.flatMap(candidate => [
+                    { invoiceNo: { equals: candidate, mode: "insensitive" as const } },
+                    { voucherNo: { equals: candidate, mode: "insensitive" as const } }
+                ]) }
+            })
+            : await prisma.purchase.findFirst({
+                where: { OR: candidates.flatMap(candidate => [
+                    { invoiceNo: { equals: candidate, mode: "insensitive" as const } },
+                    { voucherNo: { equals: candidate, mode: "insensitive" as const } }
+                ]) }
+            });
+
+        if (!invoice) {
+            throw new Error(`${sourceType === DebitCreditNoteSourceType.SALE ? "Sale" : "Purchase"} not found for note voucher ${dto.voucherNo}`);
+        }
+
+        const note = await DebitCreditNoteService.createNote(actor, {
+            type: noteType,
+            sourceType,
+            agencyId: invoice.agencyId,
+            branchId: invoice.branchId,
+            saleId: sourceType === DebitCreditNoteSourceType.SALE ? invoice.id : undefined,
+            purchaseId: sourceType === DebitCreditNoteSourceType.PURCHASE ? invoice.id : undefined,
+            noteDate: ExcelImportService.toDate(dto.date) || new Date(),
+            narration: `Imported ${voucherType}: ${dto.particulars || dto.voucherNo}`,
+            particulars: [{
+                description: dto.particulars || `${voucherType} ${dto.voucherNo}`,
+                amount
+            }]
+        });
+
+        return DebitCreditNoteService.approveNote(actor, note.id);
+    }
 
     private static agencyCache =
         new Map<string, any>();
