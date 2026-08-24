@@ -1622,7 +1622,7 @@ export class ImportResolver {
 
                     ...(allowInsufficientStock
                         ? {}
-                        : (unit === ProductUnit.KG || unit === ProductUnit.MT)
+                        : (unit === ProductUnit.KG || unit === ProductUnit.MT || unit === ProductUnit.NOS)
                         ? {
                             availableQtyKG: {
                                 gt: 0
@@ -1667,7 +1667,7 @@ export class ImportResolver {
 
             const availableInDatabase = Number(
 
-                unit === ProductUnit.KG || unit === ProductUnit.MT
+                unit === ProductUnit.KG || unit === ProductUnit.MT || unit === ProductUnit.NOS
                     ? batch.availableQtyKG
                     : batch.availableQtyLTR
 

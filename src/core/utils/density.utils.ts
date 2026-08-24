@@ -81,6 +81,15 @@ export const getStockQuantities = (
         };
     }
 
+    if (unit === ProductUnit.NOS) {
+        return {
+            // Counts use the schema's primary quantity column but never get
+            // converted via a product density.
+            quantityKG: normalizedQuantity,
+            quantityLTR: 0
+        };
+    }
+
     if (unit === ProductUnit.KG) {
         return {
             quantityKG: normalizedQuantity,
@@ -103,7 +112,7 @@ export const getAvailableQuantityForUnit = (
         return convertKGToMT(availableQtyKG);
     }
 
-    return unit === ProductUnit.KG
+    return unit === ProductUnit.KG || unit === ProductUnit.NOS
         ? Number(availableQtyKG)
         : Number(availableQtyLTR);
 };
