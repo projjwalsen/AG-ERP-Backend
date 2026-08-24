@@ -1451,6 +1451,7 @@ model Journal {
 
   saleId String? @unique
   sale   Sale? @relation("SaleHiringJournal", fields: [saleId], references: [id], onDelete: SetNull)
+  
 
   createdById String?
 
