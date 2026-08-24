@@ -675,8 +675,6 @@ export class ReportingService {
                 }
 
                 return (
-                    row.periodDebit !== 0 ||
-                    row.periodCredit !== 0 ||
                     row.closingDebit !== 0 ||
                     row.closingCredit !== 0
                 );
