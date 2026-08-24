@@ -1534,6 +1534,122 @@ export class ExcelService {
         res: Response,
         report: any
     ) {
+        // Tally-style Day Book: one voucher header line followed by its
+        // balancing ledger lines.  The previous export was an analytical
+        // workbook; this mirrors the compact Day Book layout users reconcile.
+        {
+            const workbook = new ExcelJS.Workbook();
+            workbook.creator = "AG ERP";
+            workbook.created = new Date();
+
+            const worksheet = workbook.addWorksheet("Day Book");
+            worksheet.views = [{ state: "frozen", ySplit: 9 }];
+            worksheet.pageSetup = {
+                paperSize: 9,
+                orientation: "landscape",
+                fitToPage: true,
+                fitToWidth: 1,
+                fitToHeight: 0,
+                margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 }
+            };
+            worksheet.columns = [
+                { width: 13 }, { width: 52 }, { width: 4 }, { width: 4 },
+                { width: 18 }, { width: 16 }, { width: 18 }, { width: 18 }
+            ];
+
+            const companyName = report.companyName || "A G ASHTAVINAYAKA PETROCHEM PVT LTD";
+            const startDate = report.dateRange?.startDate ? new Date(report.dateRange.startDate) : null;
+            const endDate = report.dateRange?.endDate ? new Date(report.dateRange.endDate) : new Date();
+            const dateText = startDate
+                ? `For ${startDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} to ${endDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`
+                : `For ${endDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`;
+            const thinBorder: Partial<ExcelJS.Borders> = {
+                top: { style: "thin", color: { argb: "FF808080" } },
+                left: { style: "thin", color: { argb: "FF808080" } },
+                bottom: { style: "thin", color: { argb: "FF808080" } },
+                right: { style: "thin", color: { argb: "FF808080" } }
+            };
+            const moneyFormat = "#,##0.00;[Red]-#,##0.00";
+
+            worksheet.mergeCells("A1:H1");
+            worksheet.getCell("A1").value = companyName;
+            worksheet.getCell("A1").font = { name: "Arial", bold: true, size: 12 };
+            worksheet.getCell("A1").alignment = { horizontal: "left", vertical: "middle" };
+            worksheet.mergeCells("A6:H6");
+            worksheet.getCell("A6").value = "Day Book";
+            worksheet.getCell("A6").font = { name: "Arial", bold: true, size: 13 };
+            worksheet.getCell("A6").alignment = { horizontal: "center", vertical: "middle" };
+            worksheet.mergeCells("A7:H7");
+            worksheet.getCell("A7").value = dateText;
+            worksheet.getCell("A7").font = { name: "Arial", size: 10 };
+            worksheet.getCell("A7").alignment = { horizontal: "center", vertical: "middle" };
+
+            worksheet.mergeCells("B8:D8");
+            worksheet.mergeCells("G8:G9");
+            worksheet.mergeCells("H8:H9");
+            worksheet.getCell("A8").value = "Date";
+            worksheet.getCell("B8").value = "Particulars";
+            worksheet.getCell("E8").value = "Vch Type";
+            worksheet.getCell("F8").value = "Vch No.";
+            worksheet.getCell("G8").value = "Debit Amount";
+            worksheet.getCell("H8").value = "Credit Amount";
+            worksheet.getCell("G9").value = "Inwards Qty";
+            worksheet.getCell("H9").value = "Outwards Qty";
+            for (const rowNo of [8, 9]) {
+                const row = worksheet.getRow(rowNo);
+                row.height = 20;
+                for (let col = 1; col <= 8; col++) {
+                    const cell = row.getCell(col);
+                    cell.font = { name: "Arial", bold: true, size: 10 };
+                    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+                    cell.border = thinBorder;
+                }
+            }
+
+            const voucherRows = new Map<string, any[]>();
+            for (const entry of report.doubleEntryRows || []) {
+                const key = `${entry.date}|${entry.voucherNo}|${entry.voucherType}`;
+                const rows = voucherRows.get(key) || [];
+                rows.push(entry);
+                voucherRows.set(key, rows);
+            }
+
+            let rowNo = 10;
+            for (const entries of voucherRows.values()) {
+                entries.forEach((entry, entryIndex) => {
+                    const row = worksheet.getRow(rowNo++);
+                    row.height = 19;
+                    row.values = [
+                        entryIndex === 0 ? new Date(entry.date) : null,
+                        entry.ledgerAccount || entry.particulars || "",
+                        "", "",
+                        entryIndex === 0 ? entry.voucherType || "" : "",
+                        entryIndex === 0 ? entry.voucherNo || "" : "",
+                        Number(entry.debit || 0) || null,
+                        Number(entry.credit || 0) || null
+                    ];
+                    for (let col = 1; col <= 8; col++) {
+                        const cell = row.getCell(col);
+                        cell.font = { name: "Arial", size: 10 };
+                        cell.alignment = {
+                            horizontal: col >= 7 ? "right" : col === 1 || col === 5 || col === 6 ? "center" : "left",
+                            vertical: "middle",
+                            wrapText: true
+                        };
+                    }
+                    row.getCell(1).numFmt = "dd-MMM-yy";
+                    row.getCell(7).numFmt = moneyFormat;
+                    row.getCell(8).numFmt = moneyFormat;
+                });
+            }
+
+            res.status(200);
+            res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            res.setHeader("Content-Disposition", 'attachment; filename="branch-day-book.xlsx"');
+            await workbook.xlsx.write(res as any);
+            res.end();
+            return;
+        }
 
         const workbook =
             new ExcelJS.Workbook();
