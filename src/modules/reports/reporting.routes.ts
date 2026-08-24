@@ -11,12 +11,12 @@ router.use(authMiddleware)
  *   get:
  *     summary: Trial Balance Report
  *     description: |
- *       Generates a ledger-wise Trial Balance using accounting LedgerEntry rows.
+ *       Generates a Tally-style Trial Balance using accounting LedgerEntry rows.
  *
  *       The report includes:
- *       - Opening Debit / Credit
- *       - Period Debit / Credit
- *       - Closing Debit / Credit
+ *       - Transaction Debit / Credit and a signed Closing Balance (Dr/Cr)
+ *       - `tree`: expandable accounting-header -> group -> ledger nodes for the UI
+ *       - `accountGroups`: backwards-compatible alias of `tree`
  *       - Balanced status and closing difference
  *
  *       Date filtering is based on Voucher voucherDate.

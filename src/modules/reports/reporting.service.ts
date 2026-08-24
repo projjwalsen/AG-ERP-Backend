@@ -321,7 +321,8 @@ export class ReportingService {
         const [
             ledgers,
             periodGroups,
-            priorGroups
+            priorGroups,
+            ledgerGroups
         ] = await Promise.all([
 
             prisma.ledger.findMany({
@@ -378,6 +379,17 @@ export class ReportingService {
                 _sum: {
                     amount: true
                 }
+            }),
+
+            prisma.ledgerGroup.findMany({
+                select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    parentId: true,
+                    nature: true
+                },
+                orderBy: { name: "asc" }
             })
         ]);
 
@@ -623,76 +635,31 @@ export class ReportingService {
                     };
                 });
 
-        const getHierarchy = (row: typeof consolidatedRows[number]) => {
-            const code = String(row.groupCode || "").toUpperCase();
+        const groupById = new Map(ledgerGroups.map(group => [group.id, group]));
+        const groupByCode = new Map(ledgerGroups.map(group => [group.code, group]));
 
-            if (code === "CASH_IN_HAND" || code === "BANK_ACCOUNTS" || code === "SUNDRY_DEBTORS" || code === "ASSETS") {
-                return { parentCode: "CURRENT_ASSETS", parentName: "Current Assets", childCode: code, childName: row.account };
-            }
-
-            if (code === "SUNDRY_CREDITORS" || code === "LOANS" || code === "SUSPENSE_ACCOUNT") {
-                return { parentCode: "CURRENT_LIABILITIES", parentName: "Current Liabilities", childCode: code, childName: row.account };
-            }
-
-            if (code === "PURCHASE" || code.startsWith("INPUT_GST_")) {
-                return { parentCode: "PURCHASE_ACCOUNT", parentName: "Purchase Account", childCode: code, childName: row.account };
-            }
-
-            if (code === "SALES" || code.startsWith("OUTPUT_GST_")) {
-                return { parentCode: "SALES_ACCOUNT", parentName: "Sales Account", childCode: code, childName: row.account };
-            }
-
-            if (code === "DIRECT_EXPENSE" || code === "INDIRECT_EXPENSE") {
-                return { parentCode: "EXPENSES", parentName: "Expenses", childCode: code, childName: row.account };
-            }
-
-            if (code === "DIRECT_INCOME" || code === "INDIRECT_INCOME") {
-                return { parentCode: "INCOME", parentName: "Income", childCode: code, childName: row.account };
-            }
+        // The report hierarchy follows the LedgerGroup tree.  This is the
+        // same expandable structure shown by Tally: accounting head -> group
+        // -> ledger, rather than a flat list of ledger balances.
+        const rowsWithHierarchy = consolidatedRows.map(row => {
+            const group = row.groupId
+                ? groupById.get(row.groupId)
+                : groupByCode.get(String(row.groupCode || ""));
+            const parentGroup = group?.parentId
+                ? groupById.get(group.parentId)
+                : undefined;
 
             return {
-                parentCode: String(row.parentGroup || "OTHER").toUpperCase().replace(/\s+/g, "_"),
-                parentName: row.parentGroup || "Other",
-                childCode: code || row.ledgerCode,
-                childName: row.account,
+                ...row,
+                groupId: group?.id || row.groupId || null,
+                groupCode: group?.code || row.groupCode,
+                parentGroup: group?.name || row.parentGroup,
+                reportParentCode: parentGroup?.code || group?.code || row.groupCode,
+                reportParentName: parentGroup?.name || group?.name || row.parentGroup,
+                reportChildCode: group?.code || row.groupCode,
+                reportChildName: group?.name || row.parentGroup
             };
-        };
-
-        const rowsWithHierarchy = consolidatedRows.map(row => ({
-            ...row,
-            ...(() => {
-                const hierarchy = getHierarchy(row);
-                return {
-                    reportParentCode: hierarchy.parentCode,
-                    reportParentName: hierarchy.parentName,
-                    reportChildCode: hierarchy.childCode,
-                    reportChildName: hierarchy.childName,
-                };
-            })(),
-        }));
-
-        const accountGroups = Array.from(
-            rowsWithHierarchy.reduce((groups, row) => {
-                const key = row.reportParentCode;
-                const current = groups.get(key) || {
-                    code: row.reportParentCode,
-                    name: row.reportParentName,
-                    rows: [],
-                    debit: 0,
-                    credit: 0,
-                };
-
-                current.rows.push(row);
-                current.debit += row.debit;
-                current.credit += row.credit;
-                groups.set(key, current);
-                return groups;
-            }, new Map<string, any>()).values()
-        ).map((group: any) => ({
-            ...group,
-            debit: Number(group.debit.toFixed(2)),
-            credit: Number(group.credit.toFixed(2)),
-        }));
+        });
 
         /**
          * ============================================================
@@ -719,15 +686,96 @@ export class ReportingService {
          * ============================================================
          */
 
-        const rows =
-                filteredRows.map(
-                (row, index) => ({
-                    srNo:
-                        index + 1,
+        const rows = filteredRows.map((row, index) => ({
+            srNo: index + 1,
+            rowType: "ledger" as const,
+            level: 0,
+            ...row,
+            // Tally uses one closing column.  Keep the signed value and its
+            // Dr/Cr marker so a UI does not have to infer accounting signs.
+            closingBalance: Math.abs(row.closingSigned),
+            closingBalanceType: row.closingSigned > 0 ? "Dr" : row.closingSigned < 0 ? "Cr" : null
+        }));
 
-                    ...row
-                })
-            );
+        const visibleGroupIds = new Set<string>();
+        for (const row of rows) {
+            let group = row.groupId ? groupById.get(row.groupId) : undefined;
+            while (group) {
+                visibleGroupIds.add(group.id);
+                group = group.parentId ? groupById.get(group.parentId) : undefined;
+            }
+        }
+
+        const treeNodes = new Map<string, any>();
+        for (const group of ledgerGroups) {
+            if (!query?.includeZero && !visibleGroupIds.has(group.id)) continue;
+
+            treeNodes.set(group.id, {
+                id: `group:${group.id}`,
+                groupId: group.id,
+                code: group.code,
+                name: group.name,
+                rowType: "accountingHeader",
+                parentId: group.parentId ? `group:${group.parentId}` : null,
+                level: 0,
+                periodDebit: 0,
+                periodCredit: 0,
+                closingDebit: 0,
+                closingCredit: 0,
+                closingSigned: 0,
+                children: []
+            });
+        }
+
+        for (const row of rows) {
+            const groupNode = row.groupId ? treeNodes.get(row.groupId) : undefined;
+            if (!groupNode) continue;
+            groupNode.children.push({
+                ...row,
+                id: `ledger:${row.ledgerId || row.ledgerCode}`,
+                parentId: groupNode.id,
+                level: 0,
+                hasChildren: false,
+                children: []
+            });
+        }
+
+        const rootNodes: any[] = [];
+        for (const node of treeNodes.values()) {
+            const parent = node.parentId ? treeNodes.get(node.parentId.replace("group:", "")) : undefined;
+            if (parent) parent.children.push(node);
+            else rootNodes.push(node);
+        }
+
+        const finalizeNode = (node: any, level: number) => {
+            node.level = level;
+            node.children.sort((a: any, b: any) => {
+                if (a.rowType !== b.rowType) return a.rowType === "accountingHeader" ? -1 : 1;
+                return String(a.name || a.account).localeCompare(String(b.name || b.account));
+            });
+
+            for (const child of node.children) {
+                if (child.rowType === "accountingHeader") finalizeNode(child, level + 1);
+                node.periodDebit += Number(child.periodDebit || 0);
+                node.periodCredit += Number(child.periodCredit || 0);
+                node.closingDebit += Number(child.closingDebit || 0);
+                node.closingCredit += Number(child.closingCredit || 0);
+                node.closingSigned += Number(child.closingSigned || 0);
+            }
+
+            node.periodDebit = Number(node.periodDebit.toFixed(2));
+            node.periodCredit = Number(node.periodCredit.toFixed(2));
+            node.closingDebit = Number(node.closingDebit.toFixed(2));
+            node.closingCredit = Number(node.closingCredit.toFixed(2));
+            node.closingSigned = Number(node.closingSigned.toFixed(2));
+            node.closingBalance = Math.abs(node.closingSigned);
+            node.closingBalanceType = node.closingSigned > 0 ? "Dr" : node.closingSigned < 0 ? "Cr" : null;
+            node.hasChildren = node.children.length > 0;
+        };
+
+        rootNodes.sort((a, b) => a.name.localeCompare(b.name));
+        rootNodes.forEach(node => finalizeNode(node, 0));
+        const accountGroups = rootNodes;
 
         /**
          * ============================================================
@@ -832,6 +880,20 @@ export class ReportingService {
                 endDate
             },
 
+            // Render contract for the frontend.  `tree` can be displayed
+            // directly, and every accountingHeader node can be expanded
+            // without another report request.
+            layout: {
+                style: "tally-trial-balance",
+                hierarchy: ["accountingHeader", "accountingHeader", "ledger"],
+                columns: [
+                    { key: "name", label: "Particulars", rowKey: "account" },
+                    { key: "periodDebit", label: "Debit", section: "Transactions" },
+                    { key: "periodCredit", label: "Credit", section: "Transactions" },
+                    { key: "closingBalance", label: "Balance", section: "Closing", balanceTypeKey: "closingBalanceType" }
+                ]
+            },
+
             summary: {
                 ...summary,
 
@@ -856,6 +918,9 @@ export class ReportingService {
             },
 
             rows,
+            // `tree` is the frontend-ready, click-to-expand representation.
+            // `accountGroups` is retained as its backwards-compatible alias.
+            tree: accountGroups,
             accountGroups
         };
     }
