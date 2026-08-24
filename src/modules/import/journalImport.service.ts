@@ -101,18 +101,16 @@ export class JournalImportService {
                         .toUpperCase();
 
                 const isCancelled =
-                    /\bcancell?ed\b/i.test(dto.particulars || "");
+                    ImportResolver.isCancelledOutwardCreditNoteImportRow(dto);
+
+                const isInvoiceTransaction =
+                    ["PURCHASE", "TAX INVOICE"].includes(voucherType);
 
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
 
                 const isTransaction =
-                    [
-                        "PURCHASE",
-                        "TAX INVOICE"
-                    ].includes(voucherType) ||
-                    isCancelled ||
-                    isDebitCreditNote;
+                    isInvoiceTransaction || isCancelled;
 
                 switch (type) {
 
@@ -120,7 +118,7 @@ export class JournalImportService {
                         return !isTransaction;
 
                     case "TRANSACTION":
-                        return isTransaction;
+                        return isTransaction || isDebitCreditNote;
 
                     case "BOTH":
                         return true;
@@ -161,24 +159,24 @@ export class JournalImportService {
                                 .trim()
                                 .toUpperCase();
 
-                        const isTransaction =
-                            /\bcancell?ed\b/i.test(dto.particulars || "") ||
-                            ImportResolver.isDebitCreditNoteImportRow(dto) ||
-                            [
-                                "PURCHASE",
-                                "TAX INVOICE"
-                            ].includes(voucherType);
-
-                        const isJournal =
-                            !isTransaction;
+                        const isCancelled =
+                            ImportResolver.isCancelledOutwardCreditNoteImportRow(dto);
+                        const isInvoiceTransaction =
+                            ["PURCHASE", "TAX INVOICE"].includes(voucherType);
+                        const isDebitCreditNote =
+                            ImportResolver.isDebitCreditNoteImportRow(dto);
 
                         // -----------------------------
                         // Journal Import
                         // -----------------------------
                         if (
-                            (type === "JOURNAL" || type === "BOTH")
-                            &&
-                            isJournal
+                            (
+                                type === "JOURNAL" ||
+                                type === "BOTH" ||
+                                (type === "TRANSACTION" && isDebitCreditNote)
+                            ) &&
+                            !isInvoiceTransaction &&
+                            !isCancelled
                         ) {
 
                             const payload =
@@ -206,14 +204,13 @@ export class JournalImportService {
                         if (
                             (type === "TRANSACTION" || type === "BOTH")
                             &&
-                            isTransaction
+                            (isInvoiceTransaction || isCancelled)
                         ) {
 
-                            if (ImportResolver.isDebitCreditNoteImportRow(dto)) {
-                                await ImportResolver.importDebitCreditNote(actor, dto);
-                            } else {
-                                await ImportResolver.importInvoiceTransaction(actor, dto);
-                            }
+                            await ImportResolver.importInvoiceTransaction(
+                                actor,
+                                dto
+                            );
 
                         }
 
