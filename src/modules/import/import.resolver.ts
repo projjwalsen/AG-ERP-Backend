@@ -20,6 +20,13 @@ export class ImportResolver {
         ].includes((dto.voucherType || "").trim().toUpperCase());
     }
 
+    static isCancelledTransactionImportRow(dto: JournalImportDTO) {
+        return ["TAX INVOICE", "OUTWARD CREDIT NOTE"].includes(
+            (dto.voucherType || "").trim().toUpperCase()
+        ) &&
+            /\bcancell?ed\b/i.test(dto.particulars || "");
+    }
+
     static isCancelledOutwardCreditNoteImportRow(dto: JournalImportDTO) {
         return (dto.voucherType || "").trim().toUpperCase() === "OUTWARD CREDIT NOTE" &&
             /\bcancell?ed\b/i.test(dto.particulars || "");
@@ -2658,7 +2665,7 @@ export class ImportResolver {
                 ?.trim()
                 .toUpperCase();
 
-        if (this.isCancelledOutwardCreditNoteImportRow(dto)) {
+        if (this.isCancelledTransactionImportRow(dto)) {
             return this.createCancelledSaleTransaction(actor, dto);
         }
 
@@ -2804,6 +2811,7 @@ export class ImportResolver {
                 agencyId: sale?.agencyId,
                 saleId: sale?.id,
                 amount: 0,
+                referenceNo: dto.invoiceNo || dto.voucherNo,
                 remarks: `Cancelled sale transaction imported: ${dto.voucherNo}`,
                 createdById: actor?.id,
                 createdAt: ExcelImportService.toDate(dto.date) || new Date()

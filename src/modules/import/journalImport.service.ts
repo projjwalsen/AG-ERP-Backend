@@ -101,7 +101,7 @@ export class JournalImportService {
                         .toUpperCase();
 
                 const isCancelled =
-                    ImportResolver.isCancelledOutwardCreditNoteImportRow(dto);
+                    ImportResolver.isCancelledTransactionImportRow(dto);
 
                 const isInvoiceTransaction =
                     ["PURCHASE", "TAX INVOICE"].includes(voucherType);
@@ -160,7 +160,7 @@ export class JournalImportService {
                                 .toUpperCase();
 
                         const isCancelled =
-                            ImportResolver.isCancelledOutwardCreditNoteImportRow(dto);
+                            ImportResolver.isCancelledTransactionImportRow(dto);
                         const isInvoiceTransaction =
                             ["PURCHASE", "TAX INVOICE"].includes(voucherType);
                         const isDebitCreditNote =
