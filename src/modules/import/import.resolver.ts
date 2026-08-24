@@ -11,6 +11,36 @@ import { TransactionService } from "../transaction/transac.service";
 
 export class ImportResolver {
 
+    static isDebitCreditNoteImportRow(dto: JournalImportDTO) {
+        return [
+            "INWARD DEBIT NOTE",
+            "INWARD CREDIT NOTE",
+            "OUTWARD DEBIT NOTE",
+            "OUTWARD CREDIT NOTE"
+        ].includes((dto.voucherType || "").trim().toUpperCase());
+    }
+
+    static isCancelledOutwardCreditNoteImportRow(dto: JournalImportDTO) {
+        return (dto.voucherType || "").trim().toUpperCase() === "OUTWARD CREDIT NOTE" &&
+            /\bcancell?ed\b/i.test(dto.particulars || "");
+    }
+
+    static importJournalHeadName(dto: JournalImportDTO) {
+        const voucherType = (dto.voucherType || "").trim().toUpperCase();
+        return this.isDebitCreditNoteImportRow(dto)
+            ? voucherType.replace(/\s+/g, "_")
+            : voucherType;
+    }
+
+    static importJournalAmount(dto: JournalImportDTO) {
+        const voucherType = (dto.voucherType || "").trim().toUpperCase();
+        const isDebitNote = voucherType.includes("DEBIT NOTE");
+        const expectedAmount = isDebitNote ? dto.debitAmount : dto.creditAmount;
+        const fallbackAmount = isDebitNote ? dto.creditAmount : dto.debitAmount;
+
+        return expectedAmount > 0 ? expectedAmount : fallbackAmount;
+    }
+
     private static agencyCache =
         new Map<string, any>();
 
@@ -2507,10 +2537,7 @@ export class ImportResolver {
 
             importKey,
 
-            amount:
-                dto.debitAmount > 0
-                    ? dto.debitAmount
-                    : dto.creditAmount,
+            amount: this.importJournalAmount(dto),
 
             paymentMode,
 
@@ -2558,14 +2585,11 @@ export class ImportResolver {
         dto: JournalImportDTO
     ) {
 
-        const voucherType = dto.voucherType.trim().toUpperCase();
+        const voucherType = this.importJournalHeadName(dto);
         const isHiringCharge = voucherType === "HIRING CHARGES";
-        const type =
-            isHiringCharge
-                ? "OUTWARD"
-                : dto.debitAmount > 0
-                ? "INWARD"
-                : "OUTWARD";
+        const type = voucherType.startsWith("INWARD")
+            ? "INWARD"
+            : "OUTWARD";
 
         const cacheKey =
             voucherType;
@@ -2634,7 +2658,7 @@ export class ImportResolver {
                 ?.trim()
                 .toUpperCase();
 
-        if (/\bcancell?ed\b/i.test(dto.particulars || "")) {
+        if (this.isCancelledOutwardCreditNoteImportRow(dto)) {
             return this.createCancelledSaleTransaction(actor, dto);
         }
 
