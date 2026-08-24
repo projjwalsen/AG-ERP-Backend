@@ -2668,23 +2668,29 @@ export class ImportResolver {
 
         if (voucherType === "TAX INVOICE") {
 
-            const payload =
-                await this.buildSaleTransactionPayload(
-                    actor,
-                    dto
-                );
+                const payload =
+                    await this.buildSaleTransactionPayload(
+                        actor,
+                        dto
+                    );
 
-            const transaction =
-                await TransactionService.createTransaction(
-                    actor,
-                    payload,
-                    { allowImportOverSettlement: true }
-                );
+                const transaction =
+                    await TransactionService.createTransaction(
+                        actor,
+                        payload,
+                        {
+                            allowImportOverSettlement: true,
+                            allowImportRejectedInvoice: true
+                        }
+                    );
 
             await TransactionService.approveTransaction(
                 actor,
                 transaction.id,
-                { allowImportOverSettlement: true }
+                {
+                    allowImportOverSettlement: true,
+                    allowImportRejectedInvoice: true
+                }
             );
 
             return;
@@ -3028,7 +3034,9 @@ export class ImportResolver {
 
             where: {
 
-                status: SalesStatus.APPROVED,
+                status: {
+                    in: [SalesStatus.APPROVED, SalesStatus.REJECTED]
+                },
 
                 OR: matchInvoiceCandidates
 

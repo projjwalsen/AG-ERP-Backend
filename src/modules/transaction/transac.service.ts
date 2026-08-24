@@ -24,6 +24,7 @@ type TransactionPayload = {
 
 type TransactionOperationOptions = {
     allowImportOverSettlement?: boolean;
+    allowImportRejectedInvoice?: boolean;
 };
 
 type FIFOAllocation = {
@@ -373,7 +374,8 @@ export class TransactionService {
     private static async validateInvoiceSettlement(
         tx: Prisma.TransactionClient,
         payload: TransactionPayload,
-        allowImportOverSettlement = false
+        allowImportOverSettlement = false,
+        allowImportRejectedInvoice = false
     ) {
         if(payload.thirdPartyAgencyId) {
             throw new ApiError("Third Party not allowed -- Invoice to Invoice Settlement", 400);
@@ -459,7 +461,8 @@ export class TransactionService {
         if(
             payload.direction ===
             TransactionDirection.INWARD &&
-            invoice.status !== SalesStatus.APPROVED
+            invoice.status !== SalesStatus.APPROVED &&
+            !(allowImportRejectedInvoice && invoice.status === SalesStatus.REJECTED)
         ) {
             throw new ApiError(
                 "Sale Invoice is not approved yet",
@@ -1371,7 +1374,8 @@ export class TransactionService {
                         await this.validateInvoiceSettlement(
                             tx,
                             payload,
-                            options.allowImportOverSettlement
+                            options.allowImportOverSettlement,
+                            options.allowImportRejectedInvoice
                         );
                         break;
 
