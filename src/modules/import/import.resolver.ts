@@ -1,4 +1,4 @@
-import { DebitCreditNoteSourceType, DebitCreditNoteType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -7,101 +7,38 @@ import { LocationService } from "../meta/meta.loc.service";
 import { City, State } from "country-state-city";
 import { ExcelImportService } from "./excelImport.service";
 import { JournalService } from "../journal/journal.service";
-import { DebitCreditNoteService } from "../debitCreditNote/debitCreditNote.service";
 import { TransactionService } from "../transaction/transac.service";
 
 export class ImportResolver {
 
     static isDebitCreditNoteImportRow(dto: JournalImportDTO) {
-        const voucherType = (dto.voucherType || "").trim().toUpperCase();
         return [
             "INWARD DEBIT NOTE",
             "INWARD CREDIT NOTE",
             "OUTWARD DEBIT NOTE",
             "OUTWARD CREDIT NOTE"
-        ].includes(voucherType);
+        ].includes((dto.voucherType || "").trim().toUpperCase());
     }
 
     static isCancelledOutwardCreditNoteImportRow(dto: JournalImportDTO) {
-        return dto.voucherType.trim().toUpperCase() === "OUTWARD CREDIT NOTE" &&
+        return (dto.voucherType || "").trim().toUpperCase() === "OUTWARD CREDIT NOTE" &&
             /\bcancell?ed\b/i.test(dto.particulars || "");
     }
 
-    static async importDebitCreditNote(actor: any, dto: JournalImportDTO) {
-        const voucherType = dto.voucherType.trim().toUpperCase();
-        const isInward = voucherType.startsWith("INWARD ");
-        const isDebit = voucherType.includes("DEBIT");
-        const sourceType = isInward
-            ? DebitCreditNoteSourceType.PURCHASE
-            : DebitCreditNoteSourceType.SALE;
-        const noteType = isDebit
-            ? DebitCreditNoteType.DEBIT_NOTE
-            : DebitCreditNoteType.CREDIT_NOTE;
-        const candidates = this.journalInvoiceCandidates(dto);
-        const expectedAmount = isDebit ? dto.debitAmount : dto.creditAmount;
-        const fallbackAmount = isDebit ? dto.creditAmount : dto.debitAmount;
-        const amount = expectedAmount > 0 ? expectedAmount : fallbackAmount;
+    static importJournalHeadName(dto: JournalImportDTO) {
+        const voucherType = (dto.voucherType || "").trim().toUpperCase();
+        return this.isDebitCreditNoteImportRow(dto)
+            ? voucherType.replace(/\s+/g, "_")
+            : voucherType;
+    }
 
-        if (!Number.isFinite(amount) || amount <= 0) {
-            throw new Error(`${voucherType} voucher ${dto.voucherNo} has no valid amount`);
-        }
+    static importJournalAmount(dto: JournalImportDTO) {
+        const voucherType = (dto.voucherType || "").trim().toUpperCase();
+        const isDebitNote = voucherType.includes("DEBIT NOTE");
+        const expectedAmount = isDebitNote ? dto.debitAmount : dto.creditAmount;
+        const fallbackAmount = isDebitNote ? dto.creditAmount : dto.debitAmount;
 
-        const invoice = sourceType === DebitCreditNoteSourceType.SALE
-            ? await prisma.sale.findFirst({
-                where: {
-                    OR: candidates.flatMap(candidate => [
-                        { invoiceNo: { equals: candidate, mode: "insensitive" as const } },
-                        { voucherNo: { equals: candidate, mode: "insensitive" as const } }
-                    ])
-                }
-            })
-            : await prisma.purchase.findFirst({
-                where: {
-                    OR: candidates.map(candidate => ({
-                        invoiceNo: { equals: candidate, mode: "insensitive" as const }
-                    }))
-                }
-            });
-
-        if (!invoice) {
-            throw new Error(`${sourceType === DebitCreditNoteSourceType.SALE ? "Sale" : "Purchase"} not found for note voucher ${dto.voucherNo}`);
-        }
-
-        const narration = `Imported ${voucherType}: ${dto.voucherNo}`;
-        const existingNote = await prisma.debitCreditNote.findFirst({
-            where: {
-                type: noteType,
-                sourceType,
-                saleId: sourceType === DebitCreditNoteSourceType.SALE ? invoice.id : null,
-                purchaseId: sourceType === DebitCreditNoteSourceType.PURCHASE ? invoice.id : null,
-                narration,
-                totalAmount: amount
-            }
-        });
-
-        if (existingNote) {
-            if (existingNote.status === "PENDING") {
-                return DebitCreditNoteService.approveNote(actor, existingNote.id);
-            }
-            return existingNote;
-        }
-
-        const note = await DebitCreditNoteService.createNote(actor, {
-            type: noteType,
-            sourceType,
-            agencyId: invoice.agencyId,
-            branchId: invoice.branchId,
-            saleId: sourceType === DebitCreditNoteSourceType.SALE ? invoice.id : undefined,
-            purchaseId: sourceType === DebitCreditNoteSourceType.PURCHASE ? invoice.id : undefined,
-            noteDate: ExcelImportService.toDate(dto.date) || new Date(),
-            narration,
-            particulars: [{
-                description: dto.particulars || `${voucherType} ${dto.voucherNo}`,
-                amount
-            }]
-        });
-
-        return DebitCreditNoteService.approveNote(actor, note.id);
+        return expectedAmount > 0 ? expectedAmount : fallbackAmount;
     }
 
     private static agencyCache =
@@ -2600,10 +2537,7 @@ export class ImportResolver {
 
             importKey,
 
-            amount:
-                dto.debitAmount > 0
-                    ? dto.debitAmount
-                    : dto.creditAmount,
+            amount: this.importJournalAmount(dto),
 
             paymentMode,
 
@@ -2651,14 +2585,11 @@ export class ImportResolver {
         dto: JournalImportDTO
     ) {
 
-        const voucherType = dto.voucherType.trim().toUpperCase();
+        const voucherType = this.importJournalHeadName(dto);
         const isHiringCharge = voucherType === "HIRING CHARGES";
-        const type =
-            isHiringCharge
-                ? "OUTWARD"
-                : dto.debitAmount > 0
-                ? "INWARD"
-                : "OUTWARD";
+        const type = voucherType.startsWith("INWARD")
+            ? "INWARD"
+            : "OUTWARD";
 
         const cacheKey =
             voucherType;
