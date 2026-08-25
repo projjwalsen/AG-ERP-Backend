@@ -3405,16 +3405,13 @@ export class ExcelService {
             cell.font = {
                 bold: true,
                 color: {
-                    argb: "FFFFFFFF"
+                    argb: "FF000000"
                 }
             };
 
             cell.fill = {
                 type: "pattern",
-                pattern: "solid",
-                fgColor: {
-                    argb: "FF1F4E78"
-                }
+                pattern: "none"
             };
 
             cell.alignment = {
@@ -3447,7 +3444,7 @@ export class ExcelService {
             label: string;
             order: number;
         }> = {
-            CASH_IN_HAND: { label: "Cash", order: 10 },
+            CASH_IN_HAND: { label: "Cash-in-Hand", order: 10 },
             BANK_ACCOUNTS: { label: "Bank", order: 20 },
             SUNDRY_DEBTORS: { label: "Debtors", order: 30 },
             FIXED_ASSETS: { label: "Fixed Assets", order: 40 },
@@ -3462,11 +3459,80 @@ export class ExcelService {
             DIRECT_EXPENSE: { label: "Direct Expenses", order: 130 },
             INDIRECT_EXPENSE: { label: "Indirect Expenses", order: 140 },
             DIRECT_INCOME: { label: "Direct Income", order: 150 },
-            INDIRECT_INCOME: { label: "Indirect Income", order: 160 }
+            INDIRECT_INCOME: { label: "Indirect Incomes", order: 160 },
+            INVESTMENTS: { label: "Investments", order: 45 }
+        };
+
+        const tallyParentOrder: Record<string, number> = {
+            ASSETS: 40,
+            DUTIES_AND_TAXES: 50,
+            EXPENSES: 60,
+            INCOME: 70,
+            SALES_ACCOUNTS: 80,
+            PURCHASE_ACCOUNTS: 90,
+            LIABILITIES: 130
+        };
+
+        const getTallyGroupOverride = (item: typeof options.data[number]) => {
+            const account = String(item.account || "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
+            const code = String(item.groupCode || "").toUpperCase();
+
+            if (account === "GOLD & ORNAMENTS") {
+                return {
+                    parentKey: "ASSETS",
+                    parentLabel: "Assets",
+                    childKey: "INVESTMENTS",
+                    childLabel: "Investments",
+                    label: "Investments",
+                    order: 45
+                };
+            }
+
+            const byCode: Record<string, {
+                parentKey: string;
+                parentLabel: string;
+                childKey: string;
+                childLabel: string;
+                label: string;
+                order: number;
+            }> = {
+                CASH_IN_HAND: { parentKey: "ASSETS", parentLabel: "Assets", childKey: "CASH_IN_HAND", childLabel: "Cash-in-Hand", label: "Cash-in-Hand", order: 10 },
+                BANK_ACCOUNTS: { parentKey: "ASSETS", parentLabel: "Assets", childKey: "BANK_ACCOUNTS", childLabel: "Bank Accounts", label: "Bank Accounts", order: 20 },
+                FIXED_ASSETS: { parentKey: "ASSETS", parentLabel: "Assets", childKey: "FIXED_ASSETS", childLabel: "Fixed Assets", label: "Fixed Assets", order: 30 },
+                SUNDRY_DEBTORS: { parentKey: "ASSETS", parentLabel: "Assets", childKey: "SUNDRY_DEBTORS", childLabel: "Sundry Debtors", label: "Sundry Debtors", order: 40 },
+                DUTIES_AND_TAXES: { parentKey: "LIABILITIES", parentLabel: "Liabilities", childKey: "DUTIES_AND_TAXES", childLabel: "Duties & Taxes", label: "Duties & Taxes", order: 10 },
+                LOANS: { parentKey: "LIABILITIES", parentLabel: "Liabilities", childKey: "LOANS", childLabel: "Loans", label: "Loans", order: 20 },
+                SUNDRY_CREDITORS: { parentKey: "LIABILITIES", parentLabel: "Liabilities", childKey: "SUNDRY_CREDITORS", childLabel: "Sundry Creditors", label: "Sundry Creditors", order: 30 },
+                INDIRECT_EXPENSE: { parentKey: "EXPENSES", parentLabel: "Expenses", childKey: "INDIRECT_EXPENSE", childLabel: "Indirect Expenses", label: "Indirect Expenses", order: 20 },
+                DIRECT_EXPENSE: { parentKey: "EXPENSES", parentLabel: "Expenses", childKey: "DIRECT_EXPENSE", childLabel: "Direct Expenses", label: "Direct Expenses", order: 10 },
+                PURCHASE: { parentKey: "PURCHASE_ACCOUNTS", parentLabel: "Purchase Accounts", childKey: "PURCHASE", childLabel: "Purchase", label: "Purchase", order: 10 },
+                SALES: { parentKey: "SALES_ACCOUNTS", parentLabel: "Sales Accounts", childKey: "SALES", childLabel: "Sales", label: "Sales", order: 10 },
+                INDIRECT_INCOME: { parentKey: "INCOME", parentLabel: "Income", childKey: "INDIRECT_INCOME", childLabel: "Indirect Incomes", label: "Indirect Incomes", order: 10 }
+            };
+
+            if (code.startsWith("INPUT_GST_")) {
+                const taxKind = code.replace("INPUT_GST_", "");
+                const label = `Input GST ${taxKind}`;
+                return { parentKey: "ASSETS", parentLabel: "Assets", childKey: code, childLabel: label, label, order: 50 };
+            }
+
+            if (code.startsWith("OUTPUT_GST_")) {
+                const taxKind = code.replace("OUTPUT_GST_", "");
+                const label = `Output GST ${taxKind}`;
+                return { parentKey: "LIABILITIES", parentLabel: "Liabilities", childKey: code, childLabel: label, label, order: 40 };
+            }
+
+            return byCode[code];
         };
 
         const getGroup = (item: typeof options.data[number]) => {
             const code = String(item.groupCode || "").toUpperCase();
+
+            const tallyOverride = getTallyGroupOverride(item);
+            if (tallyOverride) return tallyOverride;
 
             if (item.reportParentCode) {
                 return {
@@ -3538,6 +3604,8 @@ export class ExcelService {
 
         const sortedGroups = [...grouped.values()]
             .sort((a, b) =>
+                (tallyParentOrder[a.parentKey] ?? 999) -
+                    (tallyParentOrder[b.parentKey] ?? 999) ||
                 a.parentKey.localeCompare(b.parentKey) ||
                 a.order - b.order ||
                 a.childKey.localeCompare(b.childKey)
@@ -3564,8 +3632,7 @@ export class ExcelService {
                 parentRow.font = { bold: true, size: 12 };
                 parentRow.fill = {
                     type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFB4C7E7" }
+                    pattern: "none"
                 };
 
                 previousParentKey = group.parentKey;
@@ -3593,8 +3660,7 @@ export class ExcelService {
             groupRow.font = { bold: true };
             groupRow.fill = {
                 type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FFD9EAF7" }
+                pattern: "none"
             };
             groupRow.getCell(2).numFmt = '#,##0.00';
             groupRow.getCell(3).numFmt = '#,##0.00';
@@ -3658,25 +3724,6 @@ export class ExcelService {
                 }
             }
 
-            const subtotalRow = worksheet.addRow([
-                `Total ${group.label}`,
-                groupDebit || null,
-                groupCredit || null,
-                groupClosingSigned || null
-            ]);
-
-            subtotalRow.font = { bold: true };
-            subtotalRow.getCell(2).numFmt = '#,##0.00';
-            subtotalRow.getCell(3).numFmt = '#,##0.00';
-            subtotalRow.getCell(4).numFmt =
-                '#,##0.00 "Dr";#,##0.00 "Cr";-';
-
-            for (let column = 1; column <= 4; column++) {
-                subtotalRow.getCell(column).border = {
-                    top: { style: "thin" },
-                    bottom: { style: "thin" }
-                };
-            }
         }
 
         /* ============================================================
@@ -3687,8 +3734,7 @@ export class ExcelService {
             "Grand Total",
             options.summary.totalPeriodDebit,
             options.summary.totalPeriodCredit,
-            `${this.formatIndianAmount(options.summary.totalClosingDebit)} Dr / ` +
-                `${this.formatIndianAmount(options.summary.totalClosingCredit)} Cr`
+            null
         ]);
 
         totalRow.height = 25;
@@ -3736,6 +3782,19 @@ export class ExcelService {
 
         worksheet.pageSetup.printTitlesRow =
             `${headerRowNumber}:${headerRowNumber}`;
+
+        // Tally uses a plain Arial/black presentation without the blue
+        // application theme. Preserve bold/size settings while normalising
+        // the report font and removing any inherited white font color.
+        worksheet.eachRow(row => {
+            row.eachCell(cell => {
+                cell.font = {
+                    ...(cell.font || {}),
+                    name: "Arial",
+                    color: { argb: "FF000000" }
+                };
+            });
+        });
 
         /* ============================================================
            RESPONSE
