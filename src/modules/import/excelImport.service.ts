@@ -1647,11 +1647,11 @@ export class ExcelImportService {
                 continue;
             }
 
-            if (
-                agencyName
-                    .trim()
-                    .toUpperCase() === "GRAND TOTAL"
-            ) {
+            const normalizedAgencyName = agencyName
+                .replace(/\s+/g, " ")
+                .trim();
+
+            if (/^(?:GRAND\s+TOTAL|TOTAL(?:\s+.*)?)$/i.test(normalizedAgencyName)) {
                 continue;
             }
 
@@ -1688,8 +1688,8 @@ export class ExcelImportService {
                 : this.toNumber(openingCreditValue);
 
             const key =
-                gstin ||
-                agencyName.toUpperCase();
+                gstin.replace(/\s+/g, " ").trim().toUpperCase() ||
+                normalizedAgencyName.toUpperCase();
 
             if (agencies.has(key)) {
                 continue;
@@ -1744,7 +1744,7 @@ export class ExcelImportService {
 
             agencies.set(key, {
 
-                agencyName,
+                agencyName: normalizedAgencyName,
 
                 agencyAddress:
                     String(
