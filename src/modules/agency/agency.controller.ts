@@ -48,8 +48,9 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
         if (isExport) {
 
             const rows = result.data.flatMap(
-                agency =>
-                    agency.branches.map(
+                agency => {
+                    const branchRows = agency.branches.length > 0
+                        ? agency.branches.map(
                         branch => ({
                             agencyName:
                                 agency.name,
@@ -87,7 +88,43 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
                             isActive:
                                 agency.isActive
                         })
-                    )
+                        )
+                        : agency.ledger.map(
+                            ledger => ({
+                                agencyName: agency.name,
+                                type: agency.type,
+                                gstin: agency.gstin,
+                                contactPerson: agency.contactPerson,
+                                mobileNumber: agency.mobileNumber,
+                                email: agency.email,
+                                city: agency.city,
+                                state: agency.state,
+                                branchName: ledger.branch?.name || "",
+                                branchCode: ledger.branch?.code || "",
+                                openingBalance:
+                                    Number(ledger.openingDebit || 0) -
+                                    Number(ledger.openingCredit || 0),
+                                isActive: agency.isActive
+                            })
+                        );
+
+                    return branchRows.length > 0
+                        ? branchRows
+                        : [{
+                            agencyName: agency.name,
+                            type: agency.type,
+                            gstin: agency.gstin,
+                            contactPerson: agency.contactPerson,
+                            mobileNumber: agency.mobileNumber,
+                            email: agency.email,
+                            city: agency.city,
+                            state: agency.state,
+                            branchName: "",
+                            branchCode: "",
+                            openingBalance: 0,
+                            isActive: agency.isActive
+                        }];
+                }
             );
 
             return ExcelService.export(
