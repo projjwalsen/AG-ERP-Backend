@@ -439,7 +439,11 @@ console.log("Rows To Import:", rowsToImport.length);
                                             date: voucher.voucherDate,
                                             particulars: voucher.narration || "Hiring Charges",
                                             debitAmount: 0,
-                                            creditAmount: voucher.importedTotals?.grandTotal || 0,
+                                            // Hiring Charges is the income component of the
+                                            // invoice. GST belongs to the tax heads, so the
+                                            // hiring income journal must use the dedicated
+                                            // service subtotal, not the invoice grand total.
+                                            creditAmount: voucher.importedTotals?.subTotal || 0,
                                             saleId: sale.id,
                                             importKey: `HIRING_CHARGES_SALE_${sale.id}`
                                         });

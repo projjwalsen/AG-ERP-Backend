@@ -2712,7 +2712,7 @@ export class ImportResolver {
         );
         const isLoanIn = voucherType === "LOAN IN";
         const isHiringCharge = voucherType === "HIRING CHARGES";
-        const type = isReceipt || isLoanIn || voucherType.startsWith("INWARD")
+        const type = isReceipt || isLoanIn || isHiringCharge || voucherType.startsWith("INWARD")
             ? "INWARD"
             : "OUTWARD";
 
@@ -2724,6 +2724,40 @@ export class ImportResolver {
 
         if (cached)
             return cached;
+
+        /*
+         * The Trial Balance seed contains journal heads named after ledger
+         * accounts. For imported journal rows, an exact particulars match
+         * must win over the generic voucher type (PAYMENT/RECEIPT/JOURNAL).
+         * Keep the explicit semantic mappings above as the priority for
+         * narrations such as AMC, FD, Loan In, and Hiring Charges.
+         */
+        const hasExplicitSemanticMapping = [
+            "AMC CHARGES",
+            "FIXED DEPOSIT",
+            "LOAN IN",
+            "HIRING CHARGES"
+        ].includes(voucherType);
+
+        const particularsForMatch = String(dto.particulars || "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (!hasExplicitSemanticMapping && particularsForMatch) {
+            const particularsHead = await prisma.journalHead.findFirst({
+                where: {
+                    name: {
+                        equals: particularsForMatch,
+                        mode: "insensitive"
+                    }
+                }
+            });
+
+            if (particularsHead) {
+                this.journalHeadCache.set(cacheKey, particularsHead);
+                return particularsHead;
+            }
+        }
 
         let journalHead =
             await prisma.journalHead.findFirst({
@@ -2749,8 +2783,10 @@ export class ImportResolver {
                     ? "LOANS"
                     : /FIXED\s+DEPOSIT/.test(voucherType)
                         ? "BANK_ACCOUNTS"
-                        : isHiringCharge || /AMC\s+CHARGES?/.test(normalizedParticulars)
-                            ? "INDIRECT_EXPENSE"
+                        : isHiringCharge
+                            ? "INDIRECT_INCOME"
+                            : /AMC\s+CHARGES?/.test(normalizedParticulars)
+                                ? "INDIRECT_EXPENSE"
                             : dto.debitAmount > 0
                                 ? "INDIRECT_EXPENSE"
                                 : "INDIRECT_INCOME";
