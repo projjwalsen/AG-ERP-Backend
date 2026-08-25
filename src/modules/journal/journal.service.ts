@@ -77,6 +77,7 @@ export class JournalService {
 
     private static async getPaymentLedger(
         tx: any,
+        branchId: string,
         paymentThrough?: PaymentType
     ) {
 
@@ -85,6 +86,7 @@ export class JournalService {
             let ledger = await tx.ledger.findFirst({
                 where: {
                     category: LedgerType.CASH,
+                    branchId,
                     isActive: true
                 }
             });
@@ -93,11 +95,12 @@ export class JournalService {
 
                 try {
                     ledger = await LedgerService.getOrCreateLedger(tx, {
-                        code: "CASH_GLOBAL",
-                        name: "CASH",
+                        code: `CASH-JOURNAL-${branchId.slice(0, 8).toUpperCase()}`,
+                        name: "Cash-in-Hand",
                         category: LedgerType.CASH,
                         groupCode: "CASH_IN_HAND",
-                        nature: LedgerNature.DEBIT
+                        nature: LedgerNature.DEBIT,
+                        branchId
                     });
                     
                 } catch (error) {
@@ -114,6 +117,8 @@ export class JournalService {
 
                 category: LedgerType.BANK,
 
+                branchId,
+
                 isActive: true
 
             }
@@ -126,15 +131,17 @@ export class JournalService {
 
                 ledger = await LedgerService.getOrCreateLedger(tx, {
 
-                    code: "BANK_GLOBAL",
+                    code: `BANK-JOURNAL-${branchId.slice(0, 8).toUpperCase()}`,
 
-                    name: "BANK",
+                    name: "Bank Accounts",
 
                     category: LedgerType.BANK,
 
                     groupCode: "BANK_ACCOUNTS",
 
-                    nature: LedgerNature.DEBIT
+                    nature: LedgerNature.DEBIT,
+
+                    branchId
 
                 });
 
@@ -1019,6 +1026,8 @@ export class JournalService {
                 await this.getPaymentLedger(
 
                     tx,
+
+                    journal.branchId,
 
                     journal.paymentThrough
 

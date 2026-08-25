@@ -3,6 +3,7 @@ import { ImportResolver } from "./import.resolver";
 import pLimit from "p-limit";
 import { ImportModule } from "./importRegistry";
 import { Express } from "express";
+import { AgencyType } from "@prisma/client";
 
 
 export class AgencyImportService {
@@ -21,11 +22,18 @@ export class AgencyImportService {
         const worksheet =
             ExcelImportService.getWorkSheet(workbook);
 
+        const sheetName = workbook.SheetNames[0] || "";
+        const defaultType = /sundry\s+creditors?/i.test(sheetName)
+            ? AgencyType.VENDOR
+            : /sundry\s+debtors?/i.test(sheetName)
+                ? AgencyType.CLIENT
+                : AgencyType.BOTH;
+
         const rows =
             ExcelImportService.readRows(worksheet, { headerRow: 8 });
 
         const agencies =
-            ExcelImportService.parseAgencyRows(rows);
+            ExcelImportService.parseAgencyRows(rows, defaultType);
 
 //             console.table(
 //     agencies.map(x => ({

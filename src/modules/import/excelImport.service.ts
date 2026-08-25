@@ -1598,7 +1598,8 @@ export class ExcelImportService {
     }
 
     static parseAgencyRows(
-        rows: Record<string, any>[]
+        rows: Record<string, any>[],
+        defaultType: AgencyType = AgencyType.BOTH
     ): AgencyImportDTO[] {
 
         const agencies =
@@ -1636,17 +1637,20 @@ export class ExcelImportService {
                     ) || ""
                 ).trim();
 
-            const openingBalance =
-                this.toNumber(
-                    this.getValue(
-                        row,
-                        "OpeningBalance",
-                        "Opening Balance",
-                        "Opening Balance (Dr)",
-                        "Opening Balance (Cr)",
-                        "Opening"
-                    )
-                );
+            const openingBalanceValue = this.getValue(
+                row,
+                "OpeningBalance",
+                "Opening Balance",
+                "Opening Balance (Dr)",
+                "Opening Balance (Cr)",
+                "Opening"
+            );
+
+            // A blank cell means the source supplied no opening balance. It
+            // must not be converted to zero and overwrite an existing ledger.
+            const openingBalance = openingBalanceValue === undefined
+                ? undefined
+                : this.toNumber(openingBalanceValue);
 
             const key =
                 gstin ||
@@ -1661,7 +1665,7 @@ export class ExcelImportService {
                     this.getValue(
                         row,
                         "Type"
-                    ) || "BOTH"
+                    ) || defaultType
                 )
                     .trim()
                     .toUpperCase();
