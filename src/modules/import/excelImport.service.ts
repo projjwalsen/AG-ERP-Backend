@@ -1843,6 +1843,10 @@ export class ExcelImportService {
                         ) || ""
                     ).trim();
 
+                if (/\bSTOCK\s+JOURNAL\b/i.test(voucherType)) {
+                    return null;
+                }
+
                 // Skip Purchase & Tax Invoice
 
                 const voucherNo =

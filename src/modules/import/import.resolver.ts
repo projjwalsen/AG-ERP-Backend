@@ -34,8 +34,18 @@ export class ImportResolver {
             /\bcancell?ed\b/i.test(dto.particulars || "");
     }
 
+    static isStockJournalImportRow(dto: JournalImportDTO) {
+        return /\bSTOCK\s+JOURNAL\b/i.test(String(dto.voucherType || ""));
+    }
+
     static importJournalHeadName(dto: JournalImportDTO) {
         const voucherType = (dto.voucherType || "").trim().toUpperCase();
+        const particulars = String(dto.particulars || "").toUpperCase();
+
+        if (/\bAMC\s+CHARGES?\b/.test(particulars)) return "AMC CHARGES";
+        if (/\b(?:FD|FIXED\s+DEPOSIT)\b/.test(particulars)) return "FIXED DEPOSIT";
+        if (/\bLOAN\s*(?:IN|RECEIVED|RECEIPT)\b/.test(particulars)) return "LOAN IN";
+
         return this.isDebitCreditNoteImportRow(dto)
             ? voucherType.replace(/\s+/g, "_")
             : voucherType;
@@ -50,8 +60,24 @@ export class ImportResolver {
         return expectedAmount > 0 ? expectedAmount : fallbackAmount;
     }
 
-    private static paymentThroughFromVoucherType(voucherType?: string): PaymentType {
-        return /\bCASH\b/i.test(String(voucherType || ""))
+    private static paymentThroughFromVoucherType(
+        voucherType?: string,
+        particulars?: string,
+        raw?: Record<string, any>
+    ): PaymentType {
+        const text = [
+            voucherType,
+            particulars,
+            ...Object.entries(raw || {})
+                .filter(([key]) => /payment|mode|through|account|cash|bank/i.test(key))
+                .map(([, value]) => String(value || ""))
+        ].join(" ");
+
+        const normalizedType = String(voucherType || "").trim().toUpperCase();
+        const isReceipt = /^(?:CASH\s+)?RECEIPT$/.test(normalizedType);
+        const explicitlyBank = /\b(?:BANK|CHEQUE|CHQ|NEFT|RTGS|IMPS)\b/i.test(text);
+
+        return /\bCASH\b/i.test(text) || (isReceipt && !explicitlyBank)
             ? PaymentType.CASH
             : PaymentType.BANK_DEPOSIT;
     }
@@ -2612,7 +2638,11 @@ export class ImportResolver {
         let paymentMode: PaymentMode;
         let paymentThrough: PaymentType | undefined;
 
-        paymentThrough = this.paymentThroughFromVoucherType(dto.voucherType);
+        paymentThrough = this.paymentThroughFromVoucherType(
+            dto.voucherType,
+            dto.particulars,
+            dto.raw
+        );
         paymentMode = paymentThrough === PaymentType.CASH
             ? PaymentMode.OFFLINE
             : PaymentMode.ONLINE;
@@ -2676,8 +2706,13 @@ export class ImportResolver {
     ) {
 
         const voucherType = this.importJournalHeadName(dto);
+        const normalizedParticulars = String(dto.particulars || "").toUpperCase();
+        const isReceipt = /^(?:CASH\s+)?RECEIPT$/.test(
+            String(dto.voucherType || "").trim().toUpperCase()
+        );
+        const isLoanIn = voucherType === "LOAN IN";
         const isHiringCharge = voucherType === "HIRING CHARGES";
-        const type = voucherType.startsWith("INWARD")
+        const type = isReceipt || isLoanIn || voucherType.startsWith("INWARD")
             ? "INWARD"
             : "OUTWARD";
 
@@ -2710,11 +2745,15 @@ export class ImportResolver {
         if (!journalHead) {
 
             const groupCode =
-                isHiringCharge
-                    ? "INDIRECT_EXPENSE"
-                    : dto.debitAmount > 0
-                    ? "INDIRECT_EXPENSE"
-                    : "INDIRECT_INCOME";
+                isLoanIn
+                    ? "LOANS"
+                    : /FIXED\s+DEPOSIT/.test(voucherType)
+                        ? "BANK_ACCOUNTS"
+                        : isHiringCharge || /AMC\s+CHARGES?/.test(normalizedParticulars)
+                            ? "INDIRECT_EXPENSE"
+                            : dto.debitAmount > 0
+                                ? "INDIRECT_EXPENSE"
+                                : "INDIRECT_INCOME";
 
             journalHead =
                 await JournalService.createJournalHead(
