@@ -404,10 +404,46 @@ export class ExcelImportService {
     }
 
     private static getNarrationLineKind(row: Record<string, any>): "HIRING_CHARGE" | "SCRAP" | undefined {
-        const text = String(this.getValue(row, "Narration") || "").replace(/\s+/g, " ").trim();
+        const text = [
+            this.getValue(row, "Particulars", "Buyer", "Supplier"),
+            this.getValue(row, "Narration")
+        ]
+            .filter(Boolean)
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
         if (/\bHIRING\s+CHARGES?\b/i.test(text) || /\b(?:STORAGE|WAREHOUSE)\s+(?:&\s*)?(?:WAREHOUSE\s+)?RENT\b/i.test(text)) return "HIRING_CHARGE";
         if (/\b(?:SCRAP|WASTE|WASTAGE)\b/i.test(text)) return "SCRAP";
         return undefined;
+    }
+
+    /**
+     * Hiring service invoices carry the income value in the dedicated Tally
+     * service column. A few Tally exports place that value under R/OFF while
+     * retaining the same invoice total; accept that layout only after the
+     * dedicated hiring column has been checked.
+     */
+    private static getHiringChargeAmount(row: Record<string, any>): number {
+        const dedicatedAmount = this.toNumber(
+            this.getValue(
+                row,
+                "HIRING CHARGES FOR MICRO SURFACING PAVER",
+                "HIRING CHARGES"
+            )
+        );
+
+        if (dedicatedAmount > 0) return dedicatedAmount;
+
+        const sourceParticulars = String(
+            this.getValue(row, "Particulars", "Buyer", "Supplier") || ""
+        );
+        const narration = String(this.getValue(row, "Narration") || "");
+
+        if (/\bHIRING\s+CHARGES?\b/i.test(`${sourceParticulars} ${narration}`)) {
+            return this.toNumber(this.getValue(row, "R/OFF"));
+        }
+
+        return 0;
     }
 
     private static extractNarrationItem(row: Record<string, any>) {
@@ -434,7 +470,16 @@ export class ExcelImportService {
                 ? this.toNumber(tallyQuantityMatch[3])
                 : 0;
         const accountingAmount = accountingProduct ? this.toNumber(row[accountingProduct]) : 0;
-        if (kind === "HIRING_CHARGE") return { kind, productName: "Hiring Charges", quantity: 0, unit, rate: derivedRate, amount: accountingAmount };
+        if (kind === "HIRING_CHARGE") {
+            return {
+                kind,
+                productName: "Hiring Charges",
+                quantity: 0,
+                unit,
+                rate: derivedRate,
+                amount: this.getHiringChargeAmount(row) || accountingAmount
+            };
+        }
         const scrapMatch = narration.match(/\b(?:SALE\s+)?((?:SCRAP|WASTE|WASTAGE)[^@()]*?)(?:\s+Q(?:TY|NTY)|\s+QUANTITY|\s+@|\s*\(|$)/i);
         const extractedProductName = (scrapMatch?.[1] || "SCRAP/WASTE")
             .replace(/^SALE\s+/i, "")
