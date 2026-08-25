@@ -5,10 +5,10 @@ import { ProductLedgerService } from "../modules/accounting/productLedger/produc
 import { SalesService } from "../modules/sales/sales.service";
 
 /**
- * Backfills the three SCRAP DRUM sales that failed during the Excel import.
+ * Backfills only the SCRAP DRUM sale for voucher APM/G2526/0433.
  *
  * It creates the product and opening stock when needed, then creates and
- * approves each missing sale through SalesService. Approval is deliberate:
+ * approves the missing sale through SalesService. Approval is deliberate:
  * it consumes stock, creates the product-ledger SALE movement, updates the
  * customer outstanding balance, and creates the normal accounting sale voucher.
  *
@@ -18,7 +18,7 @@ import { SalesService } from "../modules/sales/sales.service";
 
 const PRODUCT_NAME = "SCRAP DRUM";
 const PRODUCT_SKU = "SCRAP-DRUM-SEED-2026";
-const INVOICES = ["APM/G2526/0433", "APM/G2526/2332", "APM/G2526/3078"];
+const INVOICES = ["APM/G2526/0433"];
 const SEED_REFERENCE_PREFIX = "SEED_SCRAP_DRUMS_SALE_IMPORT_2026";
 
 const SALES = [
@@ -36,34 +36,6 @@ const SALES = [
         grandTotal: 226_442,
         narration: "GJ02ZZ8469 TCS 224200*1/100=2242 (NOS 1000*190=190000)"
     },
-    {
-        invoiceNo: "APM/G2526/2332",
-        invoiceDate: "2026-01-31T00:00:00.000Z",
-        despatchDocNo: "352",
-        destination: "MEHSANA, GUJARAT",
-        vehicleNo: "GJ02BT9969",
-        quantity: 1_000,
-        unitPrice: 180,
-        taxableAmount: 180_000,
-        igstAmount: 32_400,
-        tcsAmount: 2_124,
-        grandTotal: 214_524,
-        narration: "BEING SALE SCRAP DRUM QTY 1000 NOS @ 180 AGST INVOICE NO. APM/G2526/2332 DTD 31/01/2026 VEHICLE NO GJ02BT9969 TCS CHARGE @212400*1%=2124/-"
-    },
-    {
-        invoiceNo: "APM/G2526/3078",
-        invoiceDate: "2026-03-19T00:00:00.000Z",
-        despatchDocNo: "360",
-        destination: "MEHSANA",
-        vehicleNo: "GJ02ZZ8469",
-        quantity: 1_000,
-        unitPrice: 180,
-        taxableAmount: 180_000,
-        igstAmount: 32_400,
-        tcsAmount: 2_124,
-        grandTotal: 214_524,
-        narration: "BEING SALE SCRAP DRUMS 1000 NOS @180/- AGST INV NO APM/G2526/3078 DATE: 19/03/2026 VEHICLE NO GJ02ZZ8469 TCS CHARGE 212400=2124/-"
-    }
 ] as const;
 
 async function resolveSeedActor() {
@@ -320,7 +292,7 @@ async function main() {
     }
 
     if (sales.length === 0 && missingSales.length === 0) {
-        console.log("Skipped: all three SCRAP DRUM sales are already approved.");
+        console.log("Skipped: APM/G2526/0433 is already approved.");
         return;
     }
 
@@ -390,7 +362,7 @@ async function main() {
                         totalCost: 0,
                         entryDate: new Date("2025-01-01T00:00:00.000Z"),
                         reference: `${SEED_REFERENCE_PREFIX}:${batchNo}`,
-                        remarks: "Opening stock for APM/G2526/0433, APM/G2526/2332 and APM/G2526/3078"
+                        remarks: "Opening stock for APM/G2526/0433"
                     }
                 });
                 await tx.product.update({
