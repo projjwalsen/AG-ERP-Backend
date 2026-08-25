@@ -28,12 +28,16 @@ export class AgencyImportService {
             : /sundry\s+debtors?/i.test(sheetName)
                 ? AgencyType.CLIENT
                 : AgencyType.BOTH;
+        const periodCell = worksheet["B6"]?.v ?? worksheet["A6"]?.v;
+        const openingBalanceDate = ExcelImportService.toDate(
+            String(periodCell || "").split(/\s+to\s+/i)[0]
+        );
 
         const rows =
             ExcelImportService.readRows(worksheet, { headerRow: 8 });
 
         const agencies =
-            ExcelImportService.parseAgencyRows(rows, defaultType);
+            ExcelImportService.parseAgencyRows(rows, defaultType, openingBalanceDate);
 
 //             console.table(
 //     agencies.map(x => ({

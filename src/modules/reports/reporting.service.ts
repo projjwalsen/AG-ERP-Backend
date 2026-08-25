@@ -257,7 +257,7 @@ export class ReportingService {
          * requires everything that happened before startDate.
          */
 
-        const priorWhere:
+        let priorWhere:
             Prisma.LedgerEntryWhereInput =
             startDate
                 ? {
@@ -311,6 +311,38 @@ export class ReportingService {
                 }
                 : {})
         };
+
+        // Imported opening balances are as-of a financial-year date. Start
+        // prior movement at that date so historical entries are not counted
+        // again on top of the imported opening balance.
+        if (startDate) {
+            const openingDates = await prisma.ledger.findMany({
+                where: ledgerWhere,
+                select: { openingBalanceDate: true }
+            });
+            const knownOpeningDates = openingDates
+                .map(row => row.openingBalanceDate)
+                .filter((value): value is Date => Boolean(value));
+            const earliestOpeningDate = knownOpeningDates.length
+                ? new Date(Math.min(...knownOpeningDates.map(value => value.getTime())))
+                : undefined;
+
+            if (earliestOpeningDate) {
+                priorWhere = {
+                    AND: [
+                        ...(branchEntryFilter ? [branchEntryFilter] : []),
+                        {
+                            voucher: {
+                                voucherDate: {
+                                    gte: earliestOpeningDate,
+                                    lt: startDate
+                                }
+                            }
+                        }
+                    ]
+                };
+            }
+        }
 
         /**
          * ============================================================
@@ -432,21 +464,17 @@ export class ReportingService {
                     !branchId ||
                     ledger.branchId === branchId;
 
-                const ledgerOpeningSigned =
-                    !shouldUseLedgerOpening
-                        ? 0
-                        : ledger.nature ===
-                            LedgerNature.CREDIT
-
-                            ? -Number(
-                                ledger.openingBalance ||
-                                0
-                            )
-
-                            : Number(
-                                ledger.openingBalance ||
-                                0
-                            );
+                const openingDebit = Number((ledger as any).openingDebit || 0);
+                const openingCredit = Number((ledger as any).openingCredit || 0);
+                const hasExplicitOpening = openingDebit !== 0 || openingCredit !== 0;
+                const legacyOpeningSigned = ledger.nature === LedgerNature.CREDIT
+                    ? -Number(ledger.openingBalance || 0)
+                    : Number(ledger.openingBalance || 0);
+                const ledgerOpeningSigned = !shouldUseLedgerOpening
+                    ? 0
+                    : hasExplicitOpening
+                        ? openingDebit - openingCredit
+                        : legacyOpeningSigned;
 
                 const prior =
                     priorMap.get(

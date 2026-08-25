@@ -1,4 +1,4 @@
-import { LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -252,7 +252,7 @@ export class ImportResolver {
                 }
             });
 
-        if (dto.openingBalance != null) {
+        if (dto.openingBalance != null || dto.openingBalanceDebit != null || dto.openingBalanceCredit != null) {
             const ledgerCategories = dto.type === AgencyType.VENDOR
                 ? [LedgerType.VENDOR]
                 : dto.type === AgencyType.CLIENT
@@ -299,12 +299,30 @@ export class ImportResolver {
                 });
             }
 
-            await prisma.ledger.updateMany({
-                where: { id: { in: ledgers.map(ledger => ledger.id) } },
-                data: {
-                    openingBalance: dto.openingBalance
-                }
-            });
+            const explicitOpeningDebit = Number(dto.openingBalanceDebit || 0);
+            const explicitOpeningCredit = Number(dto.openingBalanceCredit || 0);
+            const hasExplicitOpeningSide = explicitOpeningDebit !== 0 || explicitOpeningCredit !== 0;
+            const genericOpening = Number(dto.openingBalance || 0);
+            await Promise.all(ledgers.map(ledger => {
+                const openingDebit = hasExplicitOpeningSide
+                    ? explicitOpeningDebit
+                    : ledger.nature === LedgerNature.DEBIT ? genericOpening : 0;
+                const openingCredit = hasExplicitOpeningSide
+                    ? explicitOpeningCredit
+                    : ledger.nature === LedgerNature.CREDIT ? genericOpening : 0;
+
+                return prisma.ledger.update({
+                    where: { id: ledger.id },
+                    data: {
+                        openingBalance: Math.abs(openingDebit - openingCredit),
+                        openingDebit,
+                        openingCredit,
+                        openingBalanceDate: dto.openingBalanceDate
+                            ? new Date(dto.openingBalanceDate)
+                            : undefined
+                    }
+                });
+            }));
 
             // `currentBalance` is a cache of opening plus posted entries.
             // Recalculate it after changing the opening rather than replacing

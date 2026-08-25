@@ -185,6 +185,9 @@ export interface AgencyImportDTO {
     agencyPAN?: string;
 
     openingBalance?: number;
+    openingBalanceDebit?: number;
+    openingBalanceCredit?: number;
+    openingBalanceDate?: Date | string;
 
     type?: AgencyType;
 

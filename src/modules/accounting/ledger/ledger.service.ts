@@ -35,6 +35,9 @@ type LedgerMasterPayload = {
     gstin?: string;
     pan?: string;
     openingBalance?: number;
+    openingDebit?: number;
+    openingCredit?: number;
+    openingBalanceDate?: Date;
     creditLimit?: number;
 };
 
@@ -70,6 +73,9 @@ type LedgerSeed = {
     gstin?: string | null;
     pan?: string | null;
     openingBalance?: number;
+    openingDebit?: number;
+    openingCredit?: number;
+    openingBalanceDate?: Date;
     creditLimit?: number | null;
     createdById?: string | null;
 };
@@ -317,7 +323,14 @@ export class LedgerService {
                     gstin: seed.gstin || null,
                     pan: seed.pan || null,
                     openingBalance: money(seed.openingBalance),
-                    currentBalance: money(seed.openingBalance),
+                    openingDebit: money(seed.openingDebit),
+                    openingCredit: money(seed.openingCredit),
+                    openingBalanceDate: seed.openingBalanceDate,
+                    currentBalance: money(
+                        (seed.openingDebit || 0) -
+                        (seed.openingCredit || 0) ||
+                        seed.openingBalance
+                    ),
                     creditLimit: seed.creditLimit ?? null,
                     createdById: seed.createdById || null
                 }
@@ -3228,21 +3241,21 @@ export class LedgerService {
 
         const debit = money(debitAgg?._sum?.amount || 0);
         const credit = money(creditAgg?._sum?.amount || 0);
-        const opening = money(ledger.openingBalance);
-        const closing = ledger.nature === LedgerNature.CREDIT
-            ? money(opening + credit - debit)
-            : money(opening + debit - credit);
+        const openingDebit = money((ledger as any).openingDebit);
+        const openingCredit = money((ledger as any).openingCredit);
+        const legacyOpening = money(ledger.openingBalance);
+        const opening = openingDebit || openingCredit
+            ? money(openingDebit - openingCredit)
+            : (ledger.nature === LedgerNature.CREDIT ? -legacyOpening : legacyOpening);
+        const closing = money(opening + debit - credit);
 
-        const debitBalance = ledger.nature === LedgerNature.DEBIT
-            ? Math.max(closing, 0)
-            : Math.max(-closing, 0);
-
-        const creditBalance = ledger.nature === LedgerNature.CREDIT
-            ? Math.max(closing, 0)
-            : Math.max(-closing, 0);
+        const debitBalance = Math.max(closing, 0);
+        const creditBalance = Math.max(-closing, 0);
 
         return {
             openingBalance: opening,
+            openingDebit,
+            openingCredit,
             totalDebit: debit,
             totalCredit: credit,
             closingBalance: closing,

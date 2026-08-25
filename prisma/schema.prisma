@@ -1092,6 +1092,9 @@ model Ledger {
   product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   openingBalance Decimal @default(0.00) @db.Decimal(18, 2)
+  openingDebit  Decimal @default(0.00) @db.Decimal(18, 2)
+  openingCredit Decimal @default(0.00) @db.Decimal(18, 2)
+  openingBalanceDate DateTime?
 
   /**
    * Only for performance caching *

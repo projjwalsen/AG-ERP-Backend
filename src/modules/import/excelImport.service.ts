@@ -1599,7 +1599,8 @@ export class ExcelImportService {
 
     static parseAgencyRows(
         rows: Record<string, any>[],
-        defaultType: AgencyType = AgencyType.BOTH
+        defaultType: AgencyType = AgencyType.BOTH,
+        openingBalanceDate?: Date
     ): AgencyImportDTO[] {
 
         const agencies =
@@ -1637,6 +1638,8 @@ export class ExcelImportService {
                     ) || ""
                 ).trim();
 
+            const openingDebitValue = this.getValue(row, "Opening Balance (Dr)", "Opening Dr", "Opening Debit");
+            const openingCreditValue = this.getValue(row, "Opening Balance (Cr)", "Opening Cr", "Opening Credit");
             const openingBalanceValue = this.getValue(
                 row,
                 "OpeningBalance",
@@ -1651,6 +1654,12 @@ export class ExcelImportService {
             const openingBalance = openingBalanceValue === undefined
                 ? undefined
                 : this.toNumber(openingBalanceValue);
+            const explicitOpeningDebit = openingDebitValue === undefined
+                ? 0
+                : this.toNumber(openingDebitValue);
+            const explicitOpeningCredit = openingCreditValue === undefined
+                ? 0
+                : this.toNumber(openingCreditValue);
 
             const key =
                 gstin ||
@@ -1696,6 +1705,17 @@ export class ExcelImportService {
             }
 
 
+            const openingBalanceDebit = explicitOpeningDebit || (
+                openingBalance !== undefined && type === AgencyType.CLIENT
+                    ? openingBalance
+                    : 0
+            );
+            const openingBalanceCredit = explicitOpeningCredit || (
+                openingBalance !== undefined && type === AgencyType.VENDOR
+                    ? openingBalance
+                    : 0
+            );
+
             agencies.set(key, {
 
                 agencyName,
@@ -1720,6 +1740,9 @@ export class ExcelImportService {
                     ).trim(),
 
                 openingBalance,
+                openingBalanceDebit,
+                openingBalanceCredit,
+                openingBalanceDate,
 
                 type
 
