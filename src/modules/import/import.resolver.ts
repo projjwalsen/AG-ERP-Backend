@@ -1,4 +1,4 @@
-import { PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -8,6 +8,7 @@ import { City, State } from "country-state-city";
 import { ExcelImportService } from "./excelImport.service";
 import { JournalService } from "../journal/journal.service";
 import { TransactionService } from "../transaction/transac.service";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 export class ImportResolver {
 
@@ -46,6 +47,12 @@ export class ImportResolver {
         const fallbackAmount = isDebitNote ? dto.creditAmount : dto.debitAmount;
 
         return expectedAmount > 0 ? expectedAmount : fallbackAmount;
+    }
+
+    private static paymentThroughFromVoucherType(voucherType?: string): PaymentType {
+        return /\bCASH\b/i.test(String(voucherType || ""))
+            ? PaymentType.CASH
+            : PaymentType.BANK_DEPOSIT;
     }
 
     private static agencyCache =
@@ -231,83 +238,107 @@ export class ImportResolver {
 
             });
 
-        // Already exists -> Skip
-
-        if (agency) {
-
-            this.agencyCache.set(
-                cacheKey,
-                agency
-            );
-
-            return agency;
-
-        }
-
-        // Create only with available data
-
-        const created =
-            await prisma.agency.create({
-
+        const resolvedAgency = agency
+            ? agency.type === AgencyType.BOTH || agency.type === dto.type
+                ? agency
+                : await prisma.agency.update({
+                    where: { id: agency.id },
+                    data: { type: AgencyType.BOTH }
+                })
+            : await prisma.agency.create({
                 data: {
-
                     name: dto.agencyName.trim(),
-
                     type: dto.type
-
                 }
-
             });
 
-        // Existing ledger flow remains unchanged
+        if (dto.openingBalance != null || dto.openingBalanceDebit != null || dto.openingBalanceCredit != null) {
+            const ledgerCategories = dto.type === AgencyType.VENDOR
+                ? [LedgerType.VENDOR]
+                : dto.type === AgencyType.CLIENT
+                    ? [LedgerType.CUSTOMER]
+                    : [LedgerType.CUSTOMER, LedgerType.VENDOR];
 
-        const ledger =
-            await prisma.ledger.findFirst({
-
+            let ledgers = await prisma.ledger.findMany({
                 where: {
-
-                    agencyId: created.id
-
+                    agencyId: resolvedAgency.id,
+                    category: { in: ledgerCategories }
                 }
-
             });
 
-        if (
+            // Agency-master imports do not carry a branch column. A new
+            // party ledger can be created safely only for a single branch.
+            if (ledgers.length === 0) {
+                const activeBranches = await prisma.branch.findMany({
+                    where: { isActive: true },
+                    select: { id: true },
+                    take: 2
+                });
 
-            ledger &&
-
-            dto.openingBalance != null
-
-        ) {
-
-            await prisma.ledger.update({
-
-                where: {
-
-                    id: ledger.id
-
-                },
-
-                data: {
-
-                    openingBalance:
-                        dto.openingBalance,
-
-                    currentBalance:
-                        dto.openingBalance
-
+                if (activeBranches.length !== 1) {
+                    throw new ApiError(
+                        `Cannot assign opening balance for '${dto.agencyName}' without a branch-specific ledger`,
+                        400
+                    );
                 }
 
-            });
+                await prisma.$transaction(tx =>
+                    LedgerService.ensureAgencyLedgers(
+                        tx,
+                        resolvedAgency.id,
+                        [activeBranches[0].id],
+                        dto.type
+                    )
+                );
 
+                ledgers = await prisma.ledger.findMany({
+                    where: {
+                        agencyId: resolvedAgency.id,
+                        category: { in: ledgerCategories }
+                    }
+                });
+            }
+
+            const explicitOpeningDebit = Number(dto.openingBalanceDebit || 0);
+            const explicitOpeningCredit = Number(dto.openingBalanceCredit || 0);
+            const hasExplicitOpeningSide = explicitOpeningDebit !== 0 || explicitOpeningCredit !== 0;
+            const genericOpening = Number(dto.openingBalance || 0);
+            await Promise.all(ledgers.map(ledger => {
+                const openingDebit = hasExplicitOpeningSide
+                    ? explicitOpeningDebit
+                    : ledger.nature === LedgerNature.DEBIT ? genericOpening : 0;
+                const openingCredit = hasExplicitOpeningSide
+                    ? explicitOpeningCredit
+                    : ledger.nature === LedgerNature.CREDIT ? genericOpening : 0;
+
+                return prisma.ledger.update({
+                    where: { id: ledger.id },
+                    data: {
+                        openingBalance: Math.abs(openingDebit - openingCredit),
+                        openingDebit,
+                        openingCredit,
+                        openingBalanceDate: dto.openingBalanceDate
+                            ? new Date(dto.openingBalanceDate)
+                            : undefined
+                    }
+                });
+            }));
+
+            // `currentBalance` is a cache of opening plus posted entries.
+            // Recalculate it after changing the opening rather than replacing
+            // it with the opening value alone.
+            await Promise.all(ledgers.map(async ledger => {
+                const balance = await LedgerService.calculateLedgerBalance(ledger.id);
+                await prisma.ledger.update({
+                    where: { id: ledger.id },
+                    data: { currentBalance: balance.closingBalance }
+                });
+            }));
         }
 
-        this.agencyCache.set(
-            cacheKey,
-            created
-        );
+        this.agencyCache.set(cacheKey, resolvedAgency);
 
-        return created;
+        return resolvedAgency;
 
     }
 
@@ -2519,20 +2550,10 @@ export class ImportResolver {
         let paymentMode: PaymentMode;
         let paymentThrough: PaymentType | undefined;
 
-        switch (dto.voucherType.trim().toUpperCase()) {
-
-            case "CASH PAYMENT":
-            case "CASH RECEIPT":
-
-                paymentMode = PaymentMode.OFFLINE;
-                paymentThrough = PaymentType.CASH;
-                break;
-
-            default:
-
-                paymentMode = PaymentMode.ONLINE;
-                paymentThrough = PaymentType.BANK_DEPOSIT;
-        }
+        paymentThrough = this.paymentThroughFromVoucherType(dto.voucherType);
+        paymentMode = paymentThrough === PaymentType.CASH
+            ? PaymentMode.OFFLINE
+            : PaymentMode.ONLINE;
 
         return {
 

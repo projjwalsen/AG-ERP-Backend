@@ -1598,7 +1598,9 @@ export class ExcelImportService {
     }
 
     static parseAgencyRows(
-        rows: Record<string, any>[]
+        rows: Record<string, any>[],
+        defaultType: AgencyType = AgencyType.BOTH,
+        openingBalanceDate?: Date
     ): AgencyImportDTO[] {
 
         const agencies =
@@ -1636,17 +1638,28 @@ export class ExcelImportService {
                     ) || ""
                 ).trim();
 
-            const openingBalance =
-                this.toNumber(
-                    this.getValue(
-                        row,
-                        "OpeningBalance",
-                        "Opening Balance",
-                        "Opening Balance (Dr)",
-                        "Opening Balance (Cr)",
-                        "Opening"
-                    )
-                );
+            const openingDebitValue = this.getValue(row, "Opening Balance (Dr)", "Opening Dr", "Opening Debit");
+            const openingCreditValue = this.getValue(row, "Opening Balance (Cr)", "Opening Cr", "Opening Credit");
+            const openingBalanceValue = this.getValue(
+                row,
+                "OpeningBalance",
+                "Opening Balance",
+                "Opening Balance (Dr)",
+                "Opening Balance (Cr)",
+                "Opening"
+            );
+
+            // A blank cell means the source supplied no opening balance. It
+            // must not be converted to zero and overwrite an existing ledger.
+            const openingBalance = openingBalanceValue === undefined
+                ? undefined
+                : this.toNumber(openingBalanceValue);
+            const explicitOpeningDebit = openingDebitValue === undefined
+                ? 0
+                : this.toNumber(openingDebitValue);
+            const explicitOpeningCredit = openingCreditValue === undefined
+                ? 0
+                : this.toNumber(openingCreditValue);
 
             const key =
                 gstin ||
@@ -1661,7 +1674,7 @@ export class ExcelImportService {
                     this.getValue(
                         row,
                         "Type"
-                    ) || "BOTH"
+                    ) || defaultType
                 )
                     .trim()
                     .toUpperCase();
@@ -1692,6 +1705,17 @@ export class ExcelImportService {
             }
 
 
+            const openingBalanceDebit = explicitOpeningDebit || (
+                openingBalance !== undefined && type === AgencyType.CLIENT
+                    ? openingBalance
+                    : 0
+            );
+            const openingBalanceCredit = explicitOpeningCredit || (
+                openingBalance !== undefined && type === AgencyType.VENDOR
+                    ? openingBalance
+                    : 0
+            );
+
             agencies.set(key, {
 
                 agencyName,
@@ -1716,6 +1740,9 @@ export class ExcelImportService {
                     ).trim(),
 
                 openingBalance,
+                openingBalanceDebit,
+                openingBalanceCredit,
+                openingBalanceDate,
 
                 type
 
