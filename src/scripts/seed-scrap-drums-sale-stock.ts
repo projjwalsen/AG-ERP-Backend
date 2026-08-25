@@ -1,7 +1,14 @@
-import { AgencyType, ProductType, ProductUnit } from "@prisma/client";
+import {
+    AgencyType,
+    EntryType,
+    ProductType,
+    ProductUnit,
+    VoucherType
+} from "@prisma/client";
 import { prisma } from "../config/db";
 import { InventoryService } from "../modules/inventory/inventory.service";
 import { ProductLedgerService } from "../modules/accounting/productLedger/productLedger.service";
+import { LedgerService } from "../modules/accounting/ledger/ledger.service";
 import { SalesService } from "../modules/sales/sales.service";
 
 /**
@@ -116,10 +123,70 @@ async function createOrApproveSales(productId: string) {
     for (const record of SALES) {
         const existing = await prisma.sale.findUnique({ where: { invoiceNo: record.invoiceNo } });
         if (existing?.status === "APPROVED") {
+            if (
+                Number(existing.roundOffAmount) === record.tcsAmount &&
+                Number(existing.tcsAmount || 0) === 0
+            ) {
+                const repairSourceId = `TCS-RECLASS-${record.invoiceNo}`;
+                const existingRepair = await prisma.voucher.findFirst({
+                    where: {
+                        voucherType: "JOURNAL",
+                        sourceId: repairSourceId
+                    }
+                });
+
+                if (!existingRepair) {
+                    const [roundOffLedger, tcsLedger] = await Promise.all([
+                        LedgerService.getOrCreateRoundOffLedger(prisma, existing.branchId),
+                        LedgerService.getOrCreateTcsLedger(prisma, existing.branchId)
+                    ]);
+
+                    await LedgerService.createVoucher({
+                        voucherType: VoucherType.JOURNAL,
+                        sourceId: repairSourceId,
+                        branchId: existing.branchId,
+                        voucherDate: record.invoiceDate,
+                        narration: `TCS reclassification for ${record.invoiceNo}`,
+                        entries: [
+                            {
+                                ledgerId: roundOffLedger.id,
+                                entryType: EntryType.DEBIT,
+                                amount: record.tcsAmount,
+                                branchId: existing.branchId,
+                                narration: `Reverse incorrectly posted Round Off for ${record.invoiceNo}`
+                            },
+                            {
+                                ledgerId: tcsLedger.id,
+                                entryType: EntryType.CREDIT,
+                                amount: record.tcsAmount,
+                                branchId: existing.branchId,
+                                narration: `TCS payable for ${record.invoiceNo}`
+                            }
+                        ]
+                    });
+                    await prisma.sale.update({
+                        where: { id: existing.id },
+                        data: {
+                            roundOffAmount: 0,
+                            tcsAmount: record.tcsAmount
+                        }
+                    });
+                    console.log(`Reclassified TCS from Round Off for approved ${record.invoiceNo}.`);
+                }
+            }
             console.log(`Skipped ${record.invoiceNo}: sale is already approved.`);
             continue;
         }
         if (existing) {
+            if (existing.status === "PENDING") {
+                await prisma.sale.update({
+                    where: { id: existing.id },
+                    data: {
+                        roundOffAmount: 0,
+                        tcsAmount: record.tcsAmount
+                    }
+                });
+            }
             await SalesService.approveSale(actor, existing.id);
             console.log(`Approved existing pending sale ${record.invoiceNo}.`);
             continue;
@@ -163,7 +230,8 @@ async function createOrApproveSales(productId: string) {
             voucherDate: record.invoiceDate,
             approvedAt: record.invoiceDate,
             remarks: record.narration,
-            roundOffAmount: record.tcsAmount,
+            roundOffAmount: 0,
+            tcsAmount: record.tcsAmount,
             transport: {
                 despatchDocNo: record.despatchDocNo,
                 despatchThrough: "ROYAL ROADLINES",
@@ -176,7 +244,7 @@ async function createOrApproveSales(productId: string) {
                 totalSGST: 0,
                 totalIGST: record.igstAmount,
                 totalGST: record.igstAmount,
-                roundOff: record.tcsAmount,
+                roundOff: 0,
                 grandTotal: record.grandTotal
             },
             items

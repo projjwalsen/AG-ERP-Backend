@@ -50,6 +50,8 @@ export interface ExcelRowDTO {
 
     roundOff?: number;
 
+    tcs?: number;
+
     grandTotal?: number;
 
     isCancelled?: boolean;
@@ -112,6 +114,8 @@ export interface ImportedTotalsDTO {
     totalGST: number;
 
     roundOff: number;
+
+    tcs: number;
 
     grandTotal: number;
 

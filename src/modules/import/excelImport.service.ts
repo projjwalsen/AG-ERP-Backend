@@ -100,6 +100,15 @@ export class ExcelImportService {
 
     }
 
+    private static parseTcs(value: any, narration?: any): number {
+        const columnAmount = this.toNumber(value);
+        if (columnAmount !== 0) return Math.abs(columnAmount);
+
+        const text = String(narration || "");
+        const match = text.match(/\bTCS\b[\s\S]*?(?:=|:)\s*([\d,]+(?:\.\d+)?)/i);
+        return match ? Math.abs(this.toNumber(match[1])) : 0;
+    }
+
     private static money(value: number): number {
         return Math.round(Number(value || 0) * 100) / 100;
     }
@@ -1060,6 +1069,12 @@ export class ExcelImportService {
                         )
                     ),
 
+                tcs:
+                    this.parseTcs(
+                        this.getValue(row, "TCS", "TCS Amount", "TCS Amt"),
+                        rawParticulars
+                    ),
+
                 grandTotal:
                     this.toNumber(
                         this.getValue(
@@ -1366,6 +1381,11 @@ export class ExcelImportService {
                     voucher.rows.map(row => row.roundOff)
                 );
 
+            const parsedTcs =
+                this.firstNonZeroAmount(
+                    voucher.rows.map(row => row.tcs)
+                );
+
             const explicitGrandTotal =
                 this.firstNonZeroAmount(
                     voucher.rows.map(row => row.grandTotal)
@@ -1421,6 +1441,7 @@ export class ExcelImportService {
                     ? this.money(
                         explicitGrandTotal -
                         totalGST -
+                        parsedTcs -
                         parsedRoundOff
                     )
                     : subTotal;
@@ -1430,7 +1451,8 @@ export class ExcelImportService {
                     ? this.money(
                         explicitGrandTotal -
                         accountingSubTotal -
-                        totalGST
+                        totalGST -
+                        parsedTcs
                     )
                     : parsedRoundOff;
 
@@ -1438,6 +1460,7 @@ export class ExcelImportService {
                 this.money(
                     accountingSubTotal +
                     totalGST +
+                    parsedTcs +
                     effectiveRoundOff
                 );
 
@@ -1460,6 +1483,9 @@ export class ExcelImportService {
 
                 roundOff:
                     effectiveRoundOff,
+
+                tcs:
+                    parsedTcs,
 
                 grandTotal:
                     explicitGrandTotal || computedGrandTotal

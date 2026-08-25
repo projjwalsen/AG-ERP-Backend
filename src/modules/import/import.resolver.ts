@@ -2491,6 +2491,11 @@ export class ImportResolver {
                 voucher.rows[0]?.roundOff ??
                 0,
 
+            tcsAmount:
+                voucher.importedTotals?.tcs ??
+                voucher.rows[0]?.tcs ??
+                0,
+
             transport: {
 
                 /**

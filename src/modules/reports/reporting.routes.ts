@@ -30,7 +30,7 @@ router.use(authMiddleware)
  *         required: false
  *         schema:
  *           type: string
- *         description: Optional branch filter. Non-ALL users are restricted to their own branch.
+ *         description: Branch filter. Required for Excel export when an ALL-access user has multiple active branches; non-ALL users are restricted to their own branch.
  *       - in: query
  *         name: startDate
  *         required: false
@@ -38,7 +38,7 @@ router.use(authMiddleware)
  *           type: string
  *           format: date
  *         example: 2026-07-01
- *         description: Optional period start date. Entries before this date become opening balance.
+ *         description: Period start date. If omitted, the most recently completed Indian financial year is used; exact Tally exports should provide 2025-04-01.
  *       - in: query
  *         name: endDate
  *         required: false
@@ -46,7 +46,7 @@ router.use(authMiddleware)
  *           type: string
  *           format: date
  *         example: 2026-07-31
- *         description: Period end date. Defaults to today.
+ *         description: Period end date. Exact FY 2025-26 Tally comparison uses 2026-03-31.
  *       - in: query
  *         name: includeZero
  *         required: false
