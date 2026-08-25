@@ -1,4 +1,4 @@
-import { AgencyType } from "@prisma/client";
+import { AgencyType, LedgerType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { getGSTStateCode, isValidIndianPincode } from "../../core/utils/loc.utils";
@@ -279,6 +279,29 @@ export class AgencyService {
                                     state: true,
                                     stateCode: true,
                                     pinCode: true,
+                                }
+                            }
+                        }
+                    },
+                    ledger: {
+                        where: {
+                            category: {
+                                in: [LedgerType.CUSTOMER, LedgerType.VENDOR]
+                            }
+                        },
+                        select: {
+                            id: true,
+                            category: true,
+                            branchId: true,
+                            openingBalance: true,
+                            openingDebit: true,
+                            openingCredit: true,
+                            branch: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    code: true,
+                                    gstin: true
                                 }
                             }
                         }
