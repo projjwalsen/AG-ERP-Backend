@@ -104,7 +104,7 @@ export class JournalImportService {
                     ImportResolver.isCancelledTransactionImportRow(dto);
 
                 const isInvoiceTransaction =
-                    ["PURCHASE", "TAX INVOICE"].includes(voucherType);
+                    ["PURCHASE", "TAX INVOICE", "RCM PURCHASE"].includes(voucherType);
 
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
@@ -162,7 +162,7 @@ export class JournalImportService {
                         const isCancelled =
                             ImportResolver.isCancelledTransactionImportRow(dto);
                         const isInvoiceTransaction =
-                            ["PURCHASE", "TAX INVOICE"].includes(voucherType);
+                            ["PURCHASE", "TAX INVOICE", "RCM PURCHASE"].includes(voucherType);
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
 
