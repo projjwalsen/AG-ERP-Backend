@@ -39,45 +39,38 @@ export class ImportResolver {
     }
 
     static importJournalHeadName(dto: JournalImportDTO) {
-        const voucherType = (dto.voucherType || "").trim().toUpperCase();
-        const particulars = String(dto.particulars || "").toUpperCase();
+        const particulars = String(dto.particulars || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
 
         if (/\bAMC\s+CHARGES?\b/.test(particulars)) return "AMC CHARGES";
         if (/\b(?:FD|FIXED\s+DEPOSIT)\b/.test(particulars)) return "FIXED DEPOSIT";
         if (/\bLOAN\s*(?:IN|RECEIVED|RECEIPT)\b/.test(particulars)) return "LOAN IN";
 
-        return this.isDebitCreditNoteImportRow(dto)
-            ? voucherType.replace(/\s+/g, "_")
-            : voucherType;
+        return particulars || "JOURNAL";
     }
 
     static importJournalAmount(dto: JournalImportDTO) {
-        const voucherType = (dto.voucherType || "").trim().toUpperCase();
-        const isDebitNote = voucherType.includes("DEBIT NOTE");
-        const expectedAmount = isDebitNote ? dto.debitAmount : dto.creditAmount;
-        const fallbackAmount = isDebitNote ? dto.creditAmount : dto.debitAmount;
-
-        return expectedAmount > 0 ? expectedAmount : fallbackAmount;
+        return dto.debitAmount > 0
+            ? dto.debitAmount
+            : dto.creditAmount;
     }
 
-    private static paymentThroughFromVoucherType(
-        voucherType?: string,
+    private static paymentThroughFromRow(
         particulars?: string,
         raw?: Record<string, any>
     ): PaymentType {
         const text = [
-            voucherType,
             particulars,
             ...Object.entries(raw || {})
                 .filter(([key]) => /payment|mode|through|account|cash|bank/i.test(key))
                 .map(([, value]) => String(value || ""))
         ].join(" ");
 
-        const normalizedType = String(voucherType || "").trim().toUpperCase();
-        const isReceipt = /^(?:CASH\s+)?RECEIPT$/.test(normalizedType);
         const explicitlyBank = /\b(?:BANK|CHEQUE|CHQ|NEFT|RTGS|IMPS)\b/i.test(text);
 
-        return /\bCASH\b/i.test(text) || (isReceipt && !explicitlyBank)
+        return /\bCASH\b/i.test(text) && !explicitlyBank
             ? PaymentType.CASH
             : PaymentType.BANK_DEPOSIT;
     }
@@ -2638,8 +2631,7 @@ export class ImportResolver {
         let paymentMode: PaymentMode;
         let paymentThrough: PaymentType | undefined;
 
-        paymentThrough = this.paymentThroughFromVoucherType(
-            dto.voucherType,
+        paymentThrough = this.paymentThroughFromRow(
             dto.particulars,
             dto.raw
         );
@@ -2707,17 +2699,14 @@ export class ImportResolver {
 
         const voucherType = this.importJournalHeadName(dto);
         const normalizedParticulars = String(dto.particulars || "").toUpperCase();
-        const isReceipt = /^(?:CASH\s+)?RECEIPT$/.test(
-            String(dto.voucherType || "").trim().toUpperCase()
-        );
         const isLoanIn = voucherType === "LOAN IN";
         const isHiringCharge = voucherType === "HIRING CHARGES";
-        const type = isReceipt || isLoanIn || isHiringCharge || voucherType.startsWith("INWARD")
-            ? "INWARD"
-            : "OUTWARD";
+        const type = dto.debitAmount > dto.creditAmount
+            ? "OUTWARD"
+            : "INWARD";
 
         const cacheKey =
-            voucherType;
+            `${voucherType}:${dto.debitAmount > dto.creditAmount ? "DEBIT" : "CREDIT"}`;
 
         const cached =
             this.journalHeadCache.get(cacheKey);
@@ -2742,6 +2731,84 @@ export class ImportResolver {
         const particularsForMatch = String(dto.particulars || "")
             .replace(/\s+/g, " ")
             .trim();
+
+        if (!hasExplicitSemanticMapping && particularsForMatch) {
+            const agencyNames = Array.from(new Set([
+                particularsForMatch,
+                particularsForMatch.replace(/\s*[-\u2013\u2014]?\s*\(?[DC]R\)?\s*$/i, "").trim()
+            ].filter(Boolean)));
+
+            const agency = await prisma.agency.findFirst({
+                where: {
+                    OR: agencyNames.map(name => ({
+                        name: {
+                            equals: name,
+                            mode: "insensitive" as const
+                        }
+                    }))
+                }
+            });
+
+            if (agency) {
+                const branch = await prisma.branch.findFirst({
+                    where: actor?.branchId
+                        ? { id: actor.branchId, isActive: true }
+                        : { isActive: true },
+                    orderBy: { createdAt: "asc" }
+                });
+
+                if (!branch) {
+                    throw new ApiError("No active branch found for agency journal import", 400);
+                }
+
+                const agencyLedgerType = agency.type === AgencyType.VENDOR
+                    ? LedgerType.VENDOR
+                    : agency.type === AgencyType.CLIENT
+                        ? LedgerType.CUSTOMER
+                        : dto.debitAmount > 0
+                            ? LedgerType.CUSTOMER
+                            : LedgerType.VENDOR;
+
+                const agencyLedger = agencyLedgerType === LedgerType.VENDOR
+                    ? await LedgerService.getOrCreateVendorLedger(prisma, branch.id, agency.id)
+                    : await LedgerService.getOrCreateCustomerLedger(prisma, branch.id, agency.id);
+
+                const agencyHeadType = dto.debitAmount > dto.creditAmount
+                    ? "OUTWARD" as const
+                    : "INWARD" as const;
+                const agencyCacheKey = `AGENCY:${agency.id}:${agencyLedger.id}:${agencyHeadType}`;
+                const cachedAgencyHead = this.journalHeadCache.get(agencyCacheKey);
+
+                if (cachedAgencyHead) {
+                    return cachedAgencyHead;
+                }
+
+                let agencyHead = await prisma.journalHead.findFirst({
+                    where: {
+                        ledgerId: agencyLedger.id,
+                        type: agencyHeadType,
+                        name: {
+                            equals: agency.name,
+                            mode: "insensitive"
+                        }
+                    }
+                });
+
+                if (!agencyHead) {
+                    agencyHead = await prisma.journalHead.create({
+                        data: {
+                            name: agency.name,
+                            type: agencyHeadType,
+                            ledgerId: agencyLedger.id
+                        },
+                        include: { ledger: true }
+                    });
+                }
+
+                this.journalHeadCache.set(agencyCacheKey, agencyHead);
+                return agencyHead;
+            }
+        }
 
         if (!hasExplicitSemanticMapping && particularsForMatch) {
             const particularsHead = await prisma.journalHead.findFirst({
@@ -2861,7 +2928,7 @@ export class ImportResolver {
             return;
         }
 
-        if (voucherType === "PURCHASE") {
+        if (voucherType === "PURCHASE" || voucherType === "RCM PURCHASE") {
 
             const payload =
                 await this.buildPurchaseTransactionPayload(
