@@ -9,6 +9,7 @@ import { ExcelImportService } from "./excelImport.service";
 import { JournalService } from "../journal/journal.service";
 import { TransactionService } from "../transaction/transac.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { InventoryService } from "../inventory/inventory.service";
 
 export class ImportResolver {
 
@@ -88,7 +89,7 @@ export class ImportResolver {
      * repeated import reuses the same product instead of creating another.
      */
     static async ensureScrapDrumsProduct() {
-        const cacheKey = "SCRAP DRUMS";
+        const cacheKey = "SCRAP DRUM";
 
         if (this.productCache.has(cacheKey)) {
             return this.productCache.get(cacheKey);
@@ -96,21 +97,30 @@ export class ImportResolver {
 
         const existing = await prisma.product.findFirst({
             where: {
-                name: {
-                    equals: cacheKey,
-                    mode: "insensitive"
-                },
+                OR: [
+                    { name: { equals: "SCRAP DRUM", mode: "insensitive" } },
+                    { name: { equals: "SCRAP DRUMS", mode: "insensitive" } }
+                ],
                 isActive: true
             }
         });
 
-        const product = existing || await prisma.product.create({
+        const product = existing
+            ? await prisma.product.update({
+                where: { id: existing.id },
+                data: {
+                    baseUnit: ProductUnit.NOS,
+                    operationalUnit: ProductUnit.NOS,
+                    density: 1
+                }
+            })
+            : await prisma.product.create({
             data: {
                 sku: crypto.randomUUID(),
-                name: cacheKey,
+                name: "SCRAP DRUM",
                 density: 1,
-                baseUnit: ProductUnit.KG,
-                operationalUnit: ProductUnit.KG,
+                baseUnit: ProductUnit.NOS,
+                operationalUnit: ProductUnit.NOS,
                 sellPricePerUnit: 0,
                 sellPriceLTR: null,
                 minimumStockKG: null,
@@ -122,6 +132,38 @@ export class ImportResolver {
 
         this.productCache.set(cacheKey, product);
         return product;
+    }
+
+    private static isScrapDrumsProduct(name?: string) {
+        return /\bSCRAP\s+DRUMS?\b/i.test(String(name || ""));
+    }
+
+    private static async ensureScrapDrumsStock(
+        branchId: string,
+        productId: string,
+        quantity: number,
+        invoiceNo: string,
+        transactionDate?: Date
+    ) {
+        const batchNo = `SCRAP-SALE-IMPORT-${invoiceNo || "UNKNOWN"}`
+            .replace(/[^A-Z0-9-]/gi, "-");
+        const existing = await prisma.inventoryBatch.findUnique({
+            where: { branchId_productId_batchNo: { branchId, productId, batchNo } }
+        });
+        const available = Number(existing?.availableQtyKG || 0);
+        const shortage = Math.max(Number(quantity || 0) - available, 0);
+
+        if (shortage > 0) {
+            await InventoryService.addStock(prisma, {
+                branchId,
+                productId,
+                batchNo,
+                quantity: shortage,
+                unit: ProductUnit.NOS,
+                purchasePrice: 0,
+                transactionDate
+            });
+        }
     }
 
     private static normalizeProductName(name: string): string {
@@ -729,6 +771,10 @@ export class ImportResolver {
     static async resolveProduct(
         dto: ExcelRowDTO
     ) {
+
+        if (this.isScrapDrumsProduct(dto.particulars)) {
+            return this.ensureScrapDrumsProduct();
+        }
 
         const normalizedName =
             this.normalizeProductName(dto.particulars!);
@@ -2200,6 +2246,18 @@ export class ImportResolver {
                     row
                 );
 
+            const isScrapDrums = this.isScrapDrumsProduct(row.particulars);
+            if (isScrapDrums) {
+                await this.ensureScrapDrumsStock(
+                    branch.id,
+                    product.id,
+                    Number(row.quantity || 0),
+                    voucher.invoiceNo || voucher.voucherNo,
+                    voucher.invoiceDate || voucher.voucherDate
+                );
+            }
+            const resolvedUnit = isScrapDrums ? ProductUnit.NOS : row.unit as ProductUnit;
+
             const rowTaxableAmount =
                 Number(row.taxableAmount || 0) > 0
                     ? Number(row.taxableAmount)
@@ -2213,7 +2271,7 @@ export class ImportResolver {
                     branch.id,
                     product.id,
                     row.quantity!,
-                    row.unit as ProductUnit,
+                    resolvedUnit,
                     reservedByBatch,
                     row.particulars,
                     true
@@ -2373,8 +2431,7 @@ export class ImportResolver {
                     quantity:
                         allocation.quantity,
 
-                    unit:
-                        row.unit as ProductUnit,
+                    unit: resolvedUnit,
 
                     unitPrice:
                         row.rate,
