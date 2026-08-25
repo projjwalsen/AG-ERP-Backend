@@ -747,6 +747,7 @@ model Sale {
   voucherType    VoucherType?
   otherReference String?
   roundOffAmount Decimal      @default(0.00) @db.Decimal(18, 2)
+  tcsAmount      Decimal      @default(0.00) @db.Decimal(18, 2)
 
   voucherNo String?
 

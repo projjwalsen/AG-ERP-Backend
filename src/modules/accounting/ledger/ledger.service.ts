@@ -105,6 +105,7 @@ const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: L
     OUTPUT_GST_CGST: { name: "Output GST CGST", parentCode: "DUTIES_AND_TAXES", nature: LedgerNature.CREDIT },
     OUTPUT_GST_SGST: { name: "Output GST SGST", parentCode: "DUTIES_AND_TAXES", nature: LedgerNature.CREDIT },
     OUTPUT_GST_IGST: { name: "Output GST IGST", parentCode: "DUTIES_AND_TAXES", nature: LedgerNature.CREDIT },
+    TCS_PAYABLE: { name: "TCS Payable", parentCode: "DUTIES_AND_TAXES", nature: LedgerNature.CREDIT },
     SUSPENSE_ACCOUNT: { name: "Suspense Account", parentCode: "LIABILITIES", nature: LedgerNature.CREDIT },
 
     SALES: { name: "Sales", parentCode: "INCOME", nature: LedgerNature.CREDIT },
@@ -4133,6 +4134,20 @@ export class LedgerService {
         });
     }
 
+    static async getOrCreateTcsLedger(client: DbClient, branchId: string) {
+        const branchCode = await this.getBranchCode(client, branchId);
+
+        return this.getOrCreateLedger(client, {
+            code: `TCS-${branchCode}`,
+            name: `TCS Payable - ${branchCode}`,
+            category: LedgerType.GST,
+            groupCode: "TCS_PAYABLE",
+            nature: LedgerNature.CREDIT,
+            branchId,
+            gstApplicable: false
+        });
+    }
+
     private static async getSuspenseLedger(client: DbClient, branchId: string) {
         const branchCode = await this.getBranchCode(client, branchId);
 
@@ -4383,7 +4398,8 @@ export class LedgerService {
         const [
             customerLedger,
             salesLedger,
-            roundOffLedger
+            roundOffLedger,
+            tcsLedger
         ] = await Promise.all([
             this.getOrCreateCustomerLedger(
                 tx,
@@ -4399,11 +4415,19 @@ export class LedgerService {
             this.getOrCreateRoundOffLedger(
                 tx,
                 sale.branchId
+            ),
+
+            this.getOrCreateTcsLedger(
+                tx,
+                sale.branchId
             )
         ]);
 
         const roundOff =
             Number(sale.roundOffAmount);
+
+        const tcsAmount =
+            Number(sale.tcsAmount || 0);
 
         const gstLines: VoucherEntryPayload[] = [];
 
@@ -4464,6 +4488,16 @@ export class LedgerService {
                 },
 
                 ...gstLines,
+
+                ...(tcsAmount > 0
+                    ? [{
+                        ledgerId: tcsLedger.id,
+                        entryType: EntryType.CREDIT,
+                        amount: tcsAmount,
+                        branchId: sale.branchId,
+                        narration: `Invoice:${sale.invoiceNo} TCS`
+                    }]
+                    : []),
 
                 ...(roundOff !== 0
                     ? [{

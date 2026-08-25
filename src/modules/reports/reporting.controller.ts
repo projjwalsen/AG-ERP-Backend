@@ -3,7 +3,7 @@ import { LedgerService } from "../accounting/ledger/ledger.service";
 import { ReportingService } from "./reporting.service";
 import { ExcelService } from "../../core/utils/export.service";
 import { gstr1Columns, gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
-import { formatISTDate } from "../../core/utils/loc.utils";
+import { formatISTDateOnly } from "../../core/utils/loc.utils";
 
 
 export const getBranchDayBook = async (
@@ -115,12 +115,12 @@ export const getTrialBalanceReport = async (
             const periodText =
                 `${
                     report.period.startDate
-                        ? formatISTDate(
+                        ? formatISTDateOnly(
                             report.period.startDate
                         )
                         : "Beginning"
                 } to ${
-                    formatISTDate(
+                    formatISTDateOnly(
                         report.period.endDate
                     )
                 }`;

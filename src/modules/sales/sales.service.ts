@@ -96,6 +96,7 @@ type CreateSalesPayload = {
 
     transport?: SaleTransportPayload;
     roundOffAmount?:number;
+    tcsAmount?: number;
     voucherDate?: string;
     approvedAt?: string;
 
@@ -107,6 +108,7 @@ type CreateSalesPayload = {
         totalIGST: number;
         totalGST: number;
         roundOff: number;
+        tcs?: number;
         grandTotal: number;
     };
 
@@ -270,6 +272,14 @@ export class SalesService {
             true
         );
 
+        payload.tcsAmount = this.normalizeDecimalValue(
+            payload.tcsAmount ?? 0,
+            "tcsAmount",
+            2,
+            invoiceNo,
+            true
+        );
+
         if (payload.importedTotals) {
             payload.importedTotals = {
                 subTotal: this.normalizeDecimalValue(
@@ -310,6 +320,13 @@ export class SalesService {
                 roundOff: this.normalizeDecimalValue(
                     payload.importedTotals.roundOff,
                     "importedTotals.roundOff",
+                    2,
+                    invoiceNo,
+                    true
+                )!,
+                tcs: this.normalizeDecimalValue(
+                    payload.importedTotals.tcs ?? 0,
+                    "importedTotals.tcs",
                     2,
                     invoiceNo,
                     true
@@ -701,7 +718,8 @@ export class SalesService {
                 money(
                     subtotalAmount +
                     totalGSTAmount +
-                    (payload.roundOffAmount ?? 0)
+                    (payload.roundOffAmount ?? 0) +
+                    (payload.tcsAmount ?? 0)
                 );
 
             if (
@@ -719,7 +737,7 @@ export class SalesService {
                 ) > 0.01
             ) {
                 throw new ApiError(
-                    `Sale import total mismatch for invoice ${invoiceNo}. Items ${subtotalAmount} + GST ${totalGSTAmount} + RoundOff ${payload.roundOffAmount ?? 0} = ${expectedGrandTotal}, but imported Grand Total is ${payload.importedTotals.grandTotal}`,
+                    `Sale import total mismatch for invoice ${invoiceNo}. Items ${subtotalAmount} + GST ${totalGSTAmount} + TCS ${payload.tcsAmount ?? 0} + RoundOff ${payload.roundOffAmount ?? 0} = ${expectedGrandTotal}, but imported Grand Total is ${payload.importedTotals.grandTotal}`,
                     400
                 );
             }
@@ -745,7 +763,8 @@ export class SalesService {
         } else {
 
             grandTotal +=
-                payload.roundOffAmount ?? 0;
+                (payload.roundOffAmount ?? 0) +
+                (payload.tcsAmount ?? 0);
 
         }
 
@@ -871,6 +890,9 @@ export class SalesService {
 
                 roundOffAmount:
                     payload.roundOffAmount ?? 0,
+
+                tcsAmount:
+                    payload.tcsAmount ?? 0,
 
                 remarks:
                     payload.remarks?.trim(),
