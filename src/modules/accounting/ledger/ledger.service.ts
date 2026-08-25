@@ -18,6 +18,7 @@ import { randomUUID } from "crypto";
 import { prisma } from "../../../config/db";
 import { ApiError } from "../../../core/middleware/errorHandler";
 import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
+import { areVoucherTotalsBalanced } from "./voucher-balance.utils";
 
 type DbClient = any;
 type TaxKind = "CGST" | "SGST" | "IGST";
@@ -3300,7 +3301,12 @@ export class LedgerService {
             //     "Diff",
             //     totalDebit - totalCredit
             // );
-            if (lines.length < 2 || totalDebit <= 0 || totalCredit <= 0 || Math.abs(totalDebit - totalCredit) > 4) {
+            if (
+                lines.length < 2 ||
+                totalDebit <= 0 ||
+                totalCredit <= 0 ||
+                !areVoucherTotalsBalanced(totalDebit, totalCredit)
+            ) {
                 throw new ApiError(`Double entry validation failed. Debit ${totalDebit}, Credit ${totalCredit}`, 400);
             }
 
@@ -4303,7 +4309,12 @@ export class LedgerService {
                 purchase.voucherType ?? VoucherType.PURCHASE,
             sourceId: purchase.id,
             branchId: purchase.branchId,
-            voucherDate: purchase.approvedAt,
+            // Financial reports follow the supplier document date. Approval
+            // controls when posting occurs, not the accounting period.
+            voucherDate:
+                purchase.invoiceDate ??
+                purchase.approvedAt ??
+                purchase.createdAt,
 
             narration:
                 `${purchase.voucherType ?? VoucherType.PURCHASE}|${purchase.invoiceNo}|${purchase.agency.name}`,

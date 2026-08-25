@@ -74,6 +74,11 @@ export const getTrialBalanceReport = async (
         const actor =
             (req as any).user;
 
+        const isExport =
+            String(
+                req.query.export
+            ).toLowerCase() === "true";
+
         const query = {
             branchId:
                 req.query.branchId as string,
@@ -87,13 +92,10 @@ export const getTrialBalanceReport = async (
             includeZero:
                 String(
                     req.query.includeZero
-                ).toLowerCase() === "true"
-        };
+                ).toLowerCase() === "true",
 
-        const isExport =
-            String(
-                req.query.export
-            ).toLowerCase() === "true";
+            requireBranch: isExport
+        };
 
         const report =
             await ReportingService

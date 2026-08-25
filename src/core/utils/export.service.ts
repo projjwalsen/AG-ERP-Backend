@@ -3587,7 +3587,7 @@ export class ExcelService {
                 group.label,
                 groupDebit || null,
                 groupCredit || null,
-                groupClosingSigned !== 0 ? Math.abs(groupClosingSigned) : null
+                groupClosingSigned || null
             ]);
 
             groupRow.font = { bold: true };
@@ -3598,7 +3598,8 @@ export class ExcelService {
             };
             groupRow.getCell(2).numFmt = '#,##0.00';
             groupRow.getCell(3).numFmt = '#,##0.00';
-            groupRow.getCell(4).numFmt = '#,##0.00';
+            groupRow.getCell(4).numFmt =
+                '#,##0.00 "Dr";#,##0.00 "Cr";-';
 
             group.items
                 .sort((a, b) =>
@@ -3617,7 +3618,7 @@ export class ExcelService {
                         ? item.periodCredit
                         : null,
                     item.closingSigned !== 0
-                        ? Math.abs(item.closingSigned)
+                        ? item.closingSigned
                         : null
                 ]);
 
@@ -3635,7 +3636,8 @@ export class ExcelService {
 
                 row.getCell(2).numFmt = '#,##0.00';
                 row.getCell(3).numFmt = '#,##0.00';
-                row.getCell(4).numFmt = '#,##0.00';
+                row.getCell(4).numFmt =
+                    '#,##0.00 "Dr";#,##0.00 "Cr";-';
 
                 row.getCell(3).alignment = {
                     horizontal: "right",
@@ -3660,12 +3662,14 @@ export class ExcelService {
                 `Total ${group.label}`,
                 groupDebit || null,
                 groupCredit || null,
-                null
+                groupClosingSigned || null
             ]);
 
             subtotalRow.font = { bold: true };
             subtotalRow.getCell(2).numFmt = '#,##0.00';
             subtotalRow.getCell(3).numFmt = '#,##0.00';
+            subtotalRow.getCell(4).numFmt =
+                '#,##0.00 "Dr";#,##0.00 "Cr";-';
 
             for (let column = 1; column <= 4; column++) {
                 subtotalRow.getCell(column).border = {
@@ -3683,7 +3687,8 @@ export class ExcelService {
             "Grand Total",
             options.summary.totalPeriodDebit,
             options.summary.totalPeriodCredit,
-            null
+            `${this.formatIndianAmount(options.summary.totalClosingDebit)} Dr / ` +
+                `${this.formatIndianAmount(options.summary.totalClosingCredit)} Cr`
         ]);
 
         totalRow.height = 25;
@@ -3695,6 +3700,9 @@ export class ExcelService {
 
         totalRow.getCell(2).numFmt = '#,##0.00';
         totalRow.getCell(3).numFmt = '#,##0.00';
+        totalRow.getCell(4).alignment = {
+            horizontal: "right"
+        };
 
         totalRow.getCell(2).alignment = {
             horizontal: "right"
