@@ -306,6 +306,29 @@ router.get("/all", checkPermission("JOURNAL:VIEW"), JournalController.listJourna
 
 router.put("/:journalId", checkPermission("JOURNAL:WRITE"), JournalController.updateJournal);
 
+/**
+ * @openapi
+ * /api/journal/{journalId}:
+ *   delete:
+ *     tags:
+ *       - Journal
+ *     summary: Delete Journal
+ *     description: Deletes the journal and removes its orphaned dependent voucher data.
+ *     parameters:
+ *       - in: path
+ *         name: journalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Journal deleted successfully
+ *       404:
+ *         description: Journal not found
+ */
+router.delete("/:journalId", checkPermission("JOURNAL:WRITE"), JournalController.deleteJournal);
+
 
 /**
  * @openapi
