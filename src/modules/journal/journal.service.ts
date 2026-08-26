@@ -731,6 +731,45 @@ export class JournalService {
 
     }
 
+    static async deleteJournal(journalId: string) {
+        return prisma.$transaction(async (tx) => {
+            const journal = await tx.journal.findUnique({
+                where: { id: journalId },
+                select: { id: true, voucherId: true }
+            });
+
+            if (!journal) {
+                throw new ApiError("Journal not found.", 404);
+            }
+
+            await tx.journal.delete({ where: { id: journalId } });
+
+            // A voucher created exclusively for this journal is dependent on
+            // it. Deleting it also cascades its ledger entries as defined in
+            // the Prisma schema. Never remove a shared voucher.
+            if (journal.voucherId) {
+                const remaining = await tx.voucher.findUnique({
+                    where: { id: journal.voucherId },
+                    select: {
+                        journals: { select: { id: true }, take: 1 },
+                        entries: { select: { id: true }, take: 1 },
+                        transaction: { select: { id: true }, take: 1 },
+                        debitCreditNotes: { select: { id: true }, take: 1 },
+                        manufactures: { select: { id: true }, take: 1 }
+                    }
+                });
+
+                if (remaining && !remaining.journals.length &&
+                    !remaining.entries.length && !remaining.transaction.length &&
+                    !remaining.debitCreditNotes.length && !remaining.manufactures.length) {
+                    await tx.voucher.delete({ where: { id: journal.voucherId } });
+                }
+            }
+
+            return journal;
+        });
+    }
+
     static async getJournalById(
         id: string
     ) {
