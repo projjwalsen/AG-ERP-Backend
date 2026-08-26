@@ -12,7 +12,7 @@ import {
 import { areVoucherTotalsBalanced } from
     "../accounting/ledger/voucher-balance.utils";
 
-test("Beginning to 25 Aug 2026 resolves to FY 2025-26", () => {
+test("Beginning to 25 Aug 2026 resolves from FY start through as-at date", () => {
     const period = resolveTrialBalancePeriod(
         undefined,
         new Date(2026, 7, 25)
@@ -24,7 +24,7 @@ test("Beginning to 25 Aug 2026 resolves to FY 2025-26", () => {
             period.startDate.getMonth(),
             period.startDate.getDate()
         ],
-        [2025, 3, 1]
+            [2025, 3, 1]
     );
     assert.deepEqual(
         [
@@ -32,7 +32,7 @@ test("Beginning to 25 Aug 2026 resolves to FY 2025-26", () => {
             period.endDate.getMonth(),
             period.endDate.getDate()
         ],
-        [2026, 2, 31]
+            [2026, 7, 25]
     );
     assert.equal(period.normalizedFromBeginning, true);
 });

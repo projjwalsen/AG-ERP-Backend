@@ -817,7 +817,7 @@ export const setOpeningBalance = async (req: Request, res: Response, next: NextF
     try {
         const actor = (req as any).user;
         const ledgerId = (req as any).params.ledgerId;
-        const { openingBalance } = req.body;
+        const { openingBalance, openingBalanceDate } = req.body;
 
         if (openingBalance === undefined || openingBalance === null) {
             return res.status(400).json({
@@ -826,7 +826,12 @@ export const setOpeningBalance = async (req: Request, res: Response, next: NextF
             });
         }
 
-        const result = await LedgerService.setOpeningBalance(actor, ledgerId, Number(openingBalance));
+        const result = await LedgerService.setOpeningBalance(
+            actor,
+            ledgerId,
+            Number(openingBalance),
+            openingBalanceDate
+        );
 
         res.status(200).json({
             success: true,
