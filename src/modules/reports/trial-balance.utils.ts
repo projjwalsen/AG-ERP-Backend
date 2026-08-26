@@ -29,7 +29,8 @@ const atEndOfDay = (value: Date) => {
 };
 
 /**
- * "Beginning" reports use the most recently completed Indian financial year.
+ * "Beginning" reports use the previous Indian financial year start through
+ * the requested as-at date, so current-year balances are included as well.
  * For example, an as-at date of 25 Aug 2026 resolves to 1 Apr 2025–31 Mar 2026.
  */
 export const resolveTrialBalancePeriod = (
@@ -52,7 +53,7 @@ export const resolveTrialBalancePeriod = (
 
     return {
         startDate: new Date(containingFinancialYearStart - 1, 3, 1, 0, 0, 0, 0),
-        endDate: new Date(containingFinancialYearStart, 2, 31, 23, 59, 59, 999),
+        endDate: asAt,
         normalizedFromBeginning: true
     };
 };

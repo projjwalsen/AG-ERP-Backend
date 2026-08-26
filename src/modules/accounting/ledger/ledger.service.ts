@@ -3946,7 +3946,12 @@ export class LedgerService {
         };
     }
 
-    static async setOpeningBalance(actor: any, ledgerId: string, openingBalance: number) {
+    static async setOpeningBalance(
+        actor: any,
+        ledgerId: string,
+        openingBalance: number,
+        openingBalanceDate?: Date | string
+    ) {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
@@ -3967,11 +3972,25 @@ export class LedgerService {
             throw new ApiError("You do not have access to this ledger", 403);
         }
 
+        const effectiveOpeningDate = openingBalanceDate
+            ? new Date(openingBalanceDate)
+            : new Date();
+
+        if (Number.isNaN(effectiveOpeningDate.getTime())) {
+            throw new ApiError("openingBalanceDate must be a valid date", 400);
+        }
+
+        const amount = money(openingBalance);
+        const isDebitNature = ledger.nature === LedgerNature.DEBIT;
+
         return prisma.$transaction(async (tx) => {
             await tx.ledger.update({
                 where: { id: ledgerId },
                 data: {
-                    openingBalance: money(openingBalance)
+                    openingBalance: amount,
+                    openingDebit: isDebitNature ? amount : 0,
+                    openingCredit: isDebitNature ? 0 : amount,
+                    openingBalanceDate: effectiveOpeningDate
                 }
             });
 
@@ -4426,8 +4445,11 @@ export class LedgerService {
         const roundOff =
             Number(sale.roundOffAmount);
 
+        // The database schema contains tcsAmount, but older generated Prisma
+        // clients may not expose it on the inferred Sale type yet.
+        const saleWithTcs = sale as typeof sale & { tcsAmount?: unknown };
         const tcsAmount =
-            Number(sale.tcsAmount || 0);
+            Number(saleWithTcs.tcsAmount || 0);
 
         const gstLines: VoucherEntryPayload[] = [];
 
