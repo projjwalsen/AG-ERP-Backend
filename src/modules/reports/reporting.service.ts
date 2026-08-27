@@ -1,4 +1,4 @@
-import { DebitCreditNoteStatus, DebitCreditNoteType, EntryType, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
+import { DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
@@ -1809,6 +1809,73 @@ export class ReportingService {
             invoice_total: money(row.invoice_total)
         }));
 
+        const noteVoucherTypes = [
+            "OUTWARD DEBIT NOTE",
+            "OUTWARD CREDIT NOTE",
+            "INWARD DEBIT NOTE",
+            "INWARD CREDIT NOTE"
+        ];
+        const noteJournals = await prisma.journal.findMany({
+            where: {
+                status: JournalStatus.APPROVED,
+                ...(branchId ? { branchId } : {}),
+                ...(startDate || endDate ? {
+                    journalDate: {
+                        ...(startDate ? { gte: startDate } : {}),
+                        ...(endDate ? { lte: endDate } : {})
+                    }
+                } : {}),
+                OR: noteVoucherTypes.map(type => ({
+                    importKey: { startsWith: `${type}_` }
+                }))
+            },
+            include: {
+                journalHead: {
+                    include: {
+                        ledger: {
+                            include: { agency: true }
+                        }
+                    }
+                }
+            },
+            orderBy: { journalDate: "asc" }
+        });
+
+        const noteSummaryMap = new Map<string, any>();
+        for (const journal of noteJournals) {
+            const agency = journal.journalHead.ledger.agency;
+            const key = agency?.id || journal.journalHead.ledgerId;
+            const current = noteSummaryMap.get(key) || {
+                customer_gstin: agency?.gstin || null,
+                agency_name: agency?.name || journal.journalHead.name,
+                voucher_count: 0,
+                taxable_value: 0,
+                igst_rate_amount: 0,
+                cgst_rate_amount: 0,
+                sgst_rate_amount: 0,
+                cess_amount: 0,
+                gst_amount: 0,
+                invoice_total: 0
+            };
+            const amount = money(Number(journal.amount || 0));
+            current.voucher_count += 1;
+            // Imported note journals expose the note amount, not a tax split.
+            // Keep the amount in invoice/tax totals and leave the unavailable split as zero.
+            current.gst_amount += amount;
+            current.invoice_total += amount;
+            noteSummaryMap.set(key, current);
+        }
+        const creditDebitNoteSummary = [...noteSummaryMap.values()].map(row => ({
+            ...row,
+            taxable_value: money(row.taxable_value),
+            igst_rate_amount: money(row.igst_rate_amount),
+            cgst_rate_amount: money(row.cgst_rate_amount),
+            sgst_rate_amount: money(row.sgst_rate_amount),
+            cess_amount: money(row.cess_amount),
+            gst_amount: money(row.gst_amount),
+            invoice_total: money(row.invoice_total)
+        }));
+
         const summary = {
 
             totalInvoices:
@@ -1888,6 +1955,8 @@ export class ReportingService {
             summary,
 
             b2bSummary,
+
+            creditDebitNoteSummary,
 
             rows
         };
