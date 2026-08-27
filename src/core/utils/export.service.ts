@@ -559,12 +559,10 @@ export class ExcelService {
             : "";
 
         const titleRows = [
-            [branch?.branchName || ""],
-            [""],
-            [options.title || "GSTR-1 - Summary"],
-            [period],
+            [branch?.branchName || ""], [""], [options.title || "GSTR-1"], [period],
             ["GST Registration:", branch?.branchGst || ""],
-            ["Details of:", "B2B Invoices - 4A, 4B, 4C, 6B, 6C"]
+            ["Status:", "Not Filed"],
+            ["Check Vouchers Having Potential Conflicts with Masters", "Yes"]
         ];
         titleRows.forEach((values, index) => {
             if (!values[1]) {
@@ -574,7 +572,21 @@ export class ExcelService {
             if (values[1]) worksheet.getCell(index + 1, 2).value = values[1];
         });
 
-        const headerRow = 8;
+        // Match the Tally layout: voucher-status block, then the GST summary header.
+        worksheet.getRow(10).values = ["Particulars", "Voucher Count"];
+        worksheet.getRow(11).values = ["Total Vouchers", (report.summary?.totalInvoices || 0) + (report.creditDebitNoteSummary || []).reduce((sum: number, row: any) => sum + Number(row.voucher_count || 0), 0)];
+        worksheet.getRow(12).values = ["Included in Return", report.summary?.totalInvoices || 0];
+        worksheet.getRow(13).values = ["Ready for Upload", 0];
+        worksheet.getRow(14).values = ["Modified in Books After Upload/Export", 0];
+        worksheet.getRow(15).values = ["No Action Required", report.summary?.totalInvoices || 0];
+        worksheet.getRow(16).values = ["Not Relevant for This Return", 0];
+        worksheet.getRow(17).values = ["Uncertain Transactions (Corrections needed)", 0];
+        worksheet.getRow(18).values = ["Marked for Deletion on Portal", 0];
+        worksheet.getRow(19).values = ["Check Vouchers Having Potential Conflicts with Masters", "Yes"];
+        worksheet.getRow(10).eachCell(cell => { cell.font = { bold: true }; });
+        worksheet.getRow(11).eachCell(cell => { cell.font = { bold: true }; });
+
+        const headerRow = 20;
         worksheet.getRow(headerRow).values = columns;
         worksheet.getRow(headerRow + 1).values = ["", "", "Count", "Amount", "", "", "", "", "Amount", "Amount"];
         [headerRow, headerRow + 1].forEach(rowNumber => {
@@ -589,36 +601,38 @@ export class ExcelService {
         });
 
         const money = (value: any) => Number(value || 0);
-        for (const row of report.b2bSummary || []) {
-            worksheet.addRow([
-                row.customer_gstin || "",
-                row.agency_name || "",
-                row.voucher_count || 0,
-                money(row.taxable_value),
-                money(row.igst_rate_amount),
-                money(row.cgst_rate_amount),
-                money(row.sgst_rate_amount),
-                money(row.cess_amount),
-                money(row.gst_amount),
-                money(row.invoice_total)
-            ]);
-        }
+        const styleSection = (row: ExcelJS.Row, bold = true) => {
+            row.eachCell(cell => {
+                cell.font = { bold };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bold ? "D9EAF7" : "FFFFFF" } };
+                cell.border = { top: { style: "thin" }, bottom: { style: "thin" } };
+            });
+        };
+        const totalsFor = (data: any[]) => data.reduce((sum, row) => ({
+            count: sum.count + Number(row.voucher_count || 0), taxable: sum.taxable + money(row.taxable_value),
+            igst: sum.igst + money(row.igst_rate_amount), cgst: sum.cgst + money(row.cgst_rate_amount),
+            sgst: sum.sgst + money(row.sgst_rate_amount), cess: sum.cess + money(row.cess_amount),
+            tax: sum.tax + money(row.gst_amount), invoice: sum.invoice + money(row.invoice_total)
+        }), { count: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, tax: 0, invoice: 0 });
+        const addSummarySection = (title: string, data: any[]) => {
+            const totals = totalsFor(data);
+            const section = worksheet.addRow([title, totals.count, "", totals.taxable, totals.igst, totals.cgst, totals.sgst, totals.cess, totals.tax, totals.invoice]);
+            styleSection(section);
+            section.getCell(2).font = { bold: true };
+            for (const row of data) {
+                const detail = worksheet.addRow([row.customer_gstin || "", row.agency_name || "", row.voucher_count || 0, money(row.taxable_value), money(row.igst_rate_amount), money(row.cgst_rate_amount), money(row.sgst_rate_amount), money(row.cess_amount), money(row.gst_amount), money(row.invoice_total)]);
+                detail.eachCell(cell => { cell.border = { bottom: { style: "hair" } }; });
+            }
+            return totals;
+        };
 
-        const total = report.b2bSummary?.reduce((sum: any, row: any) => ({
-            count: sum.count + Number(row.voucher_count || 0),
-            taxable: sum.taxable + money(row.taxable_value),
-            igst: sum.igst + money(row.igst_rate_amount),
-            cgst: sum.cgst + money(row.cgst_rate_amount),
-            sgst: sum.sgst + money(row.sgst_rate_amount),
-            cess: sum.cess + money(row.cess_amount),
-            tax: sum.tax + money(row.gst_amount),
-            invoice: sum.invoice + money(row.invoice_total)
-        }), { count: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, tax: 0, invoice: 0 }) || { count: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, tax: 0, invoice: 0 };
-        const totalRow = worksheet.addRow(["Total", "", total.count, total.taxable, total.igst, total.cgst, total.sgst, total.cess, total.tax, total.invoice]);
-        totalRow.eachCell(cell => {
-            cell.font = { bold: true };
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9EAD3" } };
-        });
+        const returnView = worksheet.addRow(["Return View"]);
+        styleSection(returnView);
+        const b2bTotals = addSummarySection("B2B Invoices - 4A, 4B, 4C, 6B, 6C", report.b2bSummary || []);
+        const noteTotals = addSummarySection("Credit or Debit Notes (Registered) - 9B", report.creditDebitNoteSummary || []);
+        ["B2C (Large) Invoices - 5A, 5B", "Exports Invoices - 6A", "Credit or Debit Notes (Unregistered) - 9B", "Amended B2B Invoices - 9A", "Amended B2C (Large) Invoices - 9A", "Amended Exports Invoices - 9A", "Amended Credit or Debit Notes (Registered) - 9C", "Amended Credit or Debit Notes (Unregistered) - 9C", "B2C (Small) Invoices - 7", "Nil Rated Invoices - 8A, 8B, 8C, 8D", "Amendment B2C (Small) Invoices - 10", "Tax Liability (Advances Received) - 11A(1), 11A(2)", "Adjustment of Advances - 11B(1), 11B(2)", "Amended Tax Liability (Advances Received) - 11A", "Amendment of Adjusted Advances - 11B", "HSN Summary - 12", "HSN Summary - 12 (B2B - B2C Supplies)", "Document Summary - 13"].forEach(title => worksheet.addRow([title]));
+        const grand = worksheet.addRow(["Total", "", b2bTotals.count + noteTotals.count, b2bTotals.taxable + noteTotals.taxable, b2bTotals.igst + noteTotals.igst, b2bTotals.cgst + noteTotals.cgst, b2bTotals.sgst + noteTotals.sgst, b2bTotals.cess + noteTotals.cess, b2bTotals.tax + noteTotals.tax, b2bTotals.invoice + noteTotals.invoice]);
+        styleSection(grand);
 
         worksheet.columns = [12, 42, 14, 18, 16, 16, 16, 14, 16, 18].map(width => ({ width }));
         worksheet.getColumn(3).numFmt = "0";
