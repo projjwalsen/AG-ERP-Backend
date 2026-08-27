@@ -541,6 +541,104 @@ export class ExcelService {
 
         res.end();
     }
+
+    static async exportGSTR1Summary(
+        res: Response,
+        report: any,
+        options: { filename: string; sheetName?: string; title?: string }
+    ) {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(options.sheetName || "GSTR-1");
+        const columns = [
+            "Particulars", "Party Name", "Voucher Count", "Taxable Amount",
+            "IGST", "CGST", "SGST/UTGST", "Cess", "Tax Amount", "Invoice Amount"
+        ];
+        const branch = report.rows?.[0];
+        const period = report.period?.startDate && report.period?.endDate
+            ? `${new Date(report.period.startDate).toLocaleDateString("en-IN")} to ${new Date(report.period.endDate).toLocaleDateString("en-IN")}`
+            : "";
+
+        const titleRows = [
+            [branch?.branchName || ""],
+            [""],
+            [options.title || "GSTR-1 - Summary"],
+            [period],
+            ["GST Registration:", branch?.branchGst || ""],
+            ["Details of:", "B2B Invoices - 4A, 4B, 4C, 6B, 6C"]
+        ];
+        titleRows.forEach((values, index) => {
+            if (!values[1]) {
+                worksheet.mergeCells(index + 1, 1, index + 1, columns.length);
+            }
+            worksheet.getCell(index + 1, 1).value = values[0];
+            if (values[1]) worksheet.getCell(index + 1, 2).value = values[1];
+        });
+
+        const headerRow = 8;
+        worksheet.getRow(headerRow).values = columns;
+        worksheet.getRow(headerRow + 1).values = ["", "", "Count", "Amount", "", "", "", "", "Amount", "Amount"];
+        [headerRow, headerRow + 1].forEach(rowNumber => {
+            const row = worksheet.getRow(rowNumber);
+            row.height = 22;
+            row.eachCell(cell => {
+                cell.font = { bold: true };
+                cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9EAF7" } };
+                cell.alignment = { horizontal: "center", vertical: "middle" };
+                cell.border = { top: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" }, bottom: { style: "thin" } };
+            });
+        });
+
+        const money = (value: any) => Number(value || 0);
+        for (const row of report.b2bSummary || []) {
+            worksheet.addRow([
+                row.customer_gstin || "",
+                row.agency_name || "",
+                row.voucher_count || 0,
+                money(row.taxable_value),
+                money(row.igst_rate_amount),
+                money(row.cgst_rate_amount),
+                money(row.sgst_rate_amount),
+                money(row.cess_amount),
+                money(row.gst_amount),
+                money(row.invoice_total)
+            ]);
+        }
+
+        const total = report.b2bSummary?.reduce((sum: any, row: any) => ({
+            count: sum.count + Number(row.voucher_count || 0),
+            taxable: sum.taxable + money(row.taxable_value),
+            igst: sum.igst + money(row.igst_rate_amount),
+            cgst: sum.cgst + money(row.cgst_rate_amount),
+            sgst: sum.sgst + money(row.sgst_rate_amount),
+            cess: sum.cess + money(row.cess_amount),
+            tax: sum.tax + money(row.gst_amount),
+            invoice: sum.invoice + money(row.invoice_total)
+        }), { count: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, tax: 0, invoice: 0 }) || { count: 0, taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, tax: 0, invoice: 0 };
+        const totalRow = worksheet.addRow(["Total", "", total.count, total.taxable, total.igst, total.cgst, total.sgst, total.cess, total.tax, total.invoice]);
+        totalRow.eachCell(cell => {
+            cell.font = { bold: true };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9EAD3" } };
+        });
+
+        worksheet.columns = [12, 42, 14, 18, 16, 16, 16, 14, 16, 18].map(width => ({ width }));
+        worksheet.getColumn(3).numFmt = "0";
+        worksheet.getRow(headerRow + 2).eachCell(cell => cell.numFmt = "#,##0.00");
+        worksheet.getColumn(4).numFmt = "#,##0.00";
+        worksheet.getColumn(5).numFmt = "#,##0.00";
+        worksheet.getColumn(6).numFmt = "#,##0.00";
+        worksheet.getColumn(7).numFmt = "#,##0.00";
+        worksheet.getColumn(8).numFmt = "#,##0.00";
+        worksheet.getColumn(9).numFmt = "#,##0.00";
+        worksheet.getColumn(10).numFmt = "#,##0.00";
+        worksheet.views = [{ state: "frozen", ySplit: headerRow + 1 }];
+
+        res.status(200);
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", `attachment; filename="${options.filename}.xlsx"`);
+        await workbook.xlsx.write(res as any);
+        res.end();
+    }
+
     private static truncate(
         value: any,
         maxLength?: number

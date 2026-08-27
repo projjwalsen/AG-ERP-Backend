@@ -1675,6 +1675,9 @@ export class ReportingService {
             }
         });
 
+        const money = (value: number) =>
+            Math.round(Number(value || 0) * 100) / 100;
+
         const rows =
             sales.map((sale) => {
 
@@ -1694,6 +1697,32 @@ export class ReportingService {
 
                 const isIntraState =
                     branchStateCode === posStateCode;
+
+                const itemTotals = sale.items.reduce(
+                    (totals: { taxable: number; cgst: number; sgst: number; igst: number; gst: number; total: number }, item: any) => ({
+                        taxable: totals.taxable + Number(item.taxableAmount || 0),
+                        cgst: totals.cgst + Number(item.cgstAmount || 0),
+                        sgst: totals.sgst + Number(item.sgstAmount || 0),
+                        igst: totals.igst + Number(item.igstAmount || 0),
+                        gst: totals.gst + Number(item.gstAmount || 0),
+                        total: totals.total + Number(item.totalAmount || 0)
+                    }),
+                    { taxable: 0, cgst: 0, sgst: 0, igst: 0, gst: 0, total: 0 }
+                );
+
+                // TAX INVOICE imports are persisted as Sale/SalesItem records.
+                // Use line values because older imported headers may contain zero GST totals.
+                const hasItemAmounts = sale.items.length > 0 && (
+                    itemTotals.taxable !== 0 ||
+                    itemTotals.cgst !== 0 ||
+                    itemTotals.sgst !== 0 ||
+                    itemTotals.igst !== 0
+                );
+                const taxableValue = hasItemAmounts ? itemTotals.taxable : Number(sale.subTotalAmount || 0);
+                const cgst = hasItemAmounts ? itemTotals.cgst : Number(sale.totalCGSTAmount || 0);
+                const sgst = hasItemAmounts ? itemTotals.sgst : Number(sale.totalSGSTAmount || 0);
+                const igst = hasItemAmounts ? itemTotals.igst : Number(sale.totalIGSTAmount || 0);
+                const gst = hasItemAmounts ? itemTotals.gst : Number(sale.totalGSTAmount || 0);
 
                 return {
                     branchName: sale.branch.name,
@@ -1715,30 +1744,21 @@ export class ReportingService {
                         sale.agency?.state
                             || sale.agency?.stateCode,
 
-                    taxable_value:
-                        Number(
-                            sale.subTotalAmount
-                        ),
+                    taxable_value: money(taxableValue),
 
                     cgst_rate_amount:
                         isIntraState
-                            ? Number(
-                                sale.totalCGSTAmount
-                            )
+                            ? money(cgst)
                             : 0,
 
                     sgst_rate_amount:
                         isIntraState
-                            ? Number(
-                                sale.totalSGSTAmount
-                            )
+                            ? money(sgst)
                             : 0,
 
                     igst_rate_amount:
                         !isIntraState
-                            ? Number(
-                                sale.totalIGSTAmount
-                            )
+                            ? money(igst)
                             : 0,
 
                     branch_state_code:
@@ -1747,12 +1767,47 @@ export class ReportingService {
                     customer_state_code:
                         posStateCode,
 
-                    invoice_total:
-                        Number(
-                            sale.grandTotal
-                        )
+                    gst_amount: money(gst),
+
+                    invoice_total: money(Number(sale.grandTotal || 0) || itemTotals.total)
                 };
             });
+
+        const b2bSummaryMap = new Map<string, any>();
+        for (const row of rows.filter(item => item.classification === "B2B")) {
+            const key = row.customer_gstin || row.customer_state_code || row.invoice_number;
+            const current = b2bSummaryMap.get(key) || {
+                customer_gstin: row.customer_gstin,
+                agency_name: sales.find(sale => sale.invoiceNo === row.invoice_number)?.agency?.name || "",
+                voucher_count: 0,
+                taxable_value: 0,
+                igst_rate_amount: 0,
+                cgst_rate_amount: 0,
+                sgst_rate_amount: 0,
+                cess_amount: 0,
+                gst_amount: 0,
+                invoice_total: 0
+            };
+            current.voucher_count += 1;
+            current.taxable_value += row.taxable_value;
+            current.igst_rate_amount += row.igst_rate_amount;
+            current.cgst_rate_amount += row.cgst_rate_amount;
+            current.sgst_rate_amount += row.sgst_rate_amount;
+            current.gst_amount += row.gst_amount;
+            current.invoice_total += row.invoice_total;
+            b2bSummaryMap.set(key, current);
+        }
+
+        const b2bSummary = [...b2bSummaryMap.values()].map(row => ({
+            ...row,
+            taxable_value: money(row.taxable_value),
+            igst_rate_amount: money(row.igst_rate_amount),
+            cgst_rate_amount: money(row.cgst_rate_amount),
+            sgst_rate_amount: money(row.sgst_rate_amount),
+            cess_amount: money(row.cess_amount),
+            gst_amount: money(row.gst_amount),
+            invoice_total: money(row.invoice_total)
+        }));
 
         const summary = {
 
@@ -1831,6 +1886,8 @@ export class ReportingService {
             branchId,
 
             summary,
+
+            b2bSummary,
 
             rows
         };
