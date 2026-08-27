@@ -644,7 +644,9 @@ export class ExcelService {
         worksheet.getColumn(8).numFmt = "#,##0.00";
         worksheet.getColumn(9).numFmt = "#,##0.00";
         worksheet.getColumn(10).numFmt = "#,##0.00";
-        worksheet.views = [{ state: "frozen", ySplit: headerRow + 1 }];
+        // Keep the worksheet fully scrollable; Tally's report does not lock
+        // the detail header as a split/frozen pane.
+        worksheet.views = [{ state: "normal" }];
 
         res.status(200);
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

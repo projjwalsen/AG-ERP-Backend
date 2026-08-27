@@ -1684,10 +1684,11 @@ export class ReportingService {
                 const customerGSTIN =
                     sale.agency?.gstin || null;
 
-                const classification =
-                    customerGSTIN
-                        ? "B2B"
-                        : "B2C";
+                // Imported TAX INVOICE vouchers are persisted as approved Sale
+                // records. Every such sale belongs to the requested B2B
+                // voucher section; GSTIN is displayed when available but is
+                // not used to exclude an agency from the section.
+                const classification = "B2B";
 
                 const branchStateCode =
                     sale.branch.stateCode;
@@ -1728,6 +1729,8 @@ export class ReportingService {
                     branchName: sale.branch.name,
 
                     branchGst: sale.branch.gstin,
+
+                    agency_id: sale.agencyId,
 
                     classification,
 
@@ -1774,9 +1777,13 @@ export class ReportingService {
             });
 
         const b2bSummaryMap = new Map<string, any>();
-        for (const row of rows.filter(item => item.classification === "B2B")) {
-            const key = row.customer_gstin || row.customer_state_code || row.invoice_number;
+        // The Tally B2B section is based on imported TAX INVOICE vouchers.
+        // Do not use GSTIN presence as the grouping filter: imported agencies
+        // without master GSTIN/state data must still appear in the report.
+        for (const row of rows) {
+            const key = row.agency_id || row.customer_gstin || row.customer_state_code || row.invoice_number;
             const current = b2bSummaryMap.get(key) || {
+                agency_id: row.agency_id,
                 customer_gstin: row.customer_gstin,
                 agency_name: sales.find(sale => sale.invoiceNo === row.invoice_number)?.agency?.name || "",
                 voucher_count: 0,
