@@ -1553,11 +1553,12 @@ export class ExcelService {
                 margins: { left: 0.25, right: 0.25, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 }
             };
             worksheet.columns = [
-                { width: 13 }, { width: 52 }, { width: 4 }, { width: 4 },
-                { width: 18 }, { width: 16 }, { width: 18 }, { width: 18 }
+                { width: 13 }, { width: 52 }, { width: 22 }, { width: 20 },
+                { width: 18 }, { width: 18 }
             ];
 
-            const companyName = report.companyName || "A G ASHTAVINAYAKA PETROCHEM PVT LTD";
+            const companyName = report.companyName || report.branch?.name || "A G ASHTAVINAYAKA PETROCHEM PVT LTD";
+            const branch = report.branch || {};
             const startDate = report.dateRange?.startDate ? new Date(report.dateRange.startDate) : null;
             const endDate = report.dateRange?.endDate ? new Date(report.dateRange.endDate) : new Date();
             const dateText = startDate
@@ -1571,34 +1572,43 @@ export class ExcelService {
             };
             const moneyFormat = "#,##0.00;[Red]-#,##0.00";
 
-            worksheet.mergeCells("A1:H1");
+            worksheet.mergeCells("A1:F1");
             worksheet.getCell("A1").value = companyName;
             worksheet.getCell("A1").font = { name: "Arial", bold: true, size: 12 };
             worksheet.getCell("A1").alignment = { horizontal: "left", vertical: "middle" };
-            worksheet.mergeCells("A6:H6");
+            const headerDetails = [
+                ["A2", [branch.addressLine1, branch.addressLine2].filter(Boolean).join(", ")],
+                ["A3", [branch.city, branch.state, branch.pinCode].filter(Boolean).join(", ")],
+                ["A4", branch.gstin ? `GSTIN: ${branch.gstin}` : ""],
+                ["A5", branch.email ? `E-Mail : ${branch.email}` : ""]
+            ];
+            for (const [cellRef, value] of headerDetails) {
+                worksheet.mergeCells(`${cellRef}:F${String(cellRef).slice(1)}`);
+                worksheet.getCell(cellRef).value = value;
+                worksheet.getCell(cellRef).font = { name: "Arial", size: 10 };
+                worksheet.getCell(cellRef).alignment = { horizontal: "left", vertical: "middle" };
+            }
+            worksheet.mergeCells("A6:F6");
             worksheet.getCell("A6").value = "Day Book";
             worksheet.getCell("A6").font = { name: "Arial", bold: true, size: 13 };
-            worksheet.getCell("A6").alignment = { horizontal: "center", vertical: "middle" };
-            worksheet.mergeCells("A7:H7");
+            worksheet.getCell("A6").alignment = { horizontal: "left", vertical: "middle" };
+            worksheet.mergeCells("A7:F7");
             worksheet.getCell("A7").value = dateText;
             worksheet.getCell("A7").font = { name: "Arial", size: 10 };
-            worksheet.getCell("A7").alignment = { horizontal: "center", vertical: "middle" };
+            worksheet.getCell("A7").alignment = { horizontal: "left", vertical: "middle" };
 
-            worksheet.mergeCells("B8:D8");
-            worksheet.mergeCells("G8:G9");
-            worksheet.mergeCells("H8:H9");
+            worksheet.mergeCells("E8:E9");
+            worksheet.mergeCells("F8:F9");
             worksheet.getCell("A8").value = "Date";
             worksheet.getCell("B8").value = "Particulars";
-            worksheet.getCell("E8").value = "Vch Type";
-            worksheet.getCell("F8").value = "Vch No.";
-            worksheet.getCell("G8").value = "Debit Amount";
-            worksheet.getCell("H8").value = "Credit Amount";
-            worksheet.getCell("G9").value = "Inwards Qty";
-            worksheet.getCell("H9").value = "Outwards Qty";
+            worksheet.getCell("C8").value = "Vch Type";
+            worksheet.getCell("D8").value = "Vch No.";
+            worksheet.getCell("E8").value = "Debit Amount";
+            worksheet.getCell("F8").value = "Credit Amount";
             for (const rowNo of [8, 9]) {
                 const row = worksheet.getRow(rowNo);
                 row.height = 20;
-                for (let col = 1; col <= 8; col++) {
+                for (let col = 1; col <= 6; col++) {
                     const cell = row.getCell(col);
                     cell.font = { name: "Arial", bold: true, size: 10 };
                     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
@@ -1622,24 +1632,23 @@ export class ExcelService {
                     row.values = [
                         entryIndex === 0 ? new Date(entry.date) : null,
                         entry.ledgerAccount || entry.particulars || "",
-                        "", "",
                         entryIndex === 0 ? entry.voucherType || "" : "",
                         entryIndex === 0 ? entry.voucherNo || "" : "",
                         Number(entry.debit || 0) || null,
                         Number(entry.credit || 0) || null
                     ];
-                    for (let col = 1; col <= 8; col++) {
+                    for (let col = 1; col <= 6; col++) {
                         const cell = row.getCell(col);
                         cell.font = { name: "Arial", size: 10 };
                         cell.alignment = {
-                            horizontal: col >= 7 ? "right" : col === 1 || col === 5 || col === 6 ? "center" : "left",
+                        horizontal: col >= 5 ? "right" : col === 1 || col === 3 || col === 4 ? "center" : "left",
                             vertical: "middle",
                             wrapText: true
                         };
                     }
                     row.getCell(1).numFmt = "dd-MMM-yy";
-                    row.getCell(7).numFmt = moneyFormat;
-                    row.getCell(8).numFmt = moneyFormat;
+                    row.getCell(5).numFmt = moneyFormat;
+                    row.getCell(6).numFmt = moneyFormat;
                 });
             }
 
