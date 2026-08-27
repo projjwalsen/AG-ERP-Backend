@@ -12,6 +12,7 @@
     "seed:scrap": "tsx src/scripts/seed-scrap-drums-sale-stock.ts",
     "seed:fix-journal-head-debit": "tsx src/scripts/fix-journal-head-to-debit.ts",
     "seed:insurance-journal-heads": "tsx src/scripts/seed-insurance-journal-heads.ts",
+    "seed:land-journal-heads": "tsx src/scripts/seed-land-journal-heads.ts",
     "seed:trial-balance-journal-heads": "tsx src/scripts/seed-trial-balance-journal-heads.ts",
     "superuser:seed": "tsx src/modules/rbac/superuser.seeder.ts",
     "delb": "tsx src/scripts/delete-branch.ts",
