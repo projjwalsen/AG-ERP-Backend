@@ -44,11 +44,12 @@ export class ImportResolver {
             .trim()
             .toUpperCase();
 
-        if (/\bAMC\s+CHARGES?\b/.test(particulars)) return "AMC CHARGES";
-        if (/\b(?:FD|FIXED\s+DEPOSIT)\b/.test(particulars)) return "FIXED DEPOSIT";
-        if (/\bLOAN\s*(?:IN|RECEIVED|RECEIPT)\b/.test(particulars)) return "LOAN IN";
-
-        return particulars || "JOURNAL";
+        // Imported journal heads must represent the actual account in
+        // Particulars. Voucher type is only a fallback for malformed rows.
+        return particulars || String(dto.voucherType || "JOURNAL")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
     }
 
     static importJournalAmount(dto: JournalImportDTO) {
@@ -2699,9 +2700,13 @@ export class ImportResolver {
     ) {
 
         const voucherType = this.importJournalHeadName(dto);
+        const sourceVoucherType = String(dto.voucherType || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
         const normalizedParticulars = String(dto.particulars || "").toUpperCase();
-        const isLoanIn = voucherType === "LOAN IN";
-        const isHiringCharge = voucherType === "HIRING CHARGES";
+        const isLoanIn = sourceVoucherType === "LOAN IN";
+        const isHiringCharge = sourceVoucherType === "HIRING CHARGES";
         const type = dto.debitAmount > dto.creditAmount
             ? "OUTWARD"
             : "INWARD";
@@ -2722,18 +2727,11 @@ export class ImportResolver {
          * Keep the explicit semantic mappings above as the priority for
          * narrations such as AMC, FD, Loan In, and Hiring Charges.
          */
-        const hasExplicitSemanticMapping = [
-            "AMC CHARGES",
-            "FIXED DEPOSIT",
-            "LOAN IN",
-            "HIRING CHARGES"
-        ].includes(voucherType);
-
         const particularsForMatch = String(dto.particulars || "")
             .replace(/\s+/g, " ")
             .trim();
 
-        if (!hasExplicitSemanticMapping && particularsForMatch) {
+        if (particularsForMatch) {
             const agencyNames = Array.from(new Set([
                 particularsForMatch,
                 particularsForMatch.replace(/\s*[-\u2013\u2014]?\s*\(?[DC]R\)?\s*$/i, "").trim()
@@ -2789,7 +2787,7 @@ export class ImportResolver {
                         ledgerId: agencyLedger.id,
                         type: agencyHeadType,
                         name: {
-                            equals: agency.name,
+                            equals: particularsForMatch,
                             mode: "insensitive"
                         }
                     }
@@ -2798,7 +2796,7 @@ export class ImportResolver {
                 if (!agencyHead) {
                     agencyHead = await prisma.journalHead.create({
                         data: {
-                            name: agency.name,
+                            name: particularsForMatch,
                             type: agencyHeadType,
                             ledgerId: agencyLedger.id
                         },
@@ -2811,7 +2809,7 @@ export class ImportResolver {
             }
         }
 
-        if (!hasExplicitSemanticMapping && particularsForMatch) {
+        if (particularsForMatch) {
             const particularsHead = await prisma.journalHead.findFirst({
                 where: {
                     name: {
@@ -2849,7 +2847,7 @@ export class ImportResolver {
             const groupCode =
                 isLoanIn
                     ? "LOANS"
-                    : /FIXED\s+DEPOSIT/.test(voucherType)
+                    : /FIXED\s+DEPOSIT/.test(sourceVoucherType)
                         ? "BANK_ACCOUNTS"
                         : isHiringCharge
                             ? "INDIRECT_INCOME"
@@ -2893,6 +2891,15 @@ export class ImportResolver {
 
         if (this.isCancelledTransactionImportRow(dto)) {
             return this.createCancelledSaleTransaction(actor, dto);
+        }
+
+        // Transaction imports do not create a Journal record, but their
+        // particulars still represent a journal head (normally the agency
+        // ledger). Ensure that head exists before creating the transaction so
+        // a transaction import does not depend on a separately imported
+        // journal file.
+        if (["TAX INVOICE", "PURCHASE", "RCM PURCHASE"].includes(voucherType || "")) {
+            await this.resolveOrCreateJournalHead(actor, dto);
         }
 
         if (this.isHiringChargeImportRow(dto)) {

@@ -490,3 +490,20 @@ export const rejectJournal = async (
     }
 
 };
+
+export const deleteJournal = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { journalId } = (req as any).params;
+        await JournalService.deleteJournal(journalId);
+        return res.status(200).json({
+            success: true,
+            message: "Journal deleted successfully."
+        });
+    } catch (error) {
+        next(error);
+    }
+};
