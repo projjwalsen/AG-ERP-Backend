@@ -17,6 +17,7 @@ import { prisma } from "../config/db";
  *   npx tsx src/scripts/fix-journal-head-to-debit.ts <journal-head-id>
  */
 
+
 const DEFAULT_JOURNAL_HEAD_ID = "6dd9ceb3-4974-44a1-bdc8-19152c9e5a00";
 const journalHeadId = process.argv[2] || DEFAULT_JOURNAL_HEAD_ID;
 
