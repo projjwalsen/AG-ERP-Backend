@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { ReportingService } from "./reporting.service";
 import { ExcelService } from "../../core/utils/export.service";
-import { gstr1Columns, gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
+import { gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
 import { formatISTDateOnly } from "../../core/utils/loc.utils";
 
 
@@ -209,18 +209,13 @@ export const getGSTR1Report = async (
 
         if (isExport) {
 
-            return ExcelService.export(
+            return ExcelService.exportGSTR1Summary(
                 res,
+                report,
                 {
                     filename: "gstr1-report",
-
-                    title: "GSTR-1 Report",
-
-                    sheetName: "GSTR1",
-
-                    columns: gstr1Columns,
-
-                    data: report.rows
+                    sheetName: "GSTR-1",
+                    title: "GSTR-1 - Summary"
                 }
             );
         }
