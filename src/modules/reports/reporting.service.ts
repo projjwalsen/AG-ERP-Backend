@@ -370,6 +370,13 @@ export class ReportingService {
          * ============================================================
          */
 
+        type LedgerGroupReportRow = {
+            id: string;
+            code: string;
+            name: string;
+            parentId: string | null;
+        };
+
         const [ledgers, ledgerGroups] = await Promise.all([
             prisma.ledger.findMany({
                 where:
@@ -408,7 +415,7 @@ export class ReportingService {
                 },
                 orderBy: { name: "asc" }
             })
-        ]);
+        ]) as [any[], LedgerGroupReportRow[]];
 
         const aggregateWindows = async (window: "period" | "prior") => {
             const byCutoff = new Map<string, {
@@ -2316,6 +2323,7 @@ export class ReportingService {
                 branchName: string | null;
                 balanceType?: "RECEIVABLE" | "PAYABLE";
                 createdAt?: Date | null;
+                agingDays?: number;
 
                 totalOutstanding: number;
 
@@ -2825,6 +2833,16 @@ export class ReportingService {
 
             row.vendorCode =
                 `V${String(index + 1).padStart(3, "0")}`;
+
+            // The account-level aging shown in the UI is based on its oldest
+            // outstanding invoice/balance date. Expose the same value for the
+            // summary Excel export.
+            row.agingDays = row.createdAt
+                ? Math.floor(
+                    (today.getTime() - row.createdAt.getTime()) /
+                    86400000
+                )
+                : 0;
 
             row.balanceType =
                 query.type === "RECEIVABLE"
