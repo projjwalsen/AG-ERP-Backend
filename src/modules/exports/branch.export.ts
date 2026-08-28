@@ -359,13 +359,9 @@ export const outstandingColumns = [
     },
 
     {
-        header: "Created At",
-        value: row =>
-            row.createdAt
-                ? new Date(row.createdAt)
-                    .toLocaleDateString("en-IN")
-                : "",
-        width: 18
+        header: "Aging Days",
+        key: "agingDays",
+        width: 15
     }
 ];
 
