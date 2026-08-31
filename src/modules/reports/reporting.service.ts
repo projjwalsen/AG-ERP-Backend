@@ -1,4 +1,4 @@
-import { DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection } from "@prisma/client";
+import { DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
@@ -82,7 +82,9 @@ export class ReportingService {
         const cashEntryWhere: Prisma.LedgerEntryWhereInput = {
             AND: [
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
-                { ledgerId: { in: cashLedgerIds } }
+                { ledgerId: { in: cashLedgerIds } },
+                // In the application, Tally's "Cash Payment" is stored as PAYMENT.
+                { voucher: { voucherType: VoucherType.CASH_PAYMENT } }
             ]
         };
         const periodCashEntryWhere: Prisma.LedgerEntryWhereInput = {
@@ -483,6 +485,21 @@ export class ReportingService {
                                 {
                                     ledgerId: { in: ledgerIds },
                                     voucher: { voucherDate }
+                                },
+                                {
+                                    OR: [
+                                        // Non-cash ledgers retain all voucher types.
+                                        {
+                                            ledger: {
+                                                category: { not: LedgerType.CASH }
+                                            }
+                                        },
+                                        // Cash in Hand is driven only by Cash Payment vouchers.
+                                        {
+                                            ledger: { category: LedgerType.CASH },
+                                            voucher: { voucherType: VoucherType.CASH_PAYMENT }
+                                        }
+                                    ]
                                 }
                             ]
                         },

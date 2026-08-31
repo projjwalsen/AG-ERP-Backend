@@ -1093,7 +1093,12 @@ export class JournalService {
                     {
 
                         voucherType:
-                            VoucherType.JOURNAL,
+                            journal.journalHead.type === JournalHeadType.OUTWARD &&
+                                journal.paymentThrough === PaymentType.CASH
+                                ? VoucherType.CASH_PAYMENT
+                                : journal.journalHead.type === JournalHeadType.OUTWARD
+                                    ? VoucherType.BANK_PAYMENT
+                                    : VoucherType.JOURNAL,
 
                         sourceId:
                             journal.id,
