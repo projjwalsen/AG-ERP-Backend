@@ -2492,7 +2492,9 @@ export class LedgerService {
                                                     }
                     
                                                     if (
-                                                        row.voucherType === VoucherType.PAYMENT
+                                                        row.voucherType === VoucherType.PAYMENT ||
+                                                        row.voucherType === VoucherType.CASH_PAYMENT ||
+                                                        row.voucherType === VoucherType.BANK_PAYMENT
                                                     ) {
                     
                                                         particular =
@@ -3549,6 +3551,8 @@ export class LedgerService {
                     .filter(
                         x =>
                             x.voucher.voucherType === VoucherType.PAYMENT ||
+                            x.voucher.voucherType === VoucherType.CASH_PAYMENT ||
+                            x.voucher.voucherType === VoucherType.BANK_PAYMENT ||
                             x.voucher.voucherType === VoucherType.RECEIPT ||
                             x.voucher.voucherType === VoucherType.CONTRA
                     )
@@ -4933,7 +4937,11 @@ export class LedgerService {
             const suspenseLedger = await this.getSuspenseLedger(tx, transaction.branchId);
 
             return this.createVoucher({
-                voucherType: transaction.direction === TransactionDirection.INWARD ? VoucherType.RECEIPT : VoucherType.PAYMENT,
+                voucherType: transaction.direction === TransactionDirection.INWARD
+                    ? VoucherType.RECEIPT
+                    : transaction.paymentThrough === PaymentType.CASH
+                        ? VoucherType.CASH_PAYMENT
+                        : VoucherType.BANK_PAYMENT,
                 sourceId: transaction.id,
                 branchId: transaction.branchId,
                 voucherDate: transaction.updatedAt || new Date(),
@@ -5012,7 +5020,9 @@ export class LedgerService {
         const vendorLedger = await this.getOrCreateVendorLedger(tx, transaction.branchId, transaction.agencyId);
 
         return this.createVoucher({
-            voucherType: VoucherType.PAYMENT,
+            voucherType: transaction.paymentThrough === PaymentType.CASH
+                ? VoucherType.CASH_PAYMENT
+                : VoucherType.BANK_PAYMENT,
             sourceId: transaction.id,
             branchId: transaction.branchId,
             voucherDate: transaction.updatedAt || new Date(),
