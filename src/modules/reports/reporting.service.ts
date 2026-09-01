@@ -20,6 +20,9 @@ const CASH_VOUCHER_TYPES = [
     (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT",
     VoucherType.OPENING_BALANCE
 ] as VoucherType[];
+const CASH_TRANSACTION_VOUCHER_TYPES = CASH_VOUCHER_TYPES.filter(
+    type => type !== VoucherType.OPENING_BALANCE
+);
 
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
@@ -505,7 +508,7 @@ export class ReportingService {
                                         // Cash in Hand is driven by Cash Receipt/Payment and Opening Balance vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
-                                            voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
+                                            voucher: { voucherType: { in: CASH_TRANSACTION_VOUCHER_TYPES } }
                                         }
                                     ]
                                 }
