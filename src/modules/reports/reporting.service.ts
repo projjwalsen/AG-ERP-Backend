@@ -443,6 +443,7 @@ export class ReportingService {
             for (const ledger of ledgers) {
                 const mayUseOpening =
                     (!branchId || ledger.branchId === branchId) &&
+                    ledger.category !== LedgerType.BANK &&
                     openingAppliesAt(ledger.openingBalanceDate, endDate);
                 const openingDate = mayUseOpening
                     ? ledger.openingBalanceDate || undefined
@@ -558,6 +559,7 @@ export class ReportingService {
                     ...(branchEntryFilter ? [branchEntryFilter] : []),
                     {
                         ledgerId: { in: ledgers.map(ledger => ledger.id) },
+                        ledger: { category: { not: LedgerType.BANK } },
                         voucher: {
                             voucherType: VoucherType.OPENING_BALANCE,
                             voucherDate: { lte: endDate }
