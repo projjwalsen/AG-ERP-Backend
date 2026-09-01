@@ -53,6 +53,26 @@ export class ImportResolver {
     }
 
     static importJournalAmount(dto: JournalImportDTO) {
+        const voucherType = String(dto.voucherType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+
+        // Payment vouchers credit the payment ledger, so use the imported
+        // credit column as the voucher amount. Receipt vouchers use debit.
+        if (["CASH PAYMENT", "BANK PAYMENT"].includes(voucherType)) {
+            return dto.creditAmount > 0
+                ? dto.creditAmount
+                : dto.debitAmount;
+        }
+
+        if (["CASH RECEIPT", "BANK RECEIPT"].includes(voucherType)) {
+            return dto.debitAmount > 0
+                ? dto.debitAmount
+                : dto.creditAmount;
+        }
+
         return dto.debitAmount > 0
             ? dto.debitAmount
             : dto.creditAmount;

@@ -92,7 +92,8 @@ async function main() {
                     voucher: { include: { entries: true } }
                 }
             });
-            const amount = Math.abs(Number(row.debitAmount || row.creditAmount || 0));
+            // CASH PAYMENT credits cash; use the imported credit column.
+            const amount = Math.abs(Number(row.creditAmount || row.debitAmount || 0));
             const identityMatches = candidates.filter(candidate =>
                 Math.abs(Number(candidate.amount || 0) - amount) <= 0.01 &&
                 normalize(candidate.remarks) === normalize(row.particulars)
