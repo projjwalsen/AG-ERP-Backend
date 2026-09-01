@@ -83,8 +83,8 @@ export class ReportingService {
             AND: [
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
                 { ledgerId: { in: cashLedgerIds } },
-                // Cash-In-Hand includes only explicitly classified cash payments.
-                { voucher: { voucherType: VoucherType.CASH_PAYMENT } }
+                // Cash-In-Hand includes only explicitly classified cash receipts/payments.
+                { voucher: { voucherType: { in: [VoucherType.CASH_PAYMENT, VoucherType.CASH_RECEIPT] } } }
             ]
         };
         const periodCashEntryWhere: Prisma.LedgerEntryWhereInput = {
@@ -494,10 +494,10 @@ export class ReportingService {
                                                 category: { not: LedgerType.CASH }
                                             }
                                         },
-                                        // Cash in Hand is driven only by Cash Payment vouchers.
+                                        // Cash in Hand is driven only by Cash Receipt/Payment vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
-                                            voucher: { voucherType: VoucherType.CASH_PAYMENT }
+                                            voucher: { voucherType: { in: [VoucherType.CASH_PAYMENT, VoucherType.CASH_RECEIPT] } }
                                         }
                                     ]
                                 }

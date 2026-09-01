@@ -127,7 +127,11 @@ export class LedgerService {
             SALE: "SALE",
             PURCHASE: "PUR",
             RECEIPT: "RCPT",
+            CASH_RECEIPT: "CRCT",
             PAYMENT: "PAY",
+            CASH_PAYMENT: "CP",
+            BANK_PAYMENT: "BP",
+            BANK_RECEIPT: "BRCT",
             JOURNAL: "JRN",
             CONTRA: "CTR",
             DEBIT_NOTE: "DBN",
@@ -2481,7 +2485,9 @@ export class LedgerService {
                                                     }
                     
                                                     if (
-                                                        row.voucherType === VoucherType.RECEIPT
+                                                        row.voucherType === VoucherType.RECEIPT ||
+                                                        row.voucherType === VoucherType.CASH_RECEIPT ||
+                                                        row.voucherType === VoucherType.BANK_RECEIPT
                                                     ) {
                     
                                                         particular =
@@ -3554,6 +3560,8 @@ export class LedgerService {
                             x.voucher.voucherType === VoucherType.CASH_PAYMENT ||
                             x.voucher.voucherType === VoucherType.BANK_PAYMENT ||
                             x.voucher.voucherType === VoucherType.RECEIPT ||
+                            x.voucher.voucherType === VoucherType.CASH_RECEIPT ||
+                            x.voucher.voucherType === VoucherType.BANK_RECEIPT ||
                             x.voucher.voucherType === VoucherType.CONTRA
                     )
                     .map(x => x.voucher.sourceId)

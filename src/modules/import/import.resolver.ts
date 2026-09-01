@@ -2635,14 +2635,15 @@ export class ImportResolver {
 
         const importedVoucherType = String(dto.voucherType || "")
             .replace(/\s+/g, " ")
+            .replace(/_/g, " ")
             .trim()
             .toUpperCase();
 
         // The voucher type is authoritative for imported cash/bank payments.
         // The row text remains a fallback for legacy journal imports.
-        paymentThrough = importedVoucherType === "CASH PAYMENT"
+        paymentThrough = ["CASH PAYMENT", "CASH RECEIPT"].includes(importedVoucherType)
             ? PaymentType.CASH
-            : importedVoucherType === "BANK PAYMENT"
+            : ["BANK PAYMENT", "BANK RECEIPT"].includes(importedVoucherType)
                 ? PaymentType.BANK_DEPOSIT
                 : this.paymentThroughFromRow(
                     dto.particulars,
@@ -2713,15 +2714,19 @@ export class ImportResolver {
         const voucherType = this.importJournalHeadName(dto);
         const sourceVoucherType = String(dto.voucherType || "")
             .replace(/\s+/g, " ")
+            .replace(/_/g, " ")
             .trim()
             .toUpperCase();
         const normalizedParticulars = String(dto.particulars || "").toUpperCase();
         const isLoanIn = sourceVoucherType === "LOAN IN";
         const isHiringCharge = sourceVoucherType === "HIRING CHARGES";
-        const isCashOrBankPayment =
-            ["CASH PAYMENT", "BANK PAYMENT"].includes(sourceVoucherType);
-        const type = isCashOrBankPayment
-            ? "OUTWARD"
+        const isCashOrBankVoucher =
+            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT"].includes(sourceVoucherType);
+        const isReceipt = ["CASH RECEIPT", "BANK RECEIPT"].includes(sourceVoucherType);
+        const type = isReceipt
+            ? "INWARD"
+            : isCashOrBankVoucher
+                ? "OUTWARD"
             : dto.debitAmount > dto.creditAmount
                 ? "OUTWARD"
                 : "INWARD";

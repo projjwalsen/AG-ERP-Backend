@@ -98,7 +98,8 @@ export class JournalImportService {
                 const voucherType =
                     (dto.voucherType ?? "")
                         .trim()
-                        .toUpperCase();
+                        .toUpperCase()
+                        .replace(/_/g, " ");
 
                 const isCancelled =
                     ImportResolver.isCancelledTransactionImportRow(dto);
@@ -109,8 +110,8 @@ export class JournalImportService {
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
 
-                const isCashBankPayment =
-                    ["CASH PAYMENT", "BANK PAYMENT"].includes(voucherType);
+                const isExplicitJournalVoucher =
+                    ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
 
                 const isTransaction =
                     isInvoiceTransaction || isCancelled;
@@ -121,7 +122,7 @@ export class JournalImportService {
                         return !isTransaction;
 
                     case "TRANSACTION":
-                        return isTransaction || isDebitCreditNote || isCashBankPayment;
+                        return isTransaction || isDebitCreditNote || isExplicitJournalVoucher;
 
                     case "BOTH":
                         return true;
@@ -160,7 +161,8 @@ export class JournalImportService {
                        const voucherType =
                             (dto.voucherType ?? "")
                                 .trim()
-                                .toUpperCase();
+                                .toUpperCase()
+                                .replace(/_/g, " ");
 
                         const isCancelled =
                             ImportResolver.isCancelledTransactionImportRow(dto);
@@ -169,8 +171,8 @@ export class JournalImportService {
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
 
-                        const isCashBankPayment =
-                            ["CASH PAYMENT", "BANK PAYMENT"].includes(voucherType);
+                        const isExplicitJournalVoucher =
+                            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
 
                         // -----------------------------
                         // Journal Import
@@ -179,7 +181,7 @@ export class JournalImportService {
                             (
                                 type === "JOURNAL" ||
                                 type === "BOTH" ||
-                            (type === "TRANSACTION" && (isDebitCreditNote || isCashBankPayment))
+                            (type === "TRANSACTION" && (isDebitCreditNote || isExplicitJournalVoucher))
                             ) &&
                             !isInvoiceTransaction &&
                             !isCancelled

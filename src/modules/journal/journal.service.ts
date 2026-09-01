@@ -1088,17 +1088,36 @@ export class JournalService {
              * Create Voucher
              */
 
+            const importedVoucherType = String(journal.importKey || "")
+                .replace(/\s+/g, " ")
+                .replace(/_/g, " ")
+                .trim()
+                .toUpperCase();
+            const explicitImportedVoucherType =
+                importedVoucherType.startsWith("OPENING BALANCE ")
+                    ? VoucherType.OPENING_BALANCE
+                    : importedVoucherType.startsWith("CASH RECEIPT ")
+                    ? VoucherType.CASH_RECEIPT
+                    : importedVoucherType.startsWith("BANK RECEIPT ")
+                        ? VoucherType.BANK_RECEIPT
+                        : importedVoucherType.startsWith("CASH PAYMENT ")
+                            ? VoucherType.CASH_PAYMENT
+                            : importedVoucherType.startsWith("BANK PAYMENT ")
+                                ? VoucherType.BANK_PAYMENT
+                                : null;
+
             const voucher =
                 await LedgerService.createVoucher(
                     {
 
-                        voucherType:
+                        voucherType: explicitImportedVoucherType ?? (
                             journal.journalHead.type === JournalHeadType.OUTWARD &&
                                 journal.paymentThrough === PaymentType.CASH
                                 ? VoucherType.CASH_PAYMENT
                                 : journal.journalHead.type === JournalHeadType.OUTWARD
                                     ? VoucherType.BANK_PAYMENT
-                                    : VoucherType.JOURNAL,
+                                    : VoucherType.JOURNAL
+                        ),
 
                         sourceId:
                             journal.id,
