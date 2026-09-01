@@ -1908,7 +1908,12 @@ export class ExcelImportService {
                         ) || ""
                     ).trim();
 
-                if (!voucherNo && voucherType !== "OPENING BALANCE")
+                const isBankVoucher = ["BANK RECEIPT", "BANK PAYMENT"].includes(voucherType);
+
+                // Keep malformed bank rows in the import pipeline so the
+                // caller can report the missing voucher number instead of
+                // silently dropping them.
+                if (!voucherNo && voucherType !== "OPENING BALANCE" && !isBankVoucher)
                     return null;
 
                 const invoiceNo =
