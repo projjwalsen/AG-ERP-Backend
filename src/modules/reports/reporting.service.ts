@@ -832,11 +832,19 @@ export class ReportingService {
             rows.reduce(
                 (total, row) => {
 
+                    // Total Debit/Credit represent transaction turnover.
+                    // Closing balances are reported separately below.
                     total.totalDebit +=
-                        row.debit;
+                        row.periodDebit;
 
                     total.totalCredit +=
-                        row.credit;
+                        row.periodCredit;
+
+                    total.totalClosingDebit +=
+                        row.closingDebit;
+
+                    total.totalClosingCredit +=
+                        row.closingCredit;
 
                     total.totalPeriodDebit +=
                         row.periodDebit;
@@ -877,10 +885,10 @@ export class ReportingService {
             );
 
         summary.totalClosingDebit =
-            summary.totalDebit;
+            Number(summary.totalClosingDebit.toFixed(2));
 
         summary.totalClosingCredit =
-            summary.totalCredit;
+            Number(summary.totalClosingCredit.toFixed(2));
 
         const periodDifference =
             Number(
@@ -893,8 +901,8 @@ export class ReportingService {
         const closingDifference =
             Number(
                 (
-                    summary.totalDebit -
-                    summary.totalCredit
+                    summary.totalClosingDebit -
+                    summary.totalClosingCredit
                 ).toFixed(2)
             );
 
