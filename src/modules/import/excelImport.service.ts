@@ -1886,7 +1886,12 @@ export class ExcelImportService {
                             "Vch Type",
                             "Voucher Type"
                         ) || ""
-                    ).trim();
+                    )
+                        .trim()
+                        .toUpperCase()
+                        .replace(/_/g, " ")
+                        .replace(/\bRECIEPT\b/g, "RECEIPT")
+                        .replace(/\s+/g, " ");
 
                 if (/\bSTOCK\s+JOURNAL\b/i.test(voucherType)) {
                     return null;
@@ -1903,7 +1908,7 @@ export class ExcelImportService {
                         ) || ""
                     ).trim();
 
-                if (!voucherNo)
+                if (!voucherNo && voucherType !== "OPENING BALANCE")
                     return null;
 
                 const invoiceNo =
