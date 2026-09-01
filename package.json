@@ -19,7 +19,8 @@
     "accounting:sync": "tsx src/scripts/backfill-ledger.ts",
     "repair:cash-payment-vouchers": "tsx src/scripts/repair-cash-payment-vouchers.ts",
     "repair:cash-opening-balance": "tsx src/scripts/repair-cash-opening-balance.ts"
-    ,"remove:duplicate-bank-vouchers": "tsx src/scripts/remove-duplicate-bank-vouchers.ts"
+    ,"remove:duplicate-bank-vouchers": "tsx src/scripts/remove-duplicate-bank-vouchers.ts",
+    "repair:bank-receipt-entries": "tsx src/scripts/repair-bank-receipt-entries.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",
