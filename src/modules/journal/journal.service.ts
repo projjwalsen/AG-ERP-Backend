@@ -186,7 +186,20 @@ export class JournalService {
 
         if (exists) return exists;
 
-        const ledger =
+        // Journal-head creation may be retried during imports. Reuse the
+        // existing Journal ledger instead of asking createLedgerMaster to
+        // create the same generated ledger code again.
+        const existingLedger = await prisma.ledger.findFirst({
+            where: {
+                category: LedgerType.JOURNAL,
+                name: {
+                    equals: dto.name.trim(),
+                    mode: "insensitive"
+                }
+            }
+        });
+
+        const ledger = existingLedger ||
             await LedgerService.createLedgerMaster(actor, {
 
                 name: dto.name.trim(),
