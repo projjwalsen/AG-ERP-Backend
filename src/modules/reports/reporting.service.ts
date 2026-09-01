@@ -24,10 +24,8 @@ const CASH_TRANSACTION_VOUCHER_TYPES = CASH_VOUCHER_TYPES.filter(
 );
 
 
-const BANK_VOUCHER_TYPES = [
-    VoucherType.BANK_PAYMENT,
-    (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT"
-] as VoucherType[];
+const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
+const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
 
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
@@ -516,10 +514,18 @@ export class ReportingService {
                                             ledger: { category: LedgerType.CASH },
                                             voucher: { voucherType: { in: CASH_TRANSACTION_VOUCHER_TYPES } }
                                         },
-                                        // Bank Account is driven only by bank receipts/payments.
+                                        // Bank debit turnover comes only from
+                                        // BANK_RECEIPT; bank credit turnover
+                                        // comes only from BANK_PAYMENT.
                                         {
                                             ledger: { category: LedgerType.BANK },
-                                            voucher: { voucherType: { in: BANK_VOUCHER_TYPES } }
+                                            entryType: EntryType.DEBIT,
+                                            voucher: { voucherType: BANK_RECEIPT_TYPE }
+                                        },
+                                        {
+                                            ledger: { category: LedgerType.BANK },
+                                            entryType: EntryType.CREDIT,
+                                            voucher: { voucherType: BANK_PAYMENT_TYPE }
                                         }
                                     ]
                                 }
