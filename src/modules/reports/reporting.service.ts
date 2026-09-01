@@ -21,6 +21,12 @@ const CASH_VOUCHER_TYPES = [
     VoucherType.OPENING_BALANCE
 ] as VoucherType[];
 
+const BANK_VOUCHER_TYPES = [
+    VoucherType.BANK_PAYMENT,
+    (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT",
+    VoucherType.OPENING_BALANCE
+] as VoucherType[];
+
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
         const debitNotes = (sale.debitCreditNotes || [])
@@ -496,16 +502,22 @@ export class ReportingService {
                                 },
                                 {
                                     OR: [
-                                        // Non-cash ledgers retain all voucher types.
+                                        // Non-cash/non-bank ledgers retain all voucher types.
                                         {
                                             ledger: {
-                                                category: { not: LedgerType.CASH }
+                                                category: { notIn: [LedgerType.CASH, LedgerType.BANK] }
                                             }
                                         },
                                         // Cash in Hand is driven by Cash Receipt/Payment and Opening Balance vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
                                             voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
+                                        },
+                                        // Bank Account is driven only by bank
+                                        // receipts/payments and opening balance.
+                                        {
+                                            ledger: { category: LedgerType.BANK },
+                                            voucher: { voucherType: { in: BANK_VOUCHER_TYPES } }
                                         }
                                     ]
                                 }
