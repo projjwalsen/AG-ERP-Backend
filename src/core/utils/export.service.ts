@@ -1648,9 +1648,9 @@ export class ExcelService {
         res: Response,
         report: any
     ) {
-        // Tally-style Day Book: one voucher header line followed by its
-        // balancing ledger lines.  The previous export was an analytical
-        // workbook; this mirrors the compact Day Book layout users reconcile.
+            // Tally-style Day Book: one importable row per voucher. Bank and
+            // cash vouchers deliberately expose only their movement side;
+            // the importer recreates the balancing ledger entry.
         {
             const workbook = new ExcelJS.Workbook();
             workbook.creator = "AG ERP";
@@ -1730,24 +1730,16 @@ export class ExcelService {
                 }
             }
 
-            const voucherRows = new Map<string, any[]>();
-            for (const entry of report.doubleEntryRows || []) {
-                const key = `${entry.date}|${entry.voucherNo}|${entry.voucherType}`;
-                const rows = voucherRows.get(key) || [];
-                rows.push(entry);
-                voucherRows.set(key, rows);
-            }
-
+            const voucherRows = report.voucherSummaryRows || [];
             let rowNo = 10;
-            for (const entries of voucherRows.values()) {
-                entries.forEach((entry, entryIndex) => {
+            for (const entry of voucherRows) {
                     const row = worksheet.getRow(rowNo++);
                     row.height = 19;
                     row.values = [
-                        entryIndex === 0 ? new Date(entry.date) : null,
-                        entry.ledgerAccount || entry.particulars || "",
-                        entryIndex === 0 ? entry.voucherType || "" : "",
-                        entryIndex === 0 ? entry.voucherNo || "" : "",
+                        entry.date ? new Date(entry.date) : null,
+                        entry.partyLedger || entry.narration || "",
+                        entry.voucherType || "",
+                        entry.voucherNo || "",
                         Number(entry.debit || 0) || null,
                         Number(entry.credit || 0) || null
                     ];
@@ -1763,7 +1755,6 @@ export class ExcelService {
                     row.getCell(1).numFmt = "dd-MMM-yy";
                     row.getCell(5).numFmt = moneyFormat;
                     row.getCell(6).numFmt = moneyFormat;
-                });
             }
 
             res.status(200);

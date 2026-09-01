@@ -1369,11 +1369,27 @@ export class ReportingService {
                     Number(voucher.totalCredit || 0)
                 );
 
-            switch (String(voucher.voucherType)) {
+            const voucherType = String(voucher.voucherType)
+                .replace(/_/g, " ")
+                .trim()
+                .toUpperCase();
+
+            // Day-book exports are the import contract: receipts expose only
+            // debit and payments expose only credit. Stored vouchers remain
+            // balanced double-entry records.
+            switch (voucherType) {
+                case "CASH RECEIPT":
+                case "BANK RECEIPT":
+                case "RECEIPT":
+                    return { debit: amount, credit: 0 };
+
+                case "CASH PAYMENT":
+                case "BANK PAYMENT":
+                case "PAYMENT":
+                    return { debit: 0, credit: amount };
 
                 case "PURCHASE":
                 case "RCM_PURCHASE":
-                case "RECEIPT":
                 case "CREDIT_NOTE":
                 case "OPENING_BALANCE":
                     return {
@@ -1382,7 +1398,6 @@ export class ReportingService {
                     };
 
                 case "SALE":
-                case "PAYMENT":
                 case "DEBIT_NOTE":
                     return {
                         debit: 0,
@@ -1550,7 +1565,7 @@ export class ReportingService {
 
         let runningBalance = 0;
 
-        const entries =
+        const transactionEntries =
             transactions.map((txn, index) => {
 
                 const credit =
@@ -1658,7 +1673,59 @@ export class ReportingService {
 
                         date: transactionDate
                 };
+            });
+
+        // Journal-register imports create approved journals/vouchers directly
+        // and therefore have no Transaction row. Add their bank/cash ledger
+        // movements to the same day-book stream so imported entries affect
+        // the bank calculation exactly as transaction imports do.
+        const journalEntries = vouchers
+            .filter(voucher => !transactionSourceMap.has(voucher.sourceId))
+            .flatMap(voucher => {
+                const sourceJournal = journalSourceMap.get(voucher.sourceId);
+                return voucher.entries
+                    .filter(entry =>
+                        [LedgerType.BANK, LedgerType.CASH].includes(entry.ledger.category)
+                    )
+                    .map(entry => ({
+                        serialNo: 0,
+                        voucherId: voucher.voucherNo,
+                        transactionId: null,
+                        transactionDate: voucher.voucherDate,
+                        primaryAgencyName: null,
+                        secondaryAgencyName: null,
+                        paymentMode: getPaymentMode(undefined, sourceJournal),
+                        paymentType: null,
+                        transactionRef: null,
+                        inRoutedVia: false,
+                        debit: entry.entryType === EntryType.DEBIT ? Number(entry.amount) : 0,
+                        credit: entry.entryType === EntryType.CREDIT ? Number(entry.amount) : 0,
+                        runningBalance: 0,
+                        remarks: voucher.narration || sourceJournal?.remarks || "",
+                        bankAccount: null,
+                        allocations: [],
+                        particulars: getVoucherParty(voucher, undefined, sourceJournal),
+                        voucherType: voucher.voucherType,
+                        voucherNo: voucher.voucherNo,
+                        debitAmount: entry.entryType === EntryType.DEBIT ? Number(entry.amount) : 0,
+                        creditAmount: entry.entryType === EntryType.CREDIT ? Number(entry.amount) : 0,
+                        date: voucher.voucherDate
+                    }));
+            });
+
+        // Rebuild the running balance after both sources have been combined;
+        // transactionEntries already contain a transaction-only running
+        // balance from the legacy path.
+        runningBalance = 0;
+        const entries = [...transactionEntries, ...journalEntries]
+            .sort((a, b) => {
+                const dateDifference = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
+                return dateDifference || String(a.voucherNo).localeCompare(String(b.voucherNo));
             })
+            .map((entry, index) => {
+                runningBalance += entry.credit - entry.debit;
+                return { ...entry, serialNo: index + 1, runningBalance };
+            });
 
         const totalReceipts =
             entries.reduce(
