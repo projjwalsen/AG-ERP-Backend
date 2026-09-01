@@ -1,13 +1,15 @@
 import { EntryType, LedgerType, VoucherType } from "@prisma/client";
 import { prisma } from "../config/db";
 
-/** Moves the imported OP/1 opening balance from Bank Accounts to Cash-in-Hand. */
+/** Moves the imported opening balance from Bank Accounts to Cash-in-Hand. */
 async function main() {
-    const opening = await prisma.voucher.findFirst({
-        where: { voucherType: VoucherType.OPENING_BALANCE, voucherNo: "OP/1" },
+    const openings = await prisma.voucher.findMany({
+        where: { voucherType: VoucherType.OPENING_BALANCE },
         include: { entries: true }
     });
-    if (!opening) throw new Error("Opening balance voucher OP/1 was not found");
+    if (openings.length === 0) throw new Error("No opening balance voucher was found");
+    if (openings.length > 1) throw new Error(`Found ${openings.length} opening balance vouchers; repair requires one targeted voucher`);
+    const opening = openings[0];
 
     const cash = await prisma.ledger.findFirst({
         where: { category: LedgerType.CASH, isActive: true },
