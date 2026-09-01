@@ -145,7 +145,7 @@ async function createOrApproveSales(productId: string) {
                         voucherType: VoucherType.JOURNAL,
                         sourceId: repairSourceId,
                         branchId: existing.branchId,
-                        voucherDate: record.invoiceDate,
+                        voucherDate: new Date(record.invoiceDate),
                         narration: `TCS reclassification for ${record.invoiceNo}`,
                         entries: [
                             {
