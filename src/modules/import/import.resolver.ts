@@ -2633,10 +2633,21 @@ export class ImportResolver {
         let paymentMode: PaymentMode;
         let paymentThrough: PaymentType | undefined;
 
-        paymentThrough = this.paymentThroughFromRow(
-            dto.particulars,
-            dto.raw
-        );
+        const importedVoucherType = String(dto.voucherType || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+
+        // The voucher type is authoritative for imported cash/bank payments.
+        // The row text remains a fallback for legacy journal imports.
+        paymentThrough = importedVoucherType === "CASH PAYMENT"
+            ? PaymentType.CASH
+            : importedVoucherType === "BANK PAYMENT"
+                ? PaymentType.BANK_DEPOSIT
+                : this.paymentThroughFromRow(
+                    dto.particulars,
+                    dto.raw
+                );
         paymentMode = paymentThrough === PaymentType.CASH
             ? PaymentMode.OFFLINE
             : PaymentMode.ONLINE;
@@ -2707,9 +2718,13 @@ export class ImportResolver {
         const normalizedParticulars = String(dto.particulars || "").toUpperCase();
         const isLoanIn = sourceVoucherType === "LOAN IN";
         const isHiringCharge = sourceVoucherType === "HIRING CHARGES";
-        const type = dto.debitAmount > dto.creditAmount
+        const isCashOrBankPayment =
+            ["CASH PAYMENT", "BANK PAYMENT"].includes(sourceVoucherType);
+        const type = isCashOrBankPayment
             ? "OUTWARD"
-            : "INWARD";
+            : dto.debitAmount > dto.creditAmount
+                ? "OUTWARD"
+                : "INWARD";
 
         const cacheKey =
             `${voucherType}:${dto.debitAmount > dto.creditAmount ? "DEBIT" : "CREDIT"}`;
