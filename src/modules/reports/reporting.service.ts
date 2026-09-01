@@ -26,6 +26,9 @@ const BANK_VOUCHER_TYPES = [
     (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT",
     VoucherType.OPENING_BALANCE
 ] as VoucherType[];
+const CASH_TRANSACTION_VOUCHER_TYPES = CASH_VOUCHER_TYPES.filter(
+    type => type !== VoucherType.OPENING_BALANCE
+);
 
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
@@ -511,7 +514,7 @@ export class ReportingService {
                                         // Cash in Hand is driven by Cash Receipt/Payment and Opening Balance vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
-                                            voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
+                                            voucher: { voucherType: { in: CASH_TRANSACTION_VOUCHER_TYPES } }
                                         },
                                         // Bank Account is driven only by bank
                                         // receipts/payments and opening balance.
@@ -539,6 +542,27 @@ export class ReportingService {
         ]);
         const periodMap = sumTrialBalanceEntryGroups(periodGroups);
         const priorMap = sumTrialBalanceEntryGroups(priorGroups);
+
+        // Imported opening-balance vouchers are not stored on the ledger's
+        // openingBalance fields. Read them separately so they can be shown
+        // as an opening row and included in the closing balance calculation.
+        const openingGroups = await prisma.ledgerEntry.groupBy({
+            by: ["ledgerId", "entryType"],
+            where: {
+                AND: [
+                    ...(branchEntryFilter ? [branchEntryFilter] : []),
+                    {
+                        ledgerId: { in: ledgers.map(ledger => ledger.id) },
+                        voucher: {
+                            voucherType: VoucherType.OPENING_BALANCE,
+                            voucherDate: { lte: endDate }
+                        }
+                    }
+                ]
+            },
+            _sum: { amount: true }
+        });
+        const openingMap = sumTrialBalanceEntryGroups(openingGroups);
 
         /**
          * ============================================================
@@ -588,8 +612,20 @@ export class ReportingService {
                         credit: 0
                     };
 
+                const importedOpening = openingMap.get(ledger.id) || {
+                    debit: 0,
+                    credit: 0
+                };
+                const ledgerWithImportedOpening = {
+                    ...ledger,
+                    openingDebit: Number(ledger.openingDebit || 0) + importedOpening.debit,
+                    openingCredit: Number(ledger.openingCredit || 0) + importedOpening.credit,
+                    openingBalance: Number(ledger.openingBalance || 0) +
+                        importedOpening.debit - importedOpening.credit
+                };
+
                 const amounts = calculateTrialBalanceAmounts(
-                    ledger,
+                    ledgerWithImportedOpening,
                     prior,
                     period,
                     shouldUseLedgerOpening
@@ -844,11 +880,19 @@ export class ReportingService {
             rows.reduce(
                 (total, row) => {
 
+                    // Total Debit/Credit represent transaction turnover.
+                    // Closing balances are reported separately below.
                     total.totalDebit +=
-                        row.debit;
+                        row.periodDebit;
 
                     total.totalCredit +=
-                        row.credit;
+                        row.periodCredit;
+
+                    total.totalClosingDebit +=
+                        row.closingDebit;
+
+                    total.totalClosingCredit +=
+                        row.closingCredit;
 
                     total.totalPeriodDebit +=
                         row.periodDebit;
@@ -889,10 +933,10 @@ export class ReportingService {
             );
 
         summary.totalClosingDebit =
-            summary.totalDebit;
+            Number(summary.totalClosingDebit.toFixed(2));
 
         summary.totalClosingCredit =
-            summary.totalCredit;
+            Number(summary.totalClosingCredit.toFixed(2));
 
         const periodDifference =
             Number(
@@ -905,8 +949,8 @@ export class ReportingService {
         const closingDifference =
             Number(
                 (
-                    summary.totalDebit -
-                    summary.totalCredit
+                    summary.totalClosingDebit -
+                    summary.totalClosingCredit
                 ).toFixed(2)
             );
 
