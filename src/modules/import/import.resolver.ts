@@ -2827,9 +2827,15 @@ export class ImportResolver {
                     ? await LedgerService.getOrCreateVendorLedger(prisma, branch.id, agency.id)
                     : await LedgerService.getOrCreateCustomerLedger(prisma, branch.id, agency.id);
 
-                const agencyHeadType = dto.debitAmount > dto.creditAmount
-                    ? "OUTWARD" as const
-                    : "INWARD" as const;
+                // Explicit cash/bank voucher types determine the journal
+                // direction. A BANK_PAYMENT must use an OUTWARD head so
+                // approveJournal places the Bank ledger on CREDIT; a
+                // BANK_RECEIPT must use an INWARD head so Bank is DEBIT.
+                const agencyHeadType = isCashOrBankVoucher
+                    ? (isReceipt ? "INWARD" : "OUTWARD") as const
+                    : dto.debitAmount > dto.creditAmount
+                        ? "OUTWARD" as const
+                        : "INWARD" as const;
                 const agencyCacheKey = `AGENCY:${agency.id}:${agencyLedger.id}:${agencyHeadType}`;
                 const cachedAgencyHead = this.journalHeadCache.get(agencyCacheKey);
 
@@ -2878,9 +2884,48 @@ export class ImportResolver {
             const isPaymentLedgerHead = particularsHead &&
                 ([LedgerType.CASH, LedgerType.BANK] as LedgerType[]).includes(particularsHead.ledger.category);
 
-            if (particularsHead && (!isCashOrBankVoucher || !isPaymentLedgerHead)) {
+            if (
+                particularsHead &&
+                (!isCashOrBankVoucher ||
+                    (!isPaymentLedgerHead && particularsHead.type === type))
+            ) {
                 this.journalHeadCache.set(cacheKey, particularsHead);
                 return particularsHead;
+            }
+
+            // Do not reuse an opposite-direction head for an explicit
+            // payment/receipt. The approval logic uses the head direction
+            // to decide which side receives the Bank/Cash ledger.
+            if (isCashOrBankVoucher && !isPaymentLedgerHead) {
+                const correctlyDirectedHead = await prisma.journalHead.findFirst({
+                    where: {
+                        name: {
+                            equals: particularsForMatch,
+                            mode: "insensitive"
+                        },
+                        type
+                    },
+                    include: { ledger: true }
+                });
+
+                if (correctlyDirectedHead) {
+                    this.journalHeadCache.set(cacheKey, correctlyDirectedHead);
+                    return correctlyDirectedHead;
+                }
+
+                const createdDirectedHead = await JournalService.createJournalHead(
+                    actor,
+                    {
+                        name: particularsForMatch,
+                        type,
+                        groupCode: dto.debitAmount > 0
+                            ? "INDIRECT_EXPENSE"
+                            : "INDIRECT_INCOME"
+                    }
+                );
+
+                this.journalHeadCache.set(cacheKey, createdDirectedHead);
+                return createdDirectedHead;
             }
         }
 
@@ -2931,6 +2976,7 @@ export class ImportResolver {
                     }
                 );
 
+                
         }
 
         this.journalHeadCache.set(
