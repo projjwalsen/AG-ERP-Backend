@@ -62,15 +62,23 @@ export class ImportResolver {
         // Payment vouchers credit the payment ledger, so use the imported
         // credit column as the voucher amount. Receipt vouchers use debit.
         if (["CASH PAYMENT", "BANK PAYMENT"].includes(voucherType)) {
-            return dto.creditAmount > 0
-                ? dto.creditAmount
-                : dto.debitAmount;
+            if (dto.creditAmount <= 0 || dto.debitAmount > 0) {
+                throw new ApiError(
+                    `${voucherType} must have only a positive Credit amount`,
+                    400
+                );
+            }
+            return dto.creditAmount;
         }
 
         if (["CASH RECEIPT", "BANK RECEIPT"].includes(voucherType)) {
-            return dto.debitAmount > 0
-                ? dto.debitAmount
-                : dto.creditAmount;
+            if (dto.debitAmount <= 0 || dto.creditAmount > 0) {
+                throw new ApiError(
+                    `${voucherType} must have only a positive Debit amount`,
+                    400
+                );
+            }
+            return dto.debitAmount;
         }
 
         return dto.debitAmount > 0
@@ -2658,6 +2666,13 @@ export class ImportResolver {
             .replace(/_/g, " ")
             .trim()
             .toUpperCase();
+
+        if (["BANK PAYMENT", "BANK RECEIPT"].includes(importedVoucherType) && !String(dto.voucherNo || "").trim()) {
+            throw new ApiError(
+                `${importedVoucherType} requires a Voucher No`,
+                400
+            );
+        }
 
         // The voucher type is authoritative for imported cash/bank payments.
         // The row text remains a fallback for legacy journal imports.
