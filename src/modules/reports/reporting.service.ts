@@ -17,7 +17,8 @@ import {
 // filter valid during a rolling schema/client update.
 const CASH_VOUCHER_TYPES = [
     VoucherType.CASH_PAYMENT,
-    (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT"
+    (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT",
+    VoucherType.OPENING_BALANCE
 ] as VoucherType[];
 
 export class ReportingService {
@@ -90,7 +91,7 @@ export class ReportingService {
             AND: [
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
                 { ledgerId: { in: cashLedgerIds } },
-                // Cash-In-Hand includes only explicitly classified cash receipts/payments.
+                // Cash-In-Hand includes cash receipts/payments and opening-balance vouchers.
                 { voucher: { voucherType: { in: CASH_VOUCHER_TYPES } } }
             ]
         };
@@ -501,7 +502,7 @@ export class ReportingService {
                                                 category: { not: LedgerType.CASH }
                                             }
                                         },
-                                        // Cash in Hand is driven only by Cash Receipt/Payment vouchers.
+                                        // Cash in Hand is driven by Cash Receipt/Payment and Opening Balance vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
                                             voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
