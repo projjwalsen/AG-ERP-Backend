@@ -11,9 +11,8 @@ import { ExcelImportService } from "../modules/import/excelImport.service";
  *   npx tsx src/scripts/repair-cash-payment-vouchers.ts <workbook.xlsx> --dry-run
  *   npx tsx src/scripts/repair-cash-payment-vouchers.ts <workbook.xlsx>
  *
- * The script updates Voucher.voucherType and corrects the payment-side
- * LedgerEntry debit/credit side from the Excel Debit/Credit column. It does
- * not inspect payment mode or paymentThrough, and preserves all amounts.
+ * The script updates Voucher.voucherType and corrects both ledger-entry
+ * sides and amounts from the Excel Debit/Credit columns.
  * It is idempotent: already-repaired vouchers are skipped.
  */
 
@@ -77,7 +76,7 @@ async function main() {
     }
 
     const result = await prisma.$transaction(async tx => {
-        const updates: Array<{ voucherId: string; voucherNo: string; importKey: string; paymentEntryId: string; paymentEntryType: EntryType; headEntryId: string; headEntryType: EntryType }> = [];
+        const updates: Array<{ voucherId: string; journalId: string; voucherNo: string; importKey: string; amount: number; paymentEntryId: string; paymentEntryType: EntryType; headEntryId: string; headEntryType: EntryType }> = [];
         const skipped = { alreadyCashPayment: 0 };
         const failures: string[] = [];
 
@@ -95,14 +94,17 @@ async function main() {
             // CASH PAYMENT credits cash; use the imported credit column.
             const amount = Math.abs(Number(row.creditAmount || row.debitAmount || 0));
             const identityMatches = candidates.filter(candidate =>
-                Math.abs(Number(candidate.amount || 0) - amount) <= 0.01 &&
                 normalize(candidate.remarks) === normalize(row.particulars)
+            );
+            const amountMatches = identityMatches.filter(candidate =>
+                Math.abs(Number(candidate.amount || 0) - amount) <= 0.01
             );
             // Prefer the date-qualified match. If the workbook has no usable
             // date, or the date is not present in the imported journal, use
             // the other identifying fields. Only a unique fallback is safe.
             const dateMatches = row.date
-                ? identityMatches.filter(candidate => sameDay(candidate.journalDate, row.date))
+                ? (amountMatches.length ? amountMatches : identityMatches)
+                    .filter(candidate => sameDay(candidate.journalDate, row.date))
                 : [];
             const matches = dateMatches.length === 1
                 ? dateMatches
@@ -165,8 +167,10 @@ async function main() {
             }
             updates.push({
                 voucherId: journal.voucher.id,
+                journalId: journal.id,
                 voucherNo: journal.voucher.voucherNo,
                 importKey,
+                amount,
                 paymentEntryId: paymentEntries[0].id,
                 paymentEntryType: desiredPaymentEntryType,
                 headEntryId: headEntry.id,
@@ -182,11 +186,15 @@ async function main() {
             for (const update of updates) {
                 await tx.ledgerEntry.update({
                     where: { id: update.paymentEntryId },
-                    data: { entryType: update.paymentEntryType }
+                    data: { entryType: update.paymentEntryType, amount: update.amount }
                 });
                 await tx.ledgerEntry.update({
                     where: { id: update.headEntryId },
-                    data: { entryType: update.headEntryType }
+                    data: { entryType: update.headEntryType, amount: update.amount }
+                });
+                await tx.journal.update({
+                    where: { id: update.journalId },
+                    data: { amount: update.amount }
                 });
                 await tx.voucher.update({
                     where: { id: update.voucherId },
