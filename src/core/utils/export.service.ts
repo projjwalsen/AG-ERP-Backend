@@ -3390,6 +3390,8 @@ export class ExcelService {
                 credit: number;
                 periodDebit: number;
                 periodCredit: number;
+                openingDebit?: number;
+                openingCredit?: number;
                 closingSigned: number;
                 closingBalance?: number;
                 closingBalanceType?: "Dr" | "Cr" | null;
@@ -3798,6 +3800,21 @@ export class ExcelService {
                 );
 
             for (const item of group.items) {
+                const openingDebit = Number(item.openingDebit || 0);
+                const openingCredit = Number(item.openingCredit || 0);
+                if (openingDebit !== 0 || openingCredit !== 0) {
+                    const openingRow = worksheet.addRow([
+                        `${item.account} - Opening Balance`,
+                        openingDebit || null,
+                        openingCredit || null,
+                        null
+                    ]);
+                    openingRow.font = { italic: true };
+                    openingRow.getCell(2).numFmt = '#,##0.00';
+                    openingRow.getCell(3).numFmt = '#,##0.00';
+                    openingRow.getCell(4).numFmt = '#,##0.00 "Dr";#,##0.00 "Cr";-';
+                }
+
                 const row = worksheet.addRow([
                     item.account,
                     item.periodDebit !== 0
