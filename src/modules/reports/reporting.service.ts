@@ -539,6 +539,7 @@ export class ReportingService {
                 }
             }
 
+            
             return groups;
         };
 
