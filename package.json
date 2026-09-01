@@ -17,7 +17,8 @@
     "superuser:seed": "tsx src/modules/rbac/superuser.seeder.ts",
     "delb": "tsx src/scripts/delete-branch.ts",
     "accounting:sync": "tsx src/scripts/backfill-ledger.ts",
-    "repair:cash-payment-vouchers": "tsx src/scripts/repair-cash-payment-vouchers.ts"
+    "repair:cash-payment-vouchers": "tsx src/scripts/repair-cash-payment-vouchers.ts",
+    "repair:cash-opening-balance": "tsx src/scripts/repair-cash-opening-balance.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",
