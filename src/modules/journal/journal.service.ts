@@ -173,19 +173,18 @@ export class JournalService {
 
                         mode: "insensitive"
 
-                    }
+                    },
+
+                    // Reuse only a head with the same direction. This keeps
+                    // BANK_PAYMENT on the OUTWARD path (Bank CREDIT) and
+                    // BANK_RECEIPT on the INWARD path (Bank DEBIT).
+                    type: dto.type
 
                 }
 
             });
 
-        if (exists) {
-
-            throw new Error(
-                "Journal Head already exists."
-            );
-
-        }
+        if (exists) return exists;
 
         const ledger =
             await LedgerService.createLedgerMaster(actor, {
