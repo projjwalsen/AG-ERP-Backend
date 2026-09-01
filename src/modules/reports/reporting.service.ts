@@ -83,7 +83,7 @@ export class ReportingService {
             AND: [
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
                 { ledgerId: { in: cashLedgerIds } },
-                // In the application, Tally's "Cash Payment" is stored as PAYMENT.
+                // Cash-In-Hand includes only explicitly classified cash payments.
                 { voucher: { voucherType: VoucherType.CASH_PAYMENT } }
             ]
         };

@@ -109,6 +109,9 @@ export class JournalImportService {
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
 
+                const isCashBankPayment =
+                    ["CASH PAYMENT", "BANK PAYMENT"].includes(voucherType);
+
                 const isTransaction =
                     isInvoiceTransaction || isCancelled;
 
@@ -118,7 +121,7 @@ export class JournalImportService {
                         return !isTransaction;
 
                     case "TRANSACTION":
-                        return isTransaction || isDebitCreditNote;
+                        return isTransaction || isDebitCreditNote || isCashBankPayment;
 
                     case "BOTH":
                         return true;
@@ -166,6 +169,9 @@ export class JournalImportService {
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
 
+                        const isCashBankPayment =
+                            ["CASH PAYMENT", "BANK PAYMENT"].includes(voucherType);
+
                         // -----------------------------
                         // Journal Import
                         // -----------------------------
@@ -173,7 +179,7 @@ export class JournalImportService {
                             (
                                 type === "JOURNAL" ||
                                 type === "BOTH" ||
-                                (type === "TRANSACTION" && isDebitCreditNote)
+                            (type === "TRANSACTION" && (isDebitCreditNote || isCashBankPayment))
                             ) &&
                             !isInvoiceTransaction &&
                             !isCancelled
