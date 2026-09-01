@@ -22,6 +22,7 @@
     ,"remove:duplicate-bank-vouchers": "tsx src/scripts/remove-duplicate-bank-vouchers.ts",
     "repair:bank-receipt-entries": "tsx src/scripts/repair-bank-receipt-entries.ts"
     ,"diagnose:bank-receipt-mismatch": "tsx src/scripts/diagnose-bank-receipt-mismatch.ts"
+    ,"recover:missing-bank-receipts": "tsx src/scripts/recover-missing-bank-receipts.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",
