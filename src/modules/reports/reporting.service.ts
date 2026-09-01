@@ -20,6 +20,12 @@ const CASH_VOUCHER_TYPES = [
     (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT",
     VoucherType.OPENING_BALANCE
 ] as VoucherType[];
+
+const BANK_VOUCHER_TYPES = [
+    VoucherType.BANK_PAYMENT,
+    (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT",
+    VoucherType.OPENING_BALANCE
+] as VoucherType[];
 const CASH_TRANSACTION_VOUCHER_TYPES = CASH_VOUCHER_TYPES.filter(
     type => type !== VoucherType.OPENING_BALANCE
 );
@@ -499,16 +505,22 @@ export class ReportingService {
                                 },
                                 {
                                     OR: [
-                                        // Non-cash ledgers retain all voucher types.
+                                        // Non-cash/non-bank ledgers retain all voucher types.
                                         {
                                             ledger: {
-                                                category: { not: LedgerType.CASH }
+                                                category: { notIn: [LedgerType.CASH, LedgerType.BANK] }
                                             }
                                         },
                                         // Cash in Hand is driven by Cash Receipt/Payment and Opening Balance vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
                                             voucher: { voucherType: { in: CASH_TRANSACTION_VOUCHER_TYPES } }
+                                        },
+                                        // Bank Account is driven only by bank
+                                        // receipts/payments and opening balance.
+                                        {
+                                            ledger: { category: LedgerType.BANK },
+                                            voucher: { voucherType: { in: BANK_VOUCHER_TYPES } }
                                         }
                                     ]
                                 }
