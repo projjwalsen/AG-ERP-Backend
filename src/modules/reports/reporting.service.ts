@@ -13,6 +13,13 @@ import {
     sumTrialBalanceEntryGroups
 } from "./trial-balance.utils";
 
+// Older generated Prisma clients do not expose CASH_RECEIPT yet. Keep this
+// filter valid during a rolling schema/client update.
+const CASH_VOUCHER_TYPES = [
+    VoucherType.CASH_PAYMENT,
+    (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT"
+] as VoucherType[];
+
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
         const debitNotes = (sale.debitCreditNotes || [])
@@ -84,7 +91,7 @@ export class ReportingService {
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
                 { ledgerId: { in: cashLedgerIds } },
                 // Cash-In-Hand includes only explicitly classified cash receipts/payments.
-                { voucher: { voucherType: { in: [VoucherType.CASH_PAYMENT, VoucherType.CASH_RECEIPT] } } }
+                { voucher: { voucherType: { in: CASH_VOUCHER_TYPES } } }
             ]
         };
         const periodCashEntryWhere: Prisma.LedgerEntryWhereInput = {
@@ -497,7 +504,7 @@ export class ReportingService {
                                         // Cash in Hand is driven only by Cash Receipt/Payment vouchers.
                                         {
                                             ledger: { category: LedgerType.CASH },
-                                            voucher: { voucherType: { in: [VoucherType.CASH_PAYMENT, VoucherType.CASH_RECEIPT] } }
+                                            voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
                                         }
                                     ]
                                 }
