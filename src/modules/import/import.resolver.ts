@@ -2856,10 +2856,14 @@ export class ImportResolver {
                         equals: particularsForMatch,
                         mode: "insensitive"
                     }
-                }
+                },
+                include: { ledger: true }
             });
 
-            if (particularsHead) {
+            const isPaymentLedgerHead = particularsHead &&
+                ([LedgerType.CASH, LedgerType.BANK] as LedgerType[]).includes(particularsHead.ledger.category);
+
+            if (particularsHead && (!isCashOrBankVoucher || !isPaymentLedgerHead)) {
                 this.journalHeadCache.set(cacheKey, particularsHead);
                 return particularsHead;
             }
@@ -2878,11 +2882,15 @@ export class ImportResolver {
 
                     }
 
-                }
+                },
+                include: { ledger: true }
 
             });
 
-        if (!journalHead) {
+        const fallbackIsPaymentLedger = journalHead &&
+            ([LedgerType.CASH, LedgerType.BANK] as LedgerType[]).includes(journalHead.ledger.category);
+
+        if (!journalHead || (isCashOrBankVoucher && fallbackIsPaymentLedger)) {
 
             const groupCode =
                 isLoanIn
