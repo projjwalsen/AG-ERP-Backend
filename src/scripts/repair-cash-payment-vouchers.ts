@@ -33,13 +33,13 @@ const findHeaderRow = (worksheet: any) => {
         ? require("xlsx").utils.sheet_to_json(worksheet, { header: 1, defval: "" })
         : [];
     const index = rawRows.findIndex((row: any[]) => {
-        const headers = row.map(value => normalize(value));
+        const headers = row.map(value => normalize(value).replace(/[^A-Z0-9]/g, ""));
         return headers.includes("DATE") &&
             headers.includes("PARTICULARS") &&
-            headers.some(value => value === "VCH TYPE" || value === "VOUCHER TYPE") &&
-            headers.some(value => value === "VCH NO" || value === "VOUCHER NO") &&
-            headers.some(value => value === "DEBIT" || value === "DEBIT AMOUNT") &&
-            headers.some(value => value === "CREDIT" || value === "CREDIT AMOUNT");
+            headers.some(value => ["VCHTYPE", "VOUCHERTYPE"].includes(value)) &&
+            headers.some(value => ["VCHNO", "VOUCHERNO"].includes(value)) &&
+            headers.some(value => ["DEBIT", "DEBITAMOUNT"].includes(value)) &&
+            headers.some(value => ["CREDIT", "CREDITAMOUNT"].includes(value));
     });
     if (index < 0) throw new Error("Could not detect the journal header row");
     return index + 1;

@@ -16,7 +16,8 @@
     "seed:trial-balance-journal-heads": "tsx src/scripts/seed-trial-balance-journal-heads.ts",
     "superuser:seed": "tsx src/modules/rbac/superuser.seeder.ts",
     "delb": "tsx src/scripts/delete-branch.ts",
-    "accounting:sync": "tsx src/scripts/backfill-ledger.ts"
+    "accounting:sync": "tsx src/scripts/backfill-ledger.ts",
+    "repair:cash-payment-vouchers": "tsx src/scripts/repair-cash-payment-vouchers.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",
