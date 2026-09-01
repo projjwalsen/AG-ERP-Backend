@@ -528,6 +528,27 @@ export class ReportingService {
         const periodMap = sumTrialBalanceEntryGroups(periodGroups);
         const priorMap = sumTrialBalanceEntryGroups(priorGroups);
 
+        // Imported opening-balance vouchers are not stored on the ledger's
+        // openingBalance fields. Read them separately so they can be shown
+        // as an opening row and included in the closing balance calculation.
+        const openingGroups = await prisma.ledgerEntry.groupBy({
+            by: ["ledgerId", "entryType"],
+            where: {
+                AND: [
+                    ...(branchEntryFilter ? [branchEntryFilter] : []),
+                    {
+                        ledgerId: { in: ledgers.map(ledger => ledger.id) },
+                        voucher: {
+                            voucherType: VoucherType.OPENING_BALANCE,
+                            voucherDate: { lte: endDate }
+                        }
+                    }
+                ]
+            },
+            _sum: { amount: true }
+        });
+        const openingMap = sumTrialBalanceEntryGroups(openingGroups);
+
         /**
          * ============================================================
          * 8. BUILD ACCOUNT-WISE TRIAL BALANCE
@@ -576,8 +597,20 @@ export class ReportingService {
                         credit: 0
                     };
 
+                const importedOpening = openingMap.get(ledger.id) || {
+                    debit: 0,
+                    credit: 0
+                };
+                const ledgerWithImportedOpening = {
+                    ...ledger,
+                    openingDebit: Number(ledger.openingDebit || 0) + importedOpening.debit,
+                    openingCredit: Number(ledger.openingCredit || 0) + importedOpening.credit,
+                    openingBalance: Number(ledger.openingBalance || 0) +
+                        importedOpening.debit - importedOpening.credit
+                };
+
                 const amounts = calculateTrialBalanceAmounts(
-                    ledger,
+                    ledgerWithImportedOpening,
                     prior,
                     period,
                     shouldUseLedgerOpening
