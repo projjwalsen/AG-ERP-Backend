@@ -21,13 +21,21 @@ async function main() {
     const repairs: Array<{ journalId: string; entryId: string; amount: number; ledgerId?: string }> = [];
     for (const row of receipts) {
         const amount = num(row.debitAmount);
-        const matches = journals.filter(j => j.voucher?.voucherType === VoucherType.BANK_RECEIPT && norm(j.voucher.voucherNo) === norm(row.voucherNo) && norm(j.voucher.narration) === norm(row.particulars) && sameDay(j.voucher.voucherDate, new Date(row.date)) && Math.abs(Number(j.amount) - amount) < 0.01);
+        const identityMatches = journals.filter(j => j.voucher &&
+            norm(j.voucher.voucherNo) === norm(row.voucherNo) &&
+            sameDay(j.voucher.voucherDate, new Date(row.date)) &&
+            Math.abs(Number(j.amount) - amount) < 0.01
+        );
+        const particularMatches = identityMatches.filter(j =>
+            norm(j.voucher?.narration) === norm(row.particulars)
+        );
+        const matches = particularMatches.length ? particularMatches : identityMatches;
         if (matches.length !== 1 || !matches[0].voucher) continue;
         const j = matches[0];
         const entry = j.voucher.entries.find(e => bankIds.has(e.ledgerId)) || j.voucher.entries.find(e => e.ledgerId !== j.journalHead.ledgerId);
         if (entry) repairs.push({ journalId: j.id, entryId: entry.id, amount, ledgerId: bankIds.has(entry.ledgerId) ? undefined : banks[0].id });
     }
-    if (execute) await prisma.$transaction(async tx => { for (const r of repairs) { await tx.ledgerEntry.update({ where: { id: r.entryId }, data: { ledgerId: r.ledgerId, entryType: EntryType.DEBIT, amount: r.amount } }); await tx.journal.update({ where: { id: r.journalId }, data: { amount: r.amount } }); } });
+    if (execute) await prisma.$transaction(async tx => { for (const r of repairs) { await tx.ledgerEntry.update({ where: { id: r.entryId }, data: { ledgerId: r.ledgerId, entryType: EntryType.DEBIT, amount: r.amount } }); await tx.journal.update({ where: { id: r.journalId }, data: { amount: r.amount } }); const journal = journals.find(j => j.id === r.journalId); if (journal?.voucher) await tx.voucher.update({ where: { id: journal.voucher.id }, data: { voucherType: VoucherType.BANK_RECEIPT } }); } });
     console.log(JSON.stringify({ workbookRows: receipts.length, matched: repairs.length, repaired: execute ? repairs.length : 0, dryRun: !execute }, null, 2));
 }
 main().catch(e => { console.error(e instanceof Error ? e.message : e); process.exitCode = 1; }).finally(() => prisma.$disconnect());
