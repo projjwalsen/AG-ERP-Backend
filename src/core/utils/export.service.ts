@@ -3853,10 +3853,20 @@ export class ExcelService {
            TOTAL ROW
         ============================================================ */
 
+        // Recalculate turnover from the rows being exported.  The closing
+        // credit total is a net balance and must not be used as turnover.
+        const exportedDebit = options.data.reduce(
+            (sum, item) => sum + Number(item.periodDebit || 0),
+            0
+        );
+        const exportedCredit = options.data.reduce(
+            (sum, item) => sum + Number(item.periodCredit || 0),
+            0
+        );
         const totalRow = worksheet.addRow([
             "Grand Total",
-            options.summary.totalPeriodDebit,
-            options.summary.totalPeriodCredit,
+            Number(exportedDebit.toFixed(2)),
+            Number(exportedCredit.toFixed(2)),
             null
         ]);
 
