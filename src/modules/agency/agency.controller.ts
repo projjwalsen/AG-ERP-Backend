@@ -83,7 +83,7 @@ export const getAllAgencies = async (req: Request, res: Response, next: NextFunc
                                 branch.branch.code,
 
                             openingBalance:
-                                branch.openingBalance,
+                                Number(branch.openingBalance),
 
                             isActive:
                                 agency.isActive
