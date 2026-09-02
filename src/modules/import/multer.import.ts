@@ -48,51 +48,71 @@ function sourceRowValue(
 }
 
 export async function createImportErrorReport(
-    worksheet: XLSX.WorkSheet,
+    worksheet: XLSX.WorkSheet | Array<{
+        worksheet: XLSX.WorkSheet;
+        sheetName?: string;
+        headerRow?: number;
+    }>,
     errors: any[],
     headerRow?: number,
     filePrefix = "import"
 ) {
-    const sourceRows = XLSX.utils.sheet_to_json<Record<string, any>>(
-        worksheet,
-        {
-            range: (headerRow || 3) - 1,
-            defval: "",
-            raw: false
-        }
-    );
-
+    const sources = Array.isArray(worksheet)
+        ? worksheet
+        : [{ worksheet, sheetName: undefined, headerRow }];
     const rowsByVoucher = new Map<string, Record<string, any>[]>();
-    let currentVoucher = "";
 
-    for (const row of sourceRows) {
-        const voucherNo = String(
-            sourceRowValue(row, "Voucher No") || ""
-        ).trim();
+    for (const source of sources) {
+        const sourceRows = XLSX.utils.sheet_to_json<Record<string, any>>(
+            source.worksheet,
+            {
+                range: (source.headerRow || headerRow || 3) - 1,
+                defval: "",
+                raw: false
+            }
+        );
+        let currentVoucher = "";
 
-        if (voucherNo) {
-            currentVoucher = voucherNo;
+        for (const row of sourceRows) {
+            const voucherNo = String(
+                sourceRowValue(row, "Voucher No") ||
+                sourceRowValue(row, "Vch No") ||
+                ""
+            ).trim();
+
+            if (voucherNo) {
+                currentVoucher = voucherNo;
+            }
+
+            if (!currentVoucher) {
+                continue;
+            }
+
+            const key = `${source.sheetName || ""}\u0000${currentVoucher}`;
+            const rows = rowsByVoucher.get(key) || [];
+            rows.push(source.sheetName
+                ? { ...row, "Source Sheet": source.sheetName }
+                : row);
+            rowsByVoucher.set(key, rows);
         }
-
-        if (!currentVoucher) {
-            continue;
-        }
-
-        const rows = rowsByVoucher.get(currentVoucher) || [];
-        rows.push(row);
-        rowsByVoucher.set(currentVoucher, rows);
     }
 
     const selectedRows: Record<string, any>[] = [];
 
     for (const error of errors) {
+        const sourceSheet = String(error.sourceSheet || "");
+        const voucherNo = String(error.voucherNo || "").trim();
         const rows =
-            rowsByVoucher.get(String(error.voucherNo).trim()) || [];
+            rowsByVoucher.get(`${sourceSheet}\u0000${voucherNo}`) ||
+            rowsByVoucher.get(`\u0000${voucherNo}`) ||
+            [];
 
         if (rows.length === 0) {
             selectedRows.push({
                 "Voucher No": error.voucherNo,
                 "Invoice No": error.invoiceNo || "",
+                "Source Sheet": sourceSheet,
+                "Source Row": error.sourceRow || "",
                 "Import Error": error.error || "Unknown import error",
                 "Error Code": error.code || "",
                 "Error Meta": error.meta

@@ -3246,19 +3246,19 @@ export class ImportResolver {
                         actor,
                         payload,
                         {
-                            allowImportOverSettlement: true,
-                            allowImportRejectedInvoice: true
+                            allowImportPartialSettlement: true
                         }
                     );
 
-            await TransactionService.approveTransaction(
-                actor,
-                transaction.id,
-                {
-                    allowImportOverSettlement: true,
-                    allowImportRejectedInvoice: true
-                }
-            );
+            if (transaction.status === TransactionStatus.PENDING) {
+                await TransactionService.approveTransaction(
+                    actor,
+                    transaction.id,
+                    {
+                        allowImportPartialSettlement: true
+                    }
+                );
+            }
 
             return;
         }
@@ -3405,8 +3405,22 @@ export class ImportResolver {
         dto: JournalImportDTO
     ) {
 
+        if (!dto.voucherNo?.trim()) {
+            throw new Error("Sales receipt requires a voucher number");
+        }
+
+        if (!dto.date) {
+            throw new Error(`Sales receipt ${dto.voucherNo} requires a valid date`);
+        }
+
+        const importedParty = normalizeImportedPartyName(dto.particulars);
+        if (!importedParty || importedParty === "BY" || importedParty === "TO") {
+            throw new Error(`Sales receipt ${dto.voucherNo} requires a customer`);
+        }
+
         const sale =
             await this.resolveSaleForJournalTransaction(
+                actor,
                 dto
             );
 
@@ -3419,6 +3433,30 @@ export class ImportResolver {
         }
 
         const bankAccount = await this.resolveImportedBankAccount(sale.branchId);
+        const importedType = normalizeImportedTransactionType(
+            dto.accountingVoucherType
+        );
+        if (!importedType) {
+            throw new Error(`Sale ${dto.voucherNo} requires a valid Type column`);
+        }
+
+        if (dto.debitAmount > 0 || dto.creditAmount <= 0) {
+            throw new Error(
+                `Sales receipt ${dto.voucherNo} must have only a positive Credit amount`
+            );
+        }
+
+        const importKey = buildTransactionImportKey(
+            "SALE_TRANSACTION",
+            sale.branchId,
+            normalizeImportedPartyName(dto.particulars),
+            dto.voucherNo,
+            dto.invoiceNo,
+            dto.otherReferenceNo,
+            dto.date?.toISOString().slice(0, 10) || "",
+            importedType,
+            dto.creditAmount
+        );
 
         return {
 
@@ -3443,13 +3481,14 @@ export class ImportResolver {
                 sale.id,
 
             amount:
-                Number(
-                    sale.grandTotal
-                ),
+                dto.creditAmount,
 
             paymentMode: PaymentMode.ONLINE,
             paymentThrough: PaymentType.CHEQUE,
             referenceNo: `CHQ-${randomUUID().slice(0, 12).toUpperCase()}`,
+            type: importedType,
+            importKey,
+            transactionDate: dto.date || new Date(),
 
             remarks:
                 this.journalTransactionImportRemark(
@@ -3665,6 +3704,7 @@ export class ImportResolver {
     }
 
     private static async resolveSaleForJournalTransaction(
+        actor: any,
         dto: JournalImportDTO
     ) {
 
@@ -3693,19 +3733,87 @@ export class ImportResolver {
                 }
             ]);
 
-        return prisma.sale.findFirst({
-
-            where: {
-
-                status: {
-                    in: [SalesStatus.APPROVED, SalesStatus.REJECTED]
-                },
-
-                OR: matchInvoiceCandidates
-
+        const saleWhere: any = {
+            status: SalesStatus.APPROVED,
+            ...(actor?.branchAccessType !== "ALL" && actor?.branchId
+                ? { branchId: actor.branchId }
+                : {})
+        };
+        const saleInclude = {
+            agency: true,
+            allocations: {
+                select: { allocatedAmount: true }
+            },
+            debitCreditNotes: {
+                where: { status: DebitCreditNoteStatus.APPROVED },
+                select: {
+                    type: true,
+                    totalAmount: true
+                }
             }
+        };
+        const sales = candidates.length > 0
+            ? await prisma.sale.findMany({
+                where: {
+                    ...saleWhere,
+                    OR: matchInvoiceCandidates
+                },
+                include: saleInclude,
+                take: 25
+            })
+            : [];
 
+        const importedParty = normalizeImportedPartyName(dto.particulars);
+        let matches = importedParty
+            ? sales.filter(sale =>
+                normalizeImportedPartyName(sale.agency.name) === importedParty
+            )
+            : sales;
+
+        if (matches.length > 1 && dto.date) {
+            const date = dto.date.toISOString().slice(0, 10);
+            const dated = matches.filter(sale =>
+                sale.invoiceDate.toISOString().slice(0, 10) === date
+            );
+            if (dated.length > 0) matches = dated;
+        }
+
+        if (matches.length > 1) {
+            throw new Error(
+                `Sale match is ambiguous for ${dto.invoiceNo || dto.voucherNo} and ${dto.particulars}`
+            );
+        }
+
+        if (matches.length === 1) return matches[0];
+        if (!importedParty) return null;
+
+        const fifoSales = await prisma.sale.findMany({
+            where: saleWhere,
+            include: saleInclude,
+            orderBy: [
+                { invoiceDate: "asc" },
+                { createdAt: "asc" }
+            ]
         });
+
+        const customerSales = fifoSales.filter(sale =>
+            normalizeImportedPartyName(sale.agency.name) === importedParty
+        );
+
+        return customerSales.find(sale => {
+            const allocated = sale.allocations.reduce(
+                (sum, allocation) => sum + Number(allocation.allocatedAmount),
+                0
+            );
+            const debitNotes = sale.debitCreditNotes
+                .filter(note => note.type === DebitCreditNoteType.DEBIT_NOTE)
+                .reduce((sum, note) => sum + Number(note.totalAmount), 0);
+            const creditNotes = sale.debitCreditNotes
+                .filter(note => note.type === DebitCreditNoteType.CREDIT_NOTE)
+                .reduce((sum, note) => sum + Number(note.totalAmount), 0);
+
+            return Number(sale.grandTotal) + debitNotes - creditNotes - allocated > 0;
+        }) || null;
 
     }
 

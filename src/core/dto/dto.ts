@@ -229,6 +229,10 @@ export interface JournalImportDTO {
 
     importIndex?: number;
 
+    sourceSheet?: string;
+
+    sourceRow?: number;
+
     importKey?: string;
 
     saleId?: string;

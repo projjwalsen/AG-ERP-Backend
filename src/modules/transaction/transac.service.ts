@@ -30,6 +30,7 @@ type TransactionPayload = {
 
 type TransactionOperationOptions = {
     allowImportOverSettlement?: boolean;
+    allowImportPartialSettlement?: boolean;
     allowImportRejectedInvoice?: boolean;
     allowImportedPurchaseNote?: boolean;
 };
@@ -394,6 +395,7 @@ export class TransactionService {
         tx: Prisma.TransactionClient,
         payload: TransactionPayload,
         allowImportOverSettlement = false,
+        allowImportPartialSettlement = false,
         allowImportRejectedInvoice = false
     ) {
         if(payload.thirdPartyAgencyId) {
@@ -466,9 +468,16 @@ export class TransactionService {
                 )
             }
 
+            if (payload.amount > invoice.outstandings) {
+                throw new ApiError(
+                    `Outstanding amount is ${invoice.outstandings}. Settlement amount cannot exceed it.`,
+                    400
+                );
+            }
+
             if (
-                invoice.outstandings !==
-                payload.amount
+                !allowImportPartialSettlement &&
+                invoice.outstandings !== payload.amount
             ) {
                 throw new ApiError(
                     `Outstanding amount is ${invoice.outstandings}. Invoice settlement must be full.`,
@@ -1421,6 +1430,7 @@ export class TransactionService {
                             tx,
                             payload,
                             options.allowImportOverSettlement,
+                            options.allowImportPartialSettlement,
                             options.allowImportRejectedInvoice
                         );
                         break;

@@ -27,22 +27,23 @@ export class JournalImportService {
         const workbook =
             ExcelImportService.readExcel(file.buffer);
 
-        const worksheet =
-            ExcelImportService.getWorkSheet(workbook);
-
-        const rows =
-            ExcelImportService.readRows(
-                worksheet,
-                {
-                    headerRow: 8
-                }
-            );
+        const sources = workbook.SheetNames.map(sheetName => ({
+            sheetName,
+            worksheet: ExcelImportService.getWorkSheet(workbook, sheetName),
+            headerRow: 8
+        }));
 
         const limit = pLimit(1);
 
         
-        const vouchers =
-            ExcelImportService.parseJournalRows(rows);
+        const vouchers = sources.flatMap(source =>
+            ExcelImportService.parseJournalRows(
+                ExcelImportService.readRows(source.worksheet, {
+                    headerRow: source.headerRow
+                }),
+                source.sheetName
+            )
+        );
 
         const types =
             [...new Set(vouchers.map(x => x.voucherType))];
@@ -250,6 +251,12 @@ export class JournalImportService {
                             voucherNo:
                                 dto.voucherNo,
 
+                            sourceSheet:
+                                dto.sourceSheet,
+
+                            sourceRow:
+                                dto.sourceRow,
+
                             invoiceNo:
                                 dto.invoiceNo,
 
@@ -260,7 +267,7 @@ export class JournalImportService {
                                 error.message,
 
                             meta:
-                                dto
+                                dto.raw
 
                         });
 
@@ -292,7 +299,7 @@ export class JournalImportService {
         if (summary.errors.length > 0) {
             summary.errorReport =
                 await createImportErrorReport(
-                    worksheet,
+                    sources,
                     summary.errors,
                     8,
                     `journal-${type.toLowerCase()}`
