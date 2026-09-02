@@ -3020,12 +3020,6 @@ export class ImportResolver {
             throw new Error(`Inward note ${dto.voucherNo} requires a valid Type column`);
         }
 
-        if (!dto.invoiceNo?.trim()) {
-            throw new Error(
-                `Inward note ${dto.voucherNo} requires Purchase Invoice No`
-            );
-        }
-
         const isDebitNote = noteType === DebitCreditNoteType.DEBIT_NOTE;
         if (
             (isDebitNote && (dto.creditAmount <= 0 || dto.debitAmount > 0)) ||
@@ -3038,72 +3032,109 @@ export class ImportResolver {
             );
         }
 
-        const purchase = await this.resolvePurchaseForJournalTransaction(
-            actor,
-            dto,
-            true
-        );
-        if (!purchase) {
-            throw new Error(
-                `Purchase ${dto.invoiceNo} not found for inward note ${dto.voucherNo}`
-            );
-        }
-
         const amount = Number(isDebitNote ? dto.creditAmount : dto.debitAmount);
         if (!Number.isFinite(amount) || amount <= 0) {
             throw new Error(`Inward note ${dto.voucherNo} has no valid amount`);
+        }
+
+        const importDate = dto.date?.toISOString().slice(0, 10) || "";
+        const noteImportKey = buildTransactionImportKey(
+            "PURCHASE_NOTE",
+            normalizeImportedPartyName(dto.particulars),
+            dto.voucherNo,
+            dto.invoiceNo,
+            importDate,
+            noteType,
+            importedType,
+            amount
+        );
+        const transactionImportKey = buildTransactionImportKey(
+            "PURCHASE_NOTE_TRANSACTION",
+            noteImportKey
+        );
+        const noteInclude = {
+            agency: true,
+            purchase: true,
+            transaction: true
+        };
+        let note: any = await prisma.debitCreditNote.findUnique({
+            where: { importKey: noteImportKey },
+            include: noteInclude
+        });
+
+        if (!note) {
+            const rowDate = dto.date?.toISOString().slice(0, 10);
+            const candidates = await prisma.debitCreditNote.findMany({
+                where: {
+                    noteNo: String(dto.voucherNo || "").trim(),
+                    type: noteType,
+                    sourceType: DebitCreditNoteSourceType.PURCHASE
+                },
+                include: noteInclude
+            });
+            const matching = candidates.filter(candidate =>
+                Number(candidate.totalAmount) === amount &&
+                normalizeImportedPartyName(candidate.agency.name) ===
+                    normalizeImportedPartyName(dto.particulars) &&
+                (!rowDate || candidate.noteDate.toISOString().slice(0, 10) === rowDate) &&
+                (!candidate.transaction?.type ||
+                    normalizeImportedTransactionType(candidate.transaction.type) === importedType)
+            );
+
+            if (matching.length > 1) {
+                throw new Error(
+                    `Multiple existing notes match ${dto.voucherNo}; duplicate prevention cannot choose safely`
+                );
+            }
+            note = matching[0];
+        }
+
+        if (note && note.importKey !== noteImportKey) {
+            await prisma.debitCreditNote.update({
+                where: { id: note.id },
+                data: { importKey: noteImportKey }
+            });
+        }
+
+        if (note?.transaction) {
+            let transaction = note.transaction;
+            if (transaction.importKey !== transactionImportKey) {
+                transaction = await prisma.transaction.update({
+                    where: { id: transaction.id },
+                    data: { importKey: transactionImportKey }
+                });
+            }
+            if (transaction.status === TransactionStatus.PENDING) {
+                transaction = await TransactionService.approveTransaction(
+                    actor,
+                    transaction.id,
+                    { allowImportedPurchaseNote: true }
+                ) as any;
+            }
+            return { note, transaction };
+        }
+
+        if (
+            note?.status === DebitCreditNoteStatus.APPROVED &&
+            note.voucherId
+        ) {
+            throw new Error(
+                `Inward note ${dto.voucherNo} already has a legacy voucher; refusing to create duplicate accounting entries`
+            );
+        }
+
+        const purchase = note?.purchase ||
+            await this.resolvePurchaseForJournalTransaction(actor, dto);
+        if (!purchase) {
+            throw new Error(
+                `No approved outstanding Purchase found for ${dto.particulars} (${dto.voucherNo})`
+            );
         }
 
         await LedgerService.assignPurchaseToImportedType(
             purchase.id,
             importedType
         );
-
-        const importDate = dto.date?.toISOString().slice(0, 10) || "";
-        const noteImportKey = buildTransactionImportKey(
-            "PURCHASE_NOTE",
-            purchase.branchId,
-            purchase.agencyId,
-            purchase.id,
-            dto.voucherNo,
-            importDate,
-            noteType,
-            importedType,
-            amount
-        );
-        let note = await prisma.debitCreditNote.findUnique({
-            where: { importKey: noteImportKey }
-        });
-
-        if (!note) {
-            const legacyNote = await prisma.debitCreditNote.findUnique({
-                where: {
-                    branchId_agencyId_noteNo: {
-                        branchId: purchase.branchId,
-                        agencyId: purchase.agencyId,
-                        noteNo: String(dto.voucherNo || "").trim()
-                    }
-                },
-                include: { transaction: true }
-            });
-
-            if (
-                legacyNote?.status === DebitCreditNoteStatus.APPROVED &&
-                legacyNote.voucherId &&
-                !legacyNote.transaction
-            ) {
-                throw new Error(
-                    `Inward note ${dto.voucherNo} was approved before transaction-linked note posting; refusing to duplicate its ledger voucher`
-                );
-            }
-
-            if (legacyNote && !legacyNote.importKey) {
-                note = await prisma.debitCreditNote.update({
-                    where: { id: legacyNote.id },
-                    data: { importKey: noteImportKey }
-                });
-            }
-        }
 
         if (!note) {
             note = await DebitCreditNoteService.createNote(actor, {
@@ -3123,10 +3154,6 @@ export class ImportResolver {
             });
         }
 
-        const transactionImportKey = buildTransactionImportKey(
-            "PURCHASE_NOTE_TRANSACTION",
-            noteImportKey
-        );
         let transaction = await prisma.transaction.findUnique({
             where: { importKey: transactionImportKey }
         });
@@ -3237,6 +3264,30 @@ export class ImportResolver {
         }
 
         if (["PURCHASE", "RCM PURCHASE", "IGST PURCHASE", "GST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(voucherType || "")) {
+            const importedType = normalizeImportedTransactionType(
+                dto.accountingVoucherType
+            );
+            const importKey = buildTransactionImportKey(
+                "PURCHASE_TRANSACTION",
+                normalizeImportedPartyName(dto.particulars),
+                dto.voucherNo,
+                dto.invoiceNo,
+                dto.date?.toISOString().slice(0, 10) || "",
+                importedType,
+                dto.debitAmount,
+                dto.creditAmount
+            );
+            const existing = await prisma.transaction.findUnique({
+                where: { importKey }
+            });
+
+            if (existing) {
+                if (existing.status === TransactionStatus.PENDING) {
+                    await TransactionService.approveTransaction(actor, existing.id);
+                }
+                return;
+            }
+
             const payload =
                 await this.buildPurchaseTransactionPayload(
                     actor,
@@ -3444,10 +3495,9 @@ export class ImportResolver {
         const paymentThrough = PaymentType.CHEQUE;
         const importKey = buildTransactionImportKey(
             "PURCHASE_TRANSACTION",
-            purchase.branchId,
-            purchase.agencyId,
-            purchase.id,
+            normalizeImportedPartyName(dto.particulars),
             dto.voucherNo,
+            dto.invoiceNo,
             dto.date?.toISOString().slice(0, 10) || "",
             importedType,
             dto.debitAmount,
@@ -3655,15 +3705,9 @@ export class ImportResolver {
 
     private static async resolvePurchaseForJournalTransaction(
         actor: any,
-        dto: JournalImportDTO,
-        requireInvoiceNo = false
+        dto: JournalImportDTO
     ) {
-
-        const candidates = requireInvoiceNo
-            ? [String(dto.invoiceNo || "").trim()].filter(Boolean)
-            : this.journalInvoiceCandidates(dto);
-
-        if (candidates.length === 0) return null;
+        const candidates = this.journalInvoiceCandidates(dto);
 
         const matchInvoiceCandidates =
             candidates.flatMap(candidate => [
@@ -3681,34 +3725,34 @@ export class ImportResolver {
                 }
             ]);
 
-        const purchases = await prisma.purchase.findMany({
+        const purchaseWhere = {
+            status: PurchaseStatus.APPROVED,
+            ...(actor?.branchAccessType !== "ALL" && actor?.branchId
+                ? { branchId: actor.branchId }
+                : {})
+        };
+        const purchaseInclude = {
+            agency: true,
+            allocations: {
+                select: { allocatedAmount: true }
+            },
+            debitCreditNotes: {
+                where: { status: DebitCreditNoteStatus.APPROVED },
+                select: { type: true, totalAmount: true }
+            }
+        };
+
+        const purchases = candidates.length > 0
+            ? await prisma.purchase.findMany({
 
             where: {
-
-                status: PurchaseStatus.APPROVED,
-
-                ...(actor?.branchAccessType !== "ALL" && actor?.branchId
-                    ? { branchId: actor.branchId }
-                    : {}),
-
+                ...purchaseWhere,
                 OR: matchInvoiceCandidates
-
             },
-
-            include: {
-                agency: true,
-                allocations: {
-                    select: { allocatedAmount: true }
-                },
-                debitCreditNotes: {
-                    where: { status: DebitCreditNoteStatus.APPROVED },
-                    select: { type: true, totalAmount: true }
-                }
-            },
-
+            include: purchaseInclude,
             take: 25
-
-        });
+        })
+            : [];
 
         const importedParty = normalizeImportedPartyName(dto.particulars);
         let matches = importedParty
@@ -3716,8 +3760,6 @@ export class ImportResolver {
                 normalizeImportedPartyName(purchase.agency.name) === importedParty
             )
             : purchases;
-
-        if (matches.length === 0) return null;
 
         if (matches.length > 1 && dto.date) {
             const date = dto.date.toISOString().slice(0, 10);
@@ -3733,7 +3775,40 @@ export class ImportResolver {
             );
         }
 
-        return matches[0];
+        if (matches.length === 1) return matches[0];
+        if (!importedParty) return null;
+
+        // Vch No. on note rows is the note number, not a Purchase invoice.
+        // Fall back to the same vendor's oldest approved outstanding Purchase.
+        const fifoPurchases = await prisma.purchase.findMany({
+            where: purchaseWhere,
+            include: purchaseInclude,
+            orderBy: [
+                { invoiceDate: "asc" },
+                { createdAt: "asc" }
+            ]
+        });
+
+        return fifoPurchases.find(purchase => {
+            if (
+                normalizeImportedPartyName(purchase.agency.name) !==
+                importedParty
+            ) return false;
+
+            const allocated = purchase.allocations.reduce(
+                (sum, allocation) =>
+                    sum + Number(allocation.allocatedAmount),
+                0
+            );
+            const debitNotes = purchase.debitCreditNotes
+                .filter(note => note.type === DebitCreditNoteType.DEBIT_NOTE)
+                .reduce((sum, note) => sum + Number(note.totalAmount), 0);
+            const creditNotes = purchase.debitCreditNotes
+                .filter(note => note.type === DebitCreditNoteType.CREDIT_NOTE)
+                .reduce((sum, note) => sum + Number(note.totalAmount), 0);
+
+            return Number(purchase.grandTotal) - debitNotes + creditNotes - allocated > 0;
+        }) || null;
 
     }
 }
