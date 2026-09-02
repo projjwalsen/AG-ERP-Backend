@@ -23,9 +23,9 @@ const CASH_TRANSACTION_VOUCHER_TYPES = CASH_VOUCHER_TYPES.filter(
     type => type !== VoucherType.OPENING_BALANCE
 );
 
-
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
+
 
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
@@ -515,9 +515,11 @@ export class ReportingService {
                                             ledger: { category: LedgerType.CASH },
                                             voucher: { voucherType: { in: CASH_TRANSACTION_VOUCHER_TYPES } }
                                         },
-                                        // Bank debit turnover comes only from
-                                        // BANK_RECEIPT; bank credit turnover
-                                        // comes only from BANK_PAYMENT.
+                                        // The generic Bank Account ledger is
+                                        // reserved for explicit bank receipts
+                                        // and bank payments. Legacy imported
+                                        // journal movements are reported under
+                                        // Bank of Maharashtra separately.
                                         {
                                             ledger: { category: LedgerType.BANK },
                                             entryType: EntryType.DEBIT,
@@ -572,6 +574,80 @@ export class ReportingService {
         });
         const openingMap = sumTrialBalanceEntryGroups(openingGroups);
 
+        const bankLedgers = ledgers.filter(
+            ledger => ledger.category === LedgerType.BANK
+        );
+        const bankLedgerIds = bankLedgers.map(ledger => ledger.id);
+
+        const aggregateBankOfMaharashtra = async (
+            window: "period" | "prior" | "opening"
+        ) => {
+            if (bankLedgerIds.length === 0) return [];
+
+            const voucherDate = window === "period"
+                ? { gte: startDate, lte: endDate }
+                : window === "prior"
+                    ? { lt: startDate }
+                    : { lte: endDate };
+
+            return prisma.ledgerEntry.groupBy({
+                by: ["ledgerId", "entryType"],
+                where: {
+                    AND: [
+                        ...(branchEntryFilter ? [branchEntryFilter] : []),
+                        { ledgerId: { in: bankLedgerIds } },
+                        {
+                            voucher: {
+                                voucherDate,
+                                voucherType: window === "opening"
+                                    ? VoucherType.OPENING_BALANCE
+                                    : {
+                                        notIn: [
+                                            BANK_RECEIPT_TYPE,
+                                            BANK_PAYMENT_TYPE,
+                                            VoucherType.OPENING_BALANCE
+                                        ]
+                                    }
+                            }
+                        }
+                    ]
+                },
+                _sum: { amount: true }
+            });
+        };
+
+        const [
+            bankOfMaharashtraPeriodGroups,
+            bankOfMaharashtraPriorGroups,
+            bankOfMaharashtraOpeningGroups
+        ] = await Promise.all([
+            aggregateBankOfMaharashtra("period"),
+            aggregateBankOfMaharashtra("prior"),
+            aggregateBankOfMaharashtra("opening")
+        ]);
+
+        const bankOfMaharashtraPeriodMap = sumTrialBalanceEntryGroups(
+            bankOfMaharashtraPeriodGroups
+        );
+        const bankOfMaharashtraPriorMap = sumTrialBalanceEntryGroups(
+            bankOfMaharashtraPriorGroups
+        );
+        const bankOfMaharashtraOpeningMap = sumTrialBalanceEntryGroups(
+            bankOfMaharashtraOpeningGroups
+        );
+
+        const sumBankMovement = (
+            movementMap: Map<string, { debit: number; credit: number }>
+        ) => bankLedgerIds.reduce(
+            (total, ledgerId) => {
+                const movement = movementMap.get(ledgerId);
+                total.debit += Number(movement?.debit || 0);
+                total.credit += Number(movement?.credit || 0);
+                return total;
+            },
+            { debit: 0, credit: 0 }
+        );
+
         /**
          * ============================================================
          * 8. BUILD ACCOUNT-WISE TRIAL BALANCE
@@ -590,7 +666,7 @@ export class ReportingService {
          * - period credit
          */
 
-        const rawRows =
+        const ledgerRows =
             ledgers.map(ledger => {
 
                 /**
@@ -598,6 +674,7 @@ export class ReportingService {
                  * another branch's opening balance.
                  */
                 const shouldUseLedgerOpening =
+                    ledger.category !== LedgerType.BANK &&
                     (!branchId || ledger.branchId === branchId) &&
                     openingAppliesAt(
                         ledger.openingBalanceDate,
@@ -647,7 +724,10 @@ export class ReportingService {
                         ledger.code,
 
                     account:
-                        ledger.name,
+                        ledger.category === LedgerType.BANK &&
+                            String(ledger.name).trim().toUpperCase() === "BANK"
+                            ? "Bank Account"
+                            : ledger.name,
 
                     parentGroup:
                         ledger.group.name,
@@ -712,6 +792,70 @@ export class ReportingService {
                         amounts.closingSigned
                 };
             });
+
+        const bankOfMaharashtraRows = bankLedgers.length > 0
+            ? (() => {
+                const sourceLedger = bankLedgers[0];
+                const importedOpening = sumBankMovement(
+                    bankOfMaharashtraOpeningMap
+                );
+                const ledgerOpening = bankLedgers.reduce(
+                    (total, ledger) => {
+                        const applies =
+                            (!branchId || ledger.branchId === branchId) &&
+                            openingAppliesAt(ledger.openingBalanceDate, endDate);
+
+                        if (!applies) return total;
+
+                        total.openingBalance += Number(ledger.openingBalance || 0);
+                        total.openingDebit += Number(ledger.openingDebit || 0);
+                        total.openingCredit += Number(ledger.openingCredit || 0);
+                        return total;
+                    },
+                    { openingBalance: 0, openingDebit: 0, openingCredit: 0 }
+                );
+                const amounts = calculateTrialBalanceAmounts(
+                    {
+                        nature: LedgerNature.DEBIT,
+                        openingBalance:
+                            ledgerOpening.openingBalance +
+                            importedOpening.debit -
+                            importedOpening.credit,
+                        openingDebit:
+                            ledgerOpening.openingDebit + importedOpening.debit,
+                        openingCredit:
+                            ledgerOpening.openingCredit + importedOpening.credit
+                    },
+                    sumBankMovement(bankOfMaharashtraPriorMap),
+                    sumBankMovement(bankOfMaharashtraPeriodMap),
+                    true
+                );
+
+                return [{
+                    ledgerId: `bank-of-maharashtra:${branchId || "all"}`,
+                    ledgerCode: "BANK_OF_MAHARASHTRA",
+                    account: "Bank of Maharashtra",
+                    parentGroup: sourceLedger.group.name,
+                    groupCode: sourceLedger.group.code,
+                    groupId: sourceLedger.groupId,
+                    ledgerCategory: LedgerType.BANK,
+                    ledgerNature: LedgerNature.DEBIT,
+                    branchId: branchId || null,
+                    branchName: branch?.name || null,
+                    debit: amounts.closingDebit,
+                    credit: amounts.closingCredit,
+                    periodDebit: amounts.periodDebit,
+                    periodCredit: amounts.periodCredit,
+                    openingDebit: amounts.openingDebit,
+                    openingCredit: amounts.openingCredit,
+                    closingDebit: amounts.closingDebit,
+                    closingCredit: amounts.closingCredit,
+                    closingSigned: amounts.closingSigned
+                }];
+            })()
+            : [];
+
+        const rawRows = [...ledgerRows, ...bankOfMaharashtraRows];
 
         const cashDiagnostics = await this.getCashDiagnostics(
             ledgers,
