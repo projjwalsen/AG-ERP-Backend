@@ -3124,7 +3124,7 @@ export class ImportResolver {
         }
 
         const purchase = note?.purchase ||
-            await this.resolvePurchaseForJournalTransaction(actor, dto);
+            await this.resolvePurchaseForJournalTransaction(actor, dto, true);
         if (!purchase) {
             throw new Error(
                 `No approved outstanding Purchase found for ${dto.particulars} (${dto.voucherNo})`
@@ -3535,10 +3535,16 @@ export class ImportResolver {
         }
 
         const approvedDebitNotes = purchase.debitCreditNotes
-            .filter(note => note.type === DebitCreditNoteType.DEBIT_NOTE)
+            .filter(note =>
+                note.type === DebitCreditNoteType.DEBIT_NOTE &&
+                !note.transaction
+            )
             .reduce((sum, note) => sum + Number(note.totalAmount), 0);
         const approvedCreditNotes = purchase.debitCreditNotes
-            .filter(note => note.type === DebitCreditNoteType.CREDIT_NOTE)
+            .filter(note =>
+                note.type === DebitCreditNoteType.CREDIT_NOTE &&
+                !note.transaction
+            )
             .reduce((sum, note) => sum + Number(note.totalAmount), 0);
         const allocated = purchase.allocations.reduce(
             (sum, allocation) => sum + Number(allocation.allocatedAmount),
@@ -3705,7 +3711,8 @@ export class ImportResolver {
 
     private static async resolvePurchaseForJournalTransaction(
         actor: any,
-        dto: JournalImportDTO
+        dto: JournalImportDTO,
+        allowSettledFifo = false
     ) {
         const candidates = this.journalInvoiceCandidates(dto);
 
@@ -3738,7 +3745,11 @@ export class ImportResolver {
             },
             debitCreditNotes: {
                 where: { status: DebitCreditNoteStatus.APPROVED },
-                select: { type: true, totalAmount: true }
+                select: {
+                    type: true,
+                    totalAmount: true,
+                    transaction: { select: { id: true } }
+                }
             }
         };
 
@@ -3789,11 +3800,11 @@ export class ImportResolver {
             ]
         });
 
-        return fifoPurchases.find(purchase => {
-            if (
-                normalizeImportedPartyName(purchase.agency.name) !==
-                importedParty
-            ) return false;
+        const vendorPurchases = fifoPurchases.filter(purchase =>
+            normalizeImportedPartyName(purchase.agency.name) === importedParty
+        );
+
+        const outstandingPurchase = vendorPurchases.find(purchase => {
 
             const allocated = purchase.allocations.reduce(
                 (sum, allocation) =>
@@ -3801,14 +3812,24 @@ export class ImportResolver {
                 0
             );
             const debitNotes = purchase.debitCreditNotes
-                .filter(note => note.type === DebitCreditNoteType.DEBIT_NOTE)
+                .filter(note =>
+                    note.type === DebitCreditNoteType.DEBIT_NOTE &&
+                    !note.transaction
+                )
                 .reduce((sum, note) => sum + Number(note.totalAmount), 0);
             const creditNotes = purchase.debitCreditNotes
-                .filter(note => note.type === DebitCreditNoteType.CREDIT_NOTE)
+                .filter(note =>
+                    note.type === DebitCreditNoteType.CREDIT_NOTE &&
+                    !note.transaction
+                )
                 .reduce((sum, note) => sum + Number(note.totalAmount), 0);
 
             return Number(purchase.grandTotal) - debitNotes + creditNotes - allocated > 0;
-        }) || null;
+        });
+
+        return outstandingPurchase ||
+            (allowSettledFifo ? vendorPurchases[0] : null) ||
+            null;
 
     }
 }
