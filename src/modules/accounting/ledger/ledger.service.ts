@@ -19,7 +19,10 @@ import { prisma } from "../../../config/db";
 import { ApiError } from "../../../core/middleware/errorHandler";
 import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
 import { areVoucherTotalsBalanced } from "./voucher-balance.utils";
-import { importedPurchaseNotePosting } from "../../import/transaction-import.utils";
+import {
+    importedPurchaseNotePosting,
+    normalizeImportedTransactionType
+} from "../../import/transaction-import.utils";
 
 type DbClient = any;
 type TaxKind = "CGST" | "SGST" | "IGST";
@@ -4234,6 +4237,94 @@ export class LedgerService {
             nature: LedgerNature.DEBIT,
             branchId
         });
+    }
+
+    static async getOrCreateImportedSalesTypeLedger(
+        client: DbClient,
+        branchId: string,
+        importedType: string
+    ) {
+        const normalizedType = normalizeImportedTransactionType(importedType);
+
+        if (!normalizedType) {
+            throw new ApiError("Sales Transaction Type is required", 400);
+        }
+
+        const branchCode = await this.getBranchCode(client, branchId);
+
+        return this.getOrCreateLedger(client, {
+            code: `SALES-TYPE-${this.normalizeCode(normalizedType)}-${branchCode}`,
+            name: normalizedType,
+            category: LedgerType.SALES,
+            groupCode: "SALES",
+            nature: LedgerNature.CREDIT,
+            branchId
+        });
+    }
+
+    static async assignSaleToImportedType(
+        tx: Prisma.TransactionClient,
+        saleId: string,
+        importedType: string
+    ) {
+        const normalizedType = normalizeImportedTransactionType(importedType);
+        if (!normalizedType) {
+            throw new ApiError("Sales Transaction Type is required", 400);
+        }
+
+        const sale = await tx.sale.findUnique({
+            where: { id: saleId },
+            select: { id: true, branchId: true }
+        });
+
+        if (!sale) {
+            throw new ApiError("Sale not found", 404);
+        }
+
+        const targetLedger = await this.getOrCreateImportedSalesTypeLedger(
+            tx,
+            sale.branchId,
+            normalizedType
+        );
+        const revenueEntries = await tx.ledgerEntry.findMany({
+            where: {
+                voucher: { sourceId: sale.id, voucherType: VoucherType.SALE },
+                ledger: { category: LedgerType.SALES }
+            },
+            select: {
+                id: true,
+                ledgerId: true,
+                ledger: { select: { code: true, name: true } }
+            }
+        });
+
+        const conflictingEntry = revenueEntries.find(entry =>
+            entry.ledgerId !== targetLedger.id &&
+            String(entry.ledger.code || "").startsWith("SALES-TYPE-")
+        );
+        if (conflictingEntry) {
+            throw new ApiError(
+                `Sale is already classified as ${conflictingEntry.ledger.name}, not ${normalizedType}`,
+                400
+            );
+        }
+
+        const previousLedgerIds = [...new Set(
+            revenueEntries.map(entry => entry.ledgerId)
+        )];
+
+        if (revenueEntries.length > 0) {
+            await tx.ledgerEntry.updateMany({
+                where: { id: { in: revenueEntries.map(entry => entry.id) } },
+                data: { ledgerId: targetLedger.id }
+            });
+        }
+
+        for (const ledgerId of [...previousLedgerIds, targetLedger.id]) {
+            await this.syncCachedBalance(tx, ledgerId);
+        }
+
+        return targetLedger;
     }
 
     static async assignPurchaseToImportedType(
