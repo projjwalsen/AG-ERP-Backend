@@ -294,7 +294,7 @@ export class LedgerService {
         return entryType === EntryType.CREDIT ? money(amount) : money(-amount);
     }
 
-    private static async syncCachedBalance(client: DbClient, ledgerId: string) {
+    static async syncCachedBalance(client: DbClient, ledgerId: string) {
         const balance = await this.calculateLedgerBalance(ledgerId, client);
 
         await client.ledger.update({

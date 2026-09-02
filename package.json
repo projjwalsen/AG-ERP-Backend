@@ -9,6 +9,7 @@
     "test": "tsx --test src/modules/reports/trial-balance.utils.test.ts src/modules/import/transaction-import.utils.test.ts",
     "start": "node -r tsconfig-paths/register dist/server.js",
     "seed": "tsx prisma/seed.ts",
+    "repair:import-credit-notes": "tsx src/scripts/repair-imported-inward-credit-notes.ts",
     "seed:scrap": "tsx src/scripts/seed-scrap-drums-sale-stock.ts",
     "seed:fix-journal-head-debit": "tsx src/scripts/fix-journal-head-to-debit.ts",
     "seed:insurance-journal-heads": "tsx src/scripts/seed-insurance-journal-heads.ts",

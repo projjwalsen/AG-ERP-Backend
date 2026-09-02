@@ -1,11 +1,11 @@
 ALTER TABLE "Transaction"
-    ADD COLUMN "type" TEXT,
-    ADD COLUMN "importKey" TEXT,
-    ADD COLUMN "debitCreditNoteId" TEXT,
-    ADD COLUMN "transactionDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+    ADD COLUMN IF NOT EXISTS "type" TEXT,
+    ADD COLUMN IF NOT EXISTS "importKey" TEXT,
+    ADD COLUMN IF NOT EXISTS "debitCreditNoteId" TEXT,
+    ADD COLUMN IF NOT EXISTS "transactionDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
 ALTER TABLE "DebitCreditNote"
-    ADD COLUMN "importKey" TEXT;
+    ADD COLUMN IF NOT EXISTS "importKey" TEXT;
 
 UPDATE "Transaction"
 SET "transactionDate" = "createdAt";
@@ -46,10 +46,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS "DebitCreditNote_importKey_key"
 CREATE UNIQUE INDEX IF NOT EXISTS "DebitCreditNote_branchId_agencyId_noteNo_key"
     ON "DebitCreditNote"("branchId", "agencyId", "noteNo");
 
-ALTER TABLE "Transaction"
-    ADD CONSTRAINT "Transaction_debitCreditNoteId_fkey"
-    FOREIGN KEY ("debitCreditNoteId") REFERENCES "DebitCreditNote"("id")
-    ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'Transaction_debitCreditNoteId_fkey'
+    ) THEN
+        ALTER TABLE "Transaction"
+            ADD CONSTRAINT "Transaction_debitCreditNoteId_fkey"
+            FOREIGN KEY ("debitCreditNoteId") REFERENCES "DebitCreditNote"("id")
+            ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- Purchase ledgers are displayed under their own Trial Balance root instead
 -- of being mixed into generic Expenses.
