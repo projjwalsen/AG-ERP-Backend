@@ -879,6 +879,140 @@ export class ReportingService {
                 };
             });
 
+        /*
+         * Older imports stored the Excel Type on Transaction but posted the
+         * sale voucher to the generic SALES-* ledger.  Until a ledger repair
+         * is run, that left valid heads such as GST SALES invisible in Trial
+         * Balance.  Attribute those generic voucher entries to the approved
+         * transaction Type at report time.  New imports are already posted to
+         * SALES-TYPE-* ledgers and are therefore not included here.
+         */
+        const typedSaleTransactions = await prisma.transaction.findMany({
+            where: {
+                status: "APPROVED",
+                direction: TransactionDirection.INWARD,
+                saleId: { not: null },
+                type: { not: null },
+                ...(branchId ? { branchId } : {})
+            },
+            select: {
+                saleId: true,
+                type: true
+            }
+        });
+        const typeBySaleId = new Map<string, string>();
+        const conflictingSaleIds = new Set<string>();
+
+        for (const transaction of typedSaleTransactions) {
+            if (!transaction.saleId || !transaction.type) continue;
+
+            const type = String(transaction.type)
+                .replace(/_/g, " ")
+                .replace(/\bSALE\b/gi, "SALES")
+                .replace(/\s*@\s*/g, " @")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
+            const existing = typeBySaleId.get(transaction.saleId);
+            if (existing && existing !== type) {
+                conflictingSaleIds.add(transaction.saleId);
+                continue;
+            }
+            typeBySaleId.set(transaction.saleId, type);
+        }
+        for (const saleId of conflictingSaleIds) typeBySaleId.delete(saleId);
+
+        const genericSalesLedgerIds = ledgers
+            .filter(ledger =>
+                ledger.category === LedgerType.SALES &&
+                !String(ledger.code || "").startsWith("SALES-TYPE-")
+            )
+            .map(ledger => ledger.id);
+        const genericTypedSalesEntries =
+            typeBySaleId.size > 0 && genericSalesLedgerIds.length > 0
+                ? await prisma.ledgerEntry.findMany({
+                    where: {
+                        AND: [
+                            ...(branchEntryFilter ? [branchEntryFilter] : []),
+                            { ledgerId: { in: genericSalesLedgerIds } },
+                            {
+                                voucher: {
+                                    sourceId: { in: [...typeBySaleId.keys()] },
+                                    voucherType: VoucherType.SALE,
+                                    voucherDate: { lte: endDate }
+                                }
+                            }
+                        ]
+                    },
+                    select: {
+                        entryType: true,
+                        amount: true,
+                        voucher: { select: { sourceId: true, voucherDate: true } }
+                    }
+                })
+                : [];
+        const salesGroup = ledgerGroups.find(group => group.code === "SALES");
+        const typedSalesMovements = new Map<string, {
+            prior: { debit: number; credit: number };
+            period: { debit: number; credit: number };
+        }>();
+
+        for (const entry of genericTypedSalesEntries) {
+            const type = typeBySaleId.get(entry.voucher.sourceId);
+            if (!type) continue;
+
+            const current = typedSalesMovements.get(type) || {
+                prior: { debit: 0, credit: 0 },
+                period: { debit: 0, credit: 0 }
+            };
+            const target = entry.voucher.voucherDate < startDate
+                ? current.prior
+                : current.period;
+            target[entry.entryType === EntryType.DEBIT ? "debit" : "credit"] +=
+                Number(entry.amount || 0);
+            typedSalesMovements.set(type, current);
+        }
+
+        const typedSalesRows = [...typedSalesMovements.entries()].map(
+            ([type, movement]) => {
+                const amounts = calculateTrialBalanceAmounts(
+                    {
+                        nature: LedgerNature.CREDIT,
+                        openingBalance: 0,
+                        openingDebit: 0,
+                        openingCredit: 0
+                    },
+                    movement.prior,
+                    movement.period,
+                    false
+                );
+
+                return {
+                    ledgerId: `transaction-type-sales:${type}:${branchId || "all"}`,
+                    ledgerCode: `SALES-TYPE-${type}`
+                        .replace(/[^A-Z0-9_]+/gi, "_")
+                        .toUpperCase(),
+                    account: type,
+                    parentGroup: salesGroup?.name || "Sales",
+                    groupCode: "SALES",
+                    groupId: salesGroup?.id || null,
+                    ledgerCategory: LedgerType.SALES,
+                    ledgerNature: LedgerNature.CREDIT,
+                    branchId: branchId || null,
+                    branchName: branch?.name || null,
+                    debit: amounts.closingDebit,
+                    credit: amounts.closingCredit,
+                    periodDebit: amounts.periodDebit,
+                    periodCredit: amounts.periodCredit,
+                    openingDebit: amounts.openingDebit,
+                    openingCredit: amounts.openingCredit,
+                    closingDebit: amounts.closingDebit,
+                    closingCredit: amounts.closingCredit,
+                    closingSigned: amounts.closingSigned
+                };
+            }
+        );
+
         // Purchase and sales accounts display only explicit imported Types.
         // The generic branch ledgers (for example
         // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are legacy control
@@ -961,7 +1095,8 @@ export class ReportingService {
                 row.ledgerCategory !== LedgerType.SALES
             ),
             ...aggregateAccountRows(LedgerType.PURCHASE),
-            ...aggregateAccountRows(LedgerType.SALES)
+            ...aggregateAccountRows(LedgerType.SALES),
+            ...typedSalesRows
         ];
 
         const bankOfMaharashtraRows = (
