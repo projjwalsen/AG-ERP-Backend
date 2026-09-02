@@ -11,6 +11,7 @@ import { TransactionService } from "../transaction/transac.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { DebitCreditNoteService } from "../debitCreditNote/debitCreditNote.service";
+import { SalesService } from "../sales/sales.service";
 import { randomUUID } from "crypto";
 import {
     buildTransactionImportKey,
@@ -3418,17 +3419,17 @@ export class ImportResolver {
             throw new Error(`Sales receipt ${dto.voucherNo} requires a customer`);
         }
 
-        const sale =
+        let sale: any =
             await this.resolveSaleForJournalTransaction(
                 actor,
                 dto
             );
 
         if (!sale) {
-
-            throw new Error(
-                `Sale invoice ${dto.invoiceNo || dto.voucherNo} is not in the system. ` +
-                "Import the matching Sales Register first, then re-run Transaction Import."
+            sale = await this.createAccountingOnlySaleForTransactionImport(
+                actor,
+                dto,
+                importedParty
             );
 
         }
@@ -3793,6 +3794,94 @@ export class ImportResolver {
         // "Invoice outstanding has changed" error.
         return null;
 
+    }
+
+    /**
+     * Tally ledger exports can contain Tax Invoice rows without the item/GST
+     * columns required by the Sales Register importer.  Create a clearly
+     * marked accounting-only sale for those rows so the normal sale and
+     * transaction approval paths still produce a balanced voucher and the
+     * imported Type can appear in Trial Balance.  No inventory is moved.
+     */
+    private static async createAccountingOnlySaleForTransactionImport(
+        actor: any,
+        dto: JournalImportDTO,
+        partyName: string
+    ) {
+        const invoiceNo = String(dto.invoiceNo || dto.voucherNo || "").trim();
+        const amount = Number(dto.creditAmount || 0);
+
+        if (!invoiceNo || !dto.date || amount <= 0 || dto.debitAmount > 0) {
+            throw new Error(
+                `Tax Invoice ${invoiceNo || dto.voucherNo} cannot be created from this row. ` +
+                "It requires a date and one positive Credit amount."
+            );
+        }
+
+        const existing = await prisma.sale.findFirst({
+            where: {
+                OR: [
+                    { invoiceNo: { equals: invoiceNo, mode: "insensitive" } },
+                    { voucherNo: { equals: invoiceNo, mode: "insensitive" } }
+                ]
+            },
+            select: { invoiceNo: true, status: true }
+        });
+        if (existing) {
+            throw new Error(
+                `Sale invoice ${invoiceNo} already exists with status ${existing.status} but does not match this transaction row.`
+            );
+        }
+
+        const branch = await prisma.branch.findFirst({
+            where: actor?.branchAccessType === "ALL" || !actor?.branchId
+                ? { isActive: true }
+                : { id: actor.branchId, isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+        if (!branch) {
+            throw new Error("No active branch is available for the Tax Invoice import");
+        }
+
+        let agency = await prisma.agency.findFirst({
+            where: {
+                name: { equals: partyName, mode: "insensitive" }
+            }
+        });
+        if (!agency) {
+            agency = await prisma.agency.create({
+                data: { name: partyName, type: AgencyType.CLIENT }
+            });
+        } else if (agency.type === AgencyType.VENDOR) {
+            agency = await prisma.agency.update({
+                where: { id: agency.id },
+                data: { type: AgencyType.BOTH }
+            });
+        }
+
+        const sale = await SalesService.createImportedServiceSale(actor, {
+            agencyId: agency.id,
+            branchId: branch.id,
+            invoiceNo,
+            voucherNo: invoiceNo,
+            invoiceDate: dto.date.toISOString(),
+            voucherDate: dto.date.toISOString(),
+            items: [],
+            importedTotals: {
+                subTotal: amount,
+                totalCGST: 0,
+                totalSGST: 0,
+                totalIGST: 0,
+                totalGST: 0,
+                roundOff: 0,
+                grandTotal: amount
+            },
+            remarks: `Accounting-only sale imported from Transaction Import; Type: ${
+                normalizeImportedTransactionType(dto.accountingVoucherType)
+            }`
+        });
+
+        return SalesService.approveSale(actor, sale.id);
     }
 
     private static async resolvePurchaseForJournalTransaction(
