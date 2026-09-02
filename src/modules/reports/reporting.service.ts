@@ -19,12 +19,12 @@ const CASH_VOUCHER_TYPES = [
     VoucherType.CASH_PAYMENT,
     (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT"
 ] as VoucherType[];
-const CASH_TRANSACTION_VOUCHER_TYPES = CASH_VOUCHER_TYPES.filter(
-    type => type !== VoucherType.OPENING_BALANCE
-);
-
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
+const BANK_VOUCHER_TYPES = [
+    BANK_RECEIPT_TYPE,
+    BANK_PAYMENT_TYPE
+] as VoucherType[];
 
 
 export class ReportingService {
@@ -434,79 +434,6 @@ export class ReportingService {
             })
         ]) as [any[], LedgerGroupReportRow[]];
 
-        // A transaction's bank account is authoritative. Voucher type only
-        // describes the operation (for example BANK_PAYMENT), so imported
-        // purchase settlements paid through Bank of Maharashtra must be
-        // separated by Transaction.bankAccountId/BankAccount.bankName.
-        const bankOfMaharashtraTransactions =
-            await prisma.transaction.findMany({
-                where: {
-                    ...(branchId ? { branchId } : {}),
-                    bankAccount: {
-                        is: {
-                            bankName: {
-                                equals: "Bank of Maharashtra",
-                                mode: "insensitive"
-                            }
-                        }
-                    }
-                },
-                select: {
-                    id: true,
-                    direction: true
-                }
-            });
-
-        const bankOfMaharashtraInwardSourceIds =
-            bankOfMaharashtraTransactions
-                .filter(transaction =>
-                    transaction.direction === TransactionDirection.INWARD
-                )
-                .map(transaction => transaction.id);
-        const bankOfMaharashtraOutwardSourceIds =
-            bankOfMaharashtraTransactions
-                .filter(transaction =>
-                    transaction.direction === TransactionDirection.OUTWARD
-                )
-                .map(transaction => transaction.id);
-
-        const importedBankPaymentLedgerFilter: Prisma.LedgerWhereInput = {
-            OR: [
-                { category: LedgerType.BANK },
-                { code: { startsWith: "BANK-OD-CC-" } }
-            ]
-        };
-        const bankOfMaharashtraPaymentEntryConditions:
-            Prisma.LedgerEntryWhereInput[] = [
-            ...(bankOfMaharashtraInwardSourceIds.length > 0
-                ? [{
-                    entryType: EntryType.DEBIT,
-                    ledger: importedBankPaymentLedgerFilter,
-                    voucher: {
-                        sourceId: {
-                            in: bankOfMaharashtraInwardSourceIds
-                        }
-                    }
-                }]
-                : []),
-            ...(bankOfMaharashtraOutwardSourceIds.length > 0
-                ? [{
-                    entryType: EntryType.CREDIT,
-                    ledger: importedBankPaymentLedgerFilter,
-                    voucher: {
-                        sourceId: {
-                            in: bankOfMaharashtraOutwardSourceIds
-                        }
-                    }
-                }]
-                : [])
-        ];
-        const bankOfMaharashtraPaymentEntryFilter:
-            Prisma.LedgerEntryWhereInput | undefined =
-            bankOfMaharashtraPaymentEntryConditions.length > 0
-                ? { OR: bankOfMaharashtraPaymentEntryConditions }
-                : undefined;
-
         const aggregateWindows = async (window: "period" | "prior") => {
             const byCutoff = new Map<string, {
                 cutoff?: Date;
@@ -575,11 +502,6 @@ export class ReportingService {
                                     ledgerId: { in: ledgerIds },
                                     voucher: { voucherDate }
                                 },
-                                ...(bankOfMaharashtraPaymentEntryFilter
-                                    ? [{
-                                        NOT: bankOfMaharashtraPaymentEntryFilter
-                                    }]
-                                    : []),
                                 {
                                     OR: [
                                         // Non-cash/non-bank ledgers retain all voucher types.
@@ -591,22 +513,13 @@ export class ReportingService {
                                         // Cash in Hand is driven only by cash receipts/payments.
                                         {
                                             ledger: { category: LedgerType.CASH },
-                                            voucher: { voucherType: { in: CASH_TRANSACTION_VOUCHER_TYPES } }
+                                            voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
                                         },
-                                        // The generic Bank Account ledger is
-                                        // reserved for explicit bank receipts
-                                        // and bank payments. Legacy imported
-                                        // journal movements are reported under
-                                        // Bank of Maharashtra separately.
+                                        // Bank accounts are driven only by
+                                        // explicit bank receipts/payments.
                                         {
                                             ledger: { category: LedgerType.BANK },
-                                            entryType: EntryType.DEBIT,
-                                            voucher: { voucherType: BANK_RECEIPT_TYPE }
-                                        },
-                                        {
-                                            ledger: { category: LedgerType.BANK },
-                                            entryType: EntryType.CREDIT,
-                                            voucher: { voucherType: BANK_PAYMENT_TYPE }
+                                            voucher: { voucherType: { in: BANK_VOUCHER_TYPES } }
                                         }
                                     ]
                                 }
@@ -652,86 +565,6 @@ export class ReportingService {
         });
         const openingMap = sumTrialBalanceEntryGroups(openingGroups);
 
-        const bankLedgers = ledgers.filter(
-            ledger => ledger.category === LedgerType.BANK
-        );
-        const bankOfMaharashtraLedgers = bankLedgers.filter(ledger =>
-            String(ledger.name || "").trim().toUpperCase() ===
-                "BANK OF MAHARASHTRA" ||
-            String(ledger.code || "").startsWith("BANK-ACCOUNT-") &&
-                String(ledger.name || "").toUpperCase().includes("MAHARASHTRA")
-        );
-        const bankOfMaharashtraLedgerIds = bankOfMaharashtraLedgers.map(
-            ledger => ledger.id
-        );
-
-        const aggregateBankOfMaharashtra = async (
-            window: "period" | "prior" | "opening"
-        ) => {
-            if (
-                bankOfMaharashtraLedgerIds.length === 0 &&
-                !bankOfMaharashtraPaymentEntryFilter
-            ) return [];
-
-            const voucherDate = window === "period"
-                ? { gte: startDate, lte: endDate }
-                : window === "prior"
-                    ? { lt: startDate }
-                    : { lte: endDate };
-
-            return prisma.ledgerEntry.groupBy({
-                by: ["ledgerId", "entryType"],
-                where: {
-                    AND: [
-                        ...(branchEntryFilter ? [branchEntryFilter] : []),
-                        { voucher: { voucherDate } },
-                        {
-                            OR: window === "opening"
-                                ? [{
-                                    ledgerId: { in: bankOfMaharashtraLedgerIds },
-                                    voucher: {
-                                        voucherType: VoucherType.OPENING_BALANCE
-                                    }
-                                }]
-                                : bankOfMaharashtraPaymentEntryConditions
-                        }
-                    ]
-                },
-                _sum: { amount: true }
-            });
-        };
-
-        const [
-            bankOfMaharashtraPeriodGroups,
-            bankOfMaharashtraPriorGroups,
-            bankOfMaharashtraOpeningGroups
-        ] = await Promise.all([
-            aggregateBankOfMaharashtra("period"),
-            aggregateBankOfMaharashtra("prior"),
-            aggregateBankOfMaharashtra("opening")
-        ]);
-
-        const bankOfMaharashtraPeriodMap = sumTrialBalanceEntryGroups(
-            bankOfMaharashtraPeriodGroups
-        );
-        const bankOfMaharashtraPriorMap = sumTrialBalanceEntryGroups(
-            bankOfMaharashtraPriorGroups
-        );
-        const bankOfMaharashtraOpeningMap = sumTrialBalanceEntryGroups(
-            bankOfMaharashtraOpeningGroups
-        );
-
-        const sumBankMovement = (
-            movementMap: Map<string, { debit: number; credit: number }>
-        ) => [...movementMap.values()].reduce(
-            (total, movement) => {
-                total.debit += Number(movement?.debit || 0);
-                total.credit += Number(movement?.credit || 0);
-                return total;
-            },
-            { debit: 0, credit: 0 }
-        );
-
         /**
          * ============================================================
          * 8. BUILD ACCOUNT-WISE TRIAL BALANCE
@@ -752,7 +585,6 @@ export class ReportingService {
 
         const rawLedgerRows =
             ledgers
-            .filter(ledger => !bankOfMaharashtraLedgerIds.includes(ledger.id))
             .map(ledger => {
 
                 /**
@@ -1099,77 +931,7 @@ export class ReportingService {
             ...typedSalesRows
         ];
 
-        const bankOfMaharashtraRows = (
-            bankOfMaharashtraLedgers.length > 0 ||
-            bankOfMaharashtraTransactions.length > 0
-        )
-            ? (() => {
-                const sourceLedger = bankOfMaharashtraLedgers[0] || bankLedgers[0];
-                const sourceGroup = sourceLedger?.group || ledgerGroups.find(
-                    group => group.code === "BANK_ACCOUNTS"
-                );
-
-                if (!sourceGroup) return [];
-                const importedOpening = sumBankMovement(
-                    bankOfMaharashtraOpeningMap
-                );
-                const ledgerOpening = bankOfMaharashtraLedgers.reduce(
-                    (total, ledger) => {
-                        const applies =
-                            (!branchId || ledger.branchId === branchId) &&
-                            openingAppliesAt(ledger.openingBalanceDate, endDate);
-
-                        if (!applies) return total;
-
-                        total.openingBalance += Number(ledger.openingBalance || 0);
-                        total.openingDebit += Number(ledger.openingDebit || 0);
-                        total.openingCredit += Number(ledger.openingCredit || 0);
-                        return total;
-                    },
-                    { openingBalance: 0, openingDebit: 0, openingCredit: 0 }
-                );
-                const amounts = calculateTrialBalanceAmounts(
-                    {
-                        nature: LedgerNature.DEBIT,
-                        openingBalance:
-                            ledgerOpening.openingBalance +
-                            importedOpening.debit -
-                            importedOpening.credit,
-                        openingDebit:
-                            ledgerOpening.openingDebit + importedOpening.debit,
-                        openingCredit:
-                            ledgerOpening.openingCredit + importedOpening.credit
-                    },
-                    sumBankMovement(bankOfMaharashtraPriorMap),
-                    sumBankMovement(bankOfMaharashtraPeriodMap),
-                    true
-                );
-
-                return [{
-                    ledgerId: `bank-of-maharashtra:${branchId || "all"}`,
-                    ledgerCode: "BANK_OF_MAHARASHTRA",
-                    account: "Bank of Maharashtra",
-                    parentGroup: sourceGroup.name,
-                    groupCode: sourceGroup.code,
-                    groupId: sourceGroup.id,
-                    ledgerCategory: LedgerType.BANK,
-                    ledgerNature: LedgerNature.DEBIT,
-                    branchId: branchId || null,
-                    branchName: branch?.name || null,
-                    debit: amounts.closingDebit,
-                    credit: amounts.closingCredit,
-                    periodDebit: amounts.periodDebit,
-                    periodCredit: amounts.periodCredit,
-                    openingDebit: amounts.openingDebit,
-                    openingCredit: amounts.openingCredit,
-                    closingDebit: amounts.closingDebit,
-                    closingCredit: amounts.closingCredit,
-                    closingSigned: amounts.closingSigned
-                }];
-            })()
-            : [];
-
-        const rawRows = [...ledgerRows, ...bankOfMaharashtraRows];
+        const rawRows = ledgerRows;
 
         const cashDiagnostics = await this.getCashDiagnostics(
             ledgers,
