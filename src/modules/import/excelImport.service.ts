@@ -1920,6 +1920,8 @@ export class ExcelImportService {
                     String(
                         this.getValue(
                             row,
+                            "Purchase Invoice No",
+                            "Source Purchase Invoice No",
                             "Supplier Invoice No",
                             "Invoice No"
                         ) || ""

@@ -40,6 +40,7 @@ type CreateNotePayload = {
     purchaseId?: string;
     noteNo?: string;
     purchaseVoucherType?: VoucherType;
+    importKey?: string;
 
     noteDate?: string | Date;
     narration?: string;
@@ -880,6 +881,9 @@ export class DebitCreditNoteService {
                     data: {
                         noteNo:
                             payload.noteNo?.trim() || this.generateNoteNo(payload.type),
+
+                        importKey:
+                            payload.importKey || null,
 
                         type:
                             payload.type,

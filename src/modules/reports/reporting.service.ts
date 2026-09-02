@@ -434,6 +434,79 @@ export class ReportingService {
             })
         ]) as [any[], LedgerGroupReportRow[]];
 
+        // A transaction's bank account is authoritative. Voucher type only
+        // describes the operation (for example BANK_PAYMENT), so imported
+        // purchase settlements paid through Bank of Maharashtra must be
+        // separated by Transaction.bankAccountId/BankAccount.bankName.
+        const bankOfMaharashtraTransactions =
+            await prisma.transaction.findMany({
+                where: {
+                    ...(branchId ? { branchId } : {}),
+                    bankAccount: {
+                        is: {
+                            bankName: {
+                                equals: "Bank of Maharashtra",
+                                mode: "insensitive"
+                            }
+                        }
+                    }
+                },
+                select: {
+                    id: true,
+                    direction: true
+                }
+            });
+
+        const bankOfMaharashtraInwardSourceIds =
+            bankOfMaharashtraTransactions
+                .filter(transaction =>
+                    transaction.direction === TransactionDirection.INWARD
+                )
+                .map(transaction => transaction.id);
+        const bankOfMaharashtraOutwardSourceIds =
+            bankOfMaharashtraTransactions
+                .filter(transaction =>
+                    transaction.direction === TransactionDirection.OUTWARD
+                )
+                .map(transaction => transaction.id);
+
+        const importedBankPaymentLedgerFilter: Prisma.LedgerWhereInput = {
+            OR: [
+                { category: LedgerType.BANK },
+                { code: { startsWith: "BANK-OD-CC-" } }
+            ]
+        };
+        const bankOfMaharashtraPaymentEntryConditions:
+            Prisma.LedgerEntryWhereInput[] = [
+            ...(bankOfMaharashtraInwardSourceIds.length > 0
+                ? [{
+                    entryType: EntryType.DEBIT,
+                    ledger: importedBankPaymentLedgerFilter,
+                    voucher: {
+                        sourceId: {
+                            in: bankOfMaharashtraInwardSourceIds
+                        }
+                    }
+                }]
+                : []),
+            ...(bankOfMaharashtraOutwardSourceIds.length > 0
+                ? [{
+                    entryType: EntryType.CREDIT,
+                    ledger: importedBankPaymentLedgerFilter,
+                    voucher: {
+                        sourceId: {
+                            in: bankOfMaharashtraOutwardSourceIds
+                        }
+                    }
+                }]
+                : [])
+        ];
+        const bankOfMaharashtraPaymentEntryFilter:
+            Prisma.LedgerEntryWhereInput | undefined =
+            bankOfMaharashtraPaymentEntryConditions.length > 0
+                ? { OR: bankOfMaharashtraPaymentEntryConditions }
+                : undefined;
+
         const aggregateWindows = async (window: "period" | "prior") => {
             const byCutoff = new Map<string, {
                 cutoff?: Date;
@@ -502,6 +575,11 @@ export class ReportingService {
                                     ledgerId: { in: ledgerIds },
                                     voucher: { voucherDate }
                                 },
+                                ...(bankOfMaharashtraPaymentEntryFilter
+                                    ? [{
+                                        NOT: bankOfMaharashtraPaymentEntryFilter
+                                    }]
+                                    : []),
                                 {
                                     OR: [
                                         // Non-cash/non-bank ledgers retain all voucher types.
@@ -577,12 +655,23 @@ export class ReportingService {
         const bankLedgers = ledgers.filter(
             ledger => ledger.category === LedgerType.BANK
         );
-        const bankLedgerIds = bankLedgers.map(ledger => ledger.id);
+        const bankOfMaharashtraLedgers = bankLedgers.filter(ledger =>
+            String(ledger.name || "").trim().toUpperCase() ===
+                "BANK OF MAHARASHTRA" ||
+            String(ledger.code || "").startsWith("BANK-ACCOUNT-") &&
+                String(ledger.name || "").toUpperCase().includes("MAHARASHTRA")
+        );
+        const bankOfMaharashtraLedgerIds = bankOfMaharashtraLedgers.map(
+            ledger => ledger.id
+        );
 
         const aggregateBankOfMaharashtra = async (
             window: "period" | "prior" | "opening"
         ) => {
-            if (bankLedgerIds.length === 0) return [];
+            if (
+                bankOfMaharashtraLedgerIds.length === 0 &&
+                !bankOfMaharashtraPaymentEntryFilter
+            ) return [];
 
             const voucherDate = window === "period"
                 ? { gte: startDate, lte: endDate }
@@ -595,20 +684,16 @@ export class ReportingService {
                 where: {
                     AND: [
                         ...(branchEntryFilter ? [branchEntryFilter] : []),
-                        { ledgerId: { in: bankLedgerIds } },
+                        { voucher: { voucherDate } },
                         {
-                            voucher: {
-                                voucherDate,
-                                voucherType: window === "opening"
-                                    ? VoucherType.OPENING_BALANCE
-                                    : {
-                                        notIn: [
-                                            BANK_RECEIPT_TYPE,
-                                            BANK_PAYMENT_TYPE,
-                                            VoucherType.OPENING_BALANCE
-                                        ]
+                            OR: window === "opening"
+                                ? [{
+                                    ledgerId: { in: bankOfMaharashtraLedgerIds },
+                                    voucher: {
+                                        voucherType: VoucherType.OPENING_BALANCE
                                     }
-                            }
+                                }]
+                                : bankOfMaharashtraPaymentEntryConditions
                         }
                     ]
                 },
@@ -638,9 +723,8 @@ export class ReportingService {
 
         const sumBankMovement = (
             movementMap: Map<string, { debit: number; credit: number }>
-        ) => bankLedgerIds.reduce(
-            (total, ledgerId) => {
-                const movement = movementMap.get(ledgerId);
+        ) => [...movementMap.values()].reduce(
+            (total, movement) => {
                 total.debit += Number(movement?.debit || 0);
                 total.credit += Number(movement?.credit || 0);
                 return total;
@@ -667,7 +751,9 @@ export class ReportingService {
          */
 
         const ledgerRows =
-            ledgers.map(ledger => {
+            ledgers
+            .filter(ledger => !bankOfMaharashtraLedgerIds.includes(ledger.id))
+            .map(ledger => {
 
                 /**
                  * A branch-specific report must not blindly inherit
@@ -793,13 +879,21 @@ export class ReportingService {
                 };
             });
 
-        const bankOfMaharashtraRows = bankLedgers.length > 0
+        const bankOfMaharashtraRows = (
+            bankOfMaharashtraLedgers.length > 0 ||
+            bankOfMaharashtraTransactions.length > 0
+        )
             ? (() => {
-                const sourceLedger = bankLedgers[0];
+                const sourceLedger = bankOfMaharashtraLedgers[0] || bankLedgers[0];
+                const sourceGroup = sourceLedger?.group || ledgerGroups.find(
+                    group => group.code === "BANK_ACCOUNTS"
+                );
+
+                if (!sourceGroup) return [];
                 const importedOpening = sumBankMovement(
                     bankOfMaharashtraOpeningMap
                 );
-                const ledgerOpening = bankLedgers.reduce(
+                const ledgerOpening = bankOfMaharashtraLedgers.reduce(
                     (total, ledger) => {
                         const applies =
                             (!branchId || ledger.branchId === branchId) &&
@@ -835,9 +929,9 @@ export class ReportingService {
                     ledgerId: `bank-of-maharashtra:${branchId || "all"}`,
                     ledgerCode: "BANK_OF_MAHARASHTRA",
                     account: "Bank of Maharashtra",
-                    parentGroup: sourceLedger.group.name,
-                    groupCode: sourceLedger.group.code,
-                    groupId: sourceLedger.groupId,
+                    parentGroup: sourceGroup.name,
+                    groupCode: sourceGroup.code,
+                    groupId: sourceGroup.id,
                     ledgerCategory: LedgerType.BANK,
                     ledgerNature: LedgerNature.DEBIT,
                     branchId: branchId || null,
