@@ -17,6 +17,10 @@ type TransactionPayload = {
     purchaseId?: string;
     amount: number;
     voucherType?: VoucherType;
+    type?: string;
+    importKey?: string;
+    debitCreditNoteId?: string;
+    transactionDate?: string | Date;
     paymentMode?: PaymentMode;
     paymentThrough?: PaymentType;
     transactionRefNo?: string;
@@ -27,6 +31,7 @@ type TransactionPayload = {
 type TransactionOperationOptions = {
     allowImportOverSettlement?: boolean;
     allowImportRejectedInvoice?: boolean;
+    allowImportedPurchaseNote?: boolean;
 };
 
 type FIFOAllocation = {
@@ -1310,16 +1315,16 @@ export class TransactionService {
 
         let bankAccount = null;
 
-        if (payload.paymentThrough === PaymentType.BANK_DEPOSIT) {
+        if (payload.paymentThrough === PaymentType.BANK_DEPOSIT && !payload.bankAccountId) {
 
-            if (!payload.bankAccountId) {
+            throw new ApiError(
+                "Bank Account is required",
+                400
+            );
 
-                throw new ApiError(
-                    "Bank Account is required",
-                    400
-                );
+        }
 
-            }
+        if (payload.bankAccountId) {
 
             bankAccount =
                 await prisma.bankAccount.findFirst({
@@ -1366,10 +1371,37 @@ export class TransactionService {
             throw new ApiError("Payment Through is required", 400);
         }
 
+        if (payload.importKey) {
+            const existing = await prisma.transaction.findUnique({
+                where: { importKey: payload.importKey }
+            });
+
+            if (existing) return existing;
+        }
+
+        if (payload.debitCreditNoteId) {
+            if (!options.allowImportedPurchaseNote) {
+                throw new ApiError("Imported purchase-note transaction is not allowed", 400);
+            }
+
+            const note = await prisma.debitCreditNote.findUnique({
+                where: { id: payload.debitCreditNoteId }
+            });
+
+            if (
+                !note ||
+                note.branchId !== payload.branchId ||
+                note.agencyId !== payload.agencyId ||
+                note.purchaseId !== payload.purchaseId
+            ) {
+                throw new ApiError("Invalid Debit/Credit Note transaction context", 400);
+            }
+        }
+
         const transactionNo = await this.generateTransactionNo(payload.branchId);
 
         /** Settlement Validation */
-        if(!payload.suspense) {
+        if(!payload.suspense && !payload.debitCreditNoteId) {
             await prisma.$transaction(async (tx) => {
                 switch (payload.settlementType) {
                     case SettlementType.INVOICE_TO_INVOICE:
@@ -1433,6 +1465,16 @@ export class TransactionService {
                 amount: payload.amount,
 
                 voucherType: payload.voucherType,
+
+                type: payload.type?.trim() || null,
+
+                importKey: payload.importKey,
+
+                debitCreditNoteId: payload.debitCreditNoteId,
+
+                transactionDate: payload.transactionDate
+                    ? new Date(payload.transactionDate)
+                    : new Date(),
 
                 paymentMode: payload.paymentMode,
 
@@ -1708,6 +1750,9 @@ export class TransactionService {
         return prisma.$transaction(async (tx) => {
             const transaction = await tx.transaction.findUnique({
                 where: { id: transactionId },
+                include: {
+                    debitCreditNote: true
+                }
             });
 
             if (!transaction) {
@@ -1724,7 +1769,8 @@ export class TransactionService {
 
             if (
                 !transaction.suspenseAccount &&
-                transaction.settlementType === SettlementType.INVOICE_TO_INVOICE
+                transaction.settlementType === SettlementType.INVOICE_TO_INVOICE &&
+                !transaction.debitCreditNoteId
             ) {
                 if (
                     transaction.direction === TransactionDirection.INWARD &&
@@ -1752,6 +1798,66 @@ export class TransactionService {
 
             if (lock.count === 0) {
                 throw new ApiError("Transaction was already processed by another user, please refresh and try again", 409);
+            }
+
+            /**
+             * Imported purchase notes use their linked Transaction as the
+             * single accounting source. The combined voucher contains the
+             * note adjustment and the bank settlement/refund, so the vendor
+             * movement nets to zero and must not be posted a second time by
+             * DebitCreditNoteService.
+             */
+            if (transaction.debitCreditNoteId) {
+                const note = transaction.debitCreditNote;
+
+                if (!note) {
+                    throw new ApiError("Linked Debit/Credit Note not found", 404);
+                }
+
+                if (
+                    note.status !== DebitCreditNoteStatus.PENDING &&
+                    note.status !== DebitCreditNoteStatus.APPROVED
+                ) {
+                    throw new ApiError("Linked Debit/Credit Note cannot be approved", 400);
+                }
+
+                if (note.status === DebitCreditNoteStatus.PENDING) {
+                    const noteLock = await tx.debitCreditNote.updateMany({
+                        where: {
+                            id: note.id,
+                            status: DebitCreditNoteStatus.PENDING
+                        },
+                        data: {
+                            status: DebitCreditNoteStatus.APPROVED,
+                            approvedById: actor.id,
+                            approvedAt: new Date()
+                        }
+                    });
+
+                    if (noteLock.count === 0) {
+                        throw new ApiError("Debit/Credit Note was already processed", 409);
+                    }
+                }
+
+                const voucher = await LedgerService.postTransactionApproval(
+                    tx,
+                    transaction.id
+                );
+
+                await tx.debitCreditNote.update({
+                    where: { id: note.id },
+                    data: { voucherId: voucher.id }
+                });
+
+                return tx.transaction.findUnique({
+                    where: { id: transactionId },
+                    include: {
+                        debitCreditNote: true,
+                        branch: true,
+                        agency: true,
+                        createdBy: true
+                    }
+                });
             }
 
             /** Suspensse transaction --> no allocation */

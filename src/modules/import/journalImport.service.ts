@@ -120,7 +120,7 @@ export class JournalImportService {
                     ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
 
                 const isTransaction =
-                    isInvoiceTransaction || isCancelled;
+                    isInvoiceTransaction || isCancelled || isDebitCreditNote;
 
                 switch (type) {
 

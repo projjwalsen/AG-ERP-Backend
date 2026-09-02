@@ -564,6 +564,7 @@ model Purchase {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   invoiceNo String
+
   
   purchaseOrderId String?
   purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId],references: [id],onDelete: SetNull)
@@ -972,8 +973,22 @@ model Transaction {
 
   amount Decimal @db.Decimal(18, 2)
 
-  // Accounting category from the transaction import Type column.
+  // Accounting voucher operation. The imported Excel account head is stored
+  // separately in `type`.
   voucherType VoucherType?
+
+  // Purchase-account head from the transaction-import Excel Type column.
+  type String?
+
+  // Stable fingerprint used to make transaction imports idempotent.
+  importKey String? @unique
+
+  // Imported purchase notes are represented by both a note record and a
+  // transaction. The transaction owns their combined accounting voucher.
+  debitCreditNoteId String?          @unique
+  debitCreditNote   DebitCreditNote? @relation("ImportedNoteTransaction", fields: [debitCreditNoteId], references: [id], onDelete: SetNull)
+
+  transactionDate DateTime @default(now())
 
   paymentMode PaymentMode?
   paymentType TransactionPaymentType?
@@ -998,6 +1013,9 @@ model Transaction {
 
   allocations TransactionAllocation[]
   voucher     Voucher[]
+
+  @@index([type])
+  @@index([transactionDate])
 }
 
 enum AllocationSource {
@@ -1352,9 +1370,13 @@ enum DebitCreditNoteStatus {
 model DebitCreditNote {
   id String @id @default(uuid())
 
-  noteNo     String                    @unique
+  noteNo     String
   type       DebitCreditNoteType
   sourceType DebitCreditNoteSourceType
+
+  // Stable fingerprint used to distinguish repeated note numbers belonging
+  // to different vendors and to make re-imports safe.
+  importKey String? @unique
 
   purchaseVoucherType VoucherType?
 
@@ -1379,6 +1401,8 @@ model DebitCreditNote {
   voucherId String?
   voucher   Voucher? @relation(fields: [voucherId], references: [id], onDelete: SetNull)
 
+  transaction Transaction? @relation("ImportedNoteTransaction")
+
   createdById String?
   createdBy   User?   @relation("DebitCreditNoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
@@ -1393,6 +1417,7 @@ model DebitCreditNote {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([branchId, agencyId, noteNo])
   @@index([agencyId])
   @@index([branchId])
   @@index([saleId])

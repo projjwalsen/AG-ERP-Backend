@@ -19,6 +19,7 @@ import { prisma } from "../../../config/db";
 import { ApiError } from "../../../core/middleware/errorHandler";
 import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
 import { areVoucherTotalsBalanced } from "./voucher-balance.utils";
+import { importedPurchaseNotePosting } from "../../import/transaction-import.utils";
 
 type DbClient = any;
 type TaxKind = "CGST" | "SGST" | "IGST";
@@ -87,7 +88,8 @@ const ROOT_GROUPS: Record<string, { name: string; nature: LedgerNature }> = {
     ASSETS: { name: "Assets", nature: LedgerNature.DEBIT },
     LIABILITIES: { name: "Liabilities", nature: LedgerNature.CREDIT },
     INCOME: { name: "Income", nature: LedgerNature.CREDIT },
-    EXPENSES: { name: "Expenses", nature: LedgerNature.DEBIT }
+    EXPENSES: { name: "Expenses", nature: LedgerNature.DEBIT },
+    PURCHASE_ACCOUNTS: { name: "Purchase Accounts", nature: LedgerNature.DEBIT }
 };
 
 const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: LedgerNature }> = {
@@ -112,7 +114,7 @@ const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: L
     DIRECT_INCOME: { name: "Direct Income", parentCode: "INCOME", nature: LedgerNature.CREDIT },
     INDIRECT_INCOME: { name: "Indirect Income", parentCode: "INCOME", nature: LedgerNature.CREDIT },
 
-    PURCHASE: { name: "Purchase", parentCode: "EXPENSES", nature: LedgerNature.DEBIT },
+    PURCHASE: { name: "Purchase", parentCode: "PURCHASE_ACCOUNTS", nature: LedgerNature.DEBIT },
     DIRECT_EXPENSE: { name: "Direct Expense", parentCode: "EXPENSES", nature: LedgerNature.DEBIT },
     INDIRECT_EXPENSE: { name: "Indirect Expense", parentCode: "EXPENSES", nature: LedgerNature.DEBIT }
 };
@@ -4063,6 +4065,34 @@ export class LedgerService {
         });
     }
 
+    private static async getBankAccountLedger(
+        client: DbClient,
+        branchId: string,
+        bankAccount?: {
+            id: string;
+            bankName: string;
+            accountNumber: string;
+        } | null
+    ) {
+        if (!bankAccount) {
+            return this.getBankLedger(client, branchId);
+        }
+
+        const branchCode = await this.getBranchCode(client, branchId);
+        const bankName = String(bankAccount.bankName || "Bank Account")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        return this.getOrCreateLedger(client, {
+            code: `BANK-ACCOUNT-${branchCode}-${bankAccount.id.substring(0, 8).toUpperCase()}`,
+            name: bankName,
+            category: LedgerType.BANK,
+            groupCode: "BANK_ACCOUNTS",
+            nature: LedgerNature.DEBIT,
+            branchId
+        });
+    }
+
     private static async getBankOdCcLedger(client: DbClient, branchId: string) {
         const branchCode = await this.getBranchCode(client, branchId);
         return this.getOrCreateLedger(client, {
@@ -4078,11 +4108,16 @@ export class LedgerService {
     private static async getPaymentLedger(
         client: DbClient,
         branchId: string,
-        paymentThrough?: PaymentType | null
+        paymentThrough?: PaymentType | null,
+        bankAccount?: {
+            id: string;
+            bankName: string;
+            accountNumber: string;
+        } | null
     ) {
         return paymentThrough === PaymentType.CASH
             ? this.getCashLedger(client, branchId)
-            : this.getBankLedger(client, branchId);
+            : this.getBankAccountLedger(client, branchId, bankAccount);
     }
 
     static async getOrCreateCustomerLedger(client: DbClient, branchId: string, agencyId: string) {
@@ -4163,6 +4198,78 @@ export class LedgerService {
             groupCode: "PURCHASE",
             nature: LedgerNature.DEBIT,
             branchId
+        });
+    }
+
+    static async getOrCreateImportedPurchaseTypeLedger(
+        client: DbClient,
+        branchId: string,
+        importedType: string
+    ) {
+        const normalizedType = String(importedType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+
+        if (!normalizedType) {
+            throw new ApiError("Transaction Type is required", 400);
+        }
+
+        const branchCode = await this.getBranchCode(client, branchId);
+
+        return this.getOrCreateLedger(client, {
+            code: `PURCHASE-TYPE-${this.normalizeCode(normalizedType)}-${branchCode}`,
+            name: normalizedType,
+            category: LedgerType.PURCHASE,
+            groupCode: "PURCHASE",
+            nature: LedgerNature.DEBIT,
+            branchId
+        });
+    }
+
+    static async assignPurchaseToImportedType(
+        purchaseId: string,
+        importedType: string
+    ) {
+        return prisma.$transaction(async tx => {
+            const purchase = await tx.purchase.findUnique({
+                where: { id: purchaseId },
+                select: { id: true, branchId: true }
+            });
+
+            if (!purchase) {
+                throw new ApiError("Purchase not found", 404);
+            }
+
+            const targetLedger = await this.getOrCreateImportedPurchaseTypeLedger(
+                tx,
+                purchase.branchId,
+                importedType
+            );
+            const purchaseEntries = await tx.ledgerEntry.findMany({
+                where: {
+                    voucher: { sourceId: purchase.id },
+                    ledger: { category: LedgerType.PURCHASE }
+                },
+                select: { id: true, ledgerId: true }
+            });
+            const previousLedgerIds = [...new Set(
+                purchaseEntries.map(entry => entry.ledgerId)
+            )];
+
+            if (purchaseEntries.length > 0) {
+                await tx.ledgerEntry.updateMany({
+                    where: { id: { in: purchaseEntries.map(entry => entry.id) } },
+                    data: { ledgerId: targetLedger.id }
+                });
+
+                for (const ledgerId of [...previousLedgerIds, targetLedger.id]) {
+                    await this.syncCachedBalance(tx, ledgerId);
+                }
+            }
+
+            return targetLedger;
         });
     }
 
@@ -4815,6 +4922,13 @@ export class LedgerService {
                 agency: true,
                 thirdPartyAgency: true,
                 branch: true,
+                bankAccount: true,
+                debitCreditNote: {
+                    include: {
+                        purchase: true,
+                        particulars: true
+                    }
+                },
 
                 allocations: {
                     include: {
@@ -4860,21 +4974,12 @@ export class LedgerService {
             .join(",");
 
         const amount = Number(transaction.amount);
-        const specialPurchaseTypes: VoucherType[] = [
-            VoucherType.IGST_PURCHASE,
-            VoucherType.GST_PURCHASE,
-            VoucherType.CST_PURCHASE,
-            VoucherType.DISCOUNT_PURCHASE,
-            VoucherType.HIGH_SEAS_PURCHASE,
-            VoucherType.IMPORT_PURCHASE,
-            VoucherType.VAT_PURCHASE,
-            VoucherType.INTEREST_SAUNDRY_CREDITORS
-        ];
-        const importedVoucherType = (transaction as any).voucherType as VoucherType | null | undefined;
-        const paymentLedger = importedVoucherType &&
-            specialPurchaseTypes.includes(importedVoucherType)
-            ? await this.getBankOdCcLedger(tx, transaction.branchId)
-            : await this.getPaymentLedger(tx, transaction.branchId, transaction.paymentThrough);
+        const paymentLedger = await this.getPaymentLedger(
+            tx,
+            transaction.branchId,
+            transaction.paymentThrough,
+            transaction.bankAccount
+        );
         
         const narration =
         [
@@ -4884,6 +4989,129 @@ export class LedgerService {
         ]
         .filter(Boolean)
         .join(" | ");
+
+        if (transaction.debitCreditNote) {
+            const note = transaction.debitCreditNote;
+            const importedType = String(transaction.type || "")
+                .replace(/_/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
+
+            if (!importedType) {
+                throw new ApiError("Imported purchase-note Transaction Type is required", 400);
+            }
+
+            if (
+                note.sourceType !== DebitCreditNoteSourceType.PURCHASE ||
+                !note.purchase ||
+                note.purchaseId !== transaction.purchaseId ||
+                note.agencyId !== transaction.agencyId
+            ) {
+                throw new ApiError("Invalid imported purchase-note transaction", 400);
+            }
+
+            const [vendorLedger, purchaseTypeLedger] = await Promise.all([
+                this.getOrCreateVendorLedger(
+                    tx,
+                    transaction.branchId,
+                    transaction.agencyId!
+                ),
+                this.getOrCreateImportedPurchaseTypeLedger(
+                    tx,
+                    transaction.branchId,
+                    importedType
+                )
+            ]);
+            const isDebitNote = note.type === DebitCreditNoteType.DEBIT_NOTE;
+            const posting = importedPurchaseNotePosting(note.type);
+
+            if (transaction.direction !== posting.direction) {
+                throw new ApiError("Imported purchase-note direction is invalid", 400);
+            }
+
+            const noteLabel = isDebitNote
+                ? "INWARD DEBIT NOTE"
+                : "INWARD CREDIT NOTE";
+
+            return this.createVoucher({
+                voucherType: isDebitNote
+                    ? VoucherType.DEBIT_NOTE
+                    : VoucherType.CREDIT_NOTE,
+                sourceId: transaction.id,
+                branchId: transaction.branchId,
+                voucherDate: note.noteDate || transaction.transactionDate,
+                narration: [
+                    noteLabel,
+                    note.noteNo,
+                    `TYPE:${importedType}`,
+                    `PURCHASE-INVOICE:#${note.purchase.invoiceNo}`,
+                    transaction.agency?.name,
+                    `TXN:${transaction.transactionNo}`
+                ].filter(Boolean).join(" | "),
+                entries: isDebitNote
+                    ? [
+                        {
+                            ledgerId: vendorLedger.id,
+                            entryType: posting.noteVendorEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `${noteLabel} ${note.noteNo}`
+                        },
+                        {
+                            ledgerId: purchaseTypeLedger.id,
+                            entryType: posting.purchaseEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `${noteLabel} value`
+                        },
+                        {
+                            ledgerId: paymentLedger.id,
+                            entryType: posting.bankEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `Vendor refund ${transaction.transactionNo}`
+                        },
+                        {
+                            ledgerId: vendorLedger.id,
+                            entryType: posting.settlementVendorEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `Refund settlement ${transaction.transactionNo}`
+                        }
+                    ]
+                    : [
+                        {
+                            ledgerId: purchaseTypeLedger.id,
+                            entryType: posting.purchaseEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `${noteLabel} value`
+                        },
+                        {
+                            ledgerId: vendorLedger.id,
+                            entryType: posting.noteVendorEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `${noteLabel} ${note.noteNo}`
+                        },
+                        {
+                            ledgerId: vendorLedger.id,
+                            entryType: posting.settlementVendorEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `Credit-note settlement ${transaction.transactionNo}`
+                        },
+                        {
+                            ledgerId: paymentLedger.id,
+                            entryType: posting.bankEntryType,
+                            amount,
+                            branchId: transaction.branchId,
+                            narration: `Payment ${transaction.transactionNo}`
+                        }
+                    ]
+            }, tx);
+        }
         
         
         
@@ -4912,7 +5140,7 @@ export class LedgerService {
                     voucherType: VoucherType.CONTRA,
                     sourceId: transaction.id,
                     branchId: transaction.branchId,
-                    voucherDate: transaction.updatedAt ?? new Date(),
+                    voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
 
                     narration:
                         `CONTRA | ${narration} | Third Party Vendor Settlement`,
@@ -4966,7 +5194,7 @@ export class LedgerService {
 
                 branchId: transaction.branchId,
 
-                voucherDate: transaction.updatedAt ?? new Date(),
+                voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
 
                 narration:
                     `CONTRA | ${narration} | Third Party Customer Settlement`,
@@ -5007,7 +5235,7 @@ export class LedgerService {
                         : VoucherType.BANK_PAYMENT,
                 sourceId: transaction.id,
                 branchId: transaction.branchId,
-                voucherDate: transaction.updatedAt || new Date(),
+                voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
                 narration:
                 `${
                     transaction.direction === TransactionDirection.INWARD
@@ -5037,7 +5265,7 @@ export class LedgerService {
                     voucherType: VoucherType.CONTRA,
                     sourceId: transaction.id,
                     branchId: transaction.branchId,
-                    voucherDate: transaction.updatedAt || new Date(),
+                    voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
                     narration: `CONTRA | ${narration} | THIRD PARTY INWARD`,
                     entries: [
                         { ledgerId: thirdPartyVendorLedger.id, entryType: EntryType.DEBIT, amount, branchId: transaction.branchId, narration: `Third party Vendor adjustment` },
@@ -5055,7 +5283,7 @@ export class LedgerService {
                 voucherType: VoucherType.CONTRA,
                 sourceId: transaction.id,
                 branchId: transaction.branchId,
-                voucherDate: transaction.updatedAt || new Date(),
+                voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
                 narration: `CONTRA | ${narration} | THIRD PARTY OUTWARD`,
                 entries: [
                     { ledgerId: vendorLedger.id, entryType: EntryType.DEBIT, amount, branchId: transaction.branchId, narration: allocationNarration || `Vendor Settlement` },
@@ -5071,7 +5299,7 @@ export class LedgerService {
                 voucherType: VoucherType.RECEIPT,
                 sourceId: transaction.id,
                 branchId: transaction.branchId,
-                voucherDate: transaction.updatedAt || new Date(),
+                voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
                 narration: `RECEIPT | ${narration}`,
                 entries: [
                     { ledgerId: paymentLedger.id, entryType: EntryType.DEBIT, amount, branchId: transaction.branchId, narration: `Receipt ${transaction.transactionNo}` },
@@ -5088,7 +5316,7 @@ export class LedgerService {
                 : VoucherType.BANK_PAYMENT,
             sourceId: transaction.id,
             branchId: transaction.branchId,
-            voucherDate: transaction.updatedAt || new Date(),
+            voucherDate: transaction.transactionDate || transaction.updatedAt || new Date(),
             narration: `PAYMENT | ${narration}`,
             entries: [
                 { ledgerId: vendorLedger.id, entryType: EntryType.DEBIT, amount, branchId: transaction.branchId, narration: allocationNarration || `Settlement against Vendor` },
