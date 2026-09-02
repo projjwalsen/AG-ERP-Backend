@@ -879,12 +879,11 @@ export class ReportingService {
                 };
             });
 
-        // Purchase and sales ledgers are rendered by imported Type, while
-        // branch-specific generic heads (for example
-        // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are consolidated into
-        // one legacy Purchase/Sales row. This keeps heads such as
-        // "IGST SALES" and "IGST PURCHASE" visible without exposing agency
-        // or branch implementation ledgers.
+        // Purchase and sales accounts display only explicit imported Types.
+        // The generic branch ledgers (for example
+        // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are legacy control
+        // ledgers, not accounting heads, and must not create a separate
+        // "Purchase" or "Sales" row in the Trial Balance.
         const aggregateAccountRows = (category: LedgerType) => {
             const sourceRows = rawLedgerRows.filter(
                 row => row.ledgerCategory === category
@@ -898,6 +897,10 @@ export class ReportingService {
             const group = ledgerGroups.find(item => item.code === groupCode);
             const grouped = new Map<string, any[]>();
 
+            const genericHead = category === LedgerType.PURCHASE
+                ? "PURCHASE"
+                : "SALES";
+
             for (const row of sourceRows) {
                 const code = String(row.ledgerCode || "").toUpperCase();
                 const account = String(row.account || "").trim();
@@ -906,11 +909,12 @@ export class ReportingService {
                         /^(?:IGST|GST|CST|DISCOUNT|HIGH SEAS|IMPORT|VAT|INTEREST)\s+PURCHASE(?:\s+-|$)/i.test(account)
                     : code.startsWith("SALES-TYPE-") ||
                         /^(?:IGST|GST|CST|DISCOUNT|EXPORT|INTERSTATE|LOCAL)\s+SALES(?:\s+-|\s+@|$)/i.test(account);
-                const head = isTyped
-                    ? account.replace(/\s+-\s+[^-]+$/, "").trim()
-                    : category === LedgerType.PURCHASE
-                        ? "Purchase"
-                        : "Sales";
+
+                if (!isTyped) continue;
+
+                const head = account.replace(/\s+-\s+[^-]+$/, "").trim();
+                if (head.toUpperCase() === genericHead) continue;
+
                 const rowsForHead = grouped.get(head) || [];
                 rowsForHead.push(row);
                 grouped.set(head, rowsForHead);
@@ -922,12 +926,10 @@ export class ReportingService {
                         .reduce((total, row) => total + Number(row[key] || 0), 0)
                         .toFixed(2)
                 );
-                const typedCode = head !== "Purchase" && head !== "Sales";
-
                 return {
                     ...rowsForHead[0],
                     ledgerId: `aggregate:${category}:${head}:${branchId || "all"}`,
-                    ledgerCode: `${groupCode}_${typedCode ? "TYPE_" + head : "ACCOUNTS"}_TOTAL`
+                    ledgerCode: `${groupCode}_TYPE_${head}_TOTAL`
                         .replace(/[^A-Z0-9_]+/gi, "_")
                         .toUpperCase(),
                     account: head,
