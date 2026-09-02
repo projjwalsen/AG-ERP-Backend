@@ -644,7 +644,8 @@ export class TransactionService {
     private static async allocateInvoice(
         tx: Prisma.TransactionClient,
         transaction: Transaction,
-        allowImportOverSettlement = false
+        allowImportOverSettlement = false,
+        allowImportPartialSettlement = false
     ) {
         const invoice = await this.getInvoiceOutstanding(
             tx,
@@ -655,10 +656,12 @@ export class TransactionService {
             }
         );
 
-        if (
-            !allowImportOverSettlement &&
-            invoice.outstandings !== Number(transaction.amount)
-        ) {
+        const amount = Number(transaction.amount);
+        const settlementMismatch = allowImportPartialSettlement
+            ? amount > invoice.outstandings
+            : invoice.outstandings !== amount;
+
+        if (!allowImportOverSettlement && settlementMismatch) {
             throw new ApiError(
                 "Invoice outstanding has changed. Please refresh.",
                 409
@@ -694,7 +697,8 @@ export class TransactionService {
     private static async settleInvToInvPayment(
         tx: Prisma.TransactionClient,
         transaction: Transaction,
-        allowImportOverSettlement = false
+        allowImportOverSettlement = false,
+        allowImportPartialSettlement = false
     ) {
         const amount = Number(transaction.amount);
 
@@ -712,7 +716,8 @@ export class TransactionService {
         await this.allocateInvoice(
             tx,
             transaction,
-            allowImportOverSettlement
+            allowImportOverSettlement,
+            allowImportPartialSettlement
         )
 
 
@@ -1897,7 +1902,8 @@ export class TransactionService {
                     await this.settleInvToInvPayment(
                         tx,
                         transaction,
-                        options.allowImportOverSettlement
+                        options.allowImportOverSettlement,
+                        options.allowImportPartialSettlement
                     );
                     break;
 
@@ -1910,9 +1916,17 @@ export class TransactionService {
 
                 default:
                     throw new ApiError(
-                        "Invalid settlement type", 
+                        "Invalid settlement type",
                         400
                     );
+            }
+
+            if (transaction.saleId && transaction.type) {
+                await LedgerService.assignSaleToImportedType(
+                    tx,
+                    transaction.saleId,
+                    transaction.type
+                );
             }
 
             await LedgerService.postTransactionApproval(tx, transaction.id);

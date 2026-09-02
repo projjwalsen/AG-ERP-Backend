@@ -879,11 +879,12 @@ export class ReportingService {
                 };
             });
 
-        // Purchase and sales ledgers are control totals in the Trial Balance.
-        // Individual branch/type/legacy ledgers (for example
-        // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") must not be rendered as
-        // separate accounts. Their opening balances and all approved ledger
-        // movements are added into one Purchase and one Sales row.
+        // Purchase and sales ledgers are rendered by imported Type, while
+        // branch-specific generic heads (for example
+        // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are consolidated into
+        // one legacy Purchase/Sales row. This keeps heads such as
+        // "IGST SALES" and "IGST PURCHASE" visible without exposing agency
+        // or branch implementation ledgers.
         const aggregateAccountRows = (category: LedgerType) => {
             const sourceRows = rawLedgerRows.filter(
                 row => row.ledgerCategory === category
@@ -895,39 +896,61 @@ export class ReportingService {
                 ? "PURCHASE"
                 : "SALES";
             const group = ledgerGroups.find(item => item.code === groupCode);
-            const label = category === LedgerType.PURCHASE
-                ? "Purchase"
-                : "Sales";
-            const sum = (key: string) => Number(
-                sourceRows
-                    .reduce((total, row) => total + Number(row[key] || 0), 0)
-                    .toFixed(2)
-            );
+            const grouped = new Map<string, any[]>();
 
-            return [{
-                ...sourceRows[0],
-                ledgerId: `aggregate:${category}:${branchId || "all"}`,
-                ledgerCode: `${groupCode}_ACCOUNTS_TOTAL`,
-                account: label,
-                parentGroup: group?.name || label,
-                groupCode,
-                groupId: group?.id || sourceRows[0].groupId,
-                ledgerCategory: category,
-                ledgerNature: category === LedgerType.PURCHASE
-                    ? LedgerNature.DEBIT
-                    : LedgerNature.CREDIT,
-                branchId: branchId || null,
-                branchName: branch?.name || null,
-                periodDebit: sum("periodDebit"),
-                periodCredit: sum("periodCredit"),
-                openingDebit: sum("openingDebit"),
-                openingCredit: sum("openingCredit"),
-                debit: sum("closingDebit"),
-                credit: sum("closingCredit"),
-                closingDebit: sum("closingDebit"),
-                closingCredit: sum("closingCredit"),
-                closingSigned: sum("closingSigned")
-            }];
+            for (const row of sourceRows) {
+                const code = String(row.ledgerCode || "").toUpperCase();
+                const account = String(row.account || "").trim();
+                const isTyped = category === LedgerType.PURCHASE
+                    ? code.startsWith("PURCHASE-TYPE-") ||
+                        /^(?:IGST|GST|CST|DISCOUNT|HIGH SEAS|IMPORT|VAT|INTEREST)\s+PURCHASE(?:\s+-|$)/i.test(account)
+                    : code.startsWith("SALES-TYPE-") ||
+                        /^(?:IGST|GST|CST|DISCOUNT|EXPORT|INTERSTATE|LOCAL)\s+SALES(?:\s+-|\s+@|$)/i.test(account);
+                const head = isTyped
+                    ? account.replace(/\s+-\s+[^-]+$/, "").trim()
+                    : category === LedgerType.PURCHASE
+                        ? "Purchase"
+                        : "Sales";
+                const rowsForHead = grouped.get(head) || [];
+                rowsForHead.push(row);
+                grouped.set(head, rowsForHead);
+            }
+
+            return [...grouped.entries()].map(([head, rowsForHead]) => {
+                const sum = (key: string) => Number(
+                    rowsForHead
+                        .reduce((total, row) => total + Number(row[key] || 0), 0)
+                        .toFixed(2)
+                );
+                const typedCode = head !== "Purchase" && head !== "Sales";
+
+                return {
+                    ...rowsForHead[0],
+                    ledgerId: `aggregate:${category}:${head}:${branchId || "all"}`,
+                    ledgerCode: `${groupCode}_${typedCode ? "TYPE_" + head : "ACCOUNTS"}_TOTAL`
+                        .replace(/[^A-Z0-9_]+/gi, "_")
+                        .toUpperCase(),
+                    account: head,
+                    parentGroup: group?.name || head,
+                    groupCode,
+                    groupId: group?.id || rowsForHead[0].groupId,
+                    ledgerCategory: category,
+                    ledgerNature: category === LedgerType.PURCHASE
+                        ? LedgerNature.DEBIT
+                        : LedgerNature.CREDIT,
+                    branchId: branchId || null,
+                    branchName: branch?.name || null,
+                    periodDebit: sum("periodDebit"),
+                    periodCredit: sum("periodCredit"),
+                    openingDebit: sum("openingDebit"),
+                    openingCredit: sum("openingCredit"),
+                    debit: sum("closingDebit"),
+                    credit: sum("closingCredit"),
+                    closingDebit: sum("closingDebit"),
+                    closingCredit: sum("closingCredit"),
+                    closingSigned: sum("closingSigned")
+                };
+            });
         };
 
         const ledgerRows = [
