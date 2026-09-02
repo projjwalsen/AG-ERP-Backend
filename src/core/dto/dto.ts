@@ -241,6 +241,8 @@ export interface JournalImportDTO {
 
     voucherType: string;
 
+    accountingVoucherType?: string;
+
     particulars: string;
 
     debitAmount: number;

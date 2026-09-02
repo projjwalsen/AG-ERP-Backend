@@ -1,4 +1,4 @@
-import { LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteType, LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -10,6 +10,37 @@ import { JournalService } from "../journal/journal.service";
 import { TransactionService } from "../transaction/transac.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { InventoryService } from "../inventory/inventory.service";
+import { DebitCreditNoteService } from "../debitCreditNote/debitCreditNote.service";
+import { randomUUID } from "crypto";
+
+const SPECIAL_PURCHASE_TYPES: VoucherType[] = [
+    VoucherType.IGST_PURCHASE,
+    VoucherType.GST_PURCHASE,
+    VoucherType.CST_PURCHASE,
+    VoucherType.DISCOUNT_PURCHASE,
+    VoucherType.HIGH_SEAS_PURCHASE,
+    VoucherType.IMPORT_PURCHASE,
+    VoucherType.VAT_PURCHASE,
+    VoucherType.INTEREST_SAUNDRY_CREDITORS
+];
+
+const purchaseTypeFromText = (value?: string): VoucherType | undefined => {
+    const key = String(value || "")
+        .replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+    const map: Record<string, VoucherType> = {
+        "IGST PURCHASE": VoucherType.IGST_PURCHASE,
+        "GST PURCHASE": VoucherType.GST_PURCHASE,
+        "CST PURCHASE": VoucherType.CST_PURCHASE,
+        "DISCOUNT": VoucherType.DISCOUNT_PURCHASE,
+        "DISCOUNT PURCHASE": VoucherType.DISCOUNT_PURCHASE,
+        "HIGH SEAS PURCHASE": VoucherType.HIGH_SEAS_PURCHASE,
+        "IMPORT PURCHASE": VoucherType.IMPORT_PURCHASE,
+        "VAT PURCHASE": VoucherType.VAT_PURCHASE,
+        "INTEREST PAID TO S.CREDITORS": VoucherType.INTEREST_SAUNDRY_CREDITORS,
+        "INTEREST SAUNDRY CREDITORS": VoucherType.INTEREST_SAUNDRY_CREDITORS
+    };
+    return map[key];
+};
 
 export class ImportResolver {
 
@@ -20,6 +51,16 @@ export class ImportResolver {
             "OUTWARD DEBIT NOTE",
             "OUTWARD CREDIT NOTE"
         ].includes((dto.voucherType || "").trim().toUpperCase());
+    }
+
+    static isInwardDebitCreditNoteImportRow(dto: JournalImportDTO) {
+        const voucherType = String(dto.voucherType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+
+        return ["INWARD DEBIT NOTE", "INWARD CREDIT NOTE"].includes(voucherType);
     }
 
     static isCancelledTransactionImportRow(dto: JournalImportDTO) {
@@ -2831,11 +2872,11 @@ export class ImportResolver {
                 // direction. A BANK_PAYMENT must use an OUTWARD head so
                 // approveJournal places the Bank ledger on CREDIT; a
                 // BANK_RECEIPT must use an INWARD head so Bank is DEBIT.
-                const agencyHeadType = isCashOrBankVoucher
-                    ? (isReceipt ? "INWARD" : "OUTWARD") as const
+                const agencyHeadType: "INWARD" | "OUTWARD" = isCashOrBankVoucher
+                    ? (isReceipt ? "INWARD" : "OUTWARD")
                     : dto.debitAmount > dto.creditAmount
-                        ? "OUTWARD" as const
-                        : "INWARD" as const;
+                        ? "OUTWARD"
+                        : "INWARD";
                 const agencyCacheKey = `AGENCY:${agency.id}:${agencyLedger.id}:${agencyHeadType}`;
                 const cachedAgencyHead = this.journalHeadCache.get(agencyCacheKey);
 
@@ -2988,6 +3029,53 @@ export class ImportResolver {
 
     }
 
+    static async importInwardPurchaseNote(actor: any, dto: JournalImportDTO) {
+        const normalizedType = String(dto.voucherType || "")
+            .replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+        const noteType = normalizedType === "INWARD DEBIT NOTE"
+            ? DebitCreditNoteType.DEBIT_NOTE
+            : DebitCreditNoteType.CREDIT_NOTE;
+
+        const purchaseVoucherType = purchaseTypeFromText(dto.accountingVoucherType);
+        if (!purchaseVoucherType || !SPECIAL_PURCHASE_TYPES.includes(purchaseVoucherType)) {
+            throw new Error(`Inward note ${dto.voucherNo} requires a valid Type column`);
+        }
+
+        const purchase = await this.resolvePurchaseForJournalTransaction(dto);
+        if (!purchase) throw new Error(`Purchase not found for inward note ${dto.voucherNo}`);
+
+        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new Error(`Inward note ${dto.voucherNo} has no valid amount`);
+        }
+
+        const existing = await prisma.debitCreditNote.findUnique({
+            where: { noteNo: String(dto.voucherNo || "").trim() }
+        });
+        if (existing) {
+            if (existing.status === "PENDING") await DebitCreditNoteService.approveNote(actor, existing.id);
+            return existing;
+        }
+
+        const note = await DebitCreditNoteService.createNote(actor, {
+            noteNo: String(dto.voucherNo || "").trim(),
+            type: noteType,
+            sourceType: DebitCreditNoteSourceType.PURCHASE,
+            agencyId: purchase.agencyId,
+            branchId: purchase.branchId,
+            purchaseId: purchase.id,
+            purchaseVoucherType,
+            noteDate: dto.date || new Date(),
+            narration: dto.particulars || `Imported ${dto.voucherType}`,
+            particulars: [{
+                description: dto.particulars || purchase.invoiceNo,
+                amount
+            }]
+        });
+
+        return DebitCreditNoteService.approveNote(actor, note.id);
+    }
+
     static async importInvoiceTransaction(
         actor: any,
         dto: JournalImportDTO
@@ -2997,6 +3085,10 @@ export class ImportResolver {
             dto.voucherType
                 ?.trim()
                 .toUpperCase();
+
+        if (this.isInwardDebitCreditNoteImportRow(dto)) {
+            return this.importInwardPurchaseNote(actor, dto);
+        }
 
         if (this.isCancelledTransactionImportRow(dto)) {
             return this.createCancelledSaleTransaction(actor, dto);
@@ -3045,7 +3137,7 @@ export class ImportResolver {
             return;
         }
 
-        if (voucherType === "PURCHASE" || voucherType === "RCM PURCHASE") {
+        if (["PURCHASE", "RCM PURCHASE", "IGST PURCHASE", "GST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(voucherType || "")) {
 
             const payload =
                 await this.buildPurchaseTransactionPayload(
@@ -3179,35 +3271,14 @@ export class ImportResolver {
 
         }
 
-        const agency =
-            await prisma.agency.findUnique({
-
-                where: {
-
-                    id: sale.agencyId
-
-                },
-
-                include: {
-
-                    bankAccount: true
-
-                }
-
-            });
-
-        const hasBankAccount =
-            !!agency?.bankAccountId;
+        const bankAccount = await this.resolveImportedBankAccount(sale.branchId);
 
         return {
 
             branchId:
                 sale.branchId,
 
-            bankAccountId:
-                hasBankAccount
-            ? agency?.bankAccountId
-            : undefined,
+            bankAccountId: bankAccount.id,
 
             direction:
                 TransactionDirection.INWARD,
@@ -3229,10 +3300,9 @@ export class ImportResolver {
                     sale.grandTotal
                 ),
 
-            paymentThrough:
-                hasBankAccount
-            ? PaymentType.BANK_DEPOSIT
-            : PaymentType.CASH,
+            paymentMode: PaymentMode.ONLINE,
+            paymentThrough: PaymentType.CHEQUE,
+            referenceNo: `CHQ-${randomUUID().slice(0, 12).toUpperCase()}`,
 
             remarks:
                 this.journalTransactionImportRemark(
@@ -3261,30 +3331,18 @@ export class ImportResolver {
 
         }
 
-        const agency =
-            await prisma.agency.findUnique({
-
-                where: {
-                    id: purchase.agencyId
-                },
-
-                include: {
-                    bankAccount: true
-                }
-
-            });
-
-        const paymentThrough =
-            agency?.bankAccountId
-                ? PaymentType.BANK_DEPOSIT
-                : PaymentType.CASH;
+        const bankAccount = await this.resolveImportedBankAccount(purchase.branchId);
+        const importedPurchaseType = purchaseTypeFromText(dto.accountingVoucherType) ||
+            (purchase.voucherType && SPECIAL_PURCHASE_TYPES.includes(purchase.voucherType)
+                ? purchase.voucherType
+                : undefined);
+        const paymentThrough = PaymentType.CHEQUE;
 
         return {
 
             branchId: purchase.branchId,
 
-            bankAccountId:
-                agency?.bankAccountId ?? undefined,
+            bankAccountId: bankAccount.id,
 
             direction:
                 TransactionDirection.OUTWARD,
@@ -3303,7 +3361,10 @@ export class ImportResolver {
             amount:
                 Number(purchase.grandTotal),
 
+            paymentMode: PaymentMode.ONLINE,
             paymentThrough,
+            referenceNo: `CHQ-${randomUUID().slice(0, 12).toUpperCase()}`,
+            voucherType: importedPurchaseType,
 
             remarks:
                 this.journalTransactionImportRemark(
@@ -3312,6 +3373,28 @@ export class ImportResolver {
 
         };
 
+    }
+
+    private static async resolveImportedBankAccount(branchId: string) {
+        const existing = await prisma.bankAccount.findFirst({
+            where: {
+                branchId,
+                bankName: { equals: "Bank of Maharashtra", mode: "insensitive" },
+                isActive: true
+            }
+        });
+        if (existing) return existing;
+
+        return prisma.bankAccount.create({
+            data: {
+                branchId,
+                bankName: "Bank of Maharashtra",
+                bankBranchName: "Imported Account",
+                accountNumber: `IMPORT-BOM-${branchId.slice(0, 8).toUpperCase()}`,
+                ifscCode: "MAHB0000000",
+                isActive: true
+            }
+        });
     }
 
     private static journalTransactionImportRemark(

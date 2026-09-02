@@ -1968,6 +1968,10 @@ export class ExcelImportService {
 
                     voucherType,
 
+                    accountingVoucherType:
+                        String(this.getValue(row, "Type", "Account Type", "Purchase Type") || "")
+                            .trim().toUpperCase().replace(/_/g, " ").replace(/\s+/g, " ") || undefined,
+
                     particulars,
 
                     debitAmount:

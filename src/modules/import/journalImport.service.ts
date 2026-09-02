@@ -5,6 +5,12 @@ import pLimit from "p-limit";
 import { Express } from "express";
 import { createImportErrorReport } from "./multer.import";
 
+const SPECIAL_PURCHASE_TYPES = [
+    "IGST PURCHASE", "GST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE",
+    "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE",
+    "INTEREST SAUNDRY CREDITORS"
+];
+
 export class JournalImportService {
 
     static async importWorkbook(
@@ -105,7 +111,7 @@ export class JournalImportService {
                     ImportResolver.isCancelledTransactionImportRow(dto);
 
                 const isInvoiceTransaction =
-                    ["PURCHASE", "TAX INVOICE", "RCM PURCHASE"].includes(voucherType);
+                    ["PURCHASE", "TAX INVOICE", "RCM PURCHASE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
 
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
@@ -167,17 +173,25 @@ export class JournalImportService {
                         const isCancelled =
                             ImportResolver.isCancelledTransactionImportRow(dto);
                         const isInvoiceTransaction =
-                            ["PURCHASE", "TAX INVOICE", "RCM PURCHASE"].includes(voucherType);
+                            ["PURCHASE", "TAX INVOICE", "RCM PURCHASE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
 
                         const isExplicitJournalVoucher =
                             ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
 
+                        const isInwardNote = ImportResolver.isInwardDebitCreditNoteImportRow(dto);
+
                         // -----------------------------
                         // Journal Import
                         // -----------------------------
                         if (
+                            (type === "TRANSACTION" || type === "BOTH") &&
+                            isInwardNote
+                        ) {
+                            await ImportResolver.importInwardPurchaseNote(actor, dto);
+                        } else if (
+                            (
                             (
                                 type === "JOURNAL" ||
                                 type === "BOTH" ||
@@ -185,6 +199,7 @@ export class JournalImportService {
                             ) &&
                             !isInvoiceTransaction &&
                             !isCancelled
+                            )
                         ) {
 
                             const payload =

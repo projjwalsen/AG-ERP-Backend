@@ -972,6 +972,9 @@ model Transaction {
 
   amount Decimal @db.Decimal(18, 2)
 
+  // Accounting category from the transaction import Type column.
+  voucherType VoucherType?
+
   paymentMode PaymentMode?
   paymentType TransactionPaymentType?
 
@@ -1137,6 +1140,15 @@ enum VoucherType {
   CONTRA
   DEBIT_NOTE
   CREDIT_NOTE
+
+  IGST_PURCHASE
+  GST_PURCHASE
+  CST_PURCHASE
+  DISCOUNT_PURCHASE
+  HIGH_SEAS_PURCHASE
+  IMPORT_PURCHASE
+  VAT_PURCHASE
+  INTEREST_SAUNDRY_CREDITORS
 
   OPENING_BALANCE
 }
@@ -1344,6 +1356,8 @@ model DebitCreditNote {
   type       DebitCreditNoteType
   sourceType DebitCreditNoteSourceType
 
+  purchaseVoucherType VoucherType?
+
   agencyId String
   agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
 
@@ -1383,6 +1397,7 @@ model DebitCreditNote {
   @@index([branchId])
   @@index([saleId])
   @@index([purchaseId])
+  @@index([purchaseVoucherType])
   @@index([sourceType])
   @@index([status])
   @@index([type])

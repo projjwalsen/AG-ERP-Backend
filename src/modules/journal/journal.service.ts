@@ -180,6 +180,10 @@ export class JournalService {
                     // BANK_RECEIPT on the INWARD path (Bank DEBIT).
                     type: dto.type
 
+                },
+
+                include: {
+                    ledger: true
                 }
 
             });

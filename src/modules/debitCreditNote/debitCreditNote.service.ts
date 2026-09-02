@@ -5,7 +5,8 @@ import {
     OutstandingType,
     Prisma,
     PurchaseStatus,
-    SalesStatus
+    SalesStatus,
+    VoucherType
 } from "@prisma/client";
 
 import { randomUUID } from "crypto";
@@ -37,6 +38,8 @@ type CreateNotePayload = {
 
     saleId?: string;
     purchaseId?: string;
+    noteNo?: string;
+    purchaseVoucherType?: VoucherType;
 
     noteDate?: string | Date;
     narration?: string;
@@ -876,9 +879,7 @@ export class DebitCreditNoteService {
                 return tx.debitCreditNote.create({
                     data: {
                         noteNo:
-                            this.generateNoteNo(
-                                payload.type
-                            ),
+                            payload.noteNo?.trim() || this.generateNoteNo(payload.type),
 
                         type:
                             payload.type,
@@ -902,6 +903,11 @@ export class DebitCreditNoteService {
                             payload.sourceType ===
                             DebitCreditNoteSourceType.PURCHASE
                                 ? payload.purchaseId
+                                : null,
+
+                        purchaseVoucherType:
+                            payload.sourceType === DebitCreditNoteSourceType.PURCHASE
+                                ? payload.purchaseVoucherType || null
                                 : null,
 
                         noteDate:

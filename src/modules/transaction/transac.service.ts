@@ -1,4 +1,4 @@
-import { DebitCreditNoteStatus, DebitCreditNoteType, TransactionDirection, TransactionStatus, PaymentType, OutstandingType, SettlementType, Prisma, SalesStatus, PurchaseStatus, Transaction } from "@prisma/client";
+import { DebitCreditNoteStatus, DebitCreditNoteType, TransactionDirection, TransactionStatus, PaymentMode, PaymentType, OutstandingType, SettlementType, Prisma, SalesStatus, PurchaseStatus, Transaction, VoucherType } from "@prisma/client";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { prisma } from "../../config/db";
 import { randomUUID } from "crypto";
@@ -16,6 +16,8 @@ type TransactionPayload = {
     saleId?: string;
     purchaseId?: string;
     amount: number;
+    voucherType?: VoucherType;
+    paymentMode?: PaymentMode;
     paymentThrough?: PaymentType;
     transactionRefNo?: string;
     referenceNo?: string;
@@ -1429,6 +1431,10 @@ export class TransactionService {
                 purchaseId: payload.purchaseId,
 
                 amount: payload.amount,
+
+                voucherType: payload.voucherType,
+
+                paymentMode: payload.paymentMode,
 
                 paymentThrough: payload.paymentThrough,
 
