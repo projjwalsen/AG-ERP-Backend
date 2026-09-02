@@ -19,6 +19,7 @@
     "delb": "tsx src/scripts/delete-branch.ts",
     "accounting:sync": "tsx src/scripts/backfill-ledger.ts",
     "repair:cash-payment-vouchers": "tsx src/scripts/repair-cash-payment-vouchers.ts",
+    "repair:journal-payment-receipts": "tsx src/scripts/repair-journal-payment-receipts.ts",
     "repair:cash-opening-balance": "tsx src/scripts/repair-cash-opening-balance.ts",
     "remove:duplicate-bank-vouchers": "tsx src/scripts/remove-duplicate-bank-vouchers.ts",
     "repair:bank-receipt-entries": "tsx src/scripts/repair-bank-receipt-entries.ts",
