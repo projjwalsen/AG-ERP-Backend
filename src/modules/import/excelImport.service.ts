@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ProductImportDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
+import { normalizeImportedTransactionType } from "./transaction-import.utils";
 export class ExcelImportService {
 
     /**
@@ -1872,7 +1873,8 @@ export class ExcelImportService {
     };
 
     static parseJournalRows(
-        rows: Record<string, any>[]
+        rows: Record<string, any>[],
+        sourceSheet?: string
     ): JournalImportDTO[] {
 
         return rows
@@ -1913,7 +1915,9 @@ export class ExcelImportService {
                 // Keep malformed bank rows in the import pipeline so the
                 // caller can report the missing voucher number instead of
                 // silently dropping them.
-                if (!voucherNo && voucherType !== "OPENING BALANCE" && !isBankVoucher)
+                const isSalesInvoice = voucherType === "TAX INVOICE";
+
+                if (!voucherNo && voucherType !== "OPENING BALANCE" && !isBankVoucher && !isSalesInvoice)
                     return null;
 
                 const invoiceNo =
@@ -1937,13 +1941,7 @@ export class ExcelImportService {
                         ) || ""
                     ).trim();
 
-                const particulars =
-                    String(
-                        this.getValue(
-                            row,
-                            "Particulars"
-                        ) || ""
-                    ).trim();
+                const particulars = this.getJournalParticulars(row);
 
                 if (this.isTotalRow(row, particulars)) {
                     return null;
@@ -1953,6 +1951,10 @@ export class ExcelImportService {
 
                     importIndex:
                         index + 1,
+
+                    sourceSheet,
+
+                    sourceRow: index + 9,
 
                     date:
                         this.toDate(
@@ -1971,8 +1973,9 @@ export class ExcelImportService {
                     voucherType,
 
                     accountingVoucherType:
-                        String(this.getValue(row, "Type", "Account Type", "Purchase Type") || "")
-                            .trim().toUpperCase().replace(/_/g, " ").replace(/\s+/g, " ") || undefined,
+                        normalizeImportedTransactionType(
+                            this.getValue(row, "Type", "Account Type", "Purchase Type")
+                        ) || undefined,
 
                     particulars,
 
@@ -2002,5 +2005,45 @@ export class ExcelImportService {
 
             .filter(Boolean);
 
+    }
+
+    private static getJournalParticulars(row: Record<string, any>) {
+        const directParty = this.getValue(
+            row,
+            "Customer",
+            "Buyer",
+            "Party",
+            "Supplier",
+            "Consignee"
+        );
+
+        if (directParty) {
+            return String(directParty).trim();
+        }
+
+        const particulars = String(this.getValue(row, "Particulars") || "").trim();
+        if (!/^(?:BY|TO)$/i.test(particulars)) {
+            return particulars;
+        }
+
+        const values = Object.values(row);
+        const markerIndex = values.findIndex(value =>
+            /^(?:BY|TO)$/i.test(String(value || "").trim())
+        );
+
+        if (markerIndex >= 0) {
+            for (const value of values.slice(markerIndex + 1)) {
+                const candidate = String(value || "").trim();
+                if (
+                    candidate &&
+                    !/^(?:BY|TO|TAX\s+INVOICE|GST[_ ]?SALES|IGST[_ ]?SALES|SCRAP[_ ]?DRUMS?)$/i.test(candidate) &&
+                    !/^[\d,.-]+$/.test(candidate)
+                ) {
+                    return candidate;
+                }
+            }
+        }
+
+        return particulars;
     }
 }

@@ -8,12 +8,15 @@ import { createHash } from "crypto";
 export const normalizeImportedTransactionType = (value: unknown) =>
     String(value || "")
         .replace(/_/g, " ")
+        .replace(/\bSALE\b/gi, "SALES")
+        .replace(/\s*@\s*/g, " @")
         .replace(/\s+/g, " ")
         .trim()
         .toUpperCase();
 
 export const normalizeImportedPartyName = (value: unknown) =>
     String(value || "")
+        .replace(/\s*\(?DRS?\.?\)?\s*$/i, "")
         .replace(/\s+(?:-\s*)?CRS?\s*$/i, "")
         .replace(/[^A-Z0-9]+/gi, " ")
         .replace(/\s+/g, " ")

@@ -67,6 +67,7 @@ type LedgerSeed = {
     name: string;
     category: LedgerType;
     groupCode: string;
+    groupId?: string;
     nature: LedgerNature;
     branchId?: string | null;
     agencyId?: string | null;
@@ -89,7 +90,8 @@ const ROOT_GROUPS: Record<string, { name: string; nature: LedgerNature }> = {
     LIABILITIES: { name: "Liabilities", nature: LedgerNature.CREDIT },
     INCOME: { name: "Income", nature: LedgerNature.CREDIT },
     EXPENSES: { name: "Expenses", nature: LedgerNature.DEBIT },
-    PURCHASE_ACCOUNTS: { name: "Purchase Accounts", nature: LedgerNature.DEBIT }
+    PURCHASE_ACCOUNTS: { name: "Purchase Accounts", nature: LedgerNature.DEBIT },
+    SALES_ACCOUNTS: { name: "Sales Accounts", nature: LedgerNature.CREDIT }
 };
 
 const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: LedgerNature }> = {
@@ -110,7 +112,7 @@ const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: L
     TCS_PAYABLE: { name: "TCS Payable", parentCode: "DUTIES_AND_TAXES", nature: LedgerNature.CREDIT },
     SUSPENSE_ACCOUNT: { name: "Suspense Account", parentCode: "LIABILITIES", nature: LedgerNature.CREDIT },
 
-    SALES: { name: "Sales", parentCode: "INCOME", nature: LedgerNature.CREDIT },
+    SALES: { name: "Sales", parentCode: "SALES_ACCOUNTS", nature: LedgerNature.CREDIT },
     DIRECT_INCOME: { name: "Direct Income", parentCode: "INCOME", nature: LedgerNature.CREDIT },
     INDIRECT_INCOME: { name: "Indirect Income", parentCode: "INCOME", nature: LedgerNature.CREDIT },
 
@@ -314,7 +316,13 @@ export class LedgerService {
             return existing;
         }
 
-        const group = await this.getOrCreateGroup(client, seed.groupCode);
+        const group = seed.groupId
+            ? await client.ledgerGroup.findUnique({ where: { id: seed.groupId } })
+            : await this.getOrCreateGroup(client, seed.groupCode);
+
+        if (!group) {
+            throw new ApiError("Ledger group not found", 404);
+        }
 
         try {
             return await client.ledger.create({

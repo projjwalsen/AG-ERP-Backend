@@ -750,7 +750,7 @@ export class ReportingService {
          * - period credit
          */
 
-        const ledgerRows =
+        const rawLedgerRows =
             ledgers
             .filter(ledger => !bankOfMaharashtraLedgerIds.includes(ledger.id))
             .map(ledger => {
@@ -878,6 +878,66 @@ export class ReportingService {
                         amounts.closingSigned
                 };
             });
+
+        // Purchase and sales ledgers are control totals in the Trial Balance.
+        // Individual branch/type/legacy ledgers (for example
+        // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") must not be rendered as
+        // separate accounts. Their opening balances and all approved ledger
+        // movements are added into one Purchase and one Sales row.
+        const aggregateAccountRows = (category: LedgerType) => {
+            const sourceRows = rawLedgerRows.filter(
+                row => row.ledgerCategory === category
+            );
+
+            if (sourceRows.length === 0) return [];
+
+            const groupCode = category === LedgerType.PURCHASE
+                ? "PURCHASE"
+                : "SALES";
+            const group = ledgerGroups.find(item => item.code === groupCode);
+            const label = category === LedgerType.PURCHASE
+                ? "Purchase"
+                : "Sales";
+            const sum = (key: string) => Number(
+                sourceRows
+                    .reduce((total, row) => total + Number(row[key] || 0), 0)
+                    .toFixed(2)
+            );
+
+            return [{
+                ...sourceRows[0],
+                ledgerId: `aggregate:${category}:${branchId || "all"}`,
+                ledgerCode: `${groupCode}_ACCOUNTS_TOTAL`,
+                account: label,
+                parentGroup: group?.name || label,
+                groupCode,
+                groupId: group?.id || sourceRows[0].groupId,
+                ledgerCategory: category,
+                ledgerNature: category === LedgerType.PURCHASE
+                    ? LedgerNature.DEBIT
+                    : LedgerNature.CREDIT,
+                branchId: branchId || null,
+                branchName: branch?.name || null,
+                periodDebit: sum("periodDebit"),
+                periodCredit: sum("periodCredit"),
+                openingDebit: sum("openingDebit"),
+                openingCredit: sum("openingCredit"),
+                debit: sum("closingDebit"),
+                credit: sum("closingCredit"),
+                closingDebit: sum("closingDebit"),
+                closingCredit: sum("closingCredit"),
+                closingSigned: sum("closingSigned")
+            }];
+        };
+
+        const ledgerRows = [
+            ...rawLedgerRows.filter(row =>
+                row.ledgerCategory !== LedgerType.PURCHASE &&
+                row.ledgerCategory !== LedgerType.SALES
+            ),
+            ...aggregateAccountRows(LedgerType.PURCHASE),
+            ...aggregateAccountRows(LedgerType.SALES)
+        ];
 
         const bankOfMaharashtraRows = (
             bankOfMaharashtraLedgers.length > 0 ||
