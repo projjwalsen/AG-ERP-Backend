@@ -1,6 +1,27 @@
 import * as XLSX from "xlsx";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ProductImportDTO } from "../../core/dto/dto";
 import { AgencyType } from "@prisma/client";
+
+export const IMPORTABLE_PURCHASE_VOUCHER_TYPES = [
+    "PURCHASE",
+    "RCM PURCHASE",
+    "IGST PURCHASE",
+    "GST PURCHASE",
+    "CST PURCHASE",
+    "DISCOUNT PURCHASE",
+    "HIGH SEAS PURCHASE",
+    "IMPORT PURCHASE",
+    "VAT PURCHASE",
+    "INTEREST SAUNDRY CREDITORS"
+] as const;
+
+export const normalizePurchaseVoucherType = (value: unknown) =>
+    String(value || "")
+        .replace(/_/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+
 export class ExcelImportService {
 
     /**
@@ -1279,11 +1300,11 @@ export class ExcelImportService {
                 continue;
             }
 
+            const normalizedRowVoucherType =
+                normalizePurchaseVoucherType(row.voucherType);
             const isRcmPurchase =
                 type === "PURCHASE" &&
-                row.voucherType
-                    .toUpperCase()
-                    .includes("RCM PURCHASE");
+                normalizedRowVoucherType === "RCM PURCHASE";
 
             /**
              * Purchase & Tax Invoice only
@@ -1291,12 +1312,9 @@ export class ExcelImportService {
             if (
                 !isRcmPurchase &&
                 ![
-                    "PURCHASE",
+                    ...IMPORTABLE_PURCHASE_VOUCHER_TYPES,
                     "TAX INVOICE"
-                ].includes(
-                    row.voucherType
-                        .toUpperCase()
-                )
+                ].includes(normalizedRowVoucherType as any)
             ) {
                 continue;
             }
@@ -1967,6 +1985,17 @@ export class ExcelImportService {
                     otherReferenceNo,
 
                     voucherType,
+
+                    accountingVoucherType:
+                        String(
+                            this.getValue(
+                                row,
+                                "Type",
+                                "Account Type",
+                                "Purchase Type",
+                                "Particular Type"
+                            ) || ""
+                        ).trim().toUpperCase().replace(/_/g, " ").replace(/\s+/g, " ") || undefined,
 
                     particulars,
 

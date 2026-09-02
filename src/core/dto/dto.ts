@@ -125,6 +125,13 @@ export interface GroupedVoucherDTO {
 
     voucherType: string;
 
+    /**
+     * Optional accounting category from the Excel `Type` column.  For an
+     * inward debit/credit note this is separate from voucherType, which is
+     * the note kind itself.
+     */
+    accountingVoucherType?: string;
+
     voucherNo: string;
 
     voucherDate?: Date;
