@@ -1138,7 +1138,7 @@ export class JournalService {
                                                                 ? VoucherType.INTEREST_SAUNDRY_CREDITORS
                                 : null;
 
-            const specialPurchaseVoucherTypes = [
+            const specialPurchaseVoucherTypes: VoucherType[] = [
                 VoucherType.IGST_PURCHASE,
                 VoucherType.GST_PURCHASE,
                 VoucherType.CST_PURCHASE,
@@ -1151,12 +1151,12 @@ export class JournalService {
 
             if (explicitImportedVoucherType &&
                 specialPurchaseVoucherTypes.includes(explicitImportedVoucherType)) {
-                const purchaseLedger = await this.getPurchaseLedger(
+                const purchaseLedger = await LedgerService.getPurchaseLedger(
                     tx,
                     journal.branchId,
                     explicitImportedVoucherType
                 );
-                const bankOdCcLedger = await this.getBankOdCcLedger(
+                const bankOdCcLedger = await LedgerService.getBankOdCcLedger(
                     tx,
                     journal.branchId
                 );
@@ -1167,7 +1167,7 @@ export class JournalService {
                     ? EntryType.CREDIT
                     : EntryType.DEBIT;
 
-                return this.createVoucher({
+                return LedgerService.createVoucher({
                     voucherType: explicitImportedVoucherType,
                     sourceId: journal.id,
                     branchId: journal.branchId,

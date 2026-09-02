@@ -4063,7 +4063,7 @@ export class LedgerService {
         });
     }
 
-    private static async getBankOdCcLedger(client: DbClient, branchId: string) {
+    static async getBankOdCcLedger(client: DbClient, branchId: string) {
         const branchCode = await this.getBranchCode(client, branchId);
 
         return this.getOrCreateLedger(client, {
@@ -4137,7 +4137,7 @@ export class LedgerService {
         });
     }
 
-    private static async getPurchaseLedger(
+    static async getPurchaseLedger(
         client: DbClient,
         branchId: string,
         voucherType: VoucherType = VoucherType.PURCHASE
@@ -4675,7 +4675,7 @@ export class LedgerService {
                 
                 
         /** NOTE ADJUSTMENT LEDGER */
-        const specialPurchaseVoucherTypes = [
+        const specialPurchaseVoucherTypes: VoucherType[] = [
             VoucherType.IGST_PURCHASE,
             VoucherType.GST_PURCHASE,
             VoucherType.CST_PURCHASE,
@@ -4878,7 +4878,7 @@ export class LedgerService {
             .join(",");
 
         const amount = Number(transaction.amount);
-        const specialPurchaseTypes = [
+        const specialPurchaseTypes: VoucherType[] = [
             VoucherType.IGST_PURCHASE,
             VoucherType.GST_PURCHASE,
             VoucherType.CST_PURCHASE,
