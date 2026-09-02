@@ -3766,22 +3766,33 @@ export class ExcelService {
                 (sum, item) => sum + Number(item.closingSigned || 0),
                 0
             );
-            const groupRow = worksheet.addRow([
-                group.label,
-                groupDebit || null,
-                groupCredit || null,
-                groupClosingSigned || null
-            ]);
+            // Sales/Purchase Accounts already have a parent heading.  Their
+            // child label was a generic control-total ("Sales"/"Purchase")
+            // that duplicated the intent of the section; list the valid type
+            // heads directly beneath the parent instead.
+            const isTypedTradingSection = [
+                "SALES_ACCOUNTS",
+                "PURCHASE_ACCOUNTS"
+            ].includes(group.parentKey);
 
-            groupRow.font = { bold: true };
-            groupRow.fill = {
-                type: "pattern",
-                pattern: "none"
-            };
-            groupRow.getCell(2).numFmt = '#,##0.00';
-            groupRow.getCell(3).numFmt = '#,##0.00';
-            groupRow.getCell(4).numFmt =
-                '#,##0.00 "Dr";#,##0.00 "Cr";-';
+            if (!isTypedTradingSection) {
+                const groupRow = worksheet.addRow([
+                    group.label,
+                    groupDebit || null,
+                    groupCredit || null,
+                    groupClosingSigned || null
+                ]);
+
+                groupRow.font = { bold: true };
+                groupRow.fill = {
+                    type: "pattern",
+                    pattern: "none"
+                };
+                groupRow.getCell(2).numFmt = '#,##0.00';
+                groupRow.getCell(3).numFmt = '#,##0.00';
+                groupRow.getCell(4).numFmt =
+                    '#,##0.00 "Dr";#,##0.00 "Cr";-';
+            }
 
             group.items
                 .sort((a, b) =>

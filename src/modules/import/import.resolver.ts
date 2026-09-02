@@ -3427,7 +3427,8 @@ export class ImportResolver {
         if (!sale) {
 
             throw new Error(
-                `Sale not found : ${dto.voucherNo}`
+                `Sale invoice ${dto.invoiceNo || dto.voucherNo} is not in the system. ` +
+                "Import the matching Sales Register first, then re-run Transaction Import."
             );
 
         }
@@ -3785,35 +3786,12 @@ export class ImportResolver {
         }
 
         if (matches.length === 1) return matches[0];
-        if (!importedParty) return null;
 
-        const fifoSales = await prisma.sale.findMany({
-            where: saleWhere,
-            include: saleInclude,
-            orderBy: [
-                { invoiceDate: "asc" },
-                { createdAt: "asc" }
-            ]
-        });
-
-        const customerSales = fifoSales.filter(sale =>
-            normalizeImportedPartyName(sale.agency.name) === importedParty
-        );
-
-        return customerSales.find(sale => {
-            const allocated = sale.allocations.reduce(
-                (sum, allocation) => sum + Number(allocation.allocatedAmount),
-                0
-            );
-            const debitNotes = sale.debitCreditNotes
-                .filter(note => note.type === DebitCreditNoteType.DEBIT_NOTE)
-                .reduce((sum, note) => sum + Number(note.totalAmount), 0);
-            const creditNotes = sale.debitCreditNotes
-                .filter(note => note.type === DebitCreditNoteType.CREDIT_NOTE)
-                .reduce((sum, note) => sum + Number(note.totalAmount), 0);
-
-            return Number(sale.grandTotal) + debitNotes - creditNotes - allocated > 0;
-        }) || null;
+        // A Tax Invoice must always settle its own invoice.  Falling back to
+        // the oldest open invoice for the same customer can post the receipt
+        // to an unrelated sale and then surface the misleading
+        // "Invoice outstanding has changed" error.
+        return null;
 
     }
 
