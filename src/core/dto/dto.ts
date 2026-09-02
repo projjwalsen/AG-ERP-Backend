@@ -241,7 +241,6 @@ export interface JournalImportDTO {
 
     voucherType: string;
 
-    /** Purchase Account category from the Excel Type column. */
     accountingVoucherType?: string;
 
     particulars: string;

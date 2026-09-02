@@ -4063,9 +4063,8 @@ export class LedgerService {
         });
     }
 
-    static async getBankOdCcLedger(client: DbClient, branchId: string) {
+    private static async getBankOdCcLedger(client: DbClient, branchId: string) {
         const branchCode = await this.getBranchCode(client, branchId);
-
         return this.getOrCreateLedger(client, {
             code: `BANK-OD-CC-${branchCode}`,
             name: `Bank OD & CC Account - ${branchCode}`,
@@ -4137,32 +4136,29 @@ export class LedgerService {
         });
     }
 
-    static async getPurchaseLedger(
+    private static async getPurchaseLedger(
         client: DbClient,
         branchId: string,
         voucherType: VoucherType = VoucherType.PURCHASE
     ) {
         const branchCode = await this.getBranchCode(client, branchId);
-        const isDefaultPurchase = voucherType === VoucherType.PURCHASE ||
-            voucherType === VoucherType.RCM_PURCHASE;
-        const purchaseLabel = isDefaultPurchase
-            ? "Purchase"
-            : ({
-                IGST_PURCHASE: "IGST PURCHASE",
-                GST_PURCHASE: "GST PURCHASE",
-                CST_PURCHASE: "CST PURCHASE",
-                DISCOUNT_PURCHASE: "DISCOUNT",
-                HIGH_SEAS_PURCHASE: "HIGH SEAS PURCHASE",
-                IMPORT_PURCHASE: "IMPORT PURCHASE",
-                VAT_PURCHASE: "VAT PURCHASE",
-                INTEREST_SAUNDRY_CREDITORS: "INTEREST PAID TO S.CREDITORS"
-            } as Record<string, string>)[voucherType] || voucherType.replace(/_/g, " ");
+        const labels: Partial<Record<VoucherType, string>> = {
+            [VoucherType.IGST_PURCHASE]: "IGST PURCHASE",
+            [VoucherType.GST_PURCHASE]: "GST PURCHASE",
+            [VoucherType.CST_PURCHASE]: "CST PURCHASE",
+            [VoucherType.DISCOUNT_PURCHASE]: "DISCOUNT",
+            [VoucherType.HIGH_SEAS_PURCHASE]: "HIGH SEAS PURCHASE",
+            [VoucherType.IMPORT_PURCHASE]: "IMPORT PURCHASE",
+            [VoucherType.VAT_PURCHASE]: "VAT PURCHASE",
+            [VoucherType.INTEREST_SAUNDRY_CREDITORS]: "INTEREST PAID TO S.CREDITORS"
+        };
+        const label = labels[voucherType] || "Purchase";
 
         return this.getOrCreateLedger(client, {
-            code: isDefaultPurchase
+            code: label === "Purchase"
                 ? `PURCHASE-${branchCode}`
-                : `${this.normalizeCode(purchaseLabel)}-${branchCode}`,
-            name: `${purchaseLabel} - ${branchCode}`,
+                : `${this.normalizeCode(label)}-${branchCode}`,
+            name: `${label} - ${branchCode}`,
             category: LedgerType.PURCHASE,
             groupCode: "PURCHASE",
             nature: LedgerNature.DEBIT,
@@ -4296,11 +4292,7 @@ export class LedgerService {
             vendorLedger,
             roundOffLedger
         ] = await Promise.all([
-            this.getPurchaseLedger(
-                tx,
-                purchase.branchId,
-                purchase.voucherType ?? VoucherType.PURCHASE
-            ),
+            this.getPurchaseLedger(tx, purchase.branchId, purchase.voucherType ?? VoucherType.PURCHASE),
 
             this.getOrCreateVendorLedger(
                 tx,
@@ -4675,7 +4667,7 @@ export class LedgerService {
                 
                 
         /** NOTE ADJUSTMENT LEDGER */
-        const specialPurchaseVoucherTypes: VoucherType[] = [
+        const notePurchaseTypes: VoucherType[] = [
             VoucherType.IGST_PURCHASE,
             VoucherType.GST_PURCHASE,
             VoucherType.CST_PURCHASE,
@@ -4685,13 +4677,9 @@ export class LedgerService {
             VoucherType.VAT_PURCHASE,
             VoucherType.INTEREST_SAUNDRY_CREDITORS
         ];
-        const purchaseVoucherType = isPurchase &&
-            specialPurchaseVoucherTypes.includes(note.purchaseVoucherType as VoucherType)
-            ? note.purchaseVoucherType as VoucherType
-            : undefined;
-
-        const noteLedger = purchaseVoucherType
-            ? await this.getPurchaseLedger(tx, note.branchId, purchaseVoucherType)
+        const noteLedger = isPurchase && note.purchaseVoucherType &&
+            notePurchaseTypes.includes(note.purchaseVoucherType)
+            ? await this.getPurchaseLedger(tx, note.branchId, note.purchaseVoucherType)
             : await this.getOrCreateLedger(
                     tx,
                     {
@@ -4828,12 +4816,6 @@ export class LedgerService {
                 thirdPartyAgency: true,
                 branch: true,
 
-                purchase: {
-                    select: {
-                        voucherType: true
-                    }
-                },
-
                 allocations: {
                     include: {
                         sale: {
@@ -4888,8 +4870,9 @@ export class LedgerService {
             VoucherType.VAT_PURCHASE,
             VoucherType.INTEREST_SAUNDRY_CREDITORS
         ];
-        const paymentLedger = transaction.purchase?.voucherType &&
-            specialPurchaseTypes.includes(transaction.purchase.voucherType)
+        const importedVoucherType = (transaction as any).voucherType as VoucherType | null | undefined;
+        const paymentLedger = importedVoucherType &&
+            specialPurchaseTypes.includes(importedVoucherType)
             ? await this.getBankOdCcLedger(tx, transaction.branchId)
             : await this.getPaymentLedger(tx, transaction.branchId, transaction.paymentThrough);
         

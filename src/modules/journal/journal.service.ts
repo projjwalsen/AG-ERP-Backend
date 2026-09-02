@@ -1120,77 +1120,7 @@ export class JournalService {
                             ? VoucherType.CASH_PAYMENT
                             : importedVoucherType.startsWith("BANK PAYMENT ")
                                 ? VoucherType.BANK_PAYMENT
-                                : importedVoucherType.startsWith("IGST PURCHASE ")
-                                    ? VoucherType.IGST_PURCHASE
-                                    : importedVoucherType.startsWith("GST PURCHASE ")
-                                        ? VoucherType.GST_PURCHASE
-                                        : importedVoucherType.startsWith("CST PURCHASE ")
-                                            ? VoucherType.CST_PURCHASE
-                                            : importedVoucherType.startsWith("DISCOUNT PURCHASE ")
-                                                ? VoucherType.DISCOUNT_PURCHASE
-                                                : importedVoucherType.startsWith("HIGH SEAS PURCHASE ")
-                                                    ? VoucherType.HIGH_SEAS_PURCHASE
-                                                    : importedVoucherType.startsWith("IMPORT PURCHASE ")
-                                                        ? VoucherType.IMPORT_PURCHASE
-                                                        : importedVoucherType.startsWith("VAT PURCHASE ")
-                                                            ? VoucherType.VAT_PURCHASE
-                                                            : importedVoucherType.startsWith("INTEREST SAUNDRY CREDITORS ")
-                                                                ? VoucherType.INTEREST_SAUNDRY_CREDITORS
                                 : null;
-
-            const specialPurchaseVoucherTypes: VoucherType[] = [
-                VoucherType.IGST_PURCHASE,
-                VoucherType.GST_PURCHASE,
-                VoucherType.CST_PURCHASE,
-                VoucherType.DISCOUNT_PURCHASE,
-                VoucherType.HIGH_SEAS_PURCHASE,
-                VoucherType.IMPORT_PURCHASE,
-                VoucherType.VAT_PURCHASE,
-                VoucherType.INTEREST_SAUNDRY_CREDITORS
-            ];
-
-            if (explicitImportedVoucherType &&
-                specialPurchaseVoucherTypes.includes(explicitImportedVoucherType)) {
-                const purchaseLedger = await LedgerService.getPurchaseLedger(
-                    tx,
-                    journal.branchId,
-                    explicitImportedVoucherType
-                );
-                const bankOdCcLedger = await LedgerService.getBankOdCcLedger(
-                    tx,
-                    journal.branchId
-                );
-                const purchaseEntryType = journal.journalHead.type === JournalHeadType.OUTWARD
-                    ? EntryType.DEBIT
-                    : EntryType.CREDIT;
-                const bankOdCcEntryType = purchaseEntryType === EntryType.DEBIT
-                    ? EntryType.CREDIT
-                    : EntryType.DEBIT;
-
-                return LedgerService.createVoucher({
-                    voucherType: explicitImportedVoucherType,
-                    sourceId: journal.id,
-                    branchId: journal.branchId,
-                    narration: journal.remarks,
-                    voucherDate: journal.journalDate,
-                    entries: [
-                        {
-                            ledgerId: purchaseLedger.id,
-                            entryType: purchaseEntryType,
-                            amount: Number(journal.amount),
-                            branchId: journal.branchId,
-                            narration: `${explicitImportedVoucherType} purchase value`
-                        },
-                        {
-                            ledgerId: bankOdCcLedger.id,
-                            entryType: bankOdCcEntryType,
-                            amount: Number(journal.amount),
-                            branchId: journal.branchId,
-                            narration: "Bank OD & CC Account"
-                        }
-                    ]
-                }, tx);
-            }
 
             const voucher =
                 await LedgerService.createVoucher(

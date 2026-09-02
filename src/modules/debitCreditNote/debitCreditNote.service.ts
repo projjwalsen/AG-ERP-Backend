@@ -38,7 +38,6 @@ type CreateNotePayload = {
 
     saleId?: string;
     purchaseId?: string;
-
     noteNo?: string;
     purchaseVoucherType?: VoucherType;
 
@@ -880,10 +879,7 @@ export class DebitCreditNoteService {
                 return tx.debitCreditNote.create({
                     data: {
                         noteNo:
-                            payload.noteNo?.trim() ||
-                            this.generateNoteNo(
-                                payload.type
-                            ),
+                            payload.noteNo?.trim() || this.generateNoteNo(payload.type),
 
                         type:
                             payload.type,
@@ -910,8 +906,7 @@ export class DebitCreditNoteService {
                                 : null,
 
                         purchaseVoucherType:
-                            payload.sourceType ===
-                            DebitCreditNoteSourceType.PURCHASE
+                            payload.sourceType === DebitCreditNoteSourceType.PURCHASE
                                 ? payload.purchaseVoucherType || null
                                 : null,
 
