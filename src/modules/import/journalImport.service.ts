@@ -5,6 +5,17 @@ import pLimit from "p-limit";
 import { Express } from "express";
 import { createImportErrorReport } from "./multer.import";
 
+const SPECIAL_PURCHASE_JOURNAL_TYPES = [
+    "IGST PURCHASE",
+    "GST PURCHASE",
+    "CST PURCHASE",
+    "DISCOUNT PURCHASE",
+    "HIGH SEAS PURCHASE",
+    "IMPORT PURCHASE",
+    "VAT PURCHASE",
+    "INTEREST SAUNDRY CREDITORS"
+];
+
 export class JournalImportService {
 
     static async importWorkbook(
@@ -105,13 +116,16 @@ export class JournalImportService {
                     ImportResolver.isCancelledTransactionImportRow(dto);
 
                 const isInvoiceTransaction =
-                    ["PURCHASE", "TAX INVOICE", "RCM PURCHASE"].includes(voucherType);
+                    ["TAX INVOICE", "PURCHASE", "RCM PURCHASE"].includes(voucherType);
 
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
 
                 const isExplicitJournalVoucher =
-                    ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
+                    [
+                        "CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT",
+                        "OPENING BALANCE", ...SPECIAL_PURCHASE_JOURNAL_TYPES
+                    ].includes(voucherType);
 
                 const isTransaction =
                     isInvoiceTransaction || isCancelled;
@@ -167,23 +181,37 @@ export class JournalImportService {
                         const isCancelled =
                             ImportResolver.isCancelledTransactionImportRow(dto);
                         const isInvoiceTransaction =
-                            ["PURCHASE", "TAX INVOICE", "RCM PURCHASE"].includes(voucherType);
+                            ["TAX INVOICE", "PURCHASE", "RCM PURCHASE"].includes(voucherType);
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
+                        const isInwardDebitCreditNote =
+                            ImportResolver.isInwardDebitCreditNoteImportRow(dto);
 
                         const isExplicitJournalVoucher =
-                            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
+                            [
+                                "CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT",
+                                "OPENING BALANCE", ...SPECIAL_PURCHASE_JOURNAL_TYPES
+                            ].includes(voucherType);
 
                         // -----------------------------
                         // Journal Import
                         // -----------------------------
                         if (
+                            (type === "TRANSACTION" || type === "BOTH") &&
+                            isInwardDebitCreditNote
+                        ) {
+                            await ImportResolver.importInwardDebitCreditNote(
+                                actor,
+                                dto
+                            );
+                        } else if (
                             (
                                 type === "JOURNAL" ||
                                 type === "BOTH" ||
                             (type === "TRANSACTION" && (isDebitCreditNote || isExplicitJournalVoucher))
                             ) &&
                             !isInvoiceTransaction &&
+                            !isInwardDebitCreditNote &&
                             !isCancelled
                         ) {
 

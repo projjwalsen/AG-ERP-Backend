@@ -1,4 +1,4 @@
-import { LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteType, LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -10,6 +10,7 @@ import { JournalService } from "../journal/journal.service";
 import { TransactionService } from "../transaction/transac.service";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { InventoryService } from "../inventory/inventory.service";
+import { DebitCreditNoteService } from "../debitCreditNote/debitCreditNote.service";
 
 export class ImportResolver {
 
@@ -20,6 +21,12 @@ export class ImportResolver {
             "OUTWARD DEBIT NOTE",
             "OUTWARD CREDIT NOTE"
         ].includes((dto.voucherType || "").trim().toUpperCase());
+    }
+
+    static isInwardDebitCreditNoteImportRow(dto: JournalImportDTO) {
+        return ["INWARD DEBIT NOTE", "INWARD CREDIT NOTE"].includes(
+            String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase()
+        );
     }
 
     static isCancelledTransactionImportRow(dto: JournalImportDTO) {
@@ -2017,10 +2024,13 @@ export class ImportResolver {
     static async buildPurchasePayload(
         voucher: GroupedVoucherDTO
     ): Promise<any> {
-        const isRcmPurchase =
-            voucher.voucherType
-                .toUpperCase()
-                .includes("RCM PURCHASE");
+        const normalizedVoucherType = String(voucher.voucherType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+        const isRcmPurchase = normalizedVoucherType === "RCM PURCHASE";
+        const purchaseVoucherType = normalizedVoucherType.replace(/\s+/g, "_") as VoucherType;
 
         const agency =
             await this.resolveOrCreateAgency(
@@ -2116,8 +2126,17 @@ export class ImportResolver {
                 voucher.invoiceDate,
 
             voucherType:
-                isRcmPurchase
-                    ? VoucherType.RCM_PURCHASE
+                purchaseVoucherType === VoucherType.RCM_PURCHASE ||
+                purchaseVoucherType === VoucherType.PURCHASE ||
+                purchaseVoucherType === VoucherType.IGST_PURCHASE ||
+                purchaseVoucherType === VoucherType.GST_PURCHASE ||
+                purchaseVoucherType === VoucherType.CST_PURCHASE ||
+                purchaseVoucherType === VoucherType.DISCOUNT_PURCHASE ||
+                purchaseVoucherType === VoucherType.HIGH_SEAS_PURCHASE ||
+                purchaseVoucherType === VoucherType.IMPORT_PURCHASE ||
+                purchaseVoucherType === VoucherType.VAT_PURCHASE ||
+                purchaseVoucherType === VoucherType.INTEREST_SAUNDRY_CREDITORS
+                    ? purchaseVoucherType
                     : VoucherType.PURCHASE,
 
             otherReference:
@@ -2831,11 +2850,12 @@ export class ImportResolver {
                 // direction. A BANK_PAYMENT must use an OUTWARD head so
                 // approveJournal places the Bank ledger on CREDIT; a
                 // BANK_RECEIPT must use an INWARD head so Bank is DEBIT.
-                const agencyHeadType = isCashOrBankVoucher
-                    ? (isReceipt ? "INWARD" : "OUTWARD") as const
-                    : dto.debitAmount > dto.creditAmount
-                        ? "OUTWARD" as const
-                        : "INWARD" as const;
+                const agencyHeadType: "INWARD" | "OUTWARD" =
+                    isCashOrBankVoucher
+                        ? (isReceipt ? "INWARD" : "OUTWARD")
+                        : dto.debitAmount > dto.creditAmount
+                            ? "OUTWARD"
+                            : "INWARD";
                 const agencyCacheKey = `AGENCY:${agency.id}:${agencyLedger.id}:${agencyHeadType}`;
                 const cachedAgencyHead = this.journalHeadCache.get(agencyCacheKey);
 
@@ -2851,7 +2871,8 @@ export class ImportResolver {
                             equals: particularsForMatch,
                             mode: "insensitive"
                         }
-                    }
+                    },
+                    include: { ledger: true }
                 });
 
                 if (!agencyHead) {
@@ -2988,6 +3009,80 @@ export class ImportResolver {
 
     }
 
+    static async importInwardDebitCreditNote(
+        actor: any,
+        dto: JournalImportDTO
+    ) {
+        const noteType = String(dto.voucherType || "")
+            .replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase() ===
+            "INWARD DEBIT NOTE"
+            ? DebitCreditNoteType.DEBIT_NOTE
+            : DebitCreditNoteType.CREDIT_NOTE;
+
+        const purchaseTypeText = String(
+            dto.accountingVoucherType ||
+            Object.entries(dto.raw || {}).find(([key]) =>
+                /^(type|account type|purchase type|particular type)$/i.test(key)
+            )?.[1] || ""
+        ).replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+
+        const purchaseTypeMap: Record<string, VoucherType> = {
+            "IGST PURCHASE": VoucherType.IGST_PURCHASE,
+            "GST PURCHASE": VoucherType.GST_PURCHASE,
+            "CST PURCHASE": VoucherType.CST_PURCHASE,
+            "DISCOUNT": VoucherType.DISCOUNT_PURCHASE,
+            "DISCOUNT PURCHASE": VoucherType.DISCOUNT_PURCHASE,
+            "HIGH SEAS PURCHASE": VoucherType.HIGH_SEAS_PURCHASE,
+            "IMPORT PURCHASE": VoucherType.IMPORT_PURCHASE,
+            "VAT PURCHASE": VoucherType.VAT_PURCHASE,
+            "INTEREST PAID TO S.CREDITORS": VoucherType.INTEREST_SAUNDRY_CREDITORS,
+            "INTEREST SAUNDRY CREDITORS": VoucherType.INTEREST_SAUNDRY_CREDITORS
+        };
+        const purchaseVoucherType = purchaseTypeMap[purchaseTypeText];
+        if (!purchaseVoucherType) {
+            throw new Error(
+                `Inward note ${dto.voucherNo} requires a valid Type column value for Purchase Account`
+            );
+        }
+
+        const purchase = await this.resolvePurchaseForJournalTransaction(dto);
+        if (!purchase) {
+            throw new Error(`Purchase not found for inward note ${dto.voucherNo}`);
+        }
+
+        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new Error(`Inward note ${dto.voucherNo} has no valid amount`);
+        }
+
+        const noteNo = String(dto.voucherNo || "").trim();
+        const existing = await prisma.debitCreditNote.findUnique({ where: { noteNo } });
+        if (existing) {
+            if (existing.status === "PENDING") {
+                await DebitCreditNoteService.approveNote(actor, existing.id);
+            }
+            return existing;
+        }
+
+        const note = await DebitCreditNoteService.createNote(actor, {
+            noteNo,
+            type: noteType,
+            sourceType: DebitCreditNoteSourceType.PURCHASE,
+            agencyId: purchase.agencyId,
+            branchId: purchase.branchId,
+            purchaseId: purchase.id,
+            purchaseVoucherType,
+            noteDate: dto.date || new Date(),
+            narration: dto.particulars || `Imported ${dto.voucherType}`,
+            particulars: [{
+                description: dto.particulars || purchase.invoiceNo,
+                amount
+            }]
+        });
+
+        return DebitCreditNoteService.approveNote(actor, note.id);
+    }
+
     static async importInvoiceTransaction(
         actor: any,
         dto: JournalImportDTO
@@ -3007,7 +3102,19 @@ export class ImportResolver {
         // ledger). Ensure that head exists before creating the transaction so
         // a transaction import does not depend on a separately imported
         // journal file.
-        if (["TAX INVOICE", "PURCHASE", "RCM PURCHASE"].includes(voucherType || "")) {
+        if ([
+            "TAX INVOICE",
+            "PURCHASE",
+            "RCM PURCHASE",
+            "IGST PURCHASE",
+            "GST PURCHASE",
+            "CST PURCHASE",
+            "DISCOUNT PURCHASE",
+            "HIGH SEAS PURCHASE",
+            "IMPORT PURCHASE",
+            "VAT PURCHASE",
+            "INTEREST SAUNDRY CREDITORS"
+        ].includes(voucherType || "")) {
             await this.resolveOrCreateJournalHead(actor, dto);
         }
 
@@ -3045,7 +3152,18 @@ export class ImportResolver {
             return;
         }
 
-        if (voucherType === "PURCHASE" || voucherType === "RCM PURCHASE") {
+        if ([
+            "PURCHASE",
+            "RCM PURCHASE",
+            "IGST PURCHASE",
+            "GST PURCHASE",
+            "CST PURCHASE",
+            "DISCOUNT PURCHASE",
+            "HIGH SEAS PURCHASE",
+            "IMPORT PURCHASE",
+            "VAT PURCHASE",
+            "INTEREST SAUNDRY CREDITORS"
+        ].includes(voucherType || "")) {
 
             const payload =
                 await this.buildPurchaseTransactionPayload(
@@ -3274,8 +3392,38 @@ export class ImportResolver {
 
             });
 
+        const specialPurchaseTypes = [
+            "IGST_PURCHASE",
+            "GST_PURCHASE",
+            "CST_PURCHASE",
+            "DISCOUNT_PURCHASE",
+            "HIGH_SEAS_PURCHASE",
+            "IMPORT_PURCHASE",
+            "VAT_PURCHASE",
+            "INTEREST_SAUNDRY_CREDITORS"
+        ];
+        const isSpecialPurchase = specialPurchaseTypes.includes(
+            String(purchase.voucherType || "PURCHASE")
+        );
+        const bankAccount = isSpecialPurchase && !agency?.bankAccountId
+            ? await prisma.bankAccount.findFirst({
+                where: {
+                    branchId: purchase.branchId,
+                    isActive: true
+                },
+                orderBy: { createdAt: "asc" }
+            })
+            : null;
+        const selectedBankAccountId = agency?.bankAccountId || bankAccount?.id;
+
+        if (isSpecialPurchase && !selectedBankAccountId) {
+            throw new Error(
+                `No active Bank Account found for special purchase ${purchase.invoiceNo}`
+            );
+        }
+
         const paymentThrough =
-            agency?.bankAccountId
+            selectedBankAccountId
                 ? PaymentType.BANK_DEPOSIT
                 : PaymentType.CASH;
 
@@ -3284,7 +3432,7 @@ export class ImportResolver {
             branchId: purchase.branchId,
 
             bankAccountId:
-                agency?.bankAccountId ?? undefined,
+                selectedBankAccountId ?? undefined,
 
             direction:
                 TransactionDirection.OUTWARD,

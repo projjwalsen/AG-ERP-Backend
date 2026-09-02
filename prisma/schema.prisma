@@ -1129,6 +1129,14 @@ enum VoucherType {
   RCM_PURCHASE
   RECEIPT
   PAYMENT
+  IGST_PURCHASE
+  GST_PURCHASE
+  CST_PURCHASE
+  DISCOUNT_PURCHASE
+  HIGH_SEAS_PURCHASE
+  IMPORT_PURCHASE
+  VAT_PURCHASE
+  INTEREST_SAUNDRY_CREDITORS
   CASH_PAYMENT
   CASH_RECEIPT
   BANK_PAYMENT
@@ -1344,6 +1352,10 @@ model DebitCreditNote {
   type       DebitCreditNoteType
   sourceType DebitCreditNoteSourceType
 
+  // Purchase Account child ledger selected from the import Type column.
+  // This is used only for inward purchase debit/credit notes.
+  purchaseVoucherType VoucherType?
+
   agencyId String
   agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
 
@@ -1383,6 +1395,7 @@ model DebitCreditNote {
   @@index([branchId])
   @@index([saleId])
   @@index([purchaseId])
+  @@index([purchaseVoucherType])
   @@index([sourceType])
   @@index([status])
   @@index([type])
