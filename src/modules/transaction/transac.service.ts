@@ -184,7 +184,8 @@ export class TransactionService {
                 .filter(
                     (note: any) =>
                         note.type ===
-                        DebitCreditNoteType.DEBIT_NOTE
+                        DebitCreditNoteType.DEBIT_NOTE &&
+                        !note.transaction
                 )
                 .reduce(
                     (sum: number, note: any) =>
@@ -198,7 +199,8 @@ export class TransactionService {
                 .filter(
                     (note: any) =>
                         note.type ===
-                        DebitCreditNoteType.CREDIT_NOTE
+                        DebitCreditNoteType.CREDIT_NOTE &&
+                        !note.transaction
                 )
                 .reduce(
                     (sum: number, note: any) =>
@@ -234,6 +236,11 @@ export class TransactionService {
                         where: {
                             status:
                                 DebitCreditNoteStatus.APPROVED
+                        },
+                        include: {
+                            transaction: {
+                                select: { id: true }
+                            }
                         }
                     }
                 },
@@ -314,6 +321,11 @@ export class TransactionService {
                         where: {
                             status:
                                 DebitCreditNoteStatus.APPROVED
+                        },
+                        include: {
+                            transaction: {
+                                select: { id: true }
+                            }
                         }
                     }
                 }
