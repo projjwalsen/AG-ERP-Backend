@@ -208,6 +208,11 @@ async function main() {
             throw new Error(`Repair aborted; no changes committed:\n${JSON.stringify(failures, null, 2)}`);
         }
         return { workbookRows: rows.length, repaired: repaired.length, failures, dryRun: !apply, repairedRows: repaired };
+    }, {
+        // This repair processes the complete workbook and may update many
+        // ledger rows. Keep the extended timeout local to this script.
+        maxWait: 120_000,
+        timeout: 15 * 60_000
     });
     console.log(JSON.stringify(result, null, 2));
 }
