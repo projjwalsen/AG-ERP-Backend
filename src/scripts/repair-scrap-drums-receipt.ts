@@ -239,12 +239,22 @@ async function main() {
         // client may not contain the column in its TypeScript model yet.
         await tx.$executeRaw(Prisma.sql`
             UPDATE "Transaction"
-            SET "saleId" = ${sale.id}::uuid,
-                "agencyId" = COALESCE("agencyId", ${sale.agencyId}::uuid),
+            SET "saleId" = ${sale.id},
+                "agencyId" = COALESCE("agencyId", ${sale.agencyId}),
                 "type" = ${SCRAP_DRUMS}
-            WHERE id = ${transaction.id}::uuid
+            WHERE id = ${transaction.id}
         `);
-        await LedgerService.assignSaleToImportedType(tx, sale.id, SCRAP_DRUMS);
+        const scrapDrumsLedger = await LedgerService.assignSaleToImportedType(
+            tx,
+            sale.id,
+            SCRAP_DRUMS
+        );
+        // Trial Balance reads active ledgers only. An older imported ledger
+        // may already contain the sales entry but be inactive.
+        await tx.ledger.update({
+            where: { id: scrapDrumsLedger.id },
+            data: { isActive: true }
+        });
     }, {
         maxWait: 120_000,
         timeout: 120_000
