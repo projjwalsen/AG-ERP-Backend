@@ -3,7 +3,10 @@ import fs from "node:fs";
 import XLSX from "xlsx";
 import { prisma } from "../config/db";
 
-const file = process.argv[2] || "D:/SALEGST.xlsx";
+const fileFlagIndex = process.argv.indexOf("--file");
+const file = fileFlagIndex >= 0
+    ? process.argv[fileFlagIndex + 1]
+    : process.argv.find((arg, index) => index > 1 && !arg.startsWith("--")) || "D:/SALEGST.xlsx";
 const apply = process.argv.includes("--apply");
 const money = (v: unknown) => Math.round(Number(v || 0) * 100) / 100;
 if (!fs.existsSync(file)) throw new Error(`Workbook not found: ${file}`);
@@ -20,7 +23,7 @@ const sales = await prisma.sale.findMany({ where: { invoiceNo: { in: vouchers.ma
 const saleMap = new Map(sales.map(s => [s.invoiceNo, s]));
 const matched = vouchers.filter(v => saleMap.has(v.invoiceNo));
 const agencyIds = new Set(matched.map(v => saleMap.get(v.invoiceNo)!.agencyId));
-console.log(JSON.stringify({ mode: apply ? "APPLY" : "DRY_RUN", workbookRows: input.length, duplicateWorkbookVouchers, uniqueVouchers: vouchers.length, matchedVouchers: matched.length, missingVouchers: vouchers.length - matched.length, agenciesToUpdate: agencyIds.size }, null, 2));
+console.log(JSON.stringify({ mode: apply ? "APPLY" : "DRY_RUN", workbookPath: file, workbookRows: input.length, duplicateWorkbookVouchers, uniqueVouchers: vouchers.length, matchedVouchers: matched.length, missingVouchers: vouchers.length - matched.length, agenciesMatched: agencyIds.size }, null, 2));
 if (!apply) { await prisma.$disconnect(); process.exit(0); }
 await prisma.$transaction(async tx => {
     for (const v of matched) {
