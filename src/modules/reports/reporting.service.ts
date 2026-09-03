@@ -2754,7 +2754,19 @@ export class ReportingService {
 
                     ...(query.agencyId && {
                         agencyId: query.agencyId
-                    })
+                    }),
+                    // AP must be based on agencies that have a vendor ledger.
+                    // An approved Purchase alone must not create an AP row.
+                    agency: {
+                        ledger: {
+                            some: {
+                                category: LedgerType.VENDOR,
+                                ...(branchId
+                                    ? { OR: [{ branchId }, { branchId: null }] }
+                                    : {})
+                            }
+                        }
+                    }
                 },
                 include: {
                     agency: true,
