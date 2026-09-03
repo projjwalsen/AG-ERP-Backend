@@ -22,7 +22,10 @@
     "repair:cash-opening-balance": "tsx src/scripts/repair-cash-opening-balance.ts",
     "remove:duplicate-bank-vouchers": "tsx src/scripts/remove-duplicate-bank-vouchers.ts",
     "repair:bank-receipt-entries": "tsx src/scripts/repair-bank-receipt-entries.ts",
+    "repair:unclassify-journal-import-bank-vouchers": "tsx src/scripts/unclassify-journal-import-bank-vouchers.ts",
     "repair:pending-inward-transactions": "tsx src/scripts/repair-pending-inward-transactions.ts",
+    "repair:approved-transaction": "tsx src/scripts/repair-approved-transaction.ts",
+    "repair:pending-transaction": "tsx src/scripts/repair-approved-transaction.ts",
     "repair:imported-sales-ledgers": "tsx src/scripts/repair-imported-sales-ledgers.ts",
     "diagnose:bank-receipt-mismatch": "tsx src/scripts/diagnose-bank-receipt-mismatch.ts",
     "recover:missing-bank-receipts": "tsx src/scripts/recover-missing-bank-receipts.ts"
