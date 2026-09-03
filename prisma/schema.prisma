@@ -1394,6 +1394,10 @@ model DebitCreditNote {
 
   noteDate    DateTime @default(now())
   narration   String?
+  taxableAmount Decimal @default(0.00) @db.Decimal(18, 2)
+  cgstAmount Decimal @default(0.00) @db.Decimal(18, 2)
+  sgstAmount Decimal @default(0.00) @db.Decimal(18, 2)
+  igstAmount Decimal @default(0.00) @db.Decimal(18, 2)
   totalAmount Decimal  @default(0.00) @db.Decimal(18, 2)
 
   status DebitCreditNoteStatus @default(PENDING)

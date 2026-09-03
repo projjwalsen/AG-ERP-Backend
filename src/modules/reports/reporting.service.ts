@@ -2058,10 +2058,10 @@ export class ReportingService {
             }
         });
 
-        const money = (value: number) =>
+        const money = (value: unknown) =>
             Math.round(Number(value || 0) * 100) / 100;
 
-        const rows =
+        const salesRows =
             sales.map((sale) => {
 
                 const customerGSTIN =
@@ -2159,6 +2159,43 @@ export class ReportingService {
                 };
             });
 
+        const noteRecords = await prisma.debitCreditNote.findMany({
+            where: {
+                status: DebitCreditNoteStatus.APPROVED,
+                sourceType: "SALE",
+                ...(branchId ? { branchId } : {}),
+                ...(startDate || endDate ? {
+                    noteDate: {
+                        ...(startDate ? { gte: startDate } : {}),
+                        ...(endDate ? { lte: endDate } : {})
+                    }
+                } : {})
+            },
+            include: { agency: true, branch: true },
+            orderBy: { noteDate: "asc" }
+        });
+
+        const noteRows = noteRecords.map((note) => ({
+            branchName: note.branch.name,
+            branchGst: note.branch.gstin,
+            agency_id: note.agencyId,
+            classification: "B2B" as const,
+            customer_gstin: note.agency?.gstin || null,
+            invoice_number: note.noteNo,
+            invoice_date: note.noteDate,
+            place_of_supply_pos: note.agency?.state || note.agency?.stateCode,
+            taxable_value: money(note.taxableAmount),
+            cgst_rate_amount: money(note.cgstAmount),
+            sgst_rate_amount: money(note.sgstAmount),
+            igst_rate_amount: money(note.igstAmount),
+            branch_state_code: note.branch.stateCode,
+            customer_state_code: note.agency?.stateCode || null,
+            gst_amount: money(Number(note.cgstAmount) + Number(note.sgstAmount) + Number(note.igstAmount)),
+            invoice_total: money(note.totalAmount)
+        }));
+
+        const rows = [...salesRows, ...noteRows];
+
         const b2bSummaryMap = new Map<string, any>();
         // The Tally B2B section is based on imported TAX INVOICE vouchers.
         // Do not use GSTIN presence as the grouping filter: imported agencies
@@ -2199,45 +2236,12 @@ export class ReportingService {
             invoice_total: money(row.invoice_total)
         }));
 
-        const noteVoucherTypes = [
-            "OUTWARD DEBIT NOTE",
-            "OUTWARD CREDIT NOTE",
-            "INWARD DEBIT NOTE",
-            "INWARD CREDIT NOTE"
-        ];
-        const noteJournals = await prisma.journal.findMany({
-            where: {
-                status: JournalStatus.APPROVED,
-                ...(branchId ? { branchId } : {}),
-                ...(startDate || endDate ? {
-                    journalDate: {
-                        ...(startDate ? { gte: startDate } : {}),
-                        ...(endDate ? { lte: endDate } : {})
-                    }
-                } : {}),
-                OR: noteVoucherTypes.map(type => ({
-                    importKey: { startsWith: `${type}_` }
-                }))
-            },
-            include: {
-                journalHead: {
-                    include: {
-                        ledger: {
-                            include: { agency: true }
-                        }
-                    }
-                }
-            },
-            orderBy: { journalDate: "asc" }
-        });
-
         const noteSummaryMap = new Map<string, any>();
-        for (const journal of noteJournals) {
-            const agency = journal.journalHead.ledger.agency;
-            const key = agency?.id || journal.journalHead.ledgerId;
+        for (const row of noteRows) {
+            const key = row.agency_id || row.customer_gstin || row.invoice_number;
             const current = noteSummaryMap.get(key) || {
-                customer_gstin: agency?.gstin || null,
-                agency_name: agency?.name || journal.journalHead.name,
+                customer_gstin: row.customer_gstin,
+                agency_name: noteRecords.find(note => note.noteNo === row.invoice_number)?.agency?.name || "",
                 voucher_count: 0,
                 taxable_value: 0,
                 igst_rate_amount: 0,
@@ -2247,12 +2251,13 @@ export class ReportingService {
                 gst_amount: 0,
                 invoice_total: 0
             };
-            const amount = money(Number(journal.amount || 0));
             current.voucher_count += 1;
-            // Imported note journals expose the note amount, not a tax split.
-            // Keep the amount in invoice/tax totals and leave the unavailable split as zero.
-            current.gst_amount += amount;
-            current.invoice_total += amount;
+            current.taxable_value += row.taxable_value;
+            current.igst_rate_amount += row.igst_rate_amount;
+            current.cgst_rate_amount += row.cgst_rate_amount;
+            current.sgst_rate_amount += row.sgst_rate_amount;
+            current.gst_amount += row.gst_amount;
+            current.invoice_total += row.invoice_total;
             noteSummaryMap.set(key, current);
         }
         const creditDebitNoteSummary = [...noteSummaryMap.values()].map(row => ({
