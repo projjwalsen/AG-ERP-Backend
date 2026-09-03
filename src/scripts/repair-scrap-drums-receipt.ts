@@ -54,9 +54,6 @@ async function main() {
                     sale: { select: { id: true, invoiceNo: true, status: true } }
                 }
             },
-            voucher: {
-                select: { id: true, voucherNo: true, voucherType: true }
-            }
         }
     });
 
@@ -73,7 +70,14 @@ async function main() {
         );
     }
 
-    const receiptVouchers = transaction.voucher.filter(
+    // Use Voucher.sourceId directly. Some existing databases do not expose
+    // the legacy Transaction.voucher relation reliably, although the voucher
+    // is correctly linked through Voucher.sourceId = Transaction.id.
+    const transactionVouchers = await prisma.voucher.findMany({
+        where: { sourceId: transaction.id },
+        select: { id: true, voucherNo: true, voucherType: true }
+    });
+    const receiptVouchers = transactionVouchers.filter(
         voucher => voucher.voucherType === VoucherType.RECEIPT
     );
     if (receiptVouchers.length !== 1) {
