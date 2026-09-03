@@ -4,6 +4,7 @@ import {
     LedgerType,
     TransactionDirection,
     TransactionStatus,
+    Prisma,
     VoucherType
 } from "@prisma/client";
 import { prisma } from "../config/db";
@@ -24,6 +25,7 @@ import { normalizeImportedTransactionType } from "../modules/import/transaction-
  */
 
 const DEFAULT_TRANSACTION_ID = "948e2896-4593-40e5-bce7-cdb63ccf9128";
+const DEFAULT_SALE_ID = "201cf251-5663-4eef-92c3-a3ece664184e";
 const EXPECTED_AMOUNT = 190000;
 const SCRAP_DRUMS = normalizeImportedTransactionType("SCRAP DRUMS");
 
@@ -41,6 +43,7 @@ function money(value: unknown) {
 
 async function main() {
     const transactionId = valueAfter("--transaction-id") || DEFAULT_TRANSACTION_ID;
+    const requestedSaleId = valueAfter("--sale-id") || DEFAULT_SALE_ID;
 
     const transaction = await prisma.transaction.findUnique({
         where: { id: transactionId },
@@ -86,25 +89,47 @@ async function main() {
         );
     }
 
-    const saleIds = new Set<string>();
-    if (transaction.sale?.id) saleIds.add(transaction.sale.id);
-    for (const allocation of transaction.allocations) {
-        if (allocation.sourceType === "SALE" && allocation.saleId) {
-            saleIds.add(allocation.saleId);
-        }
-    }
-    if (saleIds.size !== 1) {
+    if (transaction.sale?.id && transaction.sale.id !== requestedSaleId) {
         throw new Error(
-            `Expected exactly one linked sale for Scrap Drums classification; found ${saleIds.size}`
+            `Transaction is already linked to another sale: ${transaction.sale.id}`
         );
     }
+    for (const allocation of transaction.allocations) {
+        if (
+            allocation.sourceType === "SALE" &&
+            allocation.saleId &&
+            allocation.saleId !== requestedSaleId
+        ) {
+            throw new Error(
+                `Transaction has an allocation to another sale: ${allocation.saleId}`
+            );
+        }
+    }
 
-    const saleId = [...saleIds][0];
     const sale = await prisma.sale.findUnique({
-        where: { id: saleId },
-        select: { id: true, invoiceNo: true, branchId: true, status: true }
+        where: { id: requestedSaleId },
+        select: {
+            id: true,
+            invoiceNo: true,
+            branchId: true,
+            agencyId: true,
+            grandTotal: true,
+            status: true,
+            allocations: {
+                select: { transactionId: true, allocatedAmount: true }
+            }
+        }
     });
-    if (!sale) throw new Error(`Linked sale not found: ${saleId}`);
+    if (!sale) throw new Error(`Sale not found: ${requestedSaleId}`);
+    if (sale.status !== "APPROVED") {
+        throw new Error(`Sale ${sale.invoiceNo} is ${sale.status}; it must be APPROVED`);
+    }
+    if (transaction.branchId !== sale.branchId) {
+        throw new Error(`Transaction and sale belong to different branches`);
+    }
+    if (transaction.agencyId && transaction.agencyId !== sale.agencyId) {
+        throw new Error(`Transaction and sale belong to different agencies`);
+    }
 
     const saleVouchers = await prisma.voucher.findMany({
         where: { sourceId: sale.id, voucherType: VoucherType.SALE },
@@ -145,8 +170,14 @@ async function main() {
         );
     }
 
-    const existingType = transaction.type
-        ? normalizeImportedTransactionType(transaction.type)
+    // The generated Prisma client in some deployments predates the optional
+    // Transaction.type column. Keep this diagnostic compatible with both
+    // clients; the apply step updates the column with SQL below.
+    const existingTransactionType = (transaction as unknown as {
+        type?: string | null
+    }).type;
+    const existingType = existingTransactionType
+        ? normalizeImportedTransactionType(existingTransactionType)
         : null;
     const currentLedgers = [...new Set(salesEntries.map(entry => entry.ledger.name))];
     console.log(JSON.stringify({
@@ -167,15 +198,51 @@ async function main() {
     }, null, 2));
 
     if (!apply) {
-        console.log("Dry run only. Re-run with --apply to classify the linked sale.");
+        console.log("Dry run only. Re-run with --apply to link and classify the sale.");
         return;
     }
 
     await prisma.$transaction(async tx => {
-        await tx.transaction.update({
-            where: { id: transaction.id },
-            data: { type: SCRAP_DRUMS }
-        });
+        const targetAllocation = transaction.allocations.find(
+            allocation =>
+                allocation.sourceType === "SALE" &&
+                allocation.saleId === sale.id
+        );
+        if (targetAllocation && money(targetAllocation.allocatedAmount) !== EXPECTED_AMOUNT) {
+            throw new Error(
+                `Existing sale allocation is ${money(targetAllocation.allocatedAmount)}, not ${EXPECTED_AMOUNT}`
+            );
+        }
+
+        if (!targetAllocation) {
+            const otherAllocated = sale.allocations
+                .filter(allocation => allocation.transactionId !== transaction.id)
+                .reduce((sum, allocation) => sum + money(allocation.allocatedAmount), 0);
+            const available = money(sale.grandTotal) - money(otherAllocated);
+            if (available < EXPECTED_AMOUNT) {
+                throw new Error(
+                    `Sale ${sale.invoiceNo} has only ${available} available for allocation; ${EXPECTED_AMOUNT} is required`
+                );
+            }
+            await tx.transactionAllocation.create({
+                data: {
+                    transactionId: transaction.id,
+                    sourceType: "SALE",
+                    saleId: sale.id,
+                    allocatedAmount: EXPECTED_AMOUNT
+                }
+            });
+        }
+
+        // Use SQL for Transaction.type because an older generated Prisma
+        // client may not contain the column in its TypeScript model yet.
+        await tx.$executeRaw(Prisma.sql`
+            UPDATE "Transaction"
+            SET "saleId" = ${sale.id}::uuid,
+                "agencyId" = COALESCE("agencyId", ${sale.agencyId}::uuid),
+                "type" = ${SCRAP_DRUMS}
+            WHERE id = ${transaction.id}::uuid
+        `);
         await LedgerService.assignSaleToImportedType(tx, sale.id, SCRAP_DRUMS);
     }, {
         maxWait: 120_000,
@@ -183,7 +250,7 @@ async function main() {
     });
 
     console.log(
-        `Repaired ${transaction.transactionNo}: linked sale ${sale.invoiceNo} is now classified as ${SCRAP_DRUMS}.`
+        `Repaired ${transaction.transactionNo}: linked to sale ${sale.invoiceNo}, classified as ${SCRAP_DRUMS}.`
     );
     console.log(
         "The RECEIPT voucher and its M.N. Traders customer entry were not replaced or duplicated."
