@@ -7,7 +7,7 @@ import { TransactionService } from "../modules/transaction/transac.service";
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
-const transactionId = valueAfter("--transaction-id");
+const transactionId = valueAfter("--transaction-id") || positionalTransactionId();
 const transactionNo = valueAfter("--transaction-no");
 
 // Stable business-date window: 2026-09-03 through 2026-09-04 in Asia/Kolkata.
@@ -17,6 +17,12 @@ const dayEnd = new Date("2026-09-03T18:30:00.000Z");
 function valueAfter(flag: string) {
     const index = args.indexOf(flag);
     return index >= 0 ? args[index + 1] : undefined;
+}
+
+function positionalTransactionId() {
+    return args
+        .map(arg => arg.startsWith("--") ? arg.slice(2) : arg)
+        .find(arg => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(arg));
 }
 
 function money(value: unknown) {
@@ -36,7 +42,9 @@ async function main() {
     const matches = await prisma.transaction.findMany({
         where: {
             status: TransactionStatus.PENDING,
-            transactionDate: { gte: dayStart, lt: dayEnd },
+            ...(!transactionId && !transactionNo
+                ? { transactionDate: { gte: dayStart, lt: dayEnd } }
+                : {}),
             ...(transactionId ? { id: transactionId } : {}),
             ...(transactionNo ? { transactionNo } : {})
         },
