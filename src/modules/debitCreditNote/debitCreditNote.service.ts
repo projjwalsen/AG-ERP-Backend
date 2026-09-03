@@ -44,6 +44,10 @@ type CreateNotePayload = {
 
     noteDate?: string | Date;
     narration?: string;
+    taxableAmount?: number;
+    cgstAmount?: number;
+    sgstAmount?: number;
+    igstAmount?: number;
 
     particulars: NoteParticularPayload[];
 };
@@ -924,6 +928,11 @@ export class DebitCreditNoteService {
                         narration:
                             payload.narration?.trim() ||
                             null,
+
+                        taxableAmount: money(payload.taxableAmount),
+                        cgstAmount: money(payload.cgstAmount),
+                        sgstAmount: money(payload.sgstAmount),
+                        igstAmount: money(payload.igstAmount),
 
                         totalAmount,
 
