@@ -10,7 +10,7 @@ const apply = args.includes("--apply");
 const transactionId = valueAfter("--transaction-id");
 const transactionNo = valueAfter("--transaction-no");
 
-// 2026-09-03 00:00 through 2026-09-04 00:00 in Asia/Kolkata.
+// Stable business-date window: 2026-09-03 through 2026-09-04 in Asia/Kolkata.
 const dayStart = new Date("2026-09-02T18:30:00.000Z");
 const dayEnd = new Date("2026-09-03T18:30:00.000Z");
 
@@ -36,7 +36,7 @@ async function main() {
     const matches = await prisma.transaction.findMany({
         where: {
             status: TransactionStatus.PENDING,
-            updatedAt: { gte: dayStart, lt: dayEnd },
+            transactionDate: { gte: dayStart, lt: dayEnd },
             ...(transactionId ? { id: transactionId } : {}),
             ...(transactionNo ? { transactionNo } : {})
         },
