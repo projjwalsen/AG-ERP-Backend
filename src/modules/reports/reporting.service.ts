@@ -2103,19 +2103,23 @@ export class ReportingService {
                     { taxable: 0, cgst: 0, sgst: 0, igst: 0, gst: 0, total: 0 }
                 );
 
-                // TAX INVOICE imports are persisted as Sale/SalesItem records.
-                // Use line values because older imported headers may contain zero GST totals.
-                const hasItemAmounts = sale.items.length > 0 && (
-                    itemTotals.taxable !== 0 ||
-                    itemTotals.cgst !== 0 ||
-                    itemTotals.sgst !== 0 ||
-                    itemTotals.igst !== 0
-                );
-                const taxableValue = hasItemAmounts ? itemTotals.taxable : Number(sale.subTotalAmount || 0);
-                const cgst = hasItemAmounts ? itemTotals.cgst : Number(sale.totalCGSTAmount || 0);
-                const sgst = hasItemAmounts ? itemTotals.sgst : Number(sale.totalSGSTAmount || 0);
-                const igst = hasItemAmounts ? itemTotals.igst : Number(sale.totalIGSTAmount || 0);
-                const gst = hasItemAmounts ? itemTotals.gst : Number(sale.totalGSTAmount || 0);
+                // Tally's GSTR-1 summary is based on voucher-level totals.
+                // Prefer Sale header totals because imported SalesItem GST
+                // values may be duplicated or calculated at the wrong level.
+                // Fall back to item totals only for legacy rows whose header
+                // totals are entirely unavailable.
+                const hasHeaderAmounts = [
+                    sale.subTotalAmount,
+                    sale.totalCGSTAmount,
+                    sale.totalSGSTAmount,
+                    sale.totalIGSTAmount,
+                    sale.totalGSTAmount
+                ].some(value => Number(value || 0) !== 0);
+                const taxableValue = hasHeaderAmounts ? Number(sale.subTotalAmount || 0) : itemTotals.taxable;
+                const cgst = hasHeaderAmounts ? Number(sale.totalCGSTAmount || 0) : itemTotals.cgst;
+                const sgst = hasHeaderAmounts ? Number(sale.totalSGSTAmount || 0) : itemTotals.sgst;
+                const igst = hasHeaderAmounts ? Number(sale.totalIGSTAmount || 0) : itemTotals.igst;
+                const gst = hasHeaderAmounts ? Number(sale.totalGSTAmount || 0) : itemTotals.gst;
 
                 return {
                     branchName: sale.branch.name,
@@ -2142,19 +2146,13 @@ export class ReportingService {
                     taxable_value: money(taxableValue),
 
                     cgst_rate_amount:
-                        isIntraState
-                            ? money(cgst)
-                            : 0,
+                        money(cgst),
 
                     sgst_rate_amount:
-                        isIntraState
-                            ? money(sgst)
-                            : 0,
+                        money(sgst),
 
                     igst_rate_amount:
-                        !isIntraState
-                            ? money(igst)
-                            : 0,
+                        money(igst),
 
                     branch_state_code:
                         branchStateCode,
@@ -2171,7 +2169,13 @@ export class ReportingService {
         const noteRecords = await prisma.debitCreditNote.findMany({
             where: {
                 status: DebitCreditNoteStatus.APPROVED,
-                sourceType: "SALE",
+                // Tally's outward note imports can be linked to either a sale
+                // or purchase context. The SDN/SCN number is the authoritative
+                // outward GSTR-1 marker for these imported vouchers.
+                OR: [
+                    { noteNo: { startsWith: "SDN/" } },
+                    { noteNo: { startsWith: "SCN/" } }
+                ],
                 ...(branchId ? { branchId } : {}),
                 ...(startDate || endDate ? {
                     noteDate: {
@@ -2203,7 +2207,10 @@ export class ReportingService {
             invoice_total: money(note.totalAmount)
         }));
 
-        const rows = [...salesRows, ...noteRows];
+        // Keep the main B2B invoice rows limited to sales invoices. Debit and
+        // credit notes belong only to creditDebitNoteSummary so adding GST
+        // fields to notes cannot change the existing invoice voucher count.
+        const rows = salesRows;
 
         const b2bSummaryMap = new Map<string, any>();
         // The Tally B2B section is based on imported TAX INVOICE vouchers.
@@ -3207,6 +3214,63 @@ export class ReportingService {
                 agency.totalOutstanding += remainder;
                 agency.bucket_180_plus_days.amount += remainder;
                 agency.bucket_180_plus_days.invoices.push(invoice);
+            }
+        } else {
+            // AP also includes vendor-ledger balances that do not have a
+            // Purchase row (opening balances and imported journal postings).
+            // Vendor ledgers are credit-natured, so a negative closing balance
+            // represents the payable amount.
+            const vendorLedgers = await prisma.ledger.findMany({
+                where: {
+                    category: LedgerType.VENDOR,
+                    ...(branchId ? { branchId } : {}),
+                    ...(query.agencyId ? { agencyId: query.agencyId } : {})
+                },
+                include: { agency: true, branch: true }
+            });
+
+            for (const ledger of vendorLedgers) {
+                const balance = await LedgerService.calculateLedgerBalance(ledger.id);
+                const ledgerPayable = Math.max(-Number(balance.closingBalance), 0);
+                const invoiceOutstanding = agencyMap.get(ledger.agencyId)?.totalOutstanding || 0;
+                const remainder = Number((ledgerPayable - invoiceOutstanding).toFixed(2));
+                if (remainder <= 0) continue;
+
+                let row = agencyMap.get(ledger.agencyId);
+                if (!row) {
+                    row = {
+                        agencyId: ledger.agencyId,
+                        agencyName: ledger.agency?.name || ledger.name,
+                        vendorCode: "",
+                        gstin: ledger.agency?.gstin || null,
+                        branchName: ledger.branch?.name || null,
+                        createdAt: ledger.createdAt,
+                        totalOutstanding: 0,
+                        bucket_0_60_days: { amount: 0, invoices: [] },
+                        bucket_61_120_days: { amount: 0, invoices: [] },
+                        bucket_121_180_days: { amount: 0, invoices: [] },
+                        bucket_180_plus_days: { amount: 0, invoices: [] }
+                    };
+                    agencyMap.set(ledger.agencyId, row);
+                }
+
+                const invoice = {
+                    invoiceId: `ledger-opening-${ledger.id}`,
+                    invoiceType: "OPENING_BALANCE",
+                    invoiceNo: "OPENING / LEDGER BALANCE",
+                    invoiceDate: ledger.createdAt,
+                    invoiceAgeDays: Math.max(Math.floor((today.getTime() - ledger.createdAt.getTime()) / 86400000), 0),
+                    grandTotal: remainder,
+                    originalGrandTotal: remainder,
+                    allocatedAmount: 0,
+                    outstandingAmount: remainder,
+                    settlementStatus: "UNPAID",
+                    sourceLedgerId: ledger.id
+                };
+
+                row.totalOutstanding += remainder;
+                row.bucket_180_plus_days.amount += remainder;
+                row.bucket_180_plus_days.invoices.push(invoice);
             }
         }
 
