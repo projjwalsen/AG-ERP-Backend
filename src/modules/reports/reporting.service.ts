@@ -3206,6 +3206,63 @@ export class ReportingService {
                 agency.bucket_180_plus_days.amount += remainder;
                 agency.bucket_180_plus_days.invoices.push(invoice);
             }
+        } else {
+            // AP also includes vendor-ledger balances that do not have a
+            // Purchase row (opening balances and imported journal postings).
+            // Vendor ledgers are credit-natured, so a negative closing balance
+            // represents the payable amount.
+            const vendorLedgers = await prisma.ledger.findMany({
+                where: {
+                    category: LedgerType.VENDOR,
+                    ...(branchId ? { branchId } : {}),
+                    ...(query.agencyId ? { agencyId: query.agencyId } : {})
+                },
+                include: { agency: true, branch: true }
+            });
+
+            for (const ledger of vendorLedgers) {
+                const balance = await LedgerService.calculateLedgerBalance(ledger.id);
+                const ledgerPayable = Math.max(-Number(balance.closingBalance), 0);
+                const invoiceOutstanding = agencyMap.get(ledger.agencyId)?.totalOutstanding || 0;
+                const remainder = Number((ledgerPayable - invoiceOutstanding).toFixed(2));
+                if (remainder <= 0) continue;
+
+                let row = agencyMap.get(ledger.agencyId);
+                if (!row) {
+                    row = {
+                        agencyId: ledger.agencyId,
+                        agencyName: ledger.agency?.name || ledger.name,
+                        vendorCode: "",
+                        gstin: ledger.agency?.gstin || null,
+                        branchName: ledger.branch?.name || null,
+                        createdAt: ledger.createdAt,
+                        totalOutstanding: 0,
+                        bucket_0_60_days: { amount: 0, invoices: [] },
+                        bucket_61_120_days: { amount: 0, invoices: [] },
+                        bucket_121_180_days: { amount: 0, invoices: [] },
+                        bucket_180_plus_days: { amount: 0, invoices: [] }
+                    };
+                    agencyMap.set(ledger.agencyId, row);
+                }
+
+                const invoice = {
+                    invoiceId: `ledger-opening-${ledger.id}`,
+                    invoiceType: "OPENING_BALANCE",
+                    invoiceNo: "OPENING / LEDGER BALANCE",
+                    invoiceDate: ledger.createdAt,
+                    invoiceAgeDays: Math.max(Math.floor((today.getTime() - ledger.createdAt.getTime()) / 86400000), 0),
+                    grandTotal: remainder,
+                    originalGrandTotal: remainder,
+                    allocatedAmount: 0,
+                    outstandingAmount: remainder,
+                    settlementStatus: "UNPAID",
+                    sourceLedgerId: ledger.id
+                };
+
+                row.totalOutstanding += remainder;
+                row.bucket_180_plus_days.amount += remainder;
+                row.bucket_180_plus_days.invoices.push(invoice);
+            }
         }
 
         const rows =
