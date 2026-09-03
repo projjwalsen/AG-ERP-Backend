@@ -2094,19 +2094,23 @@ export class ReportingService {
                     { taxable: 0, cgst: 0, sgst: 0, igst: 0, gst: 0, total: 0 }
                 );
 
-                // TAX INVOICE imports are persisted as Sale/SalesItem records.
-                // Use line values because older imported headers may contain zero GST totals.
-                const hasItemAmounts = sale.items.length > 0 && (
-                    itemTotals.taxable !== 0 ||
-                    itemTotals.cgst !== 0 ||
-                    itemTotals.sgst !== 0 ||
-                    itemTotals.igst !== 0
-                );
-                const taxableValue = hasItemAmounts ? itemTotals.taxable : Number(sale.subTotalAmount || 0);
-                const cgst = hasItemAmounts ? itemTotals.cgst : Number(sale.totalCGSTAmount || 0);
-                const sgst = hasItemAmounts ? itemTotals.sgst : Number(sale.totalSGSTAmount || 0);
-                const igst = hasItemAmounts ? itemTotals.igst : Number(sale.totalIGSTAmount || 0);
-                const gst = hasItemAmounts ? itemTotals.gst : Number(sale.totalGSTAmount || 0);
+                // Tally's GSTR-1 summary is based on voucher-level totals.
+                // Prefer Sale header totals because imported SalesItem GST
+                // values may be duplicated or calculated at the wrong level.
+                // Fall back to item totals only for legacy rows whose header
+                // totals are entirely unavailable.
+                const hasHeaderAmounts = [
+                    sale.subTotalAmount,
+                    sale.totalCGSTAmount,
+                    sale.totalSGSTAmount,
+                    sale.totalIGSTAmount,
+                    sale.totalGSTAmount
+                ].some(value => Number(value || 0) !== 0);
+                const taxableValue = hasHeaderAmounts ? Number(sale.subTotalAmount || 0) : itemTotals.taxable;
+                const cgst = hasHeaderAmounts ? Number(sale.totalCGSTAmount || 0) : itemTotals.cgst;
+                const sgst = hasHeaderAmounts ? Number(sale.totalSGSTAmount || 0) : itemTotals.sgst;
+                const igst = hasHeaderAmounts ? Number(sale.totalIGSTAmount || 0) : itemTotals.igst;
+                const gst = hasHeaderAmounts ? Number(sale.totalGSTAmount || 0) : itemTotals.gst;
 
                 return {
                     branchName: sale.branch.name,
