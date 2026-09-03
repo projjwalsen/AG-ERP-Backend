@@ -2754,7 +2754,19 @@ export class ReportingService {
 
                     ...(query.agencyId && {
                         agencyId: query.agencyId
-                    })
+                    }),
+                    // AP must be based on agencies that have a vendor ledger.
+                    // An approved Purchase alone must not create an AP row.
+                    agency: {
+                        ledger: {
+                            some: {
+                                category: LedgerType.VENDOR,
+                                ...(branchId
+                                    ? { OR: [{ branchId }, { branchId: null }] }
+                                    : {})
+                            }
+                        }
+                    }
                 },
                 include: {
                     agency: true,
@@ -2971,6 +2983,27 @@ export class ReportingService {
             });
 
             for(const purchase of purchases) {
+                // Do not show an invoice when the agency's vendor ledger is
+                // already cleared. Purchase allocations can lag behind
+                // accounting-ledger payments, so the ledger is authoritative
+                // for whether the agency still has an AP balance.
+                const vendorLedgersForAgency = await prisma.ledger.findMany({
+                    where: {
+                        agencyId: purchase.agencyId,
+                        category: LedgerType.VENDOR,
+                        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {})
+                    },
+                    select: { id: true }
+                });
+                if (vendorLedgersForAgency.length > 0) {
+                    let vendorBalance = 0;
+                    for (const vendorLedger of vendorLedgersForAgency) {
+                        const balance = await LedgerService.calculateLedgerBalance(vendorLedger.id);
+                        vendorBalance += Math.abs(Number(balance.closingBalance));
+                    }
+                    if (vendorBalance <= 0) continue;
+                }
+
                 const allocated =
                     purchase.allocations.reduce(
                         (sum, a) =>
