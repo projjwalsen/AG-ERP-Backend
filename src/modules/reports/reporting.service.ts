@@ -2194,7 +2194,10 @@ export class ReportingService {
             invoice_total: money(note.totalAmount)
         }));
 
-        const rows = [...salesRows, ...noteRows];
+        // Keep the main B2B invoice rows limited to sales invoices. Debit and
+        // credit notes belong only to creditDebitNoteSummary so adding GST
+        // fields to notes cannot change the existing invoice voucher count.
+        const rows = salesRows;
 
         const b2bSummaryMap = new Map<string, any>();
         // The Tally B2B section is based on imported TAX INVOICE vouchers.
