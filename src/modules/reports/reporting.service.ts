@@ -3214,7 +3214,7 @@ export class ReportingService {
             const vendorLedgers = await prisma.ledger.findMany({
                 where: {
                     category: LedgerType.VENDOR,
-                    ...(branchId ? { branchId } : {}),
+                    ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
                     ...(query.agencyId ? { agencyId: query.agencyId } : {})
                 },
                 include: { agency: true, branch: true }
@@ -3222,7 +3222,11 @@ export class ReportingService {
 
             for (const ledger of vendorLedgers) {
                 const balance = await LedgerService.calculateLedgerBalance(ledger.id);
-                const ledgerPayable = Math.max(-Number(balance.closingBalance), 0);
+                // Keep the same convention as the agency-ledger report:
+                // vendor balances are displayed as payable using absolute
+                // value, regardless of whether the ledger closing balance is
+                // debit- or credit-signed.
+                const ledgerPayable = Math.abs(Number(balance.closingBalance));
                 const invoiceOutstanding = agencyMap.get(ledger.agencyId)?.totalOutstanding || 0;
                 const remainder = Number((ledgerPayable - invoiceOutstanding).toFixed(2));
                 if (remainder <= 0) continue;
