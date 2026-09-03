@@ -80,6 +80,7 @@ Diesel & Petrol Expenses
 DIRECTORS REMUNERATION-SANDEEP SINGH
 DISHWASHER
 Donation
+Disallowance
 DREAMZZ MAKERS EVENTS AN
 EKVIRA TRANSPORT AND LOGISTICS
 Electrical Equipments
@@ -136,6 +137,7 @@ Interest on Corporate Card
 INTEREST ON FD/OD
 INTEREST ON GECL
 INTEREST ON TDS
+Interest on Tata Capital FD
 Interest on Term Loan 60435104974
 Interest on Term Loan Yes Bank
 Interest on Unsecured Loan
@@ -293,7 +295,7 @@ function definition(name: string) {
     const isCash = upper === "CASH" || /CASH LEDGER/.test(upper);
     const isTax = /^(INPUT|OUTPUT)|GST|TCS|TDS|PTEC|PTRC|PROVIDENT FUND|PAYABLE|ITC/.test(upper);
     const isLoan = /LOAN|FINANCE LIMITED|FINVEST|CAPITAL SERVICES/.test(upper);
-    const isIncome = /INCENTIVES|HIRING CHARGES|SALES|COMMISSION RECEIVED/.test(upper);
+    const isIncome = /INCENTIVES|HIRING CHARGES|SALES|COMMISSION RECEIVED|INTEREST ON TATA CAPITAL FD/.test(upper);
     const isAsset = /LAND|MACHINE|EQUIPMENT|FURNITURE|COMPUTER|LAPTOP|PRINTER|PUMP|TANK|VEHICLE|BIKE|BMW|CAR|REFRIGERATOR|TELEVISION|WASHING|PURIFIER|SOFTWARE|DEPOSIT|PREPAID|TDS ASSETS/.test(upper);
     const isPartyCredit = /\(CR\)|PAYABLE|VENDOR|SUPPLIER|CREDITOR/.test(upper);
 

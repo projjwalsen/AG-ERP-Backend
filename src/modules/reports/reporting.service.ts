@@ -25,6 +25,9 @@ const BANK_VOUCHER_TYPES = [
     BANK_RECEIPT_TYPE,
     BANK_PAYMENT_TYPE
 ] as VoucherType[];
+const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
+    "CONSUMABLE_PRODUCT"
+]);
 
 
 export class ReportingService {
@@ -852,7 +855,10 @@ export class ReportingService {
         // "Purchase" or "Sales" row in the Trial Balance.
         const aggregateAccountRows = (category: LedgerType) => {
             const sourceRows = rawLedgerRows.filter(
-                row => row.ledgerCategory === category
+                row => row.ledgerCategory === category &&
+                    !CUSTOM_TRIAL_BALANCE_GROUP_CODES.has(
+                        String(row.groupCode || "").toUpperCase()
+                    )
             );
 
             if (sourceRows.length === 0) return [];
@@ -924,7 +930,10 @@ export class ReportingService {
         const ledgerRows = [
             ...rawLedgerRows.filter(row =>
                 row.ledgerCategory !== LedgerType.PURCHASE &&
-                row.ledgerCategory !== LedgerType.SALES
+                row.ledgerCategory !== LedgerType.SALES ||
+                CUSTOM_TRIAL_BALANCE_GROUP_CODES.has(
+                    String(row.groupCode || "").toUpperCase()
+                )
             ),
             ...aggregateAccountRows(LedgerType.PURCHASE),
             ...aggregateAccountRows(LedgerType.SALES),
