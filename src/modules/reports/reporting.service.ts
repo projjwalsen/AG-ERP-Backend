@@ -2133,19 +2133,13 @@ export class ReportingService {
                     taxable_value: money(taxableValue),
 
                     cgst_rate_amount:
-                        isIntraState
-                            ? money(cgst)
-                            : 0,
+                        money(cgst),
 
                     sgst_rate_amount:
-                        isIntraState
-                            ? money(sgst)
-                            : 0,
+                        money(sgst),
 
                     igst_rate_amount:
-                        !isIntraState
-                            ? money(igst)
-                            : 0,
+                        money(igst),
 
                     branch_state_code:
                         branchStateCode,
@@ -2162,7 +2156,13 @@ export class ReportingService {
         const noteRecords = await prisma.debitCreditNote.findMany({
             where: {
                 status: DebitCreditNoteStatus.APPROVED,
-                sourceType: "SALE",
+                // Tally's outward note imports can be linked to either a sale
+                // or purchase context. The SDN/SCN number is the authoritative
+                // outward GSTR-1 marker for these imported vouchers.
+                OR: [
+                    { noteNo: { startsWith: "SDN/" } },
+                    { noteNo: { startsWith: "SCN/" } }
+                ],
                 ...(branchId ? { branchId } : {}),
                 ...(startDate || endDate ? {
                     noteDate: {
