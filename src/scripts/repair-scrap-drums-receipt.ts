@@ -173,6 +173,7 @@ async function main() {
     // The generated Prisma client in some deployments predates the optional
     // Transaction.type column. Keep this diagnostic compatible with both
     // clients; the apply step updates the column with SQL below.
+    
     const existingTransactionType = (transaction as unknown as {
         type?: string | null
     }).type;
