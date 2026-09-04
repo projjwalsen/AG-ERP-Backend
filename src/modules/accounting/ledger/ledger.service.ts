@@ -2164,7 +2164,10 @@ export class LedgerService {
             include: {
                 group: true,
                 branch: true,
-                agency: true
+                agency: true,
+                journalHeads: {
+                    select: { id: true }
+                }
             },
 
             orderBy: {
@@ -2404,7 +2407,10 @@ export class LedgerService {
                                         ledgers.filter(
                                             x =>
                                                 x.category === LedgerType.CUSTOMER ||
-                                                x.category === LedgerType.VENDOR
+                                                x.category === LedgerType.VENDOR ||
+                                                // Imported journal heads use JOURNAL ledgers.
+                                                // Include them in the agency financial ledger.
+                                                x.journalHeads?.length > 0
                                         );
                     
                                     if (accountingLedgers.length === 0) {
