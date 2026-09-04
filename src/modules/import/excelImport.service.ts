@@ -939,6 +939,7 @@ export class ExcelImportService {
                         row,
                         "Input CGST 9%",
                         "Output CGST 9%",
+                        "Output CGST 2.5%",
                         "INPUT CGST",
                         "OUTPUT CGST",
                         "CGST ITC Not Reflected in GSTR-2B"
@@ -951,6 +952,7 @@ export class ExcelImportService {
                         row,
                         "Input SGST 9%",
                         "Output SGST 9%",
+                        "Output SGST 2.5%",
                         "INPUT SGST",
                         "OUTPUT SGST",
                         "SGST ITC Not Reflected in GSTR-2B"
@@ -963,6 +965,9 @@ export class ExcelImportService {
                         row,
                         "INPUT IGST 18%",
                         "OUTPUT IGST 18%",
+                        "IGST SALES",
+                        "IGST SALES @ 12%",
+                        "OUTPUT IGST 12%",
                         "INPUT IGST",
                         "OUTPUT IGST"
                     )
