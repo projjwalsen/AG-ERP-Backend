@@ -31,6 +31,8 @@
     "create:commission-paid-journals": "tsx src/scripts/create-commission-paid-journals.ts",
     "create:admin-charges-journals": "tsx src/scripts/create-admin-charges-journals.ts",
     "create:interest-on-gst-journals": "tsx src/scripts/create-interest-on-gst-journals.ts",
+    "move:journal-head-group": "tsx src/scripts/move-journal-head-ledger-group.ts",
+    "move:journal-heads-to-group": "tsx src/scripts/move-journal-heads-to-group.ts",
     "seed:interest-tata-capital-fd": "tsx src/scripts/seed-tata-capital-fd-interest-head.ts",
     "seed:disallowance-journal-head": "tsx src/scripts/seed-disallowance-journal-head.ts",
     "repair:pending-transaction": "tsx src/scripts/repair-approved-transaction.ts",
