@@ -2755,12 +2755,11 @@ export class ReportingService {
                     ...(query.agencyId && {
                         agencyId: query.agencyId
                     }),
-                    // AP must be based on agencies that have a vendor ledger.
-                    // An approved Purchase alone must not create an AP row.
+                    // AR must be based on agencies that have a customer ledger.
                     agency: {
                         ledger: {
                             some: {
-                                category: LedgerType.VENDOR,
+                                category: LedgerType.CUSTOMER,
                                 ...(branchId
                                     ? { OR: [{ branchId }, { branchId: null }] }
                                     : {})
@@ -2784,6 +2783,21 @@ export class ReportingService {
             });
 
             for(const sale of sales) {
+                const customerLedgers = await prisma.ledger.findMany({
+                    where: {
+                        agencyId: sale.agencyId,
+                        category: LedgerType.CUSTOMER,
+                        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {})
+                    },
+                    select: { id: true }
+                });
+                let customerBalance = 0;
+                for (const ledger of customerLedgers) {
+                    const balance = await LedgerService.calculateLedgerBalance(ledger.id);
+                    customerBalance += Math.abs(Number(balance.closingBalance));
+                }
+                if (customerLedgers.length > 0 && customerBalance <= 0) continue;
+
                 const allocated =
                     sale.allocations.reduce(
                         (sum, a) =>
