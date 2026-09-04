@@ -120,6 +120,7 @@ const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: L
     INDIRECT_INCOME: { name: "Indirect Income", parentCode: "INCOME", nature: LedgerNature.CREDIT },
 
     PURCHASE: { name: "Purchase", parentCode: "PURCHASE_ACCOUNTS", nature: LedgerNature.DEBIT },
+    CONSUMABLE_PRODUCT: { name: "Consumable Product", parentCode: "DIRECT_EXPENSE", nature: LedgerNature.DEBIT },
     DIRECT_EXPENSE: { name: "Direct Expense", parentCode: "EXPENSES", nature: LedgerNature.DEBIT },
     INDIRECT_EXPENSE: { name: "Indirect Expense", parentCode: "EXPENSES", nature: LedgerNature.DEBIT }
 };
