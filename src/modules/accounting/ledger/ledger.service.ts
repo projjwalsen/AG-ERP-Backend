@@ -3265,13 +3265,45 @@ export class LedgerService {
 
         const debit = money(debitAgg?._sum?.amount || 0);
         const credit = money(creditAgg?._sum?.amount || 0);
+
+        // Imported journals are stored as Journal -> JournalHead -> Ledger,
+        // not as LedgerEntry rows. Include approved journals in the same
+        // ledger-balance calculation so agency ledgers and reports agree.
+        const journals = await client.journal.findMany({
+            where: {
+                journalHead: { ledgerId },
+                status: "APPROVED",
+                ...(dateFilter?.startDate || dateFilter?.endDate
+                    ? {
+                        journalDate: {
+                            ...(dateFilter?.startDate && { gte: dateFilter.startDate }),
+                            ...(dateFilter?.endDate && { lte: dateFilter.endDate })
+                        }
+                    }
+                    : {})
+            },
+            select: {
+                amount: true,
+                journalHead: { select: { type: true } }
+            }
+        });
+
+        const journalDebit = money(journals
+            .filter((journal) => journal.journalHead.type === "INWARD")
+            .reduce((sum, journal) => sum + Number(journal.amount), 0));
+        const journalCredit = money(journals
+            .filter((journal) => journal.journalHead.type === "OUTWARD")
+            .reduce((sum, journal) => sum + Number(journal.amount), 0));
+
+        const totalDebit = money(debit + journalDebit);
+        const totalCredit = money(credit + journalCredit);
         const openingDebit = money((ledger as any).openingDebit);
         const openingCredit = money((ledger as any).openingCredit);
         const legacyOpening = money(ledger.openingBalance);
         const opening = openingDebit || openingCredit
             ? money(openingDebit - openingCredit)
             : (ledger.nature === LedgerNature.CREDIT ? -legacyOpening : legacyOpening);
-        const closing = money(opening + debit - credit);
+        const closing = money(opening + totalDebit - totalCredit);
 
         const debitBalance = Math.max(closing, 0);
         const creditBalance = Math.max(-closing, 0);
@@ -3280,8 +3312,8 @@ export class LedgerService {
             openingBalance: opening,
             openingDebit,
             openingCredit,
-            totalDebit: debit,
-            totalCredit: credit,
+            totalDebit,
+            totalCredit,
             closingBalance: closing,
             debitBalance: money(debitBalance),
             creditBalance: money(creditBalance)
