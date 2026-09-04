@@ -3603,6 +3603,26 @@ export class LedgerService {
                 : Promise.resolve(null)
         ]);
 
+        const ledgerJournals = await prisma.journal.findMany({
+            where: {
+                journalHead: { ledgerId },
+                status: "APPROVED",
+                ...(startDate || endDate ? { journalDate: {
+                    ...(startDate && { gte: startDate }),
+                    ...(endDate && { lte: endDate })
+                } } : {})
+            },
+            include: { branch: true, journalHead: true },
+            orderBy: { journalDate: "asc" }
+        });
+
+        const priorJournals = startDate
+            ? await prisma.journal.findMany({
+                where: { journalHead: { ledgerId }, status: "APPROVED", journalDate: { lt: startDate } },
+                include: { journalHead: true }
+            })
+            : [];
+
         const sourceIds = [
             ...new Set(
                 entries
@@ -3649,33 +3669,42 @@ export class LedgerService {
 
 
 
-        const priorDebit =
+        let priorDebit =
             money(
                 priorAggregates.find(
                     x => x.entryType === EntryType.DEBIT
                 )?._sum?.amount || 0
             );
 
-        const priorCredit =
+        let priorCredit =
             money(
                 priorAggregates.find(
                     x => x.entryType === EntryType.CREDIT
                 )?._sum?.amount || 0
             );
 
-        const periodDebit =
+        let periodDebit =
             money(
                 periodAggregates.find(
                     x => x.entryType === EntryType.DEBIT
                 )?._sum?.amount || 0
             );
 
-        const periodCredit =
+        let periodCredit =
             money(
                 periodAggregates.find(
                     x => x.entryType === EntryType.CREDIT
                 )?._sum?.amount || 0
             );
+
+        for (const journal of priorJournals) {
+            if (journal.journalHead.type === "INWARD") priorDebit += money(journal.amount);
+            else priorCredit += money(journal.amount);
+        }
+        for (const journal of ledgerJournals) {
+            if (journal.journalHead.type === "INWARD") periodDebit += money(journal.amount);
+            else periodCredit += money(journal.amount);
+        }
 
         const baseOpening =
             money(ledger.openingBalance);
@@ -3836,6 +3865,28 @@ export class LedgerService {
             };
             })
         );
+
+        statementRows.push(...ledgerJournals.map(journal => {
+            const amount = money(journal.amount);
+            const debit = journal.journalHead.type === "INWARD" ? amount : 0;
+            const credit = journal.journalHead.type === "OUTWARD" ? amount : 0;
+            runningBalance = ledger.nature === LedgerNature.DEBIT
+                ? money(runningBalance + debit - credit)
+                : money(runningBalance + credit - debit);
+            return {
+                id: journal.id,
+                date: journal.journalDate,
+                voucherId: journal.voucherId,
+                voucherNo: journal.voucherId || journal.id,
+                voucherType: VoucherType.JOURNAL,
+                narration: `Journal - ${journal.journalHead.name}`,
+                debit,
+                credit,
+                runningBalance: Math.abs(runningBalance),
+                balanceType: resolveBalanceType(runningBalance, ledger.nature),
+                branch: journal.branch ? { id: journal.branch.id, name: journal.branch.name, code: journal.branch.code } : null
+            };
+        }));
 
         const periodClosing =
             runningBalance;
