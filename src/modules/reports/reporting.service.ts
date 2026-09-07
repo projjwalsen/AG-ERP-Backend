@@ -28,6 +28,10 @@ const BANK_VOUCHER_TYPES = [
 const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
 ]);
+const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set([
+    "SUNDRY_DEBTORS",
+    "SUNDRY_CREDITORS"
+]);
 
 
 export class ReportingService {
@@ -958,10 +962,97 @@ export class ReportingService {
         const groupById = new Map(ledgerGroups.map(group => [group.id, group]));
         const groupByCode = new Map(ledgerGroups.map(group => [group.code, group]));
 
+        // Sundry Debtors and Sundry Creditors are control heads in the
+        // Trial Balance. Keep their party ledgers available to detailed
+        // reports, but expose one cumulative row for each control head here.
+        const collapsedGroupIds = new Set<string>();
+        const collapsedRowsByGroup = new Map<string, any[]>();
+
+        for (const group of ledgerGroups) {
+            let current: LedgerGroupReportRow | undefined = group;
+
+            while (current) {
+                if (COLLAPSED_TRIAL_BALANCE_GROUP_CODES.has(current.code)) {
+                    collapsedGroupIds.add(group.id);
+                    break;
+                }
+
+                current = current.parentId
+                    ? groupById.get(current.parentId)
+                    : undefined;
+            }
+        }
+
+        for (const row of consolidatedRows) {
+            let current = row.groupId
+                ? groupById.get(row.groupId)
+                : undefined;
+
+            while (current) {
+                if (COLLAPSED_TRIAL_BALANCE_GROUP_CODES.has(current.code)) {
+                    const rowsForGroup = collapsedRowsByGroup.get(current.id) || [];
+                    rowsForGroup.push(row);
+                    collapsedRowsByGroup.set(current.id, rowsForGroup);
+                    break;
+                }
+
+                current = current.parentId
+                    ? groupById.get(current.parentId)
+                    : undefined;
+            }
+        }
+
+        const collapsedSummaryRows = [...collapsedRowsByGroup.entries()]
+            .map(([groupId, sourceRows]) => {
+                const group = groupById.get(groupId);
+                if (!group || sourceRows.length === 0) return null;
+
+                const sum = (key: string) => Number(
+                    sourceRows
+                        .reduce((total, row) => total + Number(row[key] || 0), 0)
+                        .toFixed(2)
+                );
+
+                return {
+                    ...sourceRows[0],
+                    ledgerId: `aggregate:ledger-group:${group.code}:${branchId || "all"}`,
+                    ledgerCode: `LEDGER_GROUP_${group.code}_TOTAL`,
+                    account: group.name,
+                    parentGroup: group.name,
+                    groupCode: group.code,
+                    groupId: group.id,
+                    periodDebit: sum("periodDebit"),
+                    periodCredit: sum("periodCredit"),
+                    openingDebit: sum("openingDebit"),
+                    openingCredit: sum("openingCredit"),
+                    debit: sum("closingDebit"),
+                    credit: sum("closingCredit"),
+                    closingDebit: sum("closingDebit"),
+                    closingCredit: sum("closingCredit"),
+                    closingSigned: sum("closingSigned"),
+                    isCollapsedTrialBalanceGroup: true
+                };
+            })
+            .filter(Boolean) as any[];
+        const collapsedSummaryGroupIds = new Set(
+            collapsedSummaryRows.map(row => row.groupId)
+        );
+
+        const collapsedSourceLedgerIds = new Set(
+            [...collapsedRowsByGroup.values()]
+                .flat()
+                .map(row => row.ledgerId)
+        );
+
+        const trialBalanceRows = [
+            ...consolidatedRows.filter(row => !collapsedSourceLedgerIds.has(row.ledgerId)),
+            ...collapsedSummaryRows
+        ];
+
         // The report hierarchy follows the LedgerGroup tree.  This is the
         // same expandable structure shown by Tally: accounting head -> group
         // -> ledger, rather than a flat list of ledger balances.
-        const rowsWithHierarchy = consolidatedRows.map(row => {
+        const rowsWithHierarchy = trialBalanceRows.map(row => {
             const group = row.groupId
                 ? groupById.get(row.groupId)
                 : groupByCode.get(String(row.groupCode || ""));
@@ -1031,6 +1122,10 @@ export class ReportingService {
         const treeNodes = new Map<string, any>();
         for (const group of ledgerGroups) {
             if (!query?.includeZero && !visibleGroupIds.has(group.id)) continue;
+            if (
+                collapsedGroupIds.has(group.id) &&
+                !collapsedSummaryGroupIds.has(group.id)
+            ) continue;
 
             treeNodes.set(group.id, {
                 id: `group:${group.id}`,
@@ -1049,9 +1144,29 @@ export class ReportingService {
             });
         }
 
+        for (const summary of collapsedSummaryRows) {
+            const groupNode = treeNodes.get(summary.groupId);
+            if (!groupNode) continue;
+
+            groupNode.periodDebit = summary.periodDebit;
+            groupNode.periodCredit = summary.periodCredit;
+            groupNode.closingDebit = summary.closingDebit;
+            groupNode.closingCredit = summary.closingCredit;
+            groupNode.closingSigned = summary.closingSigned;
+            groupNode.closingBalance = Math.abs(summary.closingSigned);
+            groupNode.closingBalanceType = summary.closingSigned > 0
+                ? "Dr"
+                : summary.closingSigned < 0
+                    ? "Cr"
+                    : null;
+            groupNode.hasChildren = false;
+            groupNode.isCollapsedTrialBalanceGroup = true;
+        }
+
         for (const row of rows) {
             const groupNode = row.groupId ? treeNodes.get(row.groupId) : undefined;
             if (!groupNode) continue;
+            if (row.isCollapsedTrialBalanceGroup) continue;
             groupNode.children.push({
                 ...row,
                 id: `ledger:${row.ledgerId || row.ledgerCode}`,
