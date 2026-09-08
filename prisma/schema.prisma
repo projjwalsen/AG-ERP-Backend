@@ -252,6 +252,7 @@ model Agency {
   outstanding            AgencyOutstanding[]
   productLedgerEntries   ProductLedgerEntry[]
   purchaseOrders         PurchaseOrder[]
+  journals               Journal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1478,6 +1479,9 @@ model Journal {
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id])
 
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
   journalHeadId String
 
   journalHead JournalHead @relation(fields: [journalHeadId], references: [id])
@@ -1485,6 +1489,10 @@ model Journal {
   importKey String? @unique
 
   amount Decimal @db.Decimal(18, 2)
+
+  cgstAmount Decimal? @db.Decimal(18, 2)
+  sgstAmount Decimal? @db.Decimal(18, 2)
+  igstAmount Decimal? @db.Decimal(18, 2)
 
   paymentMode PaymentMode
 
@@ -1517,6 +1525,8 @@ model Journal {
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
 }
 
 enum PurchaseOrderStatus {

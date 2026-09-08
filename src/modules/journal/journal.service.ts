@@ -33,11 +33,19 @@ export interface CreateJournalDto {
 
     branchId: string;
 
+    agencyId?: string;
+
     journalHeadId: string;
 
     saleId?: string;
 
     amount: number;
+
+    cgstAmount?: number;
+
+    sgstAmount?: number;
+
+    igstAmount?: number;
 
     importKey?: string;
 
@@ -55,9 +63,17 @@ export interface UpdateJournalDto {
 
     branchId?: string;
 
+    agencyId?: string | null;
+
     journalHeadId?: string;
 
     amount?: number;
+
+    cgstAmount?: number | null;
+
+    sgstAmount?: number | null;
+
+    igstAmount?: number | null;
 
     paymentMode?: PaymentMode;
 
@@ -478,7 +494,8 @@ export class JournalService {
 
         const [
             branch,
-            journalHead
+            journalHead,
+            agency
         ] = await Promise.all([
 
             prisma.branch.findUnique({
@@ -494,7 +511,13 @@ export class JournalService {
                 include: {
                     ledger: true
                 }
-            })
+            }),
+
+            dto.agencyId
+                ? prisma.agency.findUnique({
+                    where: { id: dto.agencyId }
+                })
+                : null
 
         ]);
 
@@ -512,6 +535,10 @@ export class JournalService {
             );
         }
 
+        if (dto.agencyId && !agency) {
+            throw new ApiError("Agency not found.", 404);
+        }
+
         if (
             dto.amount <= 0
         ) {
@@ -527,6 +554,9 @@ export class JournalService {
 
                 branchId:
                     dto.branchId,
+
+                agencyId:
+                    dto.agencyId ?? null,
 
                 journalHeadId:
                     dto.journalHeadId,
@@ -546,6 +576,15 @@ export class JournalService {
                 amount:
                     dto.amount,
 
+                cgstAmount:
+                    dto.cgstAmount ?? null,
+
+                sgstAmount:
+                    dto.sgstAmount ?? null,
+
+                igstAmount:
+                    dto.igstAmount ?? null,
+
                 remarks:
                     dto.remarks,
 
@@ -564,6 +603,8 @@ export class JournalService {
             include: {
 
                 branch: true,
+
+                agency: true,
 
                 journalHead: {
                     include: {
@@ -654,6 +695,16 @@ export class JournalService {
 
         }
 
+        if (dto.agencyId) {
+            const agency = await prisma.agency.findUnique({
+                where: { id: dto.agencyId }
+            });
+
+            if (!agency) {
+                throw new ApiError("Agency not found.", 404);
+            }
+        }
+
         if (
             dto.journalHeadId
         ) {
@@ -707,6 +758,9 @@ export class JournalService {
                 branchId:
                     dto.branchId,
 
+                agencyId:
+                    dto.agencyId,
+
                 journalHeadId:
                     dto.journalHeadId,
 
@@ -719,6 +773,15 @@ export class JournalService {
                 amount:
                     dto.amount,
 
+                cgstAmount:
+                    dto.cgstAmount,
+
+                sgstAmount:
+                    dto.sgstAmount,
+
+                igstAmount:
+                    dto.igstAmount,
+
                 remarks:
                     dto.remarks,
 
@@ -730,6 +793,8 @@ export class JournalService {
             include: {
 
                 branch: true,
+
+                agency: true,
 
                 journalHead: {
 
@@ -806,6 +871,8 @@ export class JournalService {
                         }
                     },
 
+                    agency: true,
+
                     journalHead: {
                         include: {
                             ledger: true
@@ -859,6 +926,7 @@ export class JournalService {
             branchId?: string;
             status?: JournalStatus;
             journalHeadId?: string;
+            agencyId?: string;
             fromDate?: Date;
             toDate?: Date;
         }
@@ -871,6 +939,7 @@ export class JournalService {
             branchId,
             status,
             journalHeadId,
+            agencyId,
             fromDate,
             toDate
         } = params;
@@ -886,6 +955,10 @@ export class JournalService {
 
             ...(journalHeadId && {
                 journalHeadId
+            }),
+
+            ...(agencyId && {
+                agencyId
             }),
 
             ...(fromDate || toDate
@@ -928,6 +1001,15 @@ export class JournalService {
                                     mode: "insensitive"
                                 }
                             }
+                        },
+
+                        {
+                            agency: {
+                                name: {
+                                    contains: search,
+                                    mode: "insensitive"
+                                }
+                            }
                         }
                     ]
                 }
@@ -961,6 +1043,8 @@ export class JournalService {
                             name: true
                         }
                     },
+
+                    agency: true,
 
                     journalHead: {
                         include: {

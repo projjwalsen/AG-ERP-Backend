@@ -216,8 +216,12 @@ export const createJournal = async (
 
         const {
             branchId,
+            agencyId,
             journalHeadId,
             amount,
+            cgstAmount,
+            sgstAmount,
+            igstAmount,
             paymentMode,
             paymentThrough,
             remarks,
@@ -231,8 +235,12 @@ export const createJournal = async (
 
                 {
                     branchId,
+                    agencyId,
                     journalHeadId,
                     amount,
+                    cgstAmount,
+                    sgstAmount,
+                    igstAmount,
                     paymentMode,
                     paymentThrough,
                     remarks,
@@ -273,8 +281,12 @@ export const updateJournal = async (
 
         const {
             branchId,
+            agencyId,
             journalHeadId,
             amount,
+            cgstAmount,
+            sgstAmount,
+            igstAmount,
             paymentMode,
             paymentThrough,
             remarks,
@@ -287,8 +299,12 @@ export const updateJournal = async (
                 journalId,
                 {
                     branchId,
+                    agencyId,
                     journalHeadId,
                     amount,
+                    cgstAmount,
+                    sgstAmount,
+                    igstAmount,
                     paymentMode,
                     paymentThrough,
                     remarks,
@@ -356,6 +372,7 @@ export const listJournals = async (
             branchId,
             status,
             journalHeadId,
+            agencyId,
             fromDate,
             toDate
         } = req.query;
@@ -384,6 +401,8 @@ export const listJournals = async (
                 status: status as any,
 
                 journalHeadId: journalHeadId as string,
+
+                agencyId: agencyId as string,
 
                 fromDate:
                     fromDate
