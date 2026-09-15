@@ -21,6 +21,8 @@ export const createJournalHead = async (
         const {
             name,
             type,
+            headType,
+            parentId,
         } = req.body;
 
         const journalHead =
@@ -28,7 +30,9 @@ export const createJournalHead = async (
                 actor,
                 {
                     name,
-                    type
+                    type,
+                    headType,
+                    parentId
                 }
             );
 
@@ -64,6 +68,8 @@ export const updateJournalHead = async (
         const {
             name,
             type,
+            headType,
+            parentId,
             ledgerId,
             isActive
         } = req.body;
@@ -76,6 +82,8 @@ export const updateJournalHead = async (
                 {
                     name,
                     type,
+                    headType,
+                    parentId,
                     isActive
                 }
 
@@ -172,6 +180,8 @@ export const listJournalHeads = async (
         const {
             search,
             type,
+            headType,
+            parentId,
             isActive
         } = (req as any).query;
 
@@ -179,6 +189,8 @@ export const listJournalHeads = async (
             await JournalService.listJournalHeads({
                 search: search as string,
                 type: type as any,
+                headType: headType as any,
+                parentId: parentId as string,
                 isActive:
                     isActive !== undefined
                         ? isActive === "true"
@@ -218,6 +230,8 @@ export const createJournal = async (
             branchId,
             agencyId,
             journalHeadId,
+            direction,
+            type,
             amount,
             cgstAmount,
             sgstAmount,
@@ -237,6 +251,8 @@ export const createJournal = async (
                     branchId,
                     agencyId,
                     journalHeadId,
+                    direction,
+                    type,
                     amount,
                     cgstAmount,
                     sgstAmount,
@@ -283,6 +299,8 @@ export const updateJournal = async (
             branchId,
             agencyId,
             journalHeadId,
+            direction,
+            type,
             amount,
             cgstAmount,
             sgstAmount,
@@ -301,6 +319,8 @@ export const updateJournal = async (
                     branchId,
                     agencyId,
                     journalHeadId,
+                    direction,
+                    type,
                     amount,
                     cgstAmount,
                     sgstAmount,

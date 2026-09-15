@@ -2,7 +2,11 @@ export interface CreateJournalHeadDto {
 
     name: string;
 
-    type: "INWARD" | "OUTWARD";
+    type?: "INWARD" | "OUTWARD" | "BOTH";
+
+    headType?: "PARENT" | "SUBHEAD";
+
+    parentId?: string | null;
 
     groupCode?: string;
 
@@ -12,7 +16,11 @@ export interface UpdateJournalHeadDto {
 
     name?: string;
 
-    type?: "INWARD" | "OUTWARD";
+    type?: "INWARD" | "OUTWARD" | "BOTH";
+
+    headType?: "PARENT" | "SUBHEAD";
+
+    parentId?: string | null;
 
     isActive?: boolean;
 
@@ -20,6 +28,7 @@ export interface UpdateJournalHeadDto {
 
 import {
     EntryType,
+    JournalDirection,
     JournalHeadType,
     JournalStatus,
     LedgerNature,
@@ -36,6 +45,10 @@ export interface CreateJournalDto {
     agencyId?: string;
 
     journalHeadId: string;
+
+    direction?: JournalDirection;
+
+    type?: JournalDirection;
 
     saleId?: string;
 
@@ -66,6 +79,10 @@ export interface UpdateJournalDto {
     agencyId?: string | null;
 
     journalHeadId?: string;
+
+    direction?: JournalDirection | null;
+
+    type?: JournalDirection | null;
 
     amount?: number;
 
@@ -178,6 +195,27 @@ export class JournalService {
         dto: CreateJournalHeadDto
     ) {
 
+        const headType = dto.headType ?? "PARENT";
+        const parentId = dto.parentId ?? null;
+
+        if (headType === "SUBHEAD" && !parentId) {
+            throw new ApiError("parentId is required for a SUBHEAD.", 400);
+        }
+
+        if (headType === "PARENT" && parentId) {
+            throw new ApiError("PARENT journal heads cannot have a parent.", 400);
+        }
+
+        if (parentId) {
+            const parent = await prisma.journalHead.findUnique({
+                where: { id: parentId }
+            });
+
+            if (!parent) {
+                throw new ApiError("Parent journal head not found.", 404);
+            }
+        }
+
         const exists =
             await prisma.journalHead.findFirst({
 
@@ -191,15 +229,15 @@ export class JournalService {
 
                     },
 
-                    // Reuse only a head with the same direction. This keeps
-                    // BANK_PAYMENT on the OUTWARD path (Bank CREDIT) and
-                    // BANK_RECEIPT on the INWARD path (Bank DEBIT).
-                    type: dto.type
+                    parentId,
+                    headType
 
                 },
 
                 include: {
-                    ledger: true
+                    ledger: true,
+                    parent: true,
+                    children: true
                 }
 
             });
@@ -228,7 +266,7 @@ export class JournalService {
 
                 groupCode:
                     dto.groupCode ??
-                    (dto.type === "INWARD"
+                    (dto.type === "INWARD" || dto.type === "BOTH"
                         ? "INDIRECT_INCOME"
                         : "INDIRECT_EXPENSE")
 
@@ -240,7 +278,9 @@ export class JournalService {
 
                 name: dto.name.trim(),
 
-                type: dto.type,
+                headType,
+                parentId,
+                type: dto.type ?? null,
 
                 ledgerId: ledger.id
 
@@ -248,7 +288,9 @@ export class JournalService {
 
             include: {
 
-                ledger: true
+                ledger: true,
+                parent: true,
+                children: true
 
             }
 
@@ -314,15 +356,46 @@ export class JournalService {
 
         }
 
+        const nextHeadType = dto.headType ?? head.headType;
+        const nextParentId = dto.parentId !== undefined
+            ? dto.parentId
+            : head.parentId;
+
+        if (nextHeadType === "SUBHEAD" && !nextParentId) {
+            throw new ApiError("parentId is required for a SUBHEAD.", 400);
+        }
+
+        if (nextHeadType === "PARENT" && nextParentId) {
+            throw new ApiError("PARENT journal heads cannot have a parent.", 400);
+        }
+
+        if (nextParentId === id) {
+            throw new ApiError("A journal head cannot be its own parent.", 400);
+        }
+
+        if (nextParentId) {
+            const parent = await prisma.journalHead.findUnique({
+                where: { id: nextParentId }
+            });
+
+            if (!parent) {
+                throw new ApiError("Parent journal head not found.", 404);
+            }
+        }
+
         return prisma.journalHead.update({
             where: { id },
             data: {
                 name: dto.name,
                 type: dto.type,
+                headType: dto.headType,
+                parentId: dto.parentId,
                 isActive: dto.isActive
             },
             include: {
                 ledger: true
+                , parent: true
+                , children: true
             }
         });
 
@@ -380,7 +453,9 @@ export class JournalService {
 
                 include: {
 
-                    ledger: true
+                    ledger: true,
+                    parent: true,
+                    children: true
 
                 }
 
@@ -403,7 +478,11 @@ export class JournalService {
 
             search?: string;
 
-            type?: "INWARD" | "OUTWARD";
+            type?: "INWARD" | "OUTWARD" | "BOTH";
+
+            headType?: "PARENT" | "SUBHEAD";
+
+            parentId?: string;
 
             isActive?: boolean;
 
@@ -415,6 +494,10 @@ export class JournalService {
             search,
 
             type,
+
+            headType,
+
+            parentId,
 
             isActive
 
@@ -442,6 +525,10 @@ export class JournalService {
 
                 }),
 
+                ...(headType && { headType }),
+
+                ...(parentId && { parentId }),
+
                 ...(isActive !== undefined && {
 
                     isActive
@@ -468,7 +555,10 @@ export class JournalService {
 
                     }
 
-                }
+                },
+
+                parent: true,
+                children: true
 
             },
 
@@ -535,6 +625,22 @@ export class JournalService {
             );
         }
 
+        const direction =
+            dto.direction ??
+            dto.type ??
+            (journalHead.type === JournalHeadType.INWARD
+                ? JournalDirection.INWARD
+                : journalHead.type === JournalHeadType.OUTWARD
+                    ? JournalDirection.OUTWARD
+                    : undefined);
+
+        if (!direction) {
+            throw new ApiError(
+                "direction is required when using a new journal head.",
+                400
+            );
+        }
+
         if (dto.agencyId && !agency) {
             throw new ApiError("Agency not found.", 404);
         }
@@ -575,6 +681,8 @@ export class JournalService {
 
                 amount:
                     dto.amount,
+
+                direction,
 
                 cgstAmount:
                     dto.cgstAmount ?? null,
@@ -644,6 +752,10 @@ export class JournalService {
 
                 where: {
                     id
+                },
+
+                include: {
+                    journalHead: true
                 }
 
             });
@@ -705,9 +817,9 @@ export class JournalService {
             }
         }
 
-        if (
-            dto.journalHeadId
-        ) {
+        let journalHead = journal.journalHead;
+
+        if (dto.journalHeadId) {
 
             const head =
                 await prisma.journalHead.findUnique({
@@ -727,6 +839,25 @@ export class JournalService {
 
             }
 
+            journalHead = head;
+
+        }
+
+        const direction =
+            dto.direction ??
+            dto.type ??
+            journal.direction ??
+            (journalHead.type === JournalHeadType.INWARD
+                ? JournalDirection.INWARD
+                : journalHead.type === JournalHeadType.OUTWARD
+                    ? JournalDirection.OUTWARD
+                    : undefined);
+
+        if (!direction) {
+            throw new ApiError(
+                "direction is required when using a new journal head.",
+                400
+            );
         }
 
 
@@ -772,6 +903,8 @@ export class JournalService {
 
                 amount:
                     dto.amount,
+
+                direction,
 
                 cgstAmount:
                     dto.cgstAmount,
@@ -875,7 +1008,9 @@ export class JournalService {
 
                     journalHead: {
                         include: {
-                            ledger: true
+                            ledger: true,
+                            parent: true,
+                            children: true
                         }
                     },
 
@@ -1048,7 +1183,9 @@ export class JournalService {
 
                     journalHead: {
                         include: {
-                            ledger: true
+                            ledger: true,
+                            parent: true,
+                            children: true
                         }
                     },
 
@@ -1206,15 +1343,21 @@ export class JournalService {
                                 ? VoucherType.BANK_PAYMENT
                                 : null;
 
+            const journalDirection =
+                journal.direction ??
+                (journal.journalHead.type === JournalHeadType.INWARD
+                    ? JournalDirection.INWARD
+                    : JournalDirection.OUTWARD);
+
             const voucher =
                 await LedgerService.createVoucher(
                     {
 
                         voucherType: explicitImportedVoucherType ?? (
-                            journal.journalHead.type === JournalHeadType.OUTWARD &&
+                            journalDirection === JournalDirection.OUTWARD &&
                                 journal.paymentThrough === PaymentType.CASH
                                 ? VoucherType.CASH_PAYMENT
-                                : journal.journalHead.type === JournalHeadType.OUTWARD
+                                : journalDirection === JournalDirection.OUTWARD
                                     ? VoucherType.BANK_PAYMENT
                                     : VoucherType.JOURNAL
                         ),
@@ -1233,8 +1376,7 @@ export class JournalService {
 
                         entries:
 
-                            journal.journalHead.type ===
-                                JournalHeadType.OUTWARD
+                            journalDirection === JournalDirection.OUTWARD
 
                                 ?
 

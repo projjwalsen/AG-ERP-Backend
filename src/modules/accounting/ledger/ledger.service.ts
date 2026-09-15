@@ -3,6 +3,7 @@ import {
     DebitCreditNoteSourceType,
     DebitCreditNoteType,
     EntryType,
+    JournalDirection,
     LedgerNature,
     LedgerType,
     PaymentMode,
@@ -87,6 +88,15 @@ type LedgerSeed = {
 };
 
 const money = (value: unknown) => Math.round(Number(value || 0) * 100) / 100;
+
+const getJournalDirection = (journal: {
+    direction?: JournalDirection | null;
+    journalHead: { type?: string | null };
+}): JournalDirection => journal.direction ?? (
+    journal.journalHead.type === "INWARD"
+        ? JournalDirection.INWARD
+        : JournalDirection.OUTWARD
+);
 
 const ROOT_GROUPS: Record<string, { name: string; nature: LedgerNature }> = {
     ASSETS: { name: "Assets", nature: LedgerNature.DEBIT },
@@ -2731,7 +2741,7 @@ export class LedgerService {
                         const amount =
                             Number(journal.amount);
 
-                        if (journal.journalHead.type === "INWARD") {
+                        if (getJournalDirection(journal) === JournalDirection.INWARD) {
 
                             openingBalance += amount;
 
@@ -2957,7 +2967,6 @@ export class LedgerService {
         for (const journal of journals) {
 
             const amount = Number(journal.amount);
-
             ledgerRows.push({
 
                 date: journal.journalDate,
@@ -2968,12 +2977,12 @@ export class LedgerService {
                     `Journal - ${journal.journalHead.name}`,
 
                 income:
-                    journal.journalHead.type === "INWARD"
+                    getJournalDirection(journal) === JournalDirection.INWARD
                         ? amount
                         : 0,
 
                 expense:
-                    journal.journalHead.type === "OUTWARD"
+                    getJournalDirection(journal) === JournalDirection.OUTWARD
                         ? amount
                         : 0
 
@@ -3295,10 +3304,10 @@ export class LedgerService {
         });
 
         const journalDebit = money(journals
-            .filter((journal) => journal.journalHead.type === "INWARD")
+            .filter((journal) => getJournalDirection(journal) === JournalDirection.INWARD)
             .reduce((sum, journal) => sum + Number(journal.amount), 0));
         const journalCredit = money(journals
-            .filter((journal) => journal.journalHead.type === "OUTWARD")
+            .filter((journal) => getJournalDirection(journal) === JournalDirection.OUTWARD)
             .reduce((sum, journal) => sum + Number(journal.amount), 0));
 
         const totalDebit = money(debit + journalDebit);
@@ -3386,12 +3395,15 @@ export class LedgerService {
             }
 
             const voucherNo = payload.voucherNo || this.generateVoucherNo(payload.voucherType, sourceId);
-            const existingVoucherNo = await tx.voucher.findUnique({
-                where: { voucherNo }
+            const existingVoucherNo = await tx.voucher.findFirst({
+                where: {
+                    voucherNo,
+                    voucherType: payload.voucherType
+                }
             });
 
             if (existingVoucherNo) {
-                throw new ApiError("Voucher number already exists", 409);
+                throw new ApiError("Voucher number and voucher type already exist", 409);
             }
 
             let voucher;
@@ -3698,11 +3710,11 @@ export class LedgerService {
             );
 
         for (const journal of priorJournals) {
-            if (journal.journalHead.type === "INWARD") priorDebit += money(journal.amount);
+            if (getJournalDirection(journal) === JournalDirection.INWARD) priorDebit += money(journal.amount);
             else priorCredit += money(journal.amount);
         }
         for (const journal of ledgerJournals) {
-            if (journal.journalHead.type === "INWARD") periodDebit += money(journal.amount);
+            if (getJournalDirection(journal) === JournalDirection.INWARD) periodDebit += money(journal.amount);
             else periodCredit += money(journal.amount);
         }
 
@@ -3868,8 +3880,8 @@ export class LedgerService {
 
         statementRows.push(...ledgerJournals.map(journal => {
             const amount = money(journal.amount);
-            const debit = journal.journalHead.type === "INWARD" ? amount : 0;
-            const credit = journal.journalHead.type === "OUTWARD" ? amount : 0;
+            const debit = getJournalDirection(journal) === JournalDirection.INWARD ? amount : 0;
+            const credit = getJournalDirection(journal) === JournalDirection.OUTWARD ? amount : 0;
             runningBalance = ledger.nature === LedgerNature.DEBIT
                 ? money(runningBalance + debit - credit)
                 : money(runningBalance + credit - debit);

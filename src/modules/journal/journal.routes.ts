@@ -20,16 +20,19 @@ router.use(authMiddleware);
  *             type: object
  *             required:
  *               - name
- *               - type
+ *               - headType
  *             properties:
  *               name:
  *                 type: string
  *                 example: Salary Payable
- *               type:
+ *               headType:
  *                 type: string
  *                 enum:
- *                   - INWARD
- *                   - OUTWARD
+ *                   - PARENT
+ *                   - SUBHEAD
+ *               parentId:
+ *                 type: string
+ *                 format: uuid
  *               ledgerId:
  *                 type: string
  *                 format: uuid
@@ -62,11 +65,14 @@ router.post("/head/create", checkPermission("JOURNAL:WRITE"), JournalController.
  *             properties:
  *               name:
  *                 type: string
- *               type:
+ *               headType:
  *                 type: string
  *                 enum:
- *                   - INWARD
- *                   - OUTWARD
+ *                   - PARENT
+ *                   - SUBHEAD
+ *               parentId:
+ *                 type: string
+ *                 format: uuid
  *               isActive:
  *                 type: boolean
  *     responses:
@@ -132,12 +138,16 @@ router.get("/head/:journalHeadId", checkPermission("JOURNAL:VIEW"), JournalContr
  *         schema:
  *           type: string
  *       - in: query
- *         name: type
+ *         name: headType
  *         schema:
  *           type: string
  *           enum:
- *             - INWARD
- *             - OUTWARD
+ *             - PARENT
+ *             - SUBHEAD
+ *       - in: query
+ *         name: parentId
+ *         schema:
+ *           type: string
  *       - in: query
  *         name: isActive
  *         schema:
@@ -180,6 +190,11 @@ router.get("/heads", checkPermission("JOURNAL:VIEW"), JournalController.listJour
  *               journalHeadId:
  *                 type: string
  *                 format: uuid
+ *               direction:
+ *                 type: string
+ *                 enum:
+ *                   - INWARD
+ *                   - OUTWARD
  *               amount:
  *                 type: number
  *                 example: 1200
@@ -288,6 +303,11 @@ router.get("/all", checkPermission("JOURNAL:VIEW"), JournalController.listJourna
  *                 type: string
  *               journalHeadId:
  *                 type: string
+ *               direction:
+ *                 type: string
+ *                 enum:
+ *                   - INWARD
+ *                   - OUTWARD
  *               amount:
  *                 type: number
  *               paymentMode:

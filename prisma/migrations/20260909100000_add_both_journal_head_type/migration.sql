@@ -1,0 +1,1 @@
+ALTER TYPE "JournalHeadType" ADD VALUE IF NOT EXISTS 'BOTH';
