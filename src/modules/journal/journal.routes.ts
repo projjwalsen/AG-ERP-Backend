@@ -33,9 +33,6 @@ router.use(authMiddleware);
  *               parentId:
  *                 type: string
  *                 format: uuid
- *               ledgerId:
- *                 type: string
- *                 format: uuid
  *     responses:
  *       201:
  *         description: Journal Head created successfully

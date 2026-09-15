@@ -70,7 +70,6 @@ export const updateJournalHead = async (
             type,
             headType,
             parentId,
-            ledgerId,
             isActive
         } = req.body;
 
