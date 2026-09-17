@@ -6,6 +6,80 @@ import {
 
 import { JournalService } from "./journal.service";
 
+export const createJournalCategory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const category = await JournalService.createJournalCategory(
+            (req as any).user,
+            req.body
+        );
+        return res.status(201).json({
+            success: true,
+            message: "Journal category created successfully.",
+            data: { category }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateJournalCategory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const category = await JournalService.updateJournalCategory(
+            (req as any).user,
+            (req as any).params.categoryId,
+            req.body
+        );
+        return res.status(200).json({
+            success: true,
+            message: "Journal category updated successfully.",
+            data: { category }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getJournalCategoryById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const category = await JournalService.getJournalCategoryById(
+            (req as any).params.categoryId
+        );
+        return res.status(200).json({ success: true, data: { category } });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const listJournalCategories = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const categories = await JournalService.listJournalCategories({
+            search: req.query.search as string,
+            isActive: req.query.isActive !== undefined
+                ? req.query.isActive === "true"
+                : undefined
+        });
+        return res.status(200).json({ success: true, data: { categories } });
+    } catch (error) {
+        next(error);
+    }
+};
+
 /** ---------------- JOURNAL HEAD ---------------- */
 
 export const createJournalHead = async (
@@ -229,6 +303,7 @@ export const createJournal = async (
             branchId,
             agencyId,
             journalHeadId,
+            categoryId,
             direction,
             type,
             amount,
@@ -250,6 +325,7 @@ export const createJournal = async (
                     branchId,
                     agencyId,
                     journalHeadId,
+                    categoryId,
                     direction,
                     type,
                     amount,
@@ -298,6 +374,7 @@ export const updateJournal = async (
             branchId,
             agencyId,
             journalHeadId,
+            categoryId,
             direction,
             type,
             amount,
@@ -318,6 +395,7 @@ export const updateJournal = async (
                     branchId,
                     agencyId,
                     journalHeadId,
+                    categoryId,
                     direction,
                     type,
                     amount,
@@ -392,6 +470,7 @@ export const listJournals = async (
             status,
             journalHeadId,
             agencyId,
+            categoryId,
             fromDate,
             toDate
         } = req.query;
@@ -422,6 +501,8 @@ export const listJournals = async (
                 journalHeadId: journalHeadId as string,
 
                 agencyId: agencyId as string,
+
+                categoryId: categoryId as string,
 
                 fromDate:
                     fromDate
