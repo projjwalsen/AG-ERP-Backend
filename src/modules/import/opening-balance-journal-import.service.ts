@@ -216,7 +216,7 @@ export class OpeningBalanceJournalImportService {
         const branch = await prisma.branch.findUnique({ where: { id: branchId } });
         if (!branch || !branch.isActive) throw new ApiError("Branch not found or inactive", 404);
 
-        const { leaves, periodStart } = await parseTallyOpeningBalanceTree(file.buffer);
+        const { nodes, leaves, periodStart } = await parseTallyOpeningBalanceTree(file.buffer);
         // A Tally Trial Balance labels its source period above the table. When
         // the user leaves the date blank, preserve that accounting start date
         // instead of incorrectly dating every opening entry to today.
