@@ -257,17 +257,12 @@ export class OpeningBalanceJournalImportService {
                         // the same file repairs that mapping without adding a
                         // second opening-balance amount.
                         if (existingLeafLedger && existing.journalHead.ledgerId !== existingLeafLedger.id) {
-                            const targetHead = await ensureHead(tx, leaf, existingLeafLedger);
                             if (existing.voucherId) {
                                 await tx.ledgerEntry.updateMany({
                                     where: { voucherId: existing.voucherId },
                                     data: { ledgerId: existingLeafLedger.id }
                                 });
                             }
-                            await tx.journal.update({
-                                where: { id: existing.id },
-                                data: { journalHeadId: targetHead.id }
-                            });
                         }
                         return "skipped" as const;
                     }
