@@ -3393,6 +3393,11 @@ export class ExcelService {
                 closingCredit: number;
             }>;
 
+            /** Optional frontend/report hierarchy. When supplied, the Excel
+             * export renders the same expandable parent -> subgroup -> ledger
+             * order as the JSON trial-balance response. */
+            tree?: any[];
+
             summary: {
                 totalDebit: number;
                 totalCredit: number;
@@ -3442,6 +3447,7 @@ export class ExcelService {
         worksheet.getColumn(3).width = 13.33;
         worksheet.getColumn(4).width = 13.33;
         worksheet.getColumn(5).width = 14.66;
+        worksheet.getColumn(6).width = 14.66;
 
         /* ============================================================
            ROW 1 - COMPANY
@@ -3511,7 +3517,7 @@ export class ExcelService {
            ROW 4 - BLANK
         ============================================================ */
 
-        worksheet.mergeCells("B8:E8");
+        worksheet.mergeCells("B8:F8");
         const branchCell = worksheet.getCell("B8");
         branchCell.value = options.branchName
             ? `${options.branchName} (from ${options.period.split(" to ")[0]})`
@@ -3527,8 +3533,9 @@ export class ExcelService {
 
         const headerRowNumber = 11;
         worksheet.mergeCells("A9:A11");
-        worksheet.mergeCells("B9:E9");
+        worksheet.mergeCells("B9:F9");
         worksheet.mergeCells("C10:D10");
+        worksheet.mergeCells("E10:F10");
         worksheet.getCell("A9").value = "Particulars";
         worksheet.getCell("B9").value = options.period;
         worksheet.getCell("B10").value = "Opening";
@@ -3537,12 +3544,13 @@ export class ExcelService {
         worksheet.getCell("B11").value = "Balance";
         worksheet.getCell("C11").value = "Debit";
         worksheet.getCell("D11").value = "Credit";
-        worksheet.getCell("E11").value = "Balance";
+        worksheet.getCell("E11").value = "Debit";
+        worksheet.getCell("F11").value = "Credit";
 
         for (const rowNumber of [9, 10, 11]) {
             const currentHeaderRow = worksheet.getRow(rowNumber);
             currentHeaderRow.height = 15;
-            for (let column = 1; column <= 5; column++) {
+            for (let column = 1; column <= 6; column++) {
                 const cell = currentHeaderRow.getCell(column);
 
             cell.font = {
@@ -3796,10 +3804,51 @@ export class ExcelService {
             row.getCell(2).numFmt = opening === 0 ? '0' : balanceNumberFormat(opening);
             row.getCell(3).numFmt = '0.00';
             row.getCell(4).numFmt = '0.00';
-            row.getCell(5).numFmt = closing === 0 ? '0' : balanceNumberFormat(closing);
+            row.getCell(5).numFmt = closing > 0 ? '0.00' : '0';
+            row.getCell(6).numFmt = closing < 0 ? '0.00' : '0';
         };
 
-        for (const group of sortedGroups) {
+        const appendTreeNode = (node: any, level = 0, openingOverride?: number) => {
+            const childOpening = Array.isArray(node.children)
+                ? node.children.reduce((sum: number, child: any) => sum + getTreeOpening(child), 0)
+                : 0;
+            const opening = openingOverride ?? (node.rowType === "ledger"
+                ? Number(node.openingDebit || 0) - Number(node.openingCredit || 0)
+                : childOpening);
+            const closing = Number(node.closingSigned || 0);
+            const row = worksheet.addRow([
+                node.name || node.account || "",
+                balanceValue(opening),
+                Number(node.periodDebit || 0) || null,
+                Number(node.periodCredit || 0) || null,
+                closing > 0 ? balanceValue(closing) : null,
+                closing < 0 ? balanceValue(closing) : null
+            ]);
+            applyReportRowStyle(row, opening, closing, node.rowType === "accountingHeader");
+            row.getCell(1).alignment = {
+                horizontal: "left",
+                vertical: "top",
+                indent: 1 + level * 3
+            };
+            if (node.rowType === "accountingHeader") {
+                row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
+            }
+            for (const child of node.children || []) appendTreeNode(child, level + 1);
+        };
+
+        const getTreeOpening = (node: any): number => {
+            if (node.rowType === "ledger") {
+                return Number(node.openingDebit || 0) - Number(node.openingCredit || 0);
+            }
+            return (node.children || []).reduce(
+                (sum: number, child: any) => sum + getTreeOpening(child),
+                0
+            );
+        };
+
+        if (options.tree?.length) {
+            for (const node of options.tree) appendTreeNode(node);
+        } else for (const group of sortedGroups) {
             if (group.parentKey !== previousParentKey) {
                 const parentRow = worksheet.addRow([
                     group.parentLabel,
@@ -3856,7 +3905,8 @@ export class ExcelService {
                     balanceValue(groupOpeningSigned),
                     groupDebit || null,
                     groupCredit || null,
-                    balanceValue(groupClosingSigned)
+                    groupClosingSigned > 0 ? balanceValue(groupClosingSigned) : null,
+                    groupClosingSigned < 0 ? balanceValue(groupClosingSigned) : null
                 ]);
 
                 applyReportRowStyle(
@@ -3890,7 +3940,12 @@ export class ExcelService {
                     item.periodCredit !== 0
                         ? item.periodCredit
                         : null,
-                    balanceValue(Number(item.closingSigned || 0))
+                    Number(item.closingSigned || 0) > 0
+                        ? balanceValue(Number(item.closingSigned || 0))
+                        : null,
+                    Number(item.closingSigned || 0) < 0
+                        ? balanceValue(Number(item.closingSigned || 0))
+                        : null
                 ]);
 
                 applyReportRowStyle(
@@ -3921,7 +3976,8 @@ export class ExcelService {
             null,
             Number(exportedDebit.toFixed(2)),
             Number(exportedCredit.toFixed(2)),
-            null
+            Number(options.summary.totalClosingDebit.toFixed(2)) || null,
+            Number(options.summary.totalClosingCredit.toFixed(2)) || null,
         ]);
 
         totalRow.height = 15;
@@ -3943,6 +3999,9 @@ export class ExcelService {
         totalRow.getCell(5).alignment = {
             horizontal: "right"
         };
+        totalRow.getCell(6).alignment = {
+            horizontal: "right"
+        };
 
         totalRow.getCell(3).alignment = {
             horizontal: "right"
@@ -3952,7 +4011,7 @@ export class ExcelService {
             horizontal: "right"
         };
 
-        for (let column = 1; column <= 5; column++) {
+        for (let column = 1; column <= 6; column++) {
             totalRow.getCell(column).border = {
                 top: {
                     style: "thin"

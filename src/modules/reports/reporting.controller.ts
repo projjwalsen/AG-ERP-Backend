@@ -159,6 +159,9 @@ export const getTrialBalanceReport = async (
                         data:
                             report.rows,
 
+                        tree:
+                            report.tree,
+
                         summary:
                             report.summary
                     }

@@ -27,6 +27,12 @@ type OpeningNode = {
     children: OpeningNode[];
 };
 
+type OpeningColumns = {
+    debit: number;
+    credit: number;
+    balance?: number;
+};
+
 type ImportSummary = {
     total: number;
     processed: number;
@@ -71,13 +77,50 @@ const sourceKey = (branchId: string, path: string) =>
 
 const parseTallyPeriodStart = (value: string) => {
     const start = value.split(/\s+to\s+/i)[0]?.trim();
-    const match = start?.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+    const match = start?.match(/^(\d{1,2})[-\s]+([A-Za-z]{3})[-\s]+(\d{2,4})$/);
     if (!match) return undefined;
     const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
         .indexOf(match[2].toUpperCase());
     if (month < 0) return undefined;
     const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
     return new Date(year, month, Number(match[1]), 0, 0, 0, 0);
+};
+
+/**
+ * Tally exports two common trial-balance layouts:
+ *
+ * 1. Opening Balance -> Debit/Credit (the original Tally export).
+ * 2. Opening -> Balance, followed by Transactions -> Debit/Credit
+ *    (the newer `trial-balance (8).xlsx` export).
+ *
+ * Do not assume that columns B/C are always opening debit/credit. In the
+ * second layout column C is transaction debit, which was previously being
+ * imported as opening credit.
+ */
+const resolveOpeningColumns = (worksheet: ExcelJS.Worksheet, headerRow: number): OpeningColumns => {
+    const firstHeader = normalizeName(worksheet.getRow(headerRow + 1).getCell(2).value).toUpperCase();
+    const secondHeader = normalizeName(worksheet.getRow(headerRow + 2).getCell(2).value).toUpperCase();
+    const thirdHeader = normalizeName(worksheet.getRow(headerRow + 2).getCell(3).value).toUpperCase();
+
+    if (secondHeader === "BALANCE" && thirdHeader === "DEBIT") {
+        // Opening Balance is a signed display value. The number format carries
+        // the Dr/Cr suffix; the importer converts it into the two ledger sides.
+        return { debit: 2, credit: 2, balance: 2 };
+    }
+
+    if (firstHeader.includes("OPENING") && secondHeader === "DEBIT" && thirdHeader === "CREDIT") {
+        return { debit: 2, credit: 3 };
+    }
+
+    // Conservative fallback for older/hand-edited files.
+    return { debit: 2, credit: 3 };
+};
+
+const signedOpeningAmount = (cell: ExcelJS.Cell) => {
+    const amount = Math.abs(numberValue(cell.value));
+    const format = String(cell.numFmt || "").toUpperCase();
+    if (format.includes("CR")) return { debit: 0, credit: amount };
+    return { debit: amount, credit: 0 };
 };
 
 /**
@@ -104,6 +147,8 @@ export const parseTallyOpeningBalanceTree = async (buffer: Buffer) => {
         throw new ApiError("Expected a Tally Trial Balance sheet with a Particulars column", 400);
     }
 
+    const openingColumns = resolveOpeningColumns(worksheet, particularsHeaderRow);
+
     const nodes: OpeningNode[] = [];
     const stack: OpeningNode[] = [];
     for (let rowNumber = particularsHeaderRow + 3; rowNumber <= worksheet.rowCount; rowNumber++) {
@@ -115,8 +160,12 @@ export const parseTallyOpeningBalanceTree = async (buffer: Buffer) => {
             row: rowNumber,
             name,
             indent: Number(row.getCell(1).alignment?.indent || 0),
-            debit: numberValue(row.getCell(2).value),
-            credit: numberValue(row.getCell(3).value),
+            debit: openingColumns.balance
+                ? signedOpeningAmount(row.getCell(openingColumns.balance)).debit
+                : numberValue(row.getCell(openingColumns.debit).value),
+            credit: openingColumns.balance
+                ? signedOpeningAmount(row.getCell(openingColumns.balance)).credit
+                : numberValue(row.getCell(openingColumns.credit).value),
             children: []
         };
         while (stack.length && stack[stack.length - 1].indent >= node.indent) {
@@ -182,6 +231,49 @@ export class OpeningBalanceJournalImportService {
             errors: []
         };
         const headCache = new Map<OpeningNode, any>();
+        const nodePath = (node: OpeningNode) => {
+            const path: string[] = [];
+            for (let current: OpeningNode | undefined = node; current; current = current.parent) {
+                path.unshift(current.name);
+            }
+            return path.join(" > ");
+        };
+
+        // A previous parser version could post a parent subtotal as if it were
+        // a ledger. Once indentation is understood, that subtotal must not
+        // remain as an opening posting because the leaf rows already contain
+        // the same amount. Remove only opening-balance postings for parent
+        // paths present in this workbook; normal purchase/sale/accounting
+        // vouchers are never touched.
+        const staleParentPaths = new Set(
+            nodes
+                .filter(node => node.children.length > 0)
+                .map(nodePath)
+        );
+        if (staleParentPaths.size > 0) {
+            await prisma.$transaction(async tx => {
+                const stale = await tx.journal.findMany({
+                    where: {
+                        branchId,
+                        remarks: { startsWith: "Opening balance import:" },
+                        voucher: { is: { voucherType: VoucherType.OPENING_BALANCE } }
+                    },
+                    include: { voucher: true, journalHead: true }
+                });
+                for (const journal of stale) {
+                    const importedPath = String(journal.remarks || "").replace(/^Opening balance import:\s*/i, "");
+                    if (!staleParentPaths.has(importedPath)) continue;
+                    const ledgerId = journal.journalHead.ledgerId;
+                    if (journal.voucherId) {
+                        await tx.ledgerEntry.deleteMany({ where: { voucherId: journal.voucherId } });
+                        await tx.journal.update({ where: { id: journal.id }, data: { voucherId: null } });
+                        await tx.voucher.delete({ where: { id: journal.voucherId } });
+                    }
+                    await tx.journal.delete({ where: { id: journal.id } });
+                    await LedgerService.syncCachedBalance(tx, ledgerId);
+                }
+            });
+        }
 
         const ensureHead = async (tx: any, node: OpeningNode, ledgerOverride?: any): Promise<any> => {
             const cached = headCache.get(node);
@@ -323,16 +415,63 @@ export class OpeningBalanceJournalImportService {
                     const existing = existingByPath || legacyParentImport || legacyLeafImport;
 
                     if (existing) {
-                        // Re-running either version of the workbook repairs
-                        // an earlier imported parent/leaf ledger mapping
-                        // without adding a second opening-balance amount.
+                        // Re-running either workbook is also a reconciliation
+                        // pass. Older versions read transaction columns as
+                        // opening amounts, so simply skipping by importKey
+                        // would preserve the wrong value forever.
+                        let targetHead = existing.journalHead;
                         if (existingLeafLedger && existing.journalHead.ledgerId !== existingLeafLedger.id) {
-                            if (existing.voucherId) {
-                                await tx.ledgerEntry.updateMany({
-                                    where: { voucherId: existing.voucherId },
-                                    data: { ledgerId: existingLeafLedger.id }
+                            targetHead = await ensureHead(tx, leaf, existingLeafLedger);
+                            let targetCategory = await tx.journalCategory.findFirst({
+                                where: {
+                                    journalHeadId: targetHead.id,
+                                    name: { equals: categoryName, mode: "insensitive" }
+                                }
+                            });
+                            if (!targetCategory) {
+                                targetCategory = await tx.journalCategory.create({
+                                    data: { name: categoryName, journalHeadId: targetHead.id, isActive: true }
                                 });
                             }
+                            await tx.journal.update({
+                                where: { id: existing.id },
+                                data: { journalHeadId: targetHead.id, categoryId: targetCategory.id }
+                            });
+                        }
+                        const targetLedgerId = targetHead.ledgerId;
+                        const previousLedgerId = existing.journalHead.ledgerId;
+                        await tx.journal.update({
+                            where: { id: existing.id },
+                            data: {
+                                amount,
+                                direction,
+                                journalDate: effectiveOpeningDate,
+                                remarks: `Opening balance import: ${path}`
+                            }
+                        });
+                        if (existing.voucherId) {
+                            await tx.voucher.update({
+                                where: { id: existing.voucherId },
+                                data: {
+                                    totalDebit: debit,
+                                    totalCredit: credit,
+                                    voucherDate: effectiveOpeningDate,
+                                    narration: `Opening balance import: ${path}`
+                                }
+                            });
+                            await tx.ledgerEntry.updateMany({
+                                where: { voucherId: existing.voucherId },
+                                data: {
+                                    ledgerId: targetLedgerId,
+                                    entryType: debit > 0 ? EntryType.DEBIT : EntryType.CREDIT,
+                                    amount,
+                                    narration: `Opening balance: ${categoryName}`
+                                }
+                            });
+                        }
+                        await LedgerService.syncCachedBalance(tx, previousLedgerId);
+                        if (targetLedgerId !== previousLedgerId) {
+                            await LedgerService.syncCachedBalance(tx, targetLedgerId);
                         }
                         return "skipped" as const;
                     }
