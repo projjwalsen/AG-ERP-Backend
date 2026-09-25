@@ -46,6 +46,14 @@ const numberValue = (value: unknown) => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const openingAmountsMatch = (
+    leftDebit: number,
+    leftCredit: number,
+    rightDebit: number,
+    rightCredit: number
+) => Math.abs(leftDebit - rightDebit) < 0.005
+    && Math.abs(leftCredit - rightCredit) < 0.005;
+
 const sourceKey = (branchId: string, path: string) =>
     `OPENING_BALANCE:${branchId}:${createHash("sha1")
         .update(path.toUpperCase())
@@ -246,16 +254,60 @@ export class OpeningBalanceJournalImportService {
                             }
                         })
                         : null;
-                    const existing = await tx.journal.findUnique({
+                    const existingByPath = await tx.journal.findUnique({
                         where: { importKey },
                         include: { journalHead: true, voucher: true }
                     });
+                    // A previous upload without indentation can have posted
+                    // the parent subtotal as a ledger (for example,
+                    // "Investments" instead of "Investments > GOLD &
+                    // ORNAMENTS"). If its amount is exactly this leaf's
+                    // amount, reuse that one existing opening posting and
+                    // move it to the real existing ledger. This keeps the
+                    // balance single-counted while repairing its location in
+                    // the trial-balance hierarchy.
+                    const legacyParentImport = !existingByPath && existingLeafLedger && leaf.parent
+                        && openingAmountsMatch(leaf.parent.debit, leaf.parent.credit, debit, credit)
+                        ? await tx.journal.findFirst({
+                            where: {
+                                branchId,
+                                amount,
+                                direction,
+                                importKey: { startsWith: `OPENING_BALANCE:${branchId}:` },
+                                remarks: {
+                                    equals: `Opening balance import: ${leaf.parent.name}`,
+                                    mode: "insensitive"
+                                },
+                                voucher: { is: { voucherType: VoucherType.OPENING_BALANCE } }
+                            },
+                            include: { journalHead: true, voucher: true }
+                        })
+                        : null;
+                    // An earlier flat import may instead have used the leaf
+                    // name by itself. Treat it as the same opening amount on
+                    // a later correctly-indented upload.
+                    const legacyLeafImport = !existingByPath && !legacyParentImport && existingLeafLedger
+                        ? await tx.journal.findFirst({
+                            where: {
+                                branchId,
+                                amount,
+                                direction,
+                                importKey: { startsWith: `OPENING_BALANCE:${branchId}:` },
+                                remarks: {
+                                    equals: `Opening balance import: ${leaf.name}`,
+                                    mode: "insensitive"
+                                },
+                                voucher: { is: { voucherType: VoucherType.OPENING_BALANCE } }
+                            },
+                            include: { journalHead: true, voucher: true }
+                        })
+                        : null;
+                    const existing = existingByPath || legacyParentImport || legacyLeafImport;
 
                     if (existing) {
-                        // Earlier versions made an imported parent ledger even
-                        // where a matching ledger already existed. Re-running
-                        // the same file repairs that mapping without adding a
-                        // second opening-balance amount.
+                        // Re-running either version of the workbook repairs
+                        // an earlier imported parent/leaf ledger mapping
+                        // without adding a second opening-balance amount.
                         if (existingLeafLedger && existing.journalHead.ledgerId !== existingLeafLedger.id) {
                             if (existing.voucherId) {
                                 await tx.ledgerEntry.updateMany({
