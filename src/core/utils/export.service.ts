@@ -3774,7 +3774,7 @@ export class ExcelService {
             bold = false
         ) => {
             row.height = 15;
-            row.eachCell({ includeEmpty: true }, cell => {
+            row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
                 cell.font = {
                     name: "Arial",
                     size: 9,
@@ -3782,9 +3782,9 @@ export class ExcelService {
                     color: { argb: "FF000000" }
                 };
                 cell.alignment = {
-                    horizontal: cell.col === 1 ? "left" : "right",
+                    horizontal: columnNumber === 1 ? "left" : "right",
                     vertical: "top",
-                    ...(cell.col === 1 ? { indent: 3 } : {})
+                    ...(columnNumber === 1 ? { indent: 3 } : {})
                 };
                 if (bold) {
                     cell.border = {

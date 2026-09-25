@@ -5,6 +5,7 @@ import {
     downloadImportErrorReport,
     importAgencyWorkbook,
     importJournalWorkbook,
+    importOpeningBalanceJournalWorkbook,
     importProductWorkbook,
     importWorkbook
 } from "./import.controller";
@@ -332,6 +333,14 @@ router.post(
     authMiddleware,
     importExcel.single("file"),
     importJournalWorkbook
+);
+
+/** Import only opening balances from a Tally Trial Balance workbook. */
+router.post(
+    "/import/opening-balance-journals",
+    authMiddleware,
+    importExcel.single("file"),
+    importOpeningBalanceJournalWorkbook
 );
 
 export default router;
