@@ -510,7 +510,10 @@ export class ReportingService {
                                 scopedJournalEntryFilter,
                                 {
                                     ledgerId: { in: ledgerIds },
-                                    voucher: { voucherDate }
+                                    voucher: {
+                                        voucherDate,
+                                        voucherType: { not: VoucherType.OPENING_BALANCE }
+                                    }
                                 },
                                 {
                                     OR: [

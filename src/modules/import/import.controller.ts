@@ -8,6 +8,7 @@ import {
     ImportService
 } from "./multer.import";
 import { JournalImportService } from "./journalImport.service";
+import { OpeningBalanceJournalImportService } from "./opening-balance-journal-import.service";
 import { ProductMasterImportService } from "./productImport.service";
 import { AgencyImportService } from "./agencyImport.service";
 
@@ -374,6 +375,40 @@ export const importJournalWorkbook = async (
         next(error);
     }
 
+};
+
+export const importOpeningBalanceJournalWorkbook = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const file = req.file;
+        if (!file) {
+            return res.status(400).json({ success: false, message: "Excel file is required." });
+        }
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        const openingDate = typeof req.body.openingDate === "string" && req.body.openingDate
+            ? new Date(req.body.openingDate)
+            : undefined;
+        const result = await OpeningBalanceJournalImportService.importWorkbook(
+            (req as any).user,
+            file,
+            typeof req.body.branchId === "string" ? req.body.branchId : undefined,
+            openingDate,
+            summary => res.write(`data: ${JSON.stringify(summary)}\n\n`)
+        );
+        res.write(`event: completed\ndata: ${JSON.stringify({
+            success: true,
+            message: "Opening-balance journals imported successfully.",
+            data: result
+        })}\n\n`);
+        res.end();
+    } catch (error) {
+        next(error);
+    }
 };
 
 export const downloadImportErrorReport = (
