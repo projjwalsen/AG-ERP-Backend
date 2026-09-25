@@ -15,6 +15,7 @@ import { Express } from "express";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { createSimpleImportErrorReport } from "./multer.import";
 
 type OpeningNode = {
     row: number;
@@ -33,7 +34,15 @@ type ImportSummary = {
     skipped: number;
     failed: number;
     percentage: number;
-    errors: Array<{ row: number; name: string; message: string }>;
+    errors: Array<{
+        row: number;
+        name: string;
+        path?: string;
+        debit?: number;
+        credit?: number;
+        message: string;
+    }>;
+    errorReport?: { reportId: string; fileName: string };
 };
 
 const normalizeName = (value: unknown) => String(value || "")
@@ -211,15 +220,18 @@ export class OpeningBalanceJournalImportService {
         };
 
         for (const leaf of leaves) {
+            let path = leaf.name;
+            let debit = 0;
+            let credit = 0;
             try {
                 const pathNodes: OpeningNode[] = [];
                 for (let current: OpeningNode | undefined = leaf; current; current = current.parent) {
                     pathNodes.unshift(current);
                 }
-                const path = pathNodes.map(node => node.name).join(" > ");
+                path = pathNodes.map(node => node.name).join(" > ");
                 const importKey = sourceKey(branchId, path);
-                const debit = Number(leaf.debit.toFixed(2));
-                const credit = Number(leaf.credit.toFixed(2));
+                debit = Number(leaf.debit.toFixed(2));
+                credit = Number(leaf.credit.toFixed(2));
                 const direction = debit > 0
                     ? JournalDirection.OUTWARD
                     : JournalDirection.INWARD;
@@ -407,12 +419,32 @@ export class OpeningBalanceJournalImportService {
                 else summary.success++;
             } catch (error: any) {
                 summary.failed++;
-                summary.errors.push({ row: leaf.row, name: leaf.name, message: error?.message || "Import failed" });
+                summary.errors.push({
+                    row: leaf.row,
+                    name: leaf.name,
+                    path,
+                    debit,
+                    credit,
+                    message: error?.message || "Import failed"
+                });
             } finally {
                 summary.processed++;
                 summary.percentage = Number(((summary.processed / summary.total) * 100).toFixed(2));
                 onProgress?.(summary);
             }
+        }
+        if (summary.errors.length > 0) {
+            summary.errorReport = await createSimpleImportErrorReport(
+                summary.errors.map(error => ({
+                    "Source Row": error.row,
+                    "Particular Name": error.name,
+                    "Hierarchy Path": error.path || error.name,
+                    Debit: error.debit ?? "",
+                    Credit: error.credit ?? "",
+                    "Failure Reason": error.message
+                })),
+                "opening-balance"
+            );
         }
         return summary;
     }
