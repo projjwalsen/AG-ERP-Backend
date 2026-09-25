@@ -212,6 +212,54 @@ export function getImportErrorReport(reportId: string) {
     return report;
 }
 
+/**
+ * Store a compact error report when the source is not a voucher register
+ * (for example, the opening-balance Trial Balance importer).
+ */
+export async function createSimpleImportErrorReport(
+    rows: Array<Record<string, unknown>>,
+    filePrefix = "import"
+) {
+    const columns = Array.from(new Set(
+        rows.flatMap(row => Object.keys(row))
+    ));
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Import Errors");
+
+    sheet.columns = columns.map(column => ({
+        header: column,
+        key: column,
+        width: column === "Failure Reason" ? 70 : Math.min(Math.max(column.length + 2, 14), 40)
+    }));
+    sheet.addRows(rows.map(row => columns.map(column => row[column] ?? "")));
+
+    const header = sheet.getRow(1);
+    //@ts-ignore ExcelJS accepts this style object at runtime.
+    header.font = { bold: true, color: "FFFFFFFF" };
+    header.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1F4E78" }
+    };
+    sheet.views = [{ state: "frozen", ySplit: 1 }];
+    if (columns.length > 0) {
+        sheet.autoFilter = {
+            from: "A1",
+            to: `${sheet.getColumn(columns.length).letter}1`
+        };
+    }
+
+    const reportId = randomUUID();
+    const fileName = `${filePrefix}-import-errors-${reportId}.xlsx`;
+    importErrorReports.set(reportId, {
+        buffer: Buffer.from(await workbook.xlsx.writeBuffer()),
+        fileName,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000
+    });
+
+    return { reportId, fileName };
+}
+
 export class ImportService {
     
 

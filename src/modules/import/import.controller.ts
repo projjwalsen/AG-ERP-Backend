@@ -403,7 +403,15 @@ export const importOpeningBalanceJournalWorkbook = async (
         res.write(`event: completed\ndata: ${JSON.stringify({
             success: true,
             message: "Opening-balance journals imported successfully.",
-            data: result
+            data: {
+                ...result,
+                ...(result.errorReport
+                    ? {
+                        errorReportUrl:
+                            `${req.baseUrl}/import/error-report/${result.errorReport.reportId}`
+                    }
+                    : {})
+            }
         })}\n\n`);
         res.end();
     } catch (error) {
