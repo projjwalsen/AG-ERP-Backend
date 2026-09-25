@@ -612,7 +612,10 @@ export class JournalService {
         if (!name) throw new ApiError("Category name is required.", 400);
 
         const exists = await prisma.journalCategory.findFirst({
-            where: { name: { equals: name, mode: "insensitive" } }
+            where: {
+                name: { equals: name, mode: "insensitive" },
+                journalHeadId: dto.journalHeadId ?? null
+            }
         });
         if (exists) throw new ApiError("Journal category already exists.", 409);
 

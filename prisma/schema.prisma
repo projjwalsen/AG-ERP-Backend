@@ -1201,7 +1201,7 @@ model Voucher {
   debitCreditNotes DebitCreditNote[]
 
   @@unique([voucherType, sourceId])
-  @@unique([voucherNo, voucherType])
+  @@index([voucherNo, voucherType])
   @@index([voucherType])
   @@index([sourceId])
   @@index([branchId])
@@ -1467,7 +1467,7 @@ enum JournalDirection {
 
 model JournalCategory {
   id            String       @id @default(uuid())
-  name          String       @unique
+    name          String
   isActive      Boolean      @default(true)
   journalHeadId String?
   journalHead   JournalHead? @relation(fields: [journalHeadId], references: [id], onDelete: SetNull)
@@ -1528,7 +1528,10 @@ model Journal {
   category   JournalCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   importKey String? @unique
-
+  serialNo String?
+  voucherNo String?
+  sourceSheet String?
+  sourceRow Int?
   amount Decimal @db.Decimal(18, 2)
 
   direction JournalDirection?
@@ -1571,6 +1574,7 @@ model Journal {
 
   @@index([agencyId])
   @@index([categoryId])
+  @@unique([branchId, serialNo])
 }
 
 enum PurchaseOrderStatus {

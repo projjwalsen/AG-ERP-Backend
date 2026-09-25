@@ -1,4 +1,4 @@
-import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalDirection, JournalStatus, LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -21,6 +21,173 @@ import {
 } from "./transaction-import.utils";
 
 export class ImportResolver {
+
+    static isJournalRegisterRow(dto: JournalImportDTO) {
+        const type = String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+        return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup) &&
+            !["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(type) &&
+            !this.isDebitCreditNoteImportRow(dto) &&
+            !["PURCHASE", "TAX INVOICE", "RCM PURCHASE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type);
+    }
+
+    static async importJournalRegisterRow(actor: any, dto: JournalImportDTO) {
+        if (!dto.sourceSerialNo) throw new ApiError("Journal Register Sr No is required", 400);
+        const debit = Number(dto.debitAmount || 0);
+        const credit = Number(dto.creditAmount || 0);
+        if ((debit > 0) === (credit > 0)) throw new ApiError("Journal Register row must contain exactly one positive Debit or Credit amount", 400);
+        const branch = await prisma.branch.findFirst({
+            where: actor?.branchId ? { id: actor.branchId, isActive: true } : { isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+        if (!branch) throw new ApiError("No active branch found", 400);
+
+        return prisma.$transaction(async tx => {
+            const existing = await tx.journal.findFirst({ where: { branchId: branch.id, serialNo: dto.sourceSerialNo } });
+            if (existing) {
+                const direction = debit > 0
+                    ? JournalDirection.OUTWARD
+                    : JournalDirection.INWARD;
+                if (existing.direction !== direction) {
+                    return tx.journal.update({
+                        where: { id: existing.id },
+                        data: { direction }
+                    });
+                }
+                return existing;
+            }
+
+            const hierarchy = [dto.journalGroup, dto.subGroup, dto.subGroup2, dto.subGroup3].map(x => String(x || "").trim()).filter(Boolean);
+            let parentId: string | null = null;
+            let parentHeadId: string | null = null;
+            const nature = /LIABIL|CREDIT|INCOME|CAPITAL|DUTI|TAX|CREDITOR/i.test(hierarchy[0] || "") ? LedgerNature.CREDIT : LedgerNature.DEBIT;
+            for (const name of hierarchy) {
+                const group = await LedgerService.getOrCreateImportedJournalGroup(tx, name, parentId, nature);
+                parentId = group.id;
+
+                // Mirror the manual JournalHead tree.  Every imported
+                // hierarchy level owns a ledger-backed head and points to
+                // its immediate parent; imported heads remain directionless.
+                const nodeLedger = await LedgerService.getOrCreateImportedJournalLedger(
+                    tx,
+                    branch.id,
+                    name,
+                    group.id,
+                    nature
+                );
+                let nodeHead = await tx.journalHead.findFirst({
+                    where: {
+                        ledgerId: nodeLedger.id,
+                        name: { equals: name, mode: "insensitive" },
+                        parentId: parentHeadId,
+                        headType: parentHeadId ? "SUBHEAD" : "PARENT"
+                    }
+                });
+                if (!nodeHead) {
+                    nodeHead = await tx.journalHead.create({
+                        data: {
+                            name,
+                            headType: parentHeadId ? "SUBHEAD" : "PARENT",
+                            parentId: parentHeadId,
+                            type: null,
+                            ledgerId: nodeLedger.id
+                        }
+                    });
+                } else if (nodeHead.type !== null) {
+                    nodeHead = await tx.journalHead.update({
+                        where: { id: nodeHead.id },
+                        data: { type: null }
+                    });
+                }
+                parentHeadId = nodeHead.id;
+            }
+            if (!parentId) throw new ApiError("Journal Register hierarchy is empty", 400);
+            const ledger = await LedgerService.getOrCreateImportedJournalLedger(tx, branch.id, dto.accountName!, parentId, nature);
+            let head = await tx.journalHead.findFirst({
+                where: {
+                    ledgerId: ledger.id,
+                    name: { equals: dto.accountName!, mode: "insensitive" },
+                    parentId: parentHeadId,
+                    headType: "SUBHEAD"
+                }
+            });
+            if (!head) {
+                head = await tx.journalHead.create({
+                    data: {
+                        name: dto.accountName!,
+                        headType: "SUBHEAD",
+                        parentId: parentHeadId,
+                        type: null,
+                        ledgerId: ledger.id
+                    }
+                });
+            } else if (head.type !== null) {
+                // Imported JournalHeads do not carry an INWARD/OUTWARD
+                // classification; the row-side is held by LedgerEntry.
+                head = await tx.journalHead.update({ where: { id: head.id }, data: { type: null } });
+            }
+            let category = await tx.journalCategory.findFirst({
+                where: {
+                    name: { equals: dto.accountName!, mode: "insensitive" },
+                    journalHeadId: head.id
+                }
+            });
+            if (!category) {
+                category = await tx.journalCategory.create({
+                    data: {
+                        name: dto.accountName!,
+                        journalHeadId: head.id,
+                        isActive: true
+                    }
+                });
+            }
+            const journal = await tx.journal.create({
+                data: {
+                    branchId: branch.id,
+                    journalHeadId: head.id,
+                    categoryId: category.id,
+                    serialNo: dto.sourceSerialNo,
+                    voucherNo: dto.voucherNo || null,
+                    sourceSheet: dto.sourceSheet,
+                    sourceRow: dto.sourceRow,
+                    importKey: `JOURNAL_REGISTER:${branch.id}:${dto.sourceSerialNo}`,
+                    amount: debit > 0 ? debit : credit,
+                    // Preserve the Excel side on the Journal as well as on
+                    // the voucher LedgerEntry. This is the same convention
+                    // used by the manual journal flow: a debit on the
+                    // journal ledger is OUTWARD and a credit is INWARD. The importer still posts directly
+                    // to the selected ledger and never creates a cash/bank
+                    // counterpart for these register rows.
+                    direction: debit > 0
+                        ? JournalDirection.OUTWARD
+                        : JournalDirection.INWARD,
+                    paymentMode: PaymentMode.OFFLINE,
+                    paymentThrough: null,
+                    remarks: dto.narration ?? dto.particulars ?? "",
+                    journalDate: dto.date || new Date(),
+                    status: JournalStatus.APPROVED,
+                    createdById: actor?.id || null,
+                    approvedById: actor?.id || null,
+                    approvedAt: new Date()
+                }
+            });
+            const voucher = await tx.voucher.create({
+                data: {
+                    voucherNo: dto.voucherNo || "",
+                    voucherType: VoucherType.JOURNAL,
+                    sourceId: journal.id,
+                    branchId: branch.id,
+                    narration: dto.narration ?? dto.particulars ?? "",
+                    totalDebit: debit,
+                    totalCredit: credit,
+                    voucherDate: dto.date || new Date(),
+                    entries: { create: { ledgerId: ledger.id, branchId: branch.id, entryType: debit > 0 ? EntryType.DEBIT : EntryType.CREDIT, amount: debit > 0 ? debit : credit, narration: dto.narration ?? dto.particulars ?? "" } }
+                }
+            });
+            const result = await tx.journal.update({ where: { id: journal.id }, data: { voucherId: voucher.id } });
+            await LedgerService.syncCachedBalance(tx, ledger.id);
+            return result;
+        });
+    }
 
     static isDebitCreditNoteImportRow(dto: JournalImportDTO) {
         return [

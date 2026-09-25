@@ -15,7 +15,7 @@ import {
     TransactionStatus,
     VoucherType
 } from "@prisma/client";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { prisma } from "../../../config/db";
 import { ApiError } from "../../../core/middleware/errorHandler";
 import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/utils/loc.utils";
@@ -138,6 +138,41 @@ const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: L
 export class LedgerService {
     private static normalizeCode(value: string) {
         return value.replace(/[^A-Z0-9]/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "").toUpperCase();
+    }
+
+    static async getOrCreateImportedJournalGroup(
+        client: DbClient,
+        name: string,
+        parentId: string | null,
+        nature: LedgerNature
+    ) {
+        const normalized = String(name || "").replace(/\s+/g, " ").trim();
+        if (!normalized) throw new ApiError("Imported journal group name is required", 400);
+        const existing = await client.ledgerGroup.findFirst({
+            where: { parentId, name: { equals: normalized, mode: "insensitive" } }
+        });
+        if (existing) return existing;
+        const code = `JRNIMP-${createHash("sha1").update(`${parentId || "ROOT"}|${normalized.toUpperCase()}`).digest("hex").slice(0, 20)}`;
+        return client.ledgerGroup.create({ data: { code, name: normalized, parentId, nature } });
+    }
+
+    static async getOrCreateImportedJournalLedger(
+        client: DbClient,
+        branchId: string,
+        name: string,
+        groupId: string,
+        nature: LedgerNature
+    ) {
+        const normalized = String(name || "").replace(/\s+/g, " ").trim();
+        if (!normalized) throw new ApiError("Imported journal account name is required", 400);
+        const existing = await client.ledger.findFirst({
+            where: { branchId, groupId, category: LedgerType.JOURNAL, name: { equals: normalized, mode: "insensitive" } }
+        });
+        if (existing) return existing;
+        const code = `JRNIMP-${createHash("sha1").update(`${branchId}|${groupId}|${normalized.toUpperCase()}`).digest("hex").slice(0, 24)}`;
+        return client.ledger.create({
+            data: { code, name: normalized, category: LedgerType.JOURNAL, groupId, nature, branchId }
+        });
     }
 
     private static voucherPrefix(voucherType: VoucherType) {
@@ -3288,6 +3323,9 @@ export class LedgerService {
             where: {
                 journalHead: { ledgerId },
                 status: "APPROVED",
+                // Voucher-backed journals are already represented by LedgerEntry.
+                // Count only legacy direct journal postings here.
+                voucherId: null,
                 ...(dateFilter?.startDate || dateFilter?.endDate
                     ? {
                         journalDate: {
@@ -3619,6 +3657,7 @@ export class LedgerService {
             where: {
                 journalHead: { ledgerId },
                 status: "APPROVED",
+                voucherId: null,
                 ...(startDate || endDate ? { journalDate: {
                     ...(startDate && { gte: startDate }),
                     ...(endDate && { lte: endDate })
@@ -3630,7 +3669,7 @@ export class LedgerService {
 
         const priorJournals = startDate
             ? await prisma.journal.findMany({
-                where: { journalHead: { ledgerId }, status: "APPROVED", journalDate: { lt: startDate } },
+                where: { journalHead: { ledgerId }, status: "APPROVED", voucherId: null, journalDate: { lt: startDate } },
                 include: { journalHead: true }
             })
             : [];
@@ -4061,6 +4100,103 @@ export class LedgerService {
 
         const totalDebit = money(rows.reduce((sum, row) => sum + row.debitBalance, 0));
         const totalCredit = money(rows.reduce((sum, row) => sum + row.creditBalance, 0));
+        const allGroups = await prisma.ledgerGroup.findMany({
+            select: { id: true, code: true, name: true, nature: true, parentId: true }
+        });
+        const groupRegistry = new Map(allGroups.map(group => [group.id, group]));
+
+        type TrialBalanceTreeNode = {
+            kind: "GROUP" | "LEDGER";
+            id: string;
+            code: string;
+            name: string;
+            nature: LedgerNature;
+            openingBalance: number;
+            debit: number;
+            credit: number;
+            closingBalance: number;
+            debitBalance: number;
+            creditBalance: number;
+            balanceType: string;
+            children: TrialBalanceTreeNode[];
+        };
+
+        const groupNodes = new Map<string, TrialBalanceTreeNode>();
+        const groupParents = new Map<string, string | null>();
+
+        const ensureGroupNode = (group: any): TrialBalanceTreeNode => {
+            const existing = groupNodes.get(group.code);
+            if (existing) return existing;
+
+            const node: TrialBalanceTreeNode = {
+                kind: "GROUP",
+                id: group.id,
+                code: group.code,
+                name: group.name,
+                nature: group.nature,
+                openingBalance: 0,
+                debit: 0,
+                credit: 0,
+                closingBalance: 0,
+                debitBalance: 0,
+                creditBalance: 0,
+                balanceType: resolveBalanceType(0, group.nature),
+                children: []
+            };
+            groupNodes.set(group.code, node);
+            const parentGroup = group.parentId
+                ? groupRegistry.get(group.parentId) ?? group.parent
+                : null;
+            groupParents.set(group.code, parentGroup?.code ?? null);
+
+            if (parentGroup) {
+                const parent = ensureGroupNode(parentGroup);
+                if (!parent.children.some(child => child.kind === "GROUP" && child.code === group.code)) {
+                    parent.children.push(node);
+                }
+            }
+
+            return node;
+        };
+
+        for (const row of rows) {
+            const groupNode = ensureGroupNode(row.group);
+            groupNode.children.push({
+                kind: "LEDGER",
+                id: row.ledgerId,
+                code: row.code,
+                name: row.name,
+                nature: row.nature,
+                openingBalance: row.openingBalance,
+                debit: row.debit,
+                credit: row.credit,
+                closingBalance: row.closingBalance,
+                debitBalance: row.debitBalance,
+                creditBalance: row.creditBalance,
+                balanceType: resolveBalanceType(row.closingBalance, row.nature),
+                children: []
+            });
+        }
+
+        const rollup = (node: TrialBalanceTreeNode) => {
+            for (const child of node.children) {
+                if (child.kind === "GROUP") rollup(child);
+            }
+
+            node.openingBalance = money(node.children.reduce((sum, child) => sum + child.openingBalance, 0));
+            node.debit = money(node.children.reduce((sum, child) => sum + child.debit, 0));
+            node.credit = money(node.children.reduce((sum, child) => sum + child.credit, 0));
+            node.debitBalance = money(node.children.reduce((sum, child) => sum + child.debitBalance, 0));
+            node.creditBalance = money(node.children.reduce((sum, child) => sum + child.creditBalance, 0));
+            node.closingBalance = money(node.debitBalance - node.creditBalance);
+            node.balanceType = resolveBalanceType(node.closingBalance, node.nature);
+            node.children.sort((a, b) => a.name.localeCompare(b.name));
+        };
+
+        const tree = [...groupNodes.values()]
+            .filter(node => !groupParents.get(node.code))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        tree.forEach(rollup);
 
         return {
             branchId: branchId || null,
@@ -4069,7 +4205,8 @@ export class LedgerService {
                 credit: totalCredit,
                 difference: money(totalDebit - totalCredit)
             },
-            rows
+            rows,
+            tree
         };
     }
 
