@@ -1343,7 +1343,8 @@ export class ReportingService {
                     { key: "name", label: "Particulars", rowKey: "account" },
                     { key: "periodDebit", label: "Debit", section: "Transactions" },
                     { key: "periodCredit", label: "Credit", section: "Transactions" },
-                    { key: "closingBalance", label: "Balance", section: "Closing", balanceTypeKey: "closingBalanceType" }
+                    { key: "closingDebit", label: "Debit", section: "Closing" },
+                    { key: "closingCredit", label: "Credit", section: "Closing" }
                 ]
             },
 
