@@ -256,7 +256,13 @@ export class OpeningBalanceJournalImportService {
                         ? await tx.ledger.findFirst({
                             where: {
                                 name: { equals: leaf.name, mode: "insensitive" },
-                                branchId: { in: [branchId, null] },
+                                // Prisma does not permit null inside an `in`
+                                // filter. Match ledgers owned by this branch
+                                // or shared/global ledgers explicitly.
+                                OR: [
+                                    { branchId },
+                                    { branchId: null }
+                                ],
                                 group: {
                                     name: {
                                         equals: leaf.parent.name,
