@@ -52,6 +52,17 @@ const sourceKey = (branchId: string, path: string) =>
         .digest("hex")
         .slice(0, 32)}`;
 
+const parseTallyPeriodStart = (value: string) => {
+    const start = value.split(/\s+to\s+/i)[0]?.trim();
+    const match = start?.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+    if (!match) return undefined;
+    const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+        .indexOf(match[2].toUpperCase());
+    if (month < 0) return undefined;
+    const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
+    return new Date(year, month, Number(match[1]), 0, 0, 0, 0);
+};
+
 /**
  * Parse a Tally Trial Balance sheet. Indented rows are children of the nearest
  * preceding row with a smaller indentation. Amounts on parent rows are totals
@@ -109,7 +120,13 @@ export const parseTallyOpeningBalanceTree = async (buffer: Buffer) => {
     if (leaves.length === 0) {
         throw new ApiError("No non-zero opening-balance leaf rows were found", 400);
     }
-    return { nodes, leaves };
+    return {
+        nodes,
+        leaves,
+        periodStart: parseTallyPeriodStart(
+            normalizeName(worksheet.getRow(particularsHeaderRow).getCell(2).value)
+        )
+    };
 };
 
 export class OpeningBalanceJournalImportService {
@@ -133,7 +150,11 @@ export class OpeningBalanceJournalImportService {
         const branch = await prisma.branch.findUnique({ where: { id: branchId } });
         if (!branch || !branch.isActive) throw new ApiError("Branch not found or inactive", 404);
 
-        const { leaves } = await parseTallyOpeningBalanceTree(file.buffer);
+        const { leaves, periodStart } = await parseTallyOpeningBalanceTree(file.buffer);
+        // A Tally Trial Balance labels its source period above the table. When
+        // the user leaves the date blank, preserve that accounting start date
+        // instead of incorrectly dating every opening entry to today.
+        const effectiveOpeningDate = openingDate || periodStart || new Date();
         const summary: ImportSummary = {
             total: leaves.length,
             processed: 0,
@@ -197,9 +218,6 @@ export class OpeningBalanceJournalImportService {
                 const amount = debit || credit;
 
                 const result = await prisma.$transaction(async tx => {
-                    const existing = await tx.journal.findUnique({ where: { importKey } });
-                    if (existing) return "skipped" as const;
-
                     const ancestorNames = pathNodes.map(node => node.name.toUpperCase());
                     const agencyType = ancestorNames.includes("SUNDRY DEBTORS")
                         ? AgencyType.CLIENT
@@ -210,6 +228,49 @@ export class OpeningBalanceJournalImportService {
                     let head: any;
                     const categoryParent = leaf.parent || leaf;
                     let categoryName = leaf.parent ? leaf.name : "Opening Balance";
+                    // Prefer an accounting ledger that already represents the
+                    // leaf under the same Tally parent. For example, reuse
+                    // Investments -> GOLD & ORNAMENTS instead of creating an
+                    // imported JOURNAL ledger also named Investments.
+                    const existingLeafLedger = !agencyType && leaf.parent
+                        ? await tx.ledger.findFirst({
+                            where: {
+                                name: { equals: leaf.name, mode: "insensitive" },
+                                branchId: { in: [branchId, null] },
+                                group: {
+                                    name: {
+                                        equals: leaf.parent.name,
+                                        mode: "insensitive"
+                                    }
+                                }
+                            }
+                        })
+                        : null;
+                    const existing = await tx.journal.findUnique({
+                        where: { importKey },
+                        include: { journalHead: true, voucher: true }
+                    });
+
+                    if (existing) {
+                        // Earlier versions made an imported parent ledger even
+                        // where a matching ledger already existed. Re-running
+                        // the same file repairs that mapping without adding a
+                        // second opening-balance amount.
+                        if (existingLeafLedger && existing.journalHead.ledgerId !== existingLeafLedger.id) {
+                            const targetHead = await ensureHead(tx, leaf, existingLeafLedger);
+                            if (existing.voucherId) {
+                                await tx.ledgerEntry.updateMany({
+                                    where: { voucherId: existing.voucherId },
+                                    data: { ledgerId: existingLeafLedger.id }
+                                });
+                            }
+                            await tx.journal.update({
+                                where: { id: existing.id },
+                                data: { journalHeadId: targetHead.id }
+                            });
+                        }
+                        return "skipped" as const;
+                    }
 
                     if (agencyType) {
                         agency = await tx.agency.findFirst({
@@ -234,6 +295,9 @@ export class OpeningBalanceJournalImportService {
                             ? await LedgerService.getOrCreateCustomerLedger(tx, branchId, agency.id)
                             : await LedgerService.getOrCreateVendorLedger(tx, branchId, agency.id);
                         head = await ensureHead(tx, leaf, agencyLedger);
+                        categoryName = "Opening Balance";
+                    } else if (existingLeafLedger) {
+                        head = await ensureHead(tx, leaf, existingLeafLedger);
                         categoryName = "Opening Balance";
                     } else {
                         head = await ensureHead(tx, categoryParent);
@@ -261,7 +325,7 @@ export class OpeningBalanceJournalImportService {
                             direction,
                             paymentMode: PaymentMode.OFFLINE,
                             remarks: `Opening balance import: ${path}`,
-                            journalDate: openingDate || new Date(),
+                            journalDate: effectiveOpeningDate,
                             status: JournalStatus.APPROVED,
                             createdById: actor.id,
                             approvedById: actor.id,
@@ -275,7 +339,7 @@ export class OpeningBalanceJournalImportService {
                             sourceId: journal.id,
                             branchId,
                             narration: `Opening balance import: ${path}`,
-                            voucherDate: openingDate || new Date(),
+                            voucherDate: effectiveOpeningDate,
                             totalDebit: debit,
                             totalCredit: credit,
                             entries: {
