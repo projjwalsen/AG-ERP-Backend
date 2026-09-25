@@ -331,6 +331,28 @@ export class ReportingService {
             Prisma.LedgerEntryWhereInput | undefined =
             buildTrialBalanceBranchFilter(branchId);
 
+        // The Trial Balance is intentionally a journal register view. A
+        // LedgerEntry is eligible only when its voucher belongs to an
+        // approved Journal record. This excludes balances and vouchers that
+        // may already exist in the database from sales, purchases,
+        // transactions, or other accounting flows but were not imported or
+        // posted through Journals.
+        const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
+            voucher: {
+                journals: {
+                    some: {
+                        status: JournalStatus.APPROVED
+                    }
+                }
+            }
+        };
+        const scopedJournalEntryFilter: Prisma.LedgerEntryWhereInput = {
+            AND: [
+                journalEntryFilter,
+                ...(branchEntryFilter ? [branchEntryFilter] : [])
+            ]
+        };
+
         /**
          * ============================================================
          * 4. PERIOD MOVEMENT
@@ -366,26 +388,9 @@ export class ReportingService {
 
             isActive: true,
 
-            ...(branchId
-                ? {
-                    OR: [
-                        {
-                            branchId
-                        },
-
-                        {
-                            branchId: null
-                        },
-
-                        {
-                            entries: {
-                                some:
-                                    branchEntryFilter
-                            }
-                        }
-                    ]
-                }
-                : {})
+            entries: {
+                some: scopedJournalEntryFilter
+            }
         };
 
         /**
@@ -502,9 +507,7 @@ export class ReportingService {
                         by: ["ledgerId", "entryType"],
                         where: {
                             AND: [
-                                ...(branchEntryFilter
-                                    ? [branchEntryFilter]
-                                    : []),
+                                scopedJournalEntryFilter,
                                 {
                                     ledgerId: { in: ledgerIds },
                                     voucher: { voucherDate }
@@ -557,7 +560,7 @@ export class ReportingService {
             by: ["ledgerId", "entryType"],
             where: {
                 AND: [
-                    ...(branchEntryFilter ? [branchEntryFilter] : []),
+                    scopedJournalEntryFilter,
                     {
                         ledgerId: { in: ledgers.map(ledger => ledger.id) },
                         ledger: { category: { not: LedgerType.BANK } },
@@ -772,7 +775,7 @@ export class ReportingService {
                 ? await prisma.ledgerEntry.findMany({
                     where: {
                         AND: [
-                            ...(branchEntryFilter ? [branchEntryFilter] : []),
+                            scopedJournalEntryFilter,
                             { ledgerId: { in: genericSalesLedgerIds } },
                             {
                                 voucher: {
@@ -948,7 +951,7 @@ export class ReportingService {
 
         const cashDiagnostics = await this.getCashDiagnostics(
             ledgers,
-            branchEntryFilter,
+            scopedJournalEntryFilter,
             startDate,
             endDate,
             rawRows
