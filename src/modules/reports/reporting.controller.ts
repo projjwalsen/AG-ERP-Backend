@@ -136,7 +136,18 @@ export const getTrialBalanceReport = async (
                             "Trial Balance",
 
                         companyName:
-                            "ASHTAVINAYAKA",
+                            "A G Ashtavinayaka Petrochem Pvt Ltd",
+
+                        companyAddressLines: [
+                            "SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD",
+                            "KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD"
+                        ],
+
+                        companyIdentifier:
+                            "CIN: U11100MH2011PTC224243",
+
+                        companyEmail:
+                            "E-Mail : info@ashtvinayakapetrochem.com",
 
                         branchName:
                             report.branch?.name ||
