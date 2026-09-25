@@ -7,6 +7,117 @@ router.use(authMiddleware);
 
 /**
  * @openapi
+ * /api/journal/category/create:
+ *   post:
+ *     tags:
+ *       - Journal
+ *     summary: Create a journal category
+ *     description: Maps a category, such as Staff Dress, to an optional journal subhead.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Staff Dress
+ *               journalHeadId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: Optional SUBHEAD to which this category belongs.
+ *               isActive:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       201:
+ *         description: Journal category created successfully
+ */
+router.post("/category/create", checkPermission("JOURNAL:WRITE"), JournalController.createJournalCategory);
+
+/**
+ * @openapi
+ * /api/journal/category/{categoryId}:
+ *   put:
+ *     tags:
+ *       - Journal
+ *     summary: Update a journal category
+ *     description: Use journalHeadId null to remove the category-to-subhead mapping.
+ *     parameters:
+ *       - in: path
+ *         name: categoryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               journalHeadId:
+ *                 type: string
+ *                 format: uuid
+ *                 nullable: true
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Journal category updated successfully
+ */
+router.put("/category/:categoryId", checkPermission("JOURNAL:WRITE"), JournalController.updateJournalCategory);
+
+/**
+ * @openapi
+ * /api/journal/categories:
+ *   get:
+ *     tags:
+ *       - Journal
+ *     summary: List journal categories
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *     responses:
+ *       200:
+ *         description: Journal categories retrieved successfully
+ */
+router.get("/categories", checkPermission("JOURNAL:VIEW"), JournalController.listJournalCategories);
+
+/**
+ * @openapi
+ * /api/journal/category/{categoryId}:
+ *   get:
+ *     tags:
+ *       - Journal
+ *     summary: Get a journal category
+ *     parameters:
+ *       - in: path
+ *         name: categoryId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Journal category retrieved successfully
+ */
+router.get("/category/:categoryId", checkPermission("JOURNAL:VIEW"), JournalController.getJournalCategoryById);
+
+/**
+ * @openapi
  * /api/journal/head/create:
  *   post:
  *     tags:
@@ -20,17 +131,17 @@ router.use(authMiddleware);
  *             type: object
  *             required:
  *               - name
- *               - type
+ *               - headType
  *             properties:
  *               name:
  *                 type: string
  *                 example: Salary Payable
- *               type:
+ *               headType:
  *                 type: string
  *                 enum:
- *                   - INWARD
- *                   - OUTWARD
- *               ledgerId:
+ *                   - PARENT
+ *                   - SUBHEAD
+ *               parentId:
  *                 type: string
  *                 format: uuid
  *     responses:
@@ -62,11 +173,14 @@ router.post("/head/create", checkPermission("JOURNAL:WRITE"), JournalController.
  *             properties:
  *               name:
  *                 type: string
- *               type:
+ *               headType:
  *                 type: string
  *                 enum:
- *                   - INWARD
- *                   - OUTWARD
+ *                   - PARENT
+ *                   - SUBHEAD
+ *               parentId:
+ *                 type: string
+ *                 format: uuid
  *               isActive:
  *                 type: boolean
  *     responses:
@@ -132,12 +246,16 @@ router.get("/head/:journalHeadId", checkPermission("JOURNAL:VIEW"), JournalContr
  *         schema:
  *           type: string
  *       - in: query
- *         name: type
+ *         name: headType
  *         schema:
  *           type: string
  *           enum:
- *             - INWARD
- *             - OUTWARD
+ *             - PARENT
+ *             - SUBHEAD
+ *       - in: query
+ *         name: parentId
+ *         schema:
+ *           type: string
  *       - in: query
  *         name: isActive
  *         schema:
@@ -170,16 +288,22 @@ router.get("/heads", checkPermission("JOURNAL:VIEW"), JournalController.listJour
  *             type: object
  *             required:
  *               - branchId
- *               - journalHeadId
+ *               - categoryId
  *               - amount
  *               - paymentMode
  *             properties:
  *               branchId:
  *                 type: string
  *                 format: uuid
- *               journalHeadId:
+ *               categoryId:
  *                 type: string
  *                 format: uuid
+ *                 description: Active journal category reference
+ *               direction:
+ *                 type: string
+ *                 enum:
+ *                   - INWARD
+ *                   - OUTWARD
  *               amount:
  *                 type: number
  *                 example: 1200
@@ -288,6 +412,14 @@ router.get("/all", checkPermission("JOURNAL:VIEW"), JournalController.listJourna
  *                 type: string
  *               journalHeadId:
  *                 type: string
+ *               categoryId:
+ *                 type: string
+ *                 format: uuid
+ *               direction:
+ *                 type: string
+ *                 enum:
+ *                   - INWARD
+ *                   - OUTWARD
  *               amount:
  *                 type: number
  *               paymentMode:

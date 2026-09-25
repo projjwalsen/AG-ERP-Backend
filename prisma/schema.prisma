@@ -252,6 +252,7 @@ model Agency {
   outstanding            AgencyOutstanding[]
   productLedgerEntries   ProductLedgerEntry[]
   purchaseOrders         PurchaseOrder[]
+  journals               Journal[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1174,7 +1175,7 @@ enum VoucherType {
 model Voucher {
   id String @id @default(uuid())
 
-  voucherNo String @unique
+  voucherNo String
 
   voucherType VoucherType
 
@@ -1200,6 +1201,7 @@ model Voucher {
   debitCreditNotes DebitCreditNote[]
 
   @@unique([voucherType, sourceId])
+  @@index([voucherNo, voucherType])
   @@index([voucherType])
   @@index([sourceId])
   @@index([branchId])
@@ -1450,6 +1452,32 @@ model DebitCreditNoteParticular {
 enum JournalHeadType {
   INWARD
   OUTWARD
+  BOTH
+}
+
+enum JournalHeadKind {
+  PARENT
+  SUBHEAD
+}
+
+enum JournalDirection {
+  INWARD
+  OUTWARD
+}
+
+model JournalCategory {
+  id            String       @id @default(uuid())
+    name          String
+  isActive      Boolean      @default(true)
+  journalHeadId String?
+  journalHead   JournalHead? @relation(fields: [journalHeadId], references: [id], onDelete: SetNull)
+  journals      Journal[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([isActive])
+  @@index([name])
+  @@index([journalHeadId])
 }
 
 model JournalHead {
@@ -1457,7 +1485,15 @@ model JournalHead {
 
   name String
 
-  type JournalHeadType
+  headType JournalHeadKind @default(PARENT)
+
+  parentId String?
+  parent   JournalHead?  @relation("JournalHeadHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children JournalHead[] @relation("JournalHeadHierarchy")
+
+  // Legacy direction retained for existing journal heads/import scripts.
+  // New heads use headType; journal direction is stored on Journal.direction.
+  type JournalHeadType?
 
   ledgerId String
 
@@ -1470,6 +1506,9 @@ model JournalHead {
   updatedAt DateTime @updatedAt
 
   journals Journal[]
+  categories JournalCategory[]
+
+  @@index([parentId])
 }
 
 model Journal {
@@ -1478,13 +1517,28 @@ model Journal {
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id])
 
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: SetNull)
+
   journalHeadId String
 
   journalHead JournalHead @relation(fields: [journalHeadId], references: [id])
 
-  importKey String? @unique
+  categoryId String?
+  category   JournalCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  importKey String? @unique
+  serialNo String?
+  voucherNo String?
+  sourceSheet String?
+  sourceRow Int?
   amount Decimal @db.Decimal(18, 2)
+
+  direction JournalDirection?
+
+  cgstAmount Decimal? @db.Decimal(18, 2)
+  sgstAmount Decimal? @db.Decimal(18, 2)
+  igstAmount Decimal? @db.Decimal(18, 2)
 
   paymentMode PaymentMode
 
@@ -1517,6 +1571,10 @@ model Journal {
   createdAt DateTime @default(now())
 
   updatedAt DateTime @updatedAt
+
+  @@index([agencyId])
+  @@index([categoryId])
+  @@unique([branchId, serialNo])
 }
 
 enum PurchaseOrderStatus {

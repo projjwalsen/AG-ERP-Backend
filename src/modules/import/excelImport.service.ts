@@ -1891,7 +1891,8 @@ export class ExcelImportService {
                         this.getValue(
                             row,
                             "Vch Type",
-                            "Voucher Type"
+                            "Voucher Type",
+                            "Journal Name / Type"
                         ) || ""
                     )
                         .trim()
@@ -1911,7 +1912,8 @@ export class ExcelImportService {
                         this.getValue(
                             row,
                             "Vch No",
-                            "Voucher No"
+                            "Voucher No",
+                            "Voucher Number"
                         ) || ""
                     ).trim();
 
@@ -1947,6 +1949,12 @@ export class ExcelImportService {
                     ).trim();
 
                 const particulars = this.getJournalParticulars(row);
+                const sourceSerialNo = String(this.getValue(
+                    row, "Sr.No", "Sr. No", "Sr No", "Serial No", "S No"
+                ) || "").trim();
+                const accountName = String(this.getValue(
+                    row, "Ledger / Account Name", "Account/Ledger", "Account / Ledger", "Ledger", "Account Name"
+                ) || particulars || "").trim();
 
                 if (this.isTotalRow(row, particulars)) {
                     return null;
@@ -1960,6 +1968,13 @@ export class ExcelImportService {
                     sourceSheet,
 
                     sourceRow: index + 9,
+                    sourceSerialNo,
+                    journalGroup: String(this.getValue(row, "Jrn Grp", "Journal Group", "Jrn Group") || "").trim(),
+                    subGroup: String(this.getValue(row, "Sub Grp", "Sub Group") || "").trim(),
+                    subGroup2: String(this.getValue(row, "Sub Grp 2", "Sub Group 2", "Sub Group2") || "").trim(),
+                    subGroup3: String(this.getValue(row, "Sub Grp 3", "Sub Group 3", "Sub Group3") || "").trim(),
+                    accountName,
+                    narration: String(this.getValue(row, "Narration") || ""),
 
                     date:
                         this.toDate(

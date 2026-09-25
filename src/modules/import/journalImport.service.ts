@@ -202,23 +202,13 @@ export class JournalImportService {
                             !isCancelled
                             )
                         ) {
-
-                            const payload =
-                                await ImportResolver.buildJournalPayload(
-                                    actor,
-                                    dto
-                                );
-
-                            const journal =
-                                await JournalService.createJournal(
-                                    actor,
-                                    payload
-                                );
-
-                            await JournalService.approveJournal(
-                                actor,
-                                journal.id
-                            );
+                            if (ImportResolver.isJournalRegisterRow(dto)) {
+                                await ImportResolver.importJournalRegisterRow(actor, dto);
+                            } else {
+                                const payload = await ImportResolver.buildJournalPayload(actor, dto);
+                                const journal = await JournalService.createJournal(actor, payload);
+                                await JournalService.approveJournal(actor, journal.id);
+                            }
 
                         }
 
@@ -248,8 +238,14 @@ export class JournalImportService {
 
                         summary.errors.push({
 
+                            sourceSerialNo:
+                                dto.sourceSerialNo,
+
                             voucherNo:
                                 dto.voucherNo,
+
+                            accountName:
+                                dto.accountName,
 
                             sourceSheet:
                                 dto.sourceSheet,

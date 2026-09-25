@@ -227,11 +227,20 @@ export interface JournalImportDTO {
 
     date?: Date;
 
+    sourceSerialNo?: string;
+
     importIndex?: number;
 
     sourceSheet?: string;
 
     sourceRow?: number;
+
+    journalGroup?: string;
+    subGroup?: string;
+    subGroup2?: string;
+    subGroup3?: string;
+    accountName?: string;
+    narration?: string;
 
     importKey?: string;
 

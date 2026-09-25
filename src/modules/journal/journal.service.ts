@@ -2,17 +2,37 @@ export interface CreateJournalHeadDto {
 
     name: string;
 
-    type: "INWARD" | "OUTWARD";
+    type?: "INWARD" | "OUTWARD" | "BOTH";
+
+    headType?: "PARENT" | "SUBHEAD";
+
+    parentId?: string | null;
 
     groupCode?: string;
 
+}
+
+export interface CreateJournalCategoryDto {
+    name: string;
+    isActive?: boolean;
+    journalHeadId?: string | null;
+}
+
+export interface UpdateJournalCategoryDto {
+    name?: string;
+    isActive?: boolean;
+    journalHeadId?: string | null;
 }
 
 export interface UpdateJournalHeadDto {
 
     name?: string;
 
-    type?: "INWARD" | "OUTWARD";
+    type?: "INWARD" | "OUTWARD" | "BOTH";
+
+    headType?: "PARENT" | "SUBHEAD";
+
+    parentId?: string | null;
 
     isActive?: boolean;
 
@@ -20,6 +40,7 @@ export interface UpdateJournalHeadDto {
 
 import {
     EntryType,
+    JournalDirection,
     JournalHeadType,
     JournalStatus,
     LedgerNature,
@@ -33,11 +54,25 @@ export interface CreateJournalDto {
 
     branchId: string;
 
-    journalHeadId: string;
+    agencyId?: string;
+
+    journalHeadId?: string;
+
+    categoryId?: string | null;
+
+    direction?: JournalDirection;
+
+    type?: JournalDirection;
 
     saleId?: string;
 
     amount: number;
+
+    cgstAmount?: number;
+
+    sgstAmount?: number;
+
+    igstAmount?: number;
 
     importKey?: string;
 
@@ -55,9 +90,23 @@ export interface UpdateJournalDto {
 
     branchId?: string;
 
+    agencyId?: string | null;
+
     journalHeadId?: string;
 
+    categoryId?: string | null;
+
+    direction?: JournalDirection | null;
+
+    type?: JournalDirection | null;
+
     amount?: number;
+
+    cgstAmount?: number | null;
+
+    sgstAmount?: number | null;
+
+    igstAmount?: number | null;
 
     paymentMode?: PaymentMode;
 
@@ -162,6 +211,27 @@ export class JournalService {
         dto: CreateJournalHeadDto
     ) {
 
+        const headType = dto.headType ?? "PARENT";
+        const parentId = dto.parentId ?? null;
+
+        if (headType === "SUBHEAD" && !parentId) {
+            throw new ApiError("parentId is required for a SUBHEAD.", 400);
+        }
+
+        if (headType === "PARENT" && parentId) {
+            throw new ApiError("PARENT journal heads cannot have a parent.", 400);
+        }
+
+        if (parentId) {
+            const parent = await prisma.journalHead.findUnique({
+                where: { id: parentId }
+            });
+
+            if (!parent) {
+                throw new ApiError("Parent journal head not found.", 404);
+            }
+        }
+
         const exists =
             await prisma.journalHead.findFirst({
 
@@ -175,15 +245,15 @@ export class JournalService {
 
                     },
 
-                    // Reuse only a head with the same direction. This keeps
-                    // BANK_PAYMENT on the OUTWARD path (Bank CREDIT) and
-                    // BANK_RECEIPT on the INWARD path (Bank DEBIT).
-                    type: dto.type
+                    parentId,
+                    headType
 
                 },
 
                 include: {
-                    ledger: true
+                    ledger: true,
+                    parent: true,
+                    children: true
                 }
 
             });
@@ -212,7 +282,7 @@ export class JournalService {
 
                 groupCode:
                     dto.groupCode ??
-                    (dto.type === "INWARD"
+                    (dto.type === "INWARD" || dto.type === "BOTH"
                         ? "INDIRECT_INCOME"
                         : "INDIRECT_EXPENSE")
 
@@ -224,7 +294,9 @@ export class JournalService {
 
                 name: dto.name.trim(),
 
-                type: dto.type,
+                headType,
+                parentId,
+                type: dto.type ?? null,
 
                 ledgerId: ledger.id
 
@@ -232,7 +304,9 @@ export class JournalService {
 
             include: {
 
-                ledger: true
+                ledger: true,
+                parent: true,
+                children: true
 
             }
 
@@ -298,15 +372,59 @@ export class JournalService {
 
         }
 
+        const nextParentId = dto.parentId !== undefined
+            ? dto.parentId
+            : head.parentId;
+        const nextHeadType = dto.headType ??
+            (dto.parentId !== undefined
+                ? (nextParentId ? "SUBHEAD" : "PARENT")
+                : head.headType);
+
+        if (nextHeadType === "SUBHEAD" && !nextParentId) {
+            throw new ApiError("parentId is required for a SUBHEAD.", 400);
+        }
+
+        if (nextHeadType === "PARENT" && nextParentId) {
+            throw new ApiError("PARENT journal heads cannot have a parent.", 400);
+        }
+
+        if (nextParentId === id) {
+            throw new ApiError("A journal head cannot be its own parent.", 400);
+        }
+
+        if (nextParentId) {
+            let parentId: string | null = nextParentId;
+            while (parentId) {
+                const parent = await prisma.journalHead.findUnique({
+                    where: { id: parentId },
+                    select: { id: true, parentId: true }
+                });
+
+                if (!parent) {
+                    throw new ApiError("Parent journal head not found.", 404);
+                }
+
+                if (parent.id === id) {
+                    throw new ApiError("A journal head cannot be moved under its own descendant.", 400);
+                }
+
+                parentId = parent.parentId;
+            }
+        }
+
         return prisma.journalHead.update({
             where: { id },
             data: {
                 name: dto.name,
                 type: dto.type,
+                headType: nextHeadType,
+                parentId: nextParentId,
                 isActive: dto.isActive
             },
             include: {
                 ledger: true
+                , parent: true
+                , children: true
             }
         });
 
@@ -364,7 +482,9 @@ export class JournalService {
 
                 include: {
 
-                    ledger: true
+                    ledger: true,
+                    parent: true,
+                    children: true
 
                 }
 
@@ -387,7 +507,11 @@ export class JournalService {
 
             search?: string;
 
-            type?: "INWARD" | "OUTWARD";
+            type?: "INWARD" | "OUTWARD" | "BOTH";
+
+            headType?: "PARENT" | "SUBHEAD";
+
+            parentId?: string;
 
             isActive?: boolean;
 
@@ -399,6 +523,10 @@ export class JournalService {
             search,
 
             type,
+
+            headType,
+
+            parentId,
 
             isActive
 
@@ -426,6 +554,10 @@ export class JournalService {
 
                 }),
 
+                ...(headType && { headType }),
+
+                ...(parentId && { parentId }),
+
                 ...(isActive !== undefined && {
 
                     isActive
@@ -452,7 +584,10 @@ export class JournalService {
 
                     }
 
-                }
+                },
+
+                parent: true,
+                children: true
 
             },
 
@@ -467,6 +602,115 @@ export class JournalService {
     }
 
     /** ------------ JOURNAL SERVICE ------------- */
+    static async createJournalCategory(
+        actor: any,
+        dto: CreateJournalCategoryDto
+    ) {
+        if (!actor?.id) throw new ApiError("Unauthorized", 401);
+
+        const name = dto.name?.trim();
+        if (!name) throw new ApiError("Category name is required.", 400);
+
+        const exists = await prisma.journalCategory.findFirst({
+            where: {
+                name: { equals: name, mode: "insensitive" },
+                journalHeadId: dto.journalHeadId ?? null
+            }
+        });
+        if (exists) throw new ApiError("Journal category already exists.", 409);
+
+        if (dto.journalHeadId) {
+            const journalHead = await prisma.journalHead.findUnique({
+                where: { id: dto.journalHeadId }
+            });
+            if (!journalHead) throw new ApiError("Journal head not found.", 404);
+            if (journalHead.headType !== "SUBHEAD") {
+                throw new ApiError("A category can only be linked to a SUBHEAD.", 400);
+            }
+        }
+
+        return prisma.journalCategory.create({
+            data: {
+                name,
+                isActive: dto.isActive ?? true,
+                journalHeadId: dto.journalHeadId ?? null
+            },
+            include: { journalHead: { include: { parent: true } } }
+        });
+    }
+
+    static async updateJournalCategory(
+        actor: any,
+        id: string,
+        dto: UpdateJournalCategoryDto
+    ) {
+        if (!actor?.id) throw new ApiError("Unauthorized", 401);
+
+        const existing = await prisma.journalCategory.findUnique({ where: { id } });
+        if (!existing) throw new ApiError("Journal category not found.", 404);
+
+        const name = dto.name?.trim();
+        if (name) {
+            const duplicate = await prisma.journalCategory.findFirst({
+                where: {
+                    id: { not: id },
+                    name: { equals: name, mode: "insensitive" }
+                }
+            });
+            if (duplicate) throw new ApiError("Journal category already exists.", 409);
+        }
+
+        if (dto.journalHeadId) {
+            const journalHead = await prisma.journalHead.findUnique({
+                where: { id: dto.journalHeadId }
+            });
+            if (!journalHead) throw new ApiError("Journal head not found.", 404);
+            if (journalHead.headType !== "SUBHEAD") {
+                throw new ApiError("A category can only be linked to a SUBHEAD.", 400);
+            }
+        }
+
+        return prisma.journalCategory.update({
+            where: { id },
+            data: {
+                ...(name !== undefined ? { name } : {}),
+                ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+                ...(dto.journalHeadId !== undefined
+                    ? { journalHeadId: dto.journalHeadId }
+                    : {})
+            },
+            include: { journalHead: { include: { parent: true } } }
+        });
+    }
+
+    static async listJournalCategories(params?: {
+        search?: string;
+        isActive?: boolean;
+    }) {
+        return prisma.journalCategory.findMany({
+            where: {
+                ...(params?.search && {
+                    name: { contains: params.search, mode: "insensitive" }
+                }),
+                ...(params?.isActive !== undefined ? { isActive: params.isActive } : {})
+            },
+            include: { journalHead: { include: { parent: true } } },
+            orderBy: { name: "asc" }
+        });
+    }
+
+    static async getJournalCategoryById(id: string) {
+        const category = await prisma.journalCategory.findUnique({
+            where: { id },
+            include: {
+                journalHead: { include: { parent: true } },
+                journals: { select: { id: true } }
+            }
+        });
+        if (!category) throw new ApiError("Journal category not found.", 404);
+        return category;
+    }
+
     static async createJournal(
         actor: any,
         dto: CreateJournalDto
@@ -476,9 +720,45 @@ export class JournalService {
             throw new ApiError("Unauthorized", 401);
         }
 
+        const category = dto.categoryId
+            ? await prisma.journalCategory.findUnique({
+                where: { id: dto.categoryId }
+            })
+            : null;
+
+        if (dto.categoryId && !category) {
+            throw new ApiError("Journal category not found.", 404);
+        }
+
+        if (category && !category.isActive) {
+            throw new ApiError("Journal category is disabled.", 400);
+        }
+
+        const resolvedJournalHeadId =
+            category?.journalHeadId ?? dto.journalHeadId;
+
+        if (!resolvedJournalHeadId) {
+            throw new ApiError(
+                "Select a category linked to a journal head or provide journalHeadId.",
+                400
+            );
+        }
+
+        if (
+            category?.journalHeadId &&
+            dto.journalHeadId &&
+            category.journalHeadId !== dto.journalHeadId
+        ) {
+            throw new ApiError(
+                "Selected category is linked to a different journal head.",
+                400
+            );
+        }
+
         const [
             branch,
-            journalHead
+            journalHead,
+            agency
         ] = await Promise.all([
 
             prisma.branch.findUnique({
@@ -489,12 +769,18 @@ export class JournalService {
 
             prisma.journalHead.findUnique({
                 where: {
-                    id: dto.journalHeadId
+                    id: resolvedJournalHeadId
                 },
                 include: {
                     ledger: true
                 }
-            })
+            }),
+
+            dto.agencyId
+                ? prisma.agency.findUnique({
+                    where: { id: dto.agencyId }
+                })
+                : null
 
         ]);
 
@@ -510,6 +796,26 @@ export class JournalService {
                 "Journal Head not found.",
                 404
             );
+        }
+
+        const direction =
+            dto.direction ??
+            dto.type ??
+            (journalHead.type === JournalHeadType.INWARD
+                ? JournalDirection.INWARD
+                : journalHead.type === JournalHeadType.OUTWARD
+                    ? JournalDirection.OUTWARD
+                    : undefined);
+
+        if (!direction) {
+            throw new ApiError(
+                "direction is required when using a new journal head.",
+                400
+            );
+        }
+
+        if (dto.agencyId && !agency) {
+            throw new ApiError("Agency not found.", 404);
         }
 
         if (
@@ -528,8 +834,14 @@ export class JournalService {
                 branchId:
                     dto.branchId,
 
+                agencyId:
+                    dto.agencyId ?? null,
+
                 journalHeadId:
-                    dto.journalHeadId,
+                    resolvedJournalHeadId,
+
+                categoryId:
+                    dto.categoryId ?? null,
 
                 saleId:
                     dto.saleId ?? null,
@@ -545,6 +857,17 @@ export class JournalService {
 
                 amount:
                     dto.amount,
+
+                direction,
+
+                cgstAmount:
+                    dto.cgstAmount ?? null,
+
+                sgstAmount:
+                    dto.sgstAmount ?? null,
+
+                igstAmount:
+                    dto.igstAmount ?? null,
 
                 remarks:
                     dto.remarks,
@@ -564,6 +887,10 @@ export class JournalService {
             include: {
 
                 branch: true,
+
+                agency: true,
+
+                category: true,
 
                 journalHead: {
                     include: {
@@ -603,6 +930,11 @@ export class JournalService {
 
                 where: {
                     id
+                },
+
+                include: {
+                    journalHead: true,
+                    category: true
                 }
 
             });
@@ -654,15 +986,56 @@ export class JournalService {
 
         }
 
+        if (dto.agencyId) {
+            const agency = await prisma.agency.findUnique({
+                where: { id: dto.agencyId }
+            });
+
+            if (!agency) {
+                throw new ApiError("Agency not found.", 404);
+            }
+        }
+
+        const category = dto.categoryId
+            ? await prisma.journalCategory.findUnique({
+                where: { id: dto.categoryId }
+            })
+            : null;
+
+        if (dto.categoryId) {
+            if (!category) throw new ApiError("Journal category not found.", 404);
+            if (!category.isActive) throw new ApiError("Journal category is disabled.", 400);
+        }
+
+        const effectiveCategory = dto.categoryId === undefined
+            ? journal.category
+            : category;
+
         if (
-            dto.journalHeadId
+            effectiveCategory?.journalHeadId &&
+            dto.journalHeadId &&
+            effectiveCategory.journalHeadId !== dto.journalHeadId
         ) {
+            throw new ApiError(
+                "Selected category is linked to a different journal head.",
+                400
+            );
+        }
+
+        const resolvedJournalHeadId =
+            effectiveCategory?.journalHeadId ??
+            dto.journalHeadId ??
+            journal.journalHeadId;
+
+        let journalHead = journal.journalHead;
+
+        if (resolvedJournalHeadId !== journal.journalHeadId) {
 
             const head =
                 await prisma.journalHead.findUnique({
 
                     where: {
-                        id: dto.journalHeadId
+                        id: resolvedJournalHeadId
                     }
 
                 });
@@ -676,6 +1049,25 @@ export class JournalService {
 
             }
 
+            journalHead = head;
+
+        }
+
+        const direction =
+            dto.direction ??
+            dto.type ??
+            journal.direction ??
+            (journalHead.type === JournalHeadType.INWARD
+                ? JournalDirection.INWARD
+                : journalHead.type === JournalHeadType.OUTWARD
+                    ? JournalDirection.OUTWARD
+                    : undefined);
+
+        if (!direction) {
+            throw new ApiError(
+                "direction is required when using a new journal head.",
+                400
+            );
         }
 
 
@@ -707,8 +1099,14 @@ export class JournalService {
                 branchId:
                     dto.branchId,
 
+                agencyId:
+                    dto.agencyId,
+
                 journalHeadId:
-                    dto.journalHeadId,
+                    resolvedJournalHeadId,
+
+                categoryId:
+                    dto.categoryId,
 
                 paymentMode:
                     dto.paymentMode,
@@ -718,6 +1116,17 @@ export class JournalService {
 
                 amount:
                     dto.amount,
+
+                direction,
+
+                cgstAmount:
+                    dto.cgstAmount,
+
+                sgstAmount:
+                    dto.sgstAmount,
+
+                igstAmount:
+                    dto.igstAmount,
 
                 remarks:
                     dto.remarks,
@@ -730,6 +1139,10 @@ export class JournalService {
             include: {
 
                 branch: true,
+
+                agency: true,
+
+                category: true,
 
                 journalHead: {
 
@@ -806,9 +1219,15 @@ export class JournalService {
                         }
                     },
 
+                    agency: true,
+
+                    category: true,
+
                     journalHead: {
                         include: {
-                            ledger: true
+                            ledger: true,
+                            parent: true,
+                            children: true
                         }
                     },
 
@@ -859,6 +1278,8 @@ export class JournalService {
             branchId?: string;
             status?: JournalStatus;
             journalHeadId?: string;
+            agencyId?: string;
+            categoryId?: string;
             fromDate?: Date;
             toDate?: Date;
         }
@@ -871,6 +1292,8 @@ export class JournalService {
             branchId,
             status,
             journalHeadId,
+            agencyId,
+            categoryId,
             fromDate,
             toDate
         } = params;
@@ -886,6 +1309,14 @@ export class JournalService {
 
             ...(journalHeadId && {
                 journalHeadId
+            }),
+
+            ...(agencyId && {
+                agencyId
+            }),
+
+            ...(categoryId && {
+                categoryId
             }),
 
             ...(fromDate || toDate
@@ -928,6 +1359,24 @@ export class JournalService {
                                     mode: "insensitive"
                                 }
                             }
+                        },
+
+                        {
+                            agency: {
+                                name: {
+                                    contains: search,
+                                    mode: "insensitive"
+                                }
+                            }
+                        },
+
+                        {
+                            category: {
+                                name: {
+                                    contains: search,
+                                    mode: "insensitive"
+                                }
+                            }
                         }
                     ]
                 }
@@ -962,9 +1411,15 @@ export class JournalService {
                         }
                     },
 
+                    agency: true,
+
+                    category: true,
+
                     journalHead: {
                         include: {
-                            ledger: true
+                            ledger: true,
+                            parent: true,
+                            children: true
                         }
                     },
 
@@ -1122,15 +1577,21 @@ export class JournalService {
                                 ? VoucherType.BANK_PAYMENT
                                 : null;
 
+            const journalDirection =
+                journal.direction ??
+                (journal.journalHead.type === JournalHeadType.INWARD
+                    ? JournalDirection.INWARD
+                    : JournalDirection.OUTWARD);
+
             const voucher =
                 await LedgerService.createVoucher(
                     {
 
                         voucherType: explicitImportedVoucherType ?? (
-                            journal.journalHead.type === JournalHeadType.OUTWARD &&
+                            journalDirection === JournalDirection.OUTWARD &&
                                 journal.paymentThrough === PaymentType.CASH
                                 ? VoucherType.CASH_PAYMENT
-                                : journal.journalHead.type === JournalHeadType.OUTWARD
+                                : journalDirection === JournalDirection.OUTWARD
                                     ? VoucherType.BANK_PAYMENT
                                     : VoucherType.JOURNAL
                         ),
@@ -1149,8 +1610,7 @@ export class JournalService {
 
                         entries:
 
-                            journal.journalHead.type ===
-                                JournalHeadType.OUTWARD
+                            journalDirection === JournalDirection.OUTWARD
 
                                 ?
 
