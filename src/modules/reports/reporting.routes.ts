@@ -11,7 +11,8 @@ router.use(authMiddleware)
  *   get:
  *     summary: Trial Balance Report
  *     description: |
- *       Generates a Tally-style Trial Balance using accounting LedgerEntry rows.
+ *       Generates a Tally-style Trial Balance using LedgerEntry rows posted
+ *       through approved Journal records only.
  *
  *       The report includes:
  *       - Transaction Debit / Credit and a signed Closing Balance (Dr/Cr)
