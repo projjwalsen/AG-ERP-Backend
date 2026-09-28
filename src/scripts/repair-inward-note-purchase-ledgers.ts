@@ -17,7 +17,6 @@ import { readFile } from "fs/promises";
 import path from "path";
 import ExcelJS from "exceljs";
 import {
-    DebitCreditNoteSourceType,
     DebitCreditNoteType,
     EntryType,
     LedgerNature,
@@ -172,12 +171,14 @@ async function main() {
     };
 
     for (const row of rows) {
+        // Voucher number is the authoritative Tally key. Most note numbers
+        // are unique inside a branch; party/date/amount only disambiguate a
+        // repeated number (for example PDN/M/2526/062 in this workbook).
         const candidates = await prisma.debitCreditNote.findMany({
             where: {
                 branchId: branch.id,
-                noteNo: row.voucherNo,
-                type: row.noteType,
-                sourceType: DebitCreditNoteSourceType.PURCHASE
+                noteNo: { equals: row.voucherNo, mode: "insensitive" },
+                type: row.noteType
             },
             include: {
                 agency: { select: { name: true } },
@@ -186,7 +187,7 @@ async function main() {
                 particulars: { select: { amount: true } }
             }
         });
-        const matching = candidates.filter(note => {
+        const exactMatches = candidates.filter(note => {
             const noteAmount = Number(note.totalAmount || 0) || note.particulars.reduce(
                 (total, particular) => total + Number(particular.amount || 0),
                 0
@@ -195,14 +196,33 @@ async function main() {
                 normalizeImportedPartyName(note.agency.name) === normalizeImportedPartyName(row.particulars) &&
                 dateKey(note.noteDate) === dateKey(row.date);
         });
+        const partyMatches = candidates.filter(note =>
+            normalizeImportedPartyName(note.agency.name) === normalizeImportedPartyName(row.particulars)
+        );
+        const dateAndAmountMatches = candidates.filter(note => {
+            const noteAmount = Number(note.totalAmount || 0) || note.particulars.reduce(
+                (total, particular) => total + Number(particular.amount || 0),
+                0
+            );
+            return Math.abs(noteAmount - row.amount) < 0.005 &&
+                dateKey(note.noteDate) === dateKey(row.date);
+        });
+        const matching = [
+            exactMatches,
+            partyMatches,
+            dateAndAmountMatches,
+            candidates
+        ].find(matches => matches.length === 1) || [];
         if (matching.length !== 1 || !matching[0].purchase) {
             summary.skipped.push({
                 row: row.row,
                 voucherNo: row.voucherNo,
                 path: row.path,
-                reason: matching.length === 0
-                    ? "No unique existing purchase note matches voucher number, party, date, and amount"
-                    : "More than one existing purchase note matches this row"
+                reason: candidates.length === 0
+                    ? "No existing debit/credit note has this voucher number in the selected branch"
+                    : !matching[0]?.purchase
+                        ? "Matched note is not linked to a Purchase"
+                        : `Voucher number is ambiguous (${candidates.length} matches); party/date/amount could not resolve it`
             });
             continue;
         }
