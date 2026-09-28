@@ -95,11 +95,15 @@ async function readWorkbook(buffer: Buffer): Promise<WorkbookRow[]> {
     const header = new Map<string, number>();
     let headerRow = 0;
     worksheet.eachRow((row, rowNumber) => {
-        const values = row.values as unknown[];
-        const columns = values.map((value, index) => [normalizeText(value).toUpperCase(), index] as const);
-        if (columns.some(([name]) => name === "VOUCHER NO." || name === "VOUCHER NO")) {
+        const currentHeader = new Map<string, number>();
+        const lastColumn = Math.max(row.cellCount, worksheet.columnCount, 8);
+        for (let column = 1; column <= lastColumn; column++) {
+            const name = normalizeText(row.getCell(column).value).toUpperCase();
+            if (name) currentHeader.set(name, column);
+        }
+        if (currentHeader.has("VOUCHER NO.") || currentHeader.has("VOUCHER NO")) {
             headerRow = rowNumber;
-            for (const [name, index] of columns) if (name) header.set(name, index);
+            currentHeader.forEach((column, name) => header.set(name, column));
         }
     });
 
