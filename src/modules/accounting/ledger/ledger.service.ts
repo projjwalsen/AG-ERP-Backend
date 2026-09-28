@@ -9,6 +9,7 @@ import {
     PaymentMode,
     PaymentType,
     Prisma,
+    PurchaseStatus,
     SettlementType,
     TransactionDirection,
     TransactionPaymentType,
@@ -4628,6 +4629,226 @@ export class LedgerService {
             }
 
             return targetLedger;
+        });
+    }
+
+    /**
+     * Move existing Purchase voucher postings under a Tally-style hierarchy.
+     *
+     * This changes only LedgerEntry rows whose voucher sourceId is a Purchase
+     * and whose current ledger is a PURCHASE ledger. The Purchase, Voucher,
+     * vendor, GST, transaction and debit/credit-note records are not changed.
+     */
+    static async bulkClassifyPurchaseVouchers(
+        actor: any,
+        payload: {
+            path?: string;
+            headName?: string;
+            branchId?: string;
+            purchaseIds?: string[];
+            voucherIds?: string[];
+            voucherNos?: string[];
+            all?: boolean;
+        }
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        const rawPath = payload.path || payload.headName;
+        let path = normalizeImportedTransactionPath(rawPath);
+        if (!path) {
+            throw new ApiError("Purchase hierarchy path is required", 400);
+        }
+
+        const pathParts = path.split(" / ").filter(Boolean);
+        if (!/^PURCHASE ACCOUNTS?$/i.test(pathParts[0])) {
+            path = normalizeImportedTransactionPath(`Purchase Accounts / ${path}`);
+        }
+
+        const importedType = importedTransactionTypeFromPath(path);
+        if (!importedType) {
+            throw new ApiError("Purchase hierarchy path must contain a leaf name", 400);
+        }
+
+        const requestedPurchaseIds = [...new Set(
+            (payload.purchaseIds || []).map(String).map(x => x.trim()).filter(Boolean)
+        )];
+        const requestedVoucherIds = [...new Set(
+            (payload.voucherIds || []).map(String).map(x => x.trim()).filter(Boolean)
+        )];
+        const requestedVoucherNos = [...new Set(
+            (payload.voucherNos || []).map(String).map(x => x.trim()).filter(Boolean)
+        )];
+
+        if (
+            !payload.all &&
+            requestedPurchaseIds.length === 0 &&
+            requestedVoucherIds.length === 0 &&
+            requestedVoucherNos.length === 0
+        ) {
+            throw new ApiError(
+                "Provide purchaseIds, voucherIds, voucherNos, or all:true",
+                400
+            );
+        }
+
+        const effectiveBranchId = actor.branchAccessType === "ALL"
+            ? payload.branchId
+            : actor.branchId;
+
+        if (payload.all && actor.branchAccessType !== "ALL" && !effectiveBranchId) {
+            throw new ApiError("Your user is not assigned to a branch", 400);
+        }
+
+        const purchaseVoucherTypes: VoucherType[] = [
+            VoucherType.PURCHASE,
+            VoucherType.RCM_PURCHASE,
+            VoucherType.IGST_PURCHASE,
+            VoucherType.GST_PURCHASE,
+            VoucherType.CST_PURCHASE,
+            VoucherType.DISCOUNT_PURCHASE,
+            VoucherType.HIGH_SEAS_PURCHASE,
+            VoucherType.IMPORT_PURCHASE,
+            VoucherType.VAT_PURCHASE,
+            VoucherType.INTEREST_SAUNDRY_CREDITORS
+        ];
+
+        return prisma.$transaction(async tx => {
+            const selectedIds = new Set<string>(requestedPurchaseIds);
+
+            if (requestedVoucherIds.length > 0) {
+                const vouchers = await tx.voucher.findMany({
+                    where: {
+                        id: { in: requestedVoucherIds },
+                        voucherType: { in: purchaseVoucherTypes },
+                        ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+                    },
+                    select: { sourceId: true }
+                });
+                for (const voucher of vouchers) selectedIds.add(voucher.sourceId);
+            }
+
+            if (requestedVoucherNos.length > 0) {
+                const [vouchers, purchases] = await Promise.all([
+                    tx.voucher.findMany({
+                        where: {
+                            voucherNo: { in: requestedVoucherNos },
+                            voucherType: { in: purchaseVoucherTypes },
+                            ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+                        },
+                        select: { sourceId: true }
+                    }),
+                    tx.purchase.findMany({
+                        where: {
+                            invoiceNo: { in: requestedVoucherNos },
+                            ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+                        },
+                        select: { id: true }
+                    })
+                ]);
+                for (const voucher of vouchers) selectedIds.add(voucher.sourceId);
+                for (const purchase of purchases) selectedIds.add(purchase.id);
+            }
+
+            const purchases = await tx.purchase.findMany({
+                where: {
+                    status: PurchaseStatus.APPROVED,
+                    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+                    ...(payload.all
+                        ? {}
+                        : { id: { in: [...selectedIds] } })
+                },
+                select: {
+                    id: true,
+                    invoiceNo: true,
+                    branchId: true
+                }
+            });
+
+            if (purchases.length === 0) {
+                throw new ApiError("No approved Purchase vouchers matched the selection", 404);
+            }
+
+            const targetLedgers = new Map<string, any>();
+            const affectedLedgerIds = new Set<string>();
+            const moved: Array<{
+                purchaseId: string;
+                invoiceNo: string;
+                ledgerId: string;
+                ledgerName: string;
+                movedEntries: number;
+            }> = [];
+            const skipped: Array<{
+                purchaseId: string;
+                invoiceNo: string;
+                reason: string;
+            }> = [];
+
+            for (const purchase of purchases) {
+                let target = targetLedgers.get(purchase.branchId);
+                if (!target) {
+                    target = await this.getOrCreateImportedPurchaseTypeLedger(
+                        tx,
+                        purchase.branchId,
+                        importedType,
+                        path
+                    );
+                    targetLedgers.set(purchase.branchId, target);
+                }
+
+                const entries = await tx.ledgerEntry.findMany({
+                    where: {
+                        voucher: { sourceId: purchase.id },
+                        ledger: { category: LedgerType.PURCHASE }
+                    },
+                    select: { id: true, ledgerId: true }
+                });
+
+                if (entries.length === 0) {
+                    skipped.push({
+                        purchaseId: purchase.id,
+                        invoiceNo: purchase.invoiceNo,
+                        reason: "No posted Purchase ledger entry found"
+                    });
+                    continue;
+                }
+
+                for (const entry of entries) affectedLedgerIds.add(entry.ledgerId);
+                affectedLedgerIds.add(target.id);
+                await tx.ledgerEntry.updateMany({
+                    where: { id: { in: entries.map(entry => entry.id) } },
+                    data: { ledgerId: target.id }
+                });
+
+                moved.push({
+                    purchaseId: purchase.id,
+                    invoiceNo: purchase.invoiceNo,
+                    ledgerId: target.id,
+                    ledgerName: target.name,
+                    movedEntries: entries.length
+                });
+            }
+
+            for (const ledgerId of affectedLedgerIds) {
+                await this.syncCachedBalance(tx, ledgerId);
+            }
+
+            return {
+                path,
+                importedType,
+                matchedPurchases: purchases.length,
+                movedPurchases: moved.length,
+                movedEntries: moved.reduce((sum, row) => sum + row.movedEntries, 0),
+                skipped,
+                ledgers: [...targetLedgers.values()].map(ledger => ({
+                    id: ledger.id,
+                    name: ledger.name,
+                    code: ledger.code,
+                    groupId: ledger.groupId
+                })),
+                vouchers: moved
+            };
         });
     }
 
