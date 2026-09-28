@@ -3326,12 +3326,6 @@ export class ImportResolver {
             );
         }
 
-        await LedgerService.assignPurchaseToImportedType(
-            purchase.id,
-            importedType,
-            importedPath || undefined
-        );
-
         if (!note) {
             note = await DebitCreditNoteService.createNote(actor, {
                 noteNo: String(dto.voucherNo || "").trim(),
@@ -3411,12 +3405,6 @@ export class ImportResolver {
     ) {
         if (!note.purchase?.id) return;
 
-        await LedgerService.assignPurchaseToImportedType(
-            note.purchase.id,
-            importedType,
-            importedPath
-        );
-
         await prisma.$transaction(async tx => {
             if (transactionId) {
                 await tx.transaction.update({
@@ -3439,6 +3427,11 @@ export class ImportResolver {
                 note.branchId,
                 importedType,
                 importedPath
+            );
+            await LedgerService.restorePurchaseVoucherLedgerFromInwardNotePath(
+                tx,
+                note.purchase.id,
+                target.id
             );
             const voucherIds = vouchers.map(v => v.id);
             const entries = await tx.ledgerEntry.findMany({

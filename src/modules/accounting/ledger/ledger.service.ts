@@ -4631,6 +4631,48 @@ export class LedgerService {
         });
     }
 
+    /**
+     * Older inward-note imports incorrectly moved the linked Purchase
+     * invoice's own entry into the debit/credit note Path. Restore only an
+     * entry that is currently on that same note-path ledger; the note voucher
+     * itself has a different sourceId and is deliberately left untouched.
+     */
+    static async restorePurchaseVoucherLedgerFromInwardNotePath(
+        client: DbClient,
+        purchaseId: string,
+        notePathLedgerId: string
+    ) {
+        const purchase = await client.purchase.findUnique({
+            where: { id: purchaseId },
+            select: { id: true, branchId: true, voucherType: true }
+        });
+        if (!purchase) return;
+
+        const restoredLedger = await this.getPurchaseLedger(
+            client,
+            purchase.branchId,
+            purchase.voucherType || VoucherType.PURCHASE
+        );
+        const entries = await client.ledgerEntry.findMany({
+            where: {
+                ledgerId: notePathLedgerId,
+                ledger: { category: LedgerType.PURCHASE },
+                voucher: { sourceId: purchase.id }
+            },
+            select: { id: true }
+        });
+        if (entries.length === 0 || restoredLedger.id === notePathLedgerId) return;
+
+        await client.ledgerEntry.updateMany({
+            where: { id: { in: entries.map(entry => entry.id) } },
+            data: { ledgerId: restoredLedger.id }
+        });
+        await Promise.all([
+            this.syncCachedBalance(client, notePathLedgerId),
+            this.syncCachedBalance(client, restoredLedger.id)
+        ]);
+    }
+
     private static async getInputGstLedger(client: DbClient, branchId: string, taxKind: TaxKind) {
         const branchCode = await this.getBranchCode(client, branchId);
 
