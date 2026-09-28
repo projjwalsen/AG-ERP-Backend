@@ -11,7 +11,8 @@ import {
     getLedgerBySuspenseId,
     getCompanyLedger,
     getGSTLedger,
-    classifyPurchaseVouchers
+    classifyPurchaseVouchers,
+    previewPurchaseVoucherClassification
 } from "./ledger.controller";
 import { authMiddleware, checkPermission } from "../../../core/middleware/auth";
 
@@ -159,6 +160,50 @@ router.get("/trial-balance", checkPermission("LEDGER:VIEW"), getTrialBalance);
  *         description: Unauthorized
  */
 router.get("/get-all", checkPermission("LEDGER:VIEW"), getLedgers);
+
+/**
+ * @openapi
+ * /api/ledgers/purchase-vouchers/classify/preview:
+ *   post:
+ *     summary: Audit vouchers currently counted under a Purchase hierarchy
+ *     description: |
+ *       Read-only endpoint. Lists Purchase vouchers, legacy mappings, and
+ *       approved inward debit/credit notes that currently contribute to the
+ *       requested Trial Balance category. It also reports requested voucher
+ *       numbers that are missing or exist but are not classified there.
+ *     tags:
+ *       - Ledgers
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - path
+ *             properties:
+ *               path:
+ *                 type: string
+ *                 example: Purchase Accounts / IGST PURCHASE
+ *               branchId:
+ *                 type: string
+ *               voucherNos:
+ *                 type: array
+ *                 items: { type: string }
+ *                 description: Optional Tally voucher or Purchase invoice numbers to audit.
+ *     responses:
+ *       200:
+ *         description: Classification audit returned successfully.
+ *       400:
+ *         description: Invalid hierarchy path.
+ */
+router.post(
+    "/purchase-vouchers/classify/preview",
+    checkPermission("LEDGER:VIEW"),
+    previewPurchaseVoucherClassification
+);
 
 /**
  * @openapi

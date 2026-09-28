@@ -896,6 +896,31 @@ export const classifyPurchaseVouchers = async (
 };
 
 /**
+ * Read-only report of Purchase vouchers and inward notes currently counted
+ * under a Purchase Account hierarchy path.
+ */
+export const previewPurchaseVoucherClassification = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const actor = (req as any).user;
+        const result = await LedgerService.previewPurchaseVoucherClassification(
+            actor,
+            req.body || {}
+        );
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * @route   GET /api/ledger-groups
  * @desc    Get all hierarchical Tally-style ledger groups
  * @access  Protected
