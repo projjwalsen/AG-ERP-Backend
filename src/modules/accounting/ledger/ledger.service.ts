@@ -22,6 +22,7 @@ import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/util
 import { areVoucherTotalsBalanced } from "./voucher-balance.utils";
 import {
     importedPurchaseNotePosting,
+    normalizeImportedTransactionPath,
     normalizeImportedTransactionType
 } from "../../import/transaction-import.utils";
 
@@ -4454,7 +4455,8 @@ export class LedgerService {
     static async getOrCreateImportedPurchaseTypeLedger(
         client: DbClient,
         branchId: string,
-        importedType: string
+        importedType: string,
+        importedPath?: string
     ) {
         const normalizedType = String(importedType || "")
             .replace(/_/g, " ")
@@ -4467,15 +4469,31 @@ export class LedgerService {
         }
 
         const branchCode = await this.getBranchCode(client, branchId);
+        const pathParts = normalizeImportedTransactionPath(importedPath).split(" / ").filter(Boolean);
+        let groupId: string | undefined;
+        if (pathParts.length > 0) {
+            const rootCode = /^PURCHASE ACCOUNTS?$/i.test(pathParts[0]) ? "PURCHASE_ACCOUNTS" : null;
+            let group = rootCode
+                ? await this.getOrCreateGroup(client, rootCode)
+                : await this.getOrCreateImportedJournalGroup(client, pathParts[0], null, LedgerNature.DEBIT);
+            for (const segment of pathParts.slice(1)) {
+                group = await this.getOrCreateImportedJournalGroup(client, segment, group.id, LedgerNature.DEBIT);
+            }
+            groupId = group.id;
+        }
 
-        return this.getOrCreateLedger(client, {
+        const ledger = await this.getOrCreateLedger(client, {
             code: `PURCHASE-TYPE-${this.normalizeCode(normalizedType)}-${branchCode}`,
             name: normalizedType,
             category: LedgerType.PURCHASE,
-            groupCode: "PURCHASE",
+            ...(groupId ? { groupId } : { groupCode: "PURCHASE" }),
             nature: LedgerNature.DEBIT,
             branchId
         });
+        if (groupId && ledger.groupId !== groupId) {
+            return client.ledger.update({ where: { id: ledger.id }, data: { groupId } });
+        }
+        return ledger;
     }
 
     static async getOrCreateImportedSalesTypeLedger(
@@ -4568,7 +4586,8 @@ export class LedgerService {
 
     static async assignPurchaseToImportedType(
         purchaseId: string,
-        importedType: string
+        importedType: string,
+        importedPath?: string
     ) {
         return prisma.$transaction(async tx => {
             const purchase = await tx.purchase.findUnique({
@@ -4583,7 +4602,8 @@ export class LedgerService {
             const targetLedger = await this.getOrCreateImportedPurchaseTypeLedger(
                 tx,
                 purchase.branchId,
-                importedType
+                importedType,
+                importedPath
             );
             const purchaseEntries = await tx.ledgerEntry.findMany({
                 where: {
@@ -5330,11 +5350,10 @@ export class LedgerService {
 
         if (transaction.debitCreditNote) {
             const note = transaction.debitCreditNote;
-            const importedType = String(transaction.type || "")
-                .replace(/_/g, " ")
-                .replace(/\s+/g, " ")
-                .trim()
-                .toUpperCase();
+            const importedPath = normalizeImportedTransactionPath(transaction.type);
+            const importedType = normalizeImportedTransactionType(
+                importedPath.split(" / ").pop() || transaction.type
+            );
 
             if (!importedType) {
                 throw new ApiError("Imported purchase-note Transaction Type is required", 400);
@@ -5358,7 +5377,8 @@ export class LedgerService {
                 this.getOrCreateImportedPurchaseTypeLedger(
                     tx,
                     transaction.branchId,
-                    importedType
+                    importedType,
+                    importedPath
                 )
             ]);
             const isDebitNote = note.type === DebitCreditNoteType.DEBIT_NOTE;

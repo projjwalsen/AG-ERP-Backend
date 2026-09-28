@@ -9,6 +9,7 @@ import {
 } from "./multer.import";
 import { JournalImportService } from "./journalImport.service";
 import { OpeningBalanceJournalImportService } from "./opening-balance-journal-import.service";
+import { InwardDebitCreditNoteImportService } from "./inwardDebitCreditNoteImport.service";
 import { ProductMasterImportService } from "./productImport.service";
 import { AgencyImportService } from "./agencyImport.service";
 
@@ -414,6 +415,30 @@ export const importOpeningBalanceJournalWorkbook = async (
             }
         })}\n\n`);
         res.end();
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const importInwardDebitCreditNoteWorkbook = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Excel file is required." });
+        }
+        const result = await InwardDebitCreditNoteImportService.importWorkbook(
+            (req as any).user,
+            req.file,
+            summary => undefined
+        );
+        return res.status(200).json({
+            success: true,
+            message: "Inward debit/credit notes imported successfully.",
+            data: result
+        });
     } catch (error) {
         next(error);
     }
