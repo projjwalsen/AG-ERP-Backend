@@ -930,7 +930,12 @@ export class ReportingService {
                 remarks: true
             }
         });
-        const purchaseGroup = ledgerGroups.find(group => group.code === "PURCHASE");
+        // These imported rows are subheads of Purchase Accounts itself. Use
+        // its root group rather than the optional legacy PURCHASE child group;
+        // otherwise databases without that child lose the rows when the Excel
+        // export renders the report tree.
+        const purchaseGroup = ledgerGroups.find(group => group.code === "PURCHASE_ACCOUNTS") ||
+            ledgerGroups.find(group => group.code === "PURCHASE");
         const purchaseSubGroupMovements = new Map<string, {
             prior: { debit: number; credit: number };
             period: { debit: number; credit: number };
@@ -972,8 +977,8 @@ export class ReportingService {
                         .replace(/[^A-Z0-9_]+/gi, "_")
                         .toUpperCase(),
                     account: subGroup,
-                    parentGroup: purchaseGroup?.name || "Purchase",
-                    groupCode: "PURCHASE",
+                    parentGroup: purchaseGroup?.name || "Purchase Accounts",
+                    groupCode: purchaseGroup?.code || "PURCHASE_ACCOUNTS",
                     groupId: purchaseGroup?.id || null,
                     ledgerCategory: LedgerType.PURCHASE,
                     ledgerNature: LedgerNature.DEBIT,
