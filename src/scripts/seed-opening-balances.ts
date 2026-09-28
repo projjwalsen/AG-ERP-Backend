@@ -1,11 +1,11 @@
 /**
  * Seed opening-balance journals from an indented Tally Trial Balance workbook.
  *
- * The script delegates to the same importer used by the UI. It posts only
- * non-zero leaf rows, reuses matching branch ledgers, and creates missing
- * journal heads, subheads, categories, ledgers, and agency ledgers as needed.
- * Re-running the same workbook is safe: the stable import key prevents a
- * second opening amount from being posted.
+ * The script delegates to the same importer used by the UI. It detects both
+ * Tally opening-column layouts, posts only non-zero leaf rows, reuses matching
+ * branch ledgers, and creates missing journal heads, subheads, categories,
+ * ledgers, and agency ledgers as needed. Re-running a workbook is safe and
+ * reconciles older misread postings instead of adding a second amount.
  *
  * Preview (no writes):
  *   npm run seed:opening-balances -- --file "C:\\path\\TallyTrialBalance.xlsx" --branch "MAHARASHTRA"

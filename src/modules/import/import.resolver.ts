@@ -16,6 +16,8 @@ import { randomUUID } from "crypto";
 import {
     buildTransactionImportKey,
     importedPurchaseNotePosting,
+    importedTransactionTypeFromPath,
+    normalizeImportedTransactionPath,
     normalizeImportedPartyName,
     normalizeImportedTransactionType
 } from "./transaction-import.utils";
@@ -3174,18 +3176,25 @@ export class ImportResolver {
 
     }
 
-    static async importInwardPurchaseNote(actor: any, dto: JournalImportDTO) {
+    static async importInwardPurchaseNote(
+        actor: any,
+        dto: JournalImportDTO,
+        options: { resolvePath?: boolean } = {}
+    ) {
         const normalizedType = String(dto.voucherType || "")
             .replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
         const noteType = normalizedType === "INWARD DEBIT NOTE"
             ? DebitCreditNoteType.DEBIT_NOTE
             : DebitCreditNoteType.CREDIT_NOTE;
 
+        const importedPath = options.resolvePath
+            ? normalizeImportedTransactionPath(dto.path)
+            : "";
         const importedType = normalizeImportedTransactionType(
-            dto.accountingVoucherType
+            dto.accountingVoucherType || importedTransactionTypeFromPath(importedPath)
         );
         if (!importedType) {
-            throw new Error(`Inward note ${dto.voucherNo} requires a valid Type column`);
+            throw new Error(`Inward note ${dto.voucherNo} requires a valid Type or Path column`);
         }
 
         const isDebitNote = noteType === DebitCreditNoteType.DEBIT_NOTE;
@@ -3214,6 +3223,7 @@ export class ImportResolver {
             importDate,
             noteType,
             importedType,
+            importedPath,
             amount
         );
         const transactionImportKey = buildTransactionImportKey(
@@ -3246,7 +3256,7 @@ export class ImportResolver {
                     normalizeImportedPartyName(dto.particulars) &&
                 (!rowDate || candidate.noteDate.toISOString().slice(0, 10) === rowDate) &&
                 (!candidate.transaction?.type ||
-                    normalizeImportedTransactionType(candidate.transaction.type) === importedType)
+                    importedTransactionTypeFromPath(candidate.transaction.type) === importedType)
             );
 
             if (matching.length > 1) {
@@ -3266,6 +3276,14 @@ export class ImportResolver {
 
         if (note?.transaction) {
             let transaction = note.transaction;
+            if (importedPath && note.purchase) {
+                await this.remapImportedPurchaseNotePath(
+                    note,
+                    transaction.id,
+                    importedType,
+                    importedPath
+                );
+            }
             if (transaction.importKey !== transactionImportKey) {
                 transaction = await prisma.transaction.update({
                     where: { id: transaction.id },
@@ -3286,6 +3304,15 @@ export class ImportResolver {
             note?.status === DebitCreditNoteStatus.APPROVED &&
             note.voucherId
         ) {
+            if (importedPath && note.purchase) {
+                await this.remapImportedPurchaseNotePath(
+                    note,
+                    undefined,
+                    importedType,
+                    importedPath
+                );
+                return { note, transaction: null };
+            }
             throw new Error(
                 `Inward note ${dto.voucherNo} already has a legacy voucher; refusing to create duplicate accounting entries`
             );
@@ -3301,7 +3328,8 @@ export class ImportResolver {
 
         await LedgerService.assignPurchaseToImportedType(
             purchase.id,
-            importedType
+            importedType,
+            importedPath || undefined
         );
 
         if (!note) {
@@ -3344,7 +3372,7 @@ export class ImportResolver {
                     purchaseId: purchase.id,
                     debitCreditNoteId: note.id,
                     amount,
-                    type: importedType,
+                    type: importedPath || importedType,
                     importKey: transactionImportKey,
                     voucherType: isDebitNote
                         ? VoucherType.DEBIT_NOTE
@@ -3368,6 +3396,69 @@ export class ImportResolver {
         }
 
         return { note, transaction };
+    }
+
+    /**
+     * Repairs an already-imported inward note whose purchase ledger was not
+     * placed under the Excel Path. This is deliberately called by the
+     * dedicated inward-note importer and is idempotent.
+     */
+    private static async remapImportedPurchaseNotePath(
+        note: any,
+        transactionId: string | undefined,
+        importedType: string,
+        importedPath: string
+    ) {
+        if (!note.purchase?.id) return;
+
+        await LedgerService.assignPurchaseToImportedType(
+            note.purchase.id,
+            importedType,
+            importedPath
+        );
+
+        await prisma.$transaction(async tx => {
+            if (transactionId) {
+                await tx.transaction.update({
+                    where: { id: transactionId },
+                    data: { type: importedPath }
+                });
+            }
+
+            const vouchers = await tx.voucher.findMany({
+                where: {
+                    ...(transactionId ? { sourceId: transactionId } : { id: note.voucherId }),
+                    voucherType: { in: [VoucherType.DEBIT_NOTE, VoucherType.CREDIT_NOTE] }
+                },
+                select: { id: true }
+            });
+            if (vouchers.length === 0) return;
+
+            const target = await LedgerService.getOrCreateImportedPurchaseTypeLedger(
+                tx,
+                note.branchId,
+                importedType,
+                importedPath
+            );
+            const voucherIds = vouchers.map(v => v.id);
+            const entries = await tx.ledgerEntry.findMany({
+                where: {
+                    voucherId: { in: voucherIds },
+                    ledger: { category: LedgerType.PURCHASE }
+                },
+                select: { id: true, ledgerId: true }
+            });
+            const oldLedgerIds = [...new Set(entries.map(entry => entry.ledgerId))];
+            if (entries.length > 0) {
+                await tx.ledgerEntry.updateMany({
+                    where: { id: { in: entries.map(entry => entry.id) } },
+                    data: { ledgerId: target.id }
+                });
+            }
+            for (const ledgerId of [...oldLedgerIds, target.id]) {
+                await LedgerService.syncCachedBalance(tx, ledgerId);
+            }
+        });
     }
 
     static async importInvoiceTransaction(

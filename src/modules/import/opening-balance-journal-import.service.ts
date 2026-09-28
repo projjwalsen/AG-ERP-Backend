@@ -4,7 +4,6 @@ import {
     EntryType,
     AgencyType,
     JournalDirection,
-    JournalHeadType,
     JournalStatus,
     LedgerNature,
     LedgerType,
@@ -23,8 +22,18 @@ type OpeningNode = {
     indent: number;
     debit: number;
     credit: number;
+    openingDate?: Date;
+    remark?: string;
+    sourceIdentity?: string;
+    nature?: LedgerNature;
     parent?: OpeningNode;
     children: OpeningNode[];
+};
+
+type OpeningColumns = {
+    debit: number;
+    credit: number;
+    balance?: number;
 };
 
 type ImportSummary = {
@@ -55,6 +64,16 @@ const numberValue = (value: unknown) => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const dateValue = (value: unknown) => {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+    const numeric = typeof value === "number" ? value : Number(String(value || "").trim());
+    if (Number.isFinite(numeric) && numeric > 20000 && numeric < 100000) {
+        return new Date(Date.UTC(1899, 11, 30) + numeric * 86400000);
+    }
+    const parsed = new Date(String(value || ""));
+    return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
 const openingAmountsMatch = (
     leftDebit: number,
     leftCredit: number,
@@ -71,13 +90,138 @@ const sourceKey = (branchId: string, path: string) =>
 
 const parseTallyPeriodStart = (value: string) => {
     const start = value.split(/\s+to\s+/i)[0]?.trim();
-    const match = start?.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+    const match = start?.match(/^(\d{1,2})[-\s]+([A-Za-z]{3})[-\s]+(\d{2,4})$/);
     if (!match) return undefined;
     const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
         .indexOf(match[2].toUpperCase());
     if (month < 0) return undefined;
     const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
     return new Date(year, month, Number(match[1]), 0, 0, 0, 0);
+};
+
+/**
+ * Tally exports two common trial-balance layouts:
+ *
+ * 1. Opening Balance -> Debit/Credit (the original Tally export).
+ * 2. Opening -> Balance, followed by Transactions -> Debit/Credit
+ *    (the newer `trial-balance (8).xlsx` export).
+ *
+ * Do not assume that columns B/C are always opening debit/credit. In the
+ * second layout column C is transaction debit, which was previously being
+ * imported as opening credit.
+ */
+const resolveOpeningColumns = (worksheet: ExcelJS.Worksheet, headerRow: number): OpeningColumns => {
+    const firstHeader = normalizeName(worksheet.getRow(headerRow + 1).getCell(2).value).toUpperCase();
+    const secondHeader = normalizeName(worksheet.getRow(headerRow + 2).getCell(2).value).toUpperCase();
+    const thirdHeader = normalizeName(worksheet.getRow(headerRow + 2).getCell(3).value).toUpperCase();
+
+    if (secondHeader === "BALANCE" && thirdHeader === "DEBIT") {
+        // Opening Balance is a signed display value. The number format carries
+        // the Dr/Cr suffix; the importer converts it into the two ledger sides.
+        return { debit: 2, credit: 2, balance: 2 };
+    }
+
+    if (firstHeader.includes("OPENING") && secondHeader === "DEBIT" && thirdHeader === "CREDIT") {
+        return { debit: 2, credit: 3 };
+    }
+
+    // Conservative fallback for older/hand-edited files.
+    return { debit: 2, credit: 3 };
+};
+
+const signedOpeningAmount = (cell: ExcelJS.Cell) => {
+    const amount = Math.abs(numberValue(cell.value));
+    const format = String(cell.numFmt || "").toUpperCase();
+    if (format.includes("CR")) return { debit: 0, credit: amount };
+    return { debit: amount, credit: 0 };
+};
+
+/** Parse the Journal Register-style opening workbook (`Tally (1).xlsx`). */
+const parseOpeningRegisterWorkbook = (worksheet: ExcelJS.Worksheet) => {
+    const header = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(column =>
+        normalizeName(worksheet.getRow(1).getCell(column).value).toUpperCase()
+    );
+    if (header[1] !== "JOURNAL GROUP" || header[6] !== "LEDGER / ACCOUNT NAME") {
+        return null;
+    }
+
+    const nodes: OpeningNode[] = [];
+    const leaves: OpeningNode[] = [];
+    const hierarchyCache = new Map<string, OpeningNode>();
+    let periodStart: Date | undefined;
+
+    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
+        const row = worksheet.getRow(rowNumber);
+        const accountName = normalizeName(row.getCell(7).value);
+        if (!accountName) continue;
+
+        const hierarchy = [2, 3, 4, 5]
+            .map(column => normalizeName(row.getCell(column).value))
+            .filter(Boolean);
+        if (hierarchy.length === 0) continue;
+
+        const nature = /LIABIL|CREDIT|INCOME|CAPITAL|DUTI|TAX|CREDITOR/i.test(hierarchy[0])
+            ? LedgerNature.CREDIT
+            : LedgerNature.DEBIT;
+
+        const debitValue = numberValue(row.getCell(8).value);
+        const creditValue = numberValue(row.getCell(9).value);
+        const debit = debitValue === 0 ? 0 : Math.abs(debitValue);
+        const credit = creditValue === 0 ? 0 : Math.abs(creditValue);
+        if (debit === 0 && credit === 0) continue;
+        if (debit > 0 && credit > 0) {
+            throw new ApiError(`Opening row ${rowNumber} must contain only Debit or Credit`, 400);
+        }
+
+        const rowDate = dateValue(row.getCell(1).value);
+        if (!periodStart && rowDate) periodStart = rowDate;
+
+        let parent: OpeningNode | undefined;
+        const parentNames: string[] = [];
+        for (const name of hierarchy) {
+            parentNames.push(name);
+            const pathKey = parentNames.join(" > ").toUpperCase();
+            let node = hierarchyCache.get(pathKey);
+            if (!node) {
+                node = {
+                    row: rowNumber,
+                    name,
+                    indent: parentNames.length - 1,
+                    debit: 0,
+                    credit: 0,
+                    nature,
+                    parent,
+                    children: []
+                };
+                hierarchyCache.set(pathKey, node);
+                nodes.push(node);
+                if (parent) parent.children.push(node);
+            }
+            parent = node;
+        }
+
+        const leaf: OpeningNode = {
+            row: rowNumber,
+            name: accountName,
+            indent: hierarchy.length,
+            debit,
+            credit,
+            nature,
+            openingDate: rowDate,
+            remark: normalizeName(row.getCell(10).value),
+            sourceIdentity: `${[...hierarchy, accountName].join(" > ")}|ROW:${rowNumber}`,
+            parent,
+            children: []
+        };
+        parent!.children.push(leaf);
+        nodes.push(leaf);
+        leaves.push(leaf);
+    }
+
+    if (leaves.length === 0) {
+        throw new ApiError("No non-zero opening rows were found", 400);
+    }
+    return { nodes, leaves, periodStart };
 };
 
 /**
@@ -101,8 +245,14 @@ export const parseTallyOpeningBalanceTree = async (buffer: Buffer) => {
         }
     });
     if (!particularsHeaderRow) {
-        throw new ApiError("Expected a Tally Trial Balance sheet with a Particulars column", 400);
+        const register = parseOpeningRegisterWorkbook(worksheet);
+        if (!register) {
+            throw new ApiError("Expected a Tally Trial Balance or Journal Group opening-balance workbook", 400);
+        }
+        return register;
     }
+
+    const openingColumns = resolveOpeningColumns(worksheet, particularsHeaderRow);
 
     const nodes: OpeningNode[] = [];
     const stack: OpeningNode[] = [];
@@ -115,8 +265,12 @@ export const parseTallyOpeningBalanceTree = async (buffer: Buffer) => {
             row: rowNumber,
             name,
             indent: Number(row.getCell(1).alignment?.indent || 0),
-            debit: numberValue(row.getCell(2).value),
-            credit: numberValue(row.getCell(3).value),
+            debit: openingColumns.balance
+                ? signedOpeningAmount(row.getCell(openingColumns.balance)).debit
+                : numberValue(row.getCell(openingColumns.debit).value),
+            credit: openingColumns.balance
+                ? signedOpeningAmount(row.getCell(openingColumns.balance)).credit
+                : numberValue(row.getCell(openingColumns.credit).value),
             children: []
         };
         while (stack.length && stack[stack.length - 1].indent >= node.indent) {
@@ -167,7 +321,7 @@ export class OpeningBalanceJournalImportService {
         const branch = await prisma.branch.findUnique({ where: { id: branchId } });
         if (!branch || !branch.isActive) throw new ApiError("Branch not found or inactive", 404);
 
-        const { leaves, periodStart } = await parseTallyOpeningBalanceTree(file.buffer);
+        const { nodes, leaves, periodStart } = await parseTallyOpeningBalanceTree(file.buffer);
         // A Tally Trial Balance labels its source period above the table. When
         // the user leaves the date blank, preserve that accounting start date
         // instead of incorrectly dating every opening entry to today.
@@ -182,6 +336,49 @@ export class OpeningBalanceJournalImportService {
             errors: []
         };
         const headCache = new Map<OpeningNode, any>();
+        const nodePath = (node: OpeningNode) => {
+            const path: string[] = [];
+            for (let current: OpeningNode | undefined = node; current; current = current.parent) {
+                path.unshift(current.name);
+            }
+            return path.join(" > ");
+        };
+
+        // A previous parser version could post a parent subtotal as if it were
+        // a ledger. Once indentation is understood, that subtotal must not
+        // remain as an opening posting because the leaf rows already contain
+        // the same amount. Remove only opening-balance postings for parent
+        // paths present in this workbook; normal purchase/sale/accounting
+        // vouchers are never touched.
+        const staleParentPaths = new Set(
+            nodes
+                .filter(node => node.children.length > 0)
+                .map(nodePath)
+        );
+        if (staleParentPaths.size > 0) {
+            await prisma.$transaction(async tx => {
+                const stale = await tx.journal.findMany({
+                    where: {
+                        branchId,
+                        remarks: { startsWith: "Opening balance import:" },
+                        voucher: { is: { voucherType: VoucherType.OPENING_BALANCE } }
+                    },
+                    include: { voucher: true, journalHead: true }
+                });
+                for (const journal of stale) {
+                    const importedPath = String(journal.remarks || "").replace(/^Opening balance import:\s*/i, "");
+                    if (!staleParentPaths.has(importedPath)) continue;
+                    const ledgerId = journal.journalHead.ledgerId;
+                    if (journal.voucherId) {
+                        await tx.ledgerEntry.deleteMany({ where: { voucherId: journal.voucherId } });
+                        await tx.journal.update({ where: { id: journal.id }, data: { voucherId: null } });
+                        await tx.voucher.delete({ where: { id: journal.voucherId } });
+                    }
+                    await tx.journal.delete({ where: { id: journal.id } });
+                    await LedgerService.syncCachedBalance(tx, ledgerId);
+                }
+            });
+        }
 
         const ensureHead = async (tx: any, node: OpeningNode, ledgerOverride?: any): Promise<any> => {
             const cached = headCache.get(node);
@@ -200,17 +397,20 @@ export class OpeningBalanceJournalImportService {
                 return head;
             }
             const group = ledgerOverride ? null : await LedgerService.getOrCreateImportedJournalGroup(
-                tx, node.name, parentHead?.ledger?.groupId || null, LedgerNature.DEBIT
+                tx, node.name, parentHead?.ledger?.groupId || null, node.nature || LedgerNature.DEBIT
             );
             const ledger = ledgerOverride || await LedgerService.getOrCreateImportedJournalLedger(
-                tx, branchId, node.name, group!.id, LedgerNature.DEBIT
+                tx, branchId, node.name, group!.id, node.nature || LedgerNature.DEBIT
             );
             head = await tx.journalHead.create({
                 data: {
                     name: node.name,
                     parentId: parentHead?.id || null,
                     ledgerId: ledger.id,
-                    type: JournalHeadType.BOTH,
+                    // Imported heads are directionless; the opening row's
+                    // Debit/Credit side is stored on Journal.direction and
+                    // the Voucher LedgerEntry.
+                    type: null,
                     isActive: true
                 },
                 include: { ledger: true }
@@ -229,7 +429,12 @@ export class OpeningBalanceJournalImportService {
                     pathNodes.unshift(current);
                 }
                 path = pathNodes.map(node => node.name).join(" > ");
-                const importKey = sourceKey(branchId, path);
+                const importIdentity = leaf.sourceIdentity || path;
+                const importKey = sourceKey(branchId, importIdentity);
+                const entryDate = leaf.openingDate || effectiveOpeningDate;
+                    const entryRemark = leaf.remark
+                        ? `Opening balance import: ${path} | ${leaf.remark}`
+                        : `Opening balance import: ${path}`;
                 debit = Number(leaf.debit.toFixed(2));
                 credit = Number(leaf.credit.toFixed(2));
                 const direction = debit > 0
@@ -239,7 +444,9 @@ export class OpeningBalanceJournalImportService {
 
                 const result = await prisma.$transaction(async tx => {
                     const ancestorNames = pathNodes.map(node => node.name.toUpperCase());
-                    const agencyType = ancestorNames.includes("SUNDRY DEBTORS")
+                    const agencyType = leaf.sourceIdentity
+                        ? null
+                        : ancestorNames.includes("SUNDRY DEBTORS")
                         ? AgencyType.CLIENT
                         : ancestorNames.includes("SUNDRY CREDITORS")
                             ? AgencyType.VENDOR
@@ -247,7 +454,10 @@ export class OpeningBalanceJournalImportService {
                     let agency: any = null;
                     let head: any;
                     const categoryParent = leaf.parent || leaf;
-                    let categoryName = leaf.parent ? leaf.name : "Opening Balance";
+                    const isRegisterOpening = Boolean(leaf.sourceIdentity);
+                    let categoryName = isRegisterOpening
+                        ? leaf.name
+                        : (leaf.parent ? leaf.name : "Opening Balance");
                     // Prefer an accounting ledger that already represents the
                     // leaf under the same Tally parent. For example, reuse
                     // Investments -> GOLD & ORNAMENTS instead of creating an
@@ -323,16 +533,63 @@ export class OpeningBalanceJournalImportService {
                     const existing = existingByPath || legacyParentImport || legacyLeafImport;
 
                     if (existing) {
-                        // Re-running either version of the workbook repairs
-                        // an earlier imported parent/leaf ledger mapping
-                        // without adding a second opening-balance amount.
+                        // Re-running either workbook is also a reconciliation
+                        // pass. Older versions read transaction columns as
+                        // opening amounts, so simply skipping by importKey
+                        // would preserve the wrong value forever.
+                        let targetHead = existing.journalHead;
                         if (existingLeafLedger && existing.journalHead.ledgerId !== existingLeafLedger.id) {
-                            if (existing.voucherId) {
-                                await tx.ledgerEntry.updateMany({
-                                    where: { voucherId: existing.voucherId },
-                                    data: { ledgerId: existingLeafLedger.id }
+                            targetHead = await ensureHead(tx, leaf, existingLeafLedger);
+                            let targetCategory = await tx.journalCategory.findFirst({
+                                where: {
+                                    journalHeadId: targetHead.id,
+                                    name: { equals: categoryName, mode: "insensitive" }
+                                }
+                            });
+                            if (!targetCategory) {
+                                targetCategory = await tx.journalCategory.create({
+                                    data: { name: categoryName, journalHeadId: targetHead.id, isActive: true }
                                 });
                             }
+                            await tx.journal.update({
+                                where: { id: existing.id },
+                                data: { journalHeadId: targetHead.id, categoryId: targetCategory.id }
+                            });
+                        }
+                        const targetLedgerId = targetHead.ledgerId;
+                        const previousLedgerId = existing.journalHead.ledgerId;
+                        await tx.journal.update({
+                            where: { id: existing.id },
+                            data: {
+                                amount,
+                                direction,
+                                journalDate: entryDate,
+                                remarks: entryRemark
+                            }
+                        });
+                        if (existing.voucherId) {
+                            await tx.voucher.update({
+                                where: { id: existing.voucherId },
+                                data: {
+                                    totalDebit: debit,
+                                    totalCredit: credit,
+                                    voucherDate: entryDate,
+                                    narration: entryRemark
+                                }
+                            });
+                            await tx.ledgerEntry.updateMany({
+                                where: { voucherId: existing.voucherId },
+                                data: {
+                                    ledgerId: targetLedgerId,
+                                    entryType: debit > 0 ? EntryType.DEBIT : EntryType.CREDIT,
+                                    amount,
+                                    narration: `Opening balance: ${categoryName}`
+                                }
+                            });
+                        }
+                        await LedgerService.syncCachedBalance(tx, previousLedgerId);
+                        if (targetLedgerId !== previousLedgerId) {
+                            await LedgerService.syncCachedBalance(tx, targetLedgerId);
                         }
                         return "skipped" as const;
                     }
@@ -361,6 +618,13 @@ export class OpeningBalanceJournalImportService {
                             : await LedgerService.getOrCreateVendorLedger(tx, branchId, agency.id);
                         head = await ensureHead(tx, leaf, agencyLedger);
                         categoryName = "Opening Balance";
+                    } else if (isRegisterOpening) {
+                        // Journal Register opening files already provide the
+                        // exact Journal Group/Sub Group path. Reuse the
+                        // existing account ledger when present, otherwise
+                        // create the leaf head under that path and post the
+                        // opening amount to the leaf ledger/category.
+                        head = await ensureHead(tx, leaf, existingLeafLedger || undefined);
                     } else if (existingLeafLedger) {
                         head = await ensureHead(tx, leaf, existingLeafLedger);
                         categoryName = "Opening Balance";
@@ -389,8 +653,8 @@ export class OpeningBalanceJournalImportService {
                             amount,
                             direction,
                             paymentMode: PaymentMode.OFFLINE,
-                            remarks: `Opening balance import: ${path}`,
-                            journalDate: effectiveOpeningDate,
+                            remarks: entryRemark,
+                            journalDate: entryDate,
                             status: JournalStatus.APPROVED,
                             createdById: actor.id,
                             approvedById: actor.id,
@@ -403,8 +667,8 @@ export class OpeningBalanceJournalImportService {
                             voucherType: VoucherType.OPENING_BALANCE,
                             sourceId: journal.id,
                             branchId,
-                            narration: `Opening balance import: ${path}`,
-                            voucherDate: effectiveOpeningDate,
+                            narration: entryRemark,
+                            voucherDate: entryDate,
                             totalDebit: debit,
                             totalCredit: credit,
                             entries: {

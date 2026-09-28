@@ -66,6 +66,7 @@ type ListNoteQuery = {
     sourceType?: DebitCreditNoteSourceType;
     type?: DebitCreditNoteType;
     status?: DebitCreditNoteStatus;
+    search?: string;
 };
 
 /* ============================================================
@@ -1492,6 +1493,17 @@ export class DebitCreditNoteService {
                     query.status
             })
         };
+
+        const search = query.search?.trim();
+        if (search) {
+            where.OR = [
+                { noteNo: { contains: search, mode: "insensitive" } },
+                { narration: { contains: search, mode: "insensitive" } },
+                { agency: { name: { contains: search, mode: "insensitive" } } },
+                { sale: { is: { invoiceNo: { contains: search, mode: "insensitive" } } } },
+                { purchase: { is: { invoiceNo: { contains: search, mode: "insensitive" } } } }
+            ];
+        }
 
         if (
             actor.branchAccessType !== "ALL"
