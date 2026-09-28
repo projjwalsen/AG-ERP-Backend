@@ -32,6 +32,39 @@ const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set([
     "SUNDRY_DEBTORS",
     "SUNDRY_CREDITORS"
 ]);
+const PURCHASE_SUB_GROUP_MARKER = "TB_PURCHASE_SUBGROUPS";
+
+const readPurchaseSubGroups = (remarks: string | null) => {
+    const match = remarks?.match(
+        new RegExp(`\\[\\[${PURCHASE_SUB_GROUP_MARKER}:(.*?)\\]\\]`, "s")
+    );
+    if (!match) return [] as Array<{
+        name: string;
+        entryType: EntryType;
+        amount: number;
+    }>;
+
+    try {
+        const parsed = JSON.parse(match[1]);
+        return Array.isArray(parsed)
+            ? parsed
+                .filter(item =>
+                    item &&
+                    typeof item.name === "string" &&
+                    (item.entryType === EntryType.DEBIT || item.entryType === EntryType.CREDIT) &&
+                    Number.isFinite(Number(item.amount))
+                )
+                .map(item => ({
+                    name: String(item.name).trim(),
+                    entryType: item.entryType as EntryType,
+                    amount: Number(item.amount)
+                }))
+                .filter(item => item.name && item.amount !== 0)
+            : [];
+    } catch {
+        return [];
+    }
+};
 
 
 export class ReportingService {
@@ -331,12 +364,12 @@ export class ReportingService {
             Prisma.LedgerEntryWhereInput | undefined =
             buildTrialBalanceBranchFilter(branchId);
 
-        // The Trial Balance is intentionally a journal register view. A
+        // The Trial Balance is primarily a journal-register view. A
         // LedgerEntry is eligible only when its voucher belongs to an
-        // approved Journal record. This excludes balances and vouchers that
-        // may already exist in the database from sales, purchases,
-        // transactions, or other accounting flows but were not imported or
-        // posted through Journals.
+        // approved Journal record. Purchase Account subgroups imported from
+        // Tally are the explicit exception: they are reporting-only
+        // classifications of existing approved Purchases and do not create
+        // accounting Journals or LedgerEntries.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
             voucher: {
                 journals: {
@@ -858,6 +891,86 @@ export class ReportingService {
             }
         );
 
+        // Tally's Purchase Accounts workbook supplies a Sub Group and a
+        // debit/credit side for existing purchases. Keep that imported
+        // classification separate from accounting journals: it gives the
+        // Trial Balance its Purchase Accounts children without manufacturing
+        // a journal or voucher merely for reporting.
+        const classifiedPurchases = await prisma.purchase.findMany({
+            where: {
+                ...(branchId ? { branchId } : {}),
+                status: PurchaseStatus.APPROVED,
+                remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` }
+            },
+            select: {
+                invoiceDate: true,
+                createdAt: true,
+                remarks: true
+            }
+        });
+        const purchaseGroup = ledgerGroups.find(group => group.code === "PURCHASE");
+        const purchaseSubGroupMovements = new Map<string, {
+            prior: { debit: number; credit: number };
+            period: { debit: number; credit: number };
+        }>();
+
+        for (const purchase of classifiedPurchases) {
+            const purchaseDate = purchase.invoiceDate || purchase.createdAt;
+            if (purchaseDate > endDate) continue;
+
+            for (const mapping of readPurchaseSubGroups(purchase.remarks)) {
+                const current = purchaseSubGroupMovements.get(mapping.name) || {
+                    prior: { debit: 0, credit: 0 },
+                    period: { debit: 0, credit: 0 }
+                };
+                const target = purchaseDate < startDate ? current.prior : current.period;
+                target[mapping.entryType === EntryType.DEBIT ? "debit" : "credit"] +=
+                    mapping.amount;
+                purchaseSubGroupMovements.set(mapping.name, current);
+            }
+        }
+
+        const purchaseSubGroupRows = [...purchaseSubGroupMovements.entries()].map(
+            ([subGroup, movement]) => {
+                const amounts = calculateTrialBalanceAmounts(
+                    {
+                        nature: LedgerNature.DEBIT,
+                        openingBalance: 0,
+                        openingDebit: 0,
+                        openingCredit: 0
+                    },
+                    movement.prior,
+                    movement.period,
+                    false
+                );
+
+                return {
+                    ledgerId: `purchase-sub-group:${subGroup}:${branchId || "all"}`,
+                    ledgerCode: `PURCHASE-SUB-GROUP-${subGroup}`
+                        .replace(/[^A-Z0-9_]+/gi, "_")
+                        .toUpperCase(),
+                    account: subGroup,
+                    parentGroup: purchaseGroup?.name || "Purchase",
+                    groupCode: "PURCHASE",
+                    groupId: purchaseGroup?.id || null,
+                    ledgerCategory: LedgerType.PURCHASE,
+                    ledgerNature: LedgerNature.DEBIT,
+                    branchId: branchId || null,
+                    branchName: branch?.name || null,
+                    debit: amounts.closingDebit,
+                    credit: amounts.closingCredit,
+                    periodDebit: amounts.periodDebit,
+                    periodCredit: amounts.periodCredit,
+                    openingDebit: amounts.openingDebit,
+                    openingCredit: amounts.openingCredit,
+                    closingDebit: amounts.closingDebit,
+                    closingCredit: amounts.closingCredit,
+                    closingSigned: amounts.closingSigned,
+                    isPurchaseSubGroup: true
+                };
+            }
+        );
+
         // Purchase and sales accounts display only explicit imported Types.
         // The generic branch ledgers (for example
         // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are legacy control
@@ -946,6 +1059,7 @@ export class ReportingService {
                 )
             ),
             ...aggregateAccountRows(LedgerType.PURCHASE),
+            ...purchaseSubGroupRows,
             ...aggregateAccountRows(LedgerType.SALES),
             ...typedSalesRows
         ];

@@ -16,6 +16,7 @@
     "seed:land-journal-heads": "tsx src/scripts/seed-land-journal-heads.ts",
     "seed:trial-balance-journal-heads": "tsx src/scripts/seed-trial-balance-journal-heads.ts",
     "seed:opening-balances": "tsx src/scripts/seed-opening-balances.ts",
+    "seed:purchase-account-journals": "tsx src/scripts/seed-purchase-account-journals.ts",
     "superuser:seed": "tsx src/modules/rbac/superuser.seeder.ts",
     "delb": "tsx src/scripts/delete-branch.ts",
     "accounting:sync": "tsx src/scripts/backfill-ledger.ts",
