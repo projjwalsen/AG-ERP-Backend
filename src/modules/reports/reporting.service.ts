@@ -1,4 +1,4 @@
-import { DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
@@ -382,13 +382,19 @@ export class ReportingService {
                     }
                 },
                 {
-                    voucher: {
-                        debitCreditNotes: {
-                            some: {
-                                status: DebitCreditNoteStatus.APPROVED
+                    AND: [
+                        { ledger: { category: LedgerType.PURCHASE } },
+                        {
+                            voucher: {
+                                debitCreditNotes: {
+                                    some: {
+                                        sourceType: DebitCreditNoteSourceType.PURCHASE,
+                                        status: DebitCreditNoteStatus.APPROVED
+                                    }
+                                }
                             }
                         }
-                    }
+                    ]
                 }
             ]
         };
@@ -1005,9 +1011,12 @@ export class ReportingService {
             if (sourceRows.length === 0) return [];
 
             const groupCode = category === LedgerType.PURCHASE
-                ? "PURCHASE"
+                ? "PURCHASE_ACCOUNTS"
                 : "SALES";
-            const group = ledgerGroups.find(item => item.code === groupCode);
+            const group = category === LedgerType.PURCHASE
+                ? ledgerGroups.find(item => item.code === "PURCHASE_ACCOUNTS") ||
+                    ledgerGroups.find(item => item.code === "PURCHASE")
+                : ledgerGroups.find(item => item.code === groupCode);
             const grouped = new Map<string, any[]>();
 
             const genericHead = category === LedgerType.PURCHASE
@@ -1068,6 +1077,54 @@ export class ReportingService {
             });
         };
 
+        // A category can receive movement from both normal Purchase entries
+        // and an approved inward debit/credit note. Present one category row
+        // in Trial Balance, with turnover kept on its original Dr/Cr side and
+        // the closing columns netted in the normal accounting manner.
+        const mergePurchaseAccountRows = (sourceRows: any[]) => {
+            const grouped = new Map<string, any[]>();
+            for (const row of sourceRows) {
+                const key = String(row.account || "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase();
+                if (!key) continue;
+                grouped.set(key, [...(grouped.get(key) || []), row]);
+            }
+
+            return [...grouped.entries()].map(([key, rowsForCategory]) => {
+                const sum = (field: string) => Number(rowsForCategory
+                    .reduce((total, row) => total + Number(row[field] || 0), 0)
+                    .toFixed(2));
+                const openingSigned = Number((sum("openingDebit") - sum("openingCredit")).toFixed(2));
+                const closingSigned = sum("closingSigned");
+                const first = rowsForCategory[0];
+
+                return {
+                    ...first,
+                    ledgerId: `aggregate:purchase-account:${key}:${branchId || "all"}`,
+                    ledgerCode: `PURCHASE_ACCOUNT_${key}`
+                        .replace(/[^A-Z0-9_]+/gi, "_")
+                        .toUpperCase(),
+                    account: first.account,
+                    periodDebit: sum("periodDebit"),
+                    periodCredit: sum("periodCredit"),
+                    openingDebit: openingSigned > 0 ? openingSigned : 0,
+                    openingCredit: openingSigned < 0 ? Math.abs(openingSigned) : 0,
+                    debit: closingSigned > 0 ? closingSigned : 0,
+                    credit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                    closingDebit: closingSigned > 0 ? closingSigned : 0,
+                    closingCredit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                    closingSigned
+                };
+            });
+        };
+
+        const purchaseAccountRows = mergePurchaseAccountRows([
+            ...aggregateAccountRows(LedgerType.PURCHASE),
+            ...purchaseSubGroupRows
+        ]);
+
         const ledgerRows = [
             ...rawLedgerRows.filter(row =>
                 row.ledgerCategory !== LedgerType.PURCHASE &&
@@ -1076,8 +1133,7 @@ export class ReportingService {
                     String(row.groupCode || "").toUpperCase()
                 )
             ),
-            ...aggregateAccountRows(LedgerType.PURCHASE),
-            ...purchaseSubGroupRows,
+            ...purchaseAccountRows,
             ...aggregateAccountRows(LedgerType.SALES),
             ...typedSalesRows
         ];
