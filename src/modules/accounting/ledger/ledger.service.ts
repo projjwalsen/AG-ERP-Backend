@@ -23,6 +23,7 @@ import { formatISTDate, parseDate, resolveBalanceType } from "../../../core/util
 import { areVoucherTotalsBalanced } from "./voucher-balance.utils";
 import {
     importedPurchaseNotePosting,
+    importedTransactionTypeFromPath,
     normalizeImportedTransactionPath,
     normalizeImportedTransactionType
 } from "../../import/transaction-import.utils";
