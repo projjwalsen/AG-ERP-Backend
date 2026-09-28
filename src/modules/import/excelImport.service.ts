@@ -267,6 +267,18 @@ export class ExcelImportService {
 
     }
 
+    static detectJournalHeaderRow(worksheet: XLSX.WorkSheet): number {
+        const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, defval: "", raw: false });
+        for (let index = 0; index < Math.min(rows.length, 50); index++) {
+            const headers = new Set((rows[index] || []).map((cell: any) => this.normalizeHeader(cell)));
+            if ((headers.has("voucher type") || headers.has("vch type")) &&
+                (headers.has("voucher no") || headers.has("voucher number") || headers.has("vch no")) &&
+                (headers.has("debit") || headers.has("debit amount") || headers.has("credit") || headers.has("credit amount")) &&
+                (headers.has("particular") || headers.has("particulars") || headers.has("path"))) return index + 1;
+        }
+        return 8;
+    }
+
     /**
      * Detect the header row in Tally registers. Sales exports commonly have
      * report/title rows before the actual column headers, while purchase
@@ -1879,7 +1891,8 @@ export class ExcelImportService {
 
     static parseJournalRows(
         rows: Record<string, any>[],
-        sourceSheet?: string
+        sourceSheet?: string,
+        headerRow = 8
     ): JournalImportDTO[] {
 
         return rows
@@ -1967,7 +1980,7 @@ export class ExcelImportService {
 
                     sourceSheet,
 
-                    sourceRow: index + 9,
+                    sourceRow: index + headerRow + 1,
                     sourceSerialNo,
                     journalGroup: String(this.getValue(row, "Jrn Grp", "Journal Group", "Jrn Group") || "").trim(),
                     subGroup: String(this.getValue(row, "Sub Grp", "Sub Group") || "").trim(),
@@ -1996,6 +2009,8 @@ export class ExcelImportService {
                         normalizeImportedTransactionType(
                             this.getValue(row, "Type", "Account Type", "Purchase Type")
                         ) || undefined,
+
+                    path: String(this.getValue(row, "Path", "Account Path", "Ledger Path") || "").trim() || undefined,
 
                     particulars,
 
@@ -2033,6 +2048,7 @@ export class ExcelImportService {
             "Customer",
             "Buyer",
             "Party",
+            "Particular",
             "Supplier",
             "Consignee"
         );

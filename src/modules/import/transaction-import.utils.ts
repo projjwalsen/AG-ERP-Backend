@@ -14,6 +14,16 @@ export const normalizeImportedTransactionType = (value: unknown) =>
         .trim()
         .toUpperCase();
 
+export const normalizeImportedTransactionPath = (value: unknown) =>
+    String(value || "").replace(/\\/g, "/").split(/[/>]/)
+        .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean).join(" / ");
+
+export const importedTransactionTypeFromPath = (value: unknown) => {
+    const path = normalizeImportedTransactionPath(value);
+    return normalizeImportedTransactionType(path.split(" / ").pop() || "");
+};
+
 export const normalizeImportedPartyName = (value: unknown) =>
     String(value || "")
         .replace(/\s*\(?DRS?\.?\)?\s*$/i, "")

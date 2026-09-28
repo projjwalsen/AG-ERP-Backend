@@ -101,7 +101,12 @@ export const listNotes = async (req: Request, res: Response, next: NextFunction)
                 req.query.type as any,
 
             status:
-                req.query.status as any
+                req.query.status as any,
+
+            search:
+                req.query.search
+                    ? String(req.query.search)
+                    : undefined
         });
 
         return res.status(200).json({

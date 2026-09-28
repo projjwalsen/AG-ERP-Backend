@@ -6,6 +6,7 @@ import {
     importAgencyWorkbook,
     importJournalWorkbook,
     importOpeningBalanceJournalWorkbook,
+    importInwardDebitCreditNoteWorkbook,
     importProductWorkbook,
     importWorkbook
 } from "./import.controller";
@@ -341,6 +342,13 @@ router.post(
     authMiddleware,
     importExcel.single("file"),
     importOpeningBalanceJournalWorkbook
+);
+
+router.post(
+    "/import/inward-debit-credit-notes",
+    authMiddleware,
+    importExcel.single("file"),
+    importInwardDebitCreditNoteWorkbook
 );
 
 export default router;
