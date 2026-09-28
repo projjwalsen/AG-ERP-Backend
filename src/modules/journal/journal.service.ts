@@ -75,6 +75,7 @@ export interface CreateJournalDto {
     igstAmount?: number;
 
     importKey?: string;
+    categoryPath?: string;
 
     paymentMode: PaymentMode;
 
@@ -854,6 +855,9 @@ export class JournalService {
 
                 importKey:
                     dto.importKey ?? null,
+
+                categoryPath:
+                    dto.categoryPath?.trim() || null,
 
                 amount:
                     dto.amount,

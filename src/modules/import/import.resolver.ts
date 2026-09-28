@@ -2876,6 +2876,8 @@ export class ImportResolver {
             ? PaymentMode.OFFLINE
             : PaymentMode.ONLINE;
 
+        await this.persistOutwardNoteCategoryPath(branch.id, dto);
+
         return {
 
             branchId: branch.id,
@@ -2894,11 +2896,68 @@ export class ImportResolver {
 
             remarks: dto.particulars,
 
+            // Outward debit/credit-note rows use the Journal import flow.
+            // Persist the normalized source category alongside that document.
+            ...(this.isDebitCreditNoteImportRow(dto) && dto.path
+                ? { categoryPath: normalizeImportedTransactionPath(dto.path) }
+                : {}),
+
             journalDate:
                 ExcelImportService.toDate(dto.date) || new Date()
 
         };
 
+    }
+
+    /**
+     * Outward note Excel rows are posted through the Journal importer. When
+     * the corresponding DebitCreditNote already exists, retain the same Path
+     * on it as well. A non-matching row remains a Journal-only import rather
+     * than creating an unsafe, unlinked credit/debit note.
+     */
+    private static async persistOutwardNoteCategoryPath(
+        branchId: string,
+        dto: JournalImportDTO
+    ) {
+        const voucherType = String(dto.voucherType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+        if (![
+            "OUTWARD DEBIT NOTE",
+            "OUTWARD CREDIT NOTE"
+        ].includes(voucherType)) return;
+
+        const categoryPath = normalizeImportedTransactionPath(dto.path);
+        const noteNo = String(dto.voucherNo || "").trim();
+        if (!categoryPath || !noteNo) return;
+
+        const type = voucherType === "OUTWARD DEBIT NOTE"
+            ? DebitCreditNoteType.DEBIT_NOTE
+            : DebitCreditNoteType.CREDIT_NOTE;
+        const candidates = await prisma.debitCreditNote.findMany({
+            where: {
+                branchId,
+                noteNo: { equals: noteNo, mode: "insensitive" },
+                type,
+                sourceType: DebitCreditNoteSourceType.SALE
+            },
+            include: { agency: { select: { name: true } } }
+        });
+        const importedParty = normalizeImportedPartyName(dto.particulars);
+        const matches = importedParty
+            ? candidates.filter(note =>
+                normalizeImportedPartyName(note.agency.name) === importedParty
+            )
+            : candidates;
+
+        if (matches.length === 1 && matches[0].categoryPath !== categoryPath) {
+            await prisma.debitCreditNote.update({
+                where: { id: matches[0].id },
+                data: { categoryPath }
+            });
+        }
     }
 
     static async importHiringChargeVoucher(
@@ -3187,11 +3246,12 @@ export class ImportResolver {
             ? DebitCreditNoteType.DEBIT_NOTE
             : DebitCreditNoteType.CREDIT_NOTE;
 
-        const importedPath = options.resolvePath
-            ? normalizeImportedTransactionPath(dto.path)
-            : "";
+        // Preserve a supplied Excel Path on every imported inward note. The
+        // dedicated endpoint also uses it to remap the note's ledger entry.
+        const suppliedCategoryPath = normalizeImportedTransactionPath(dto.path);
+        const importedPath = options.resolvePath ? suppliedCategoryPath : "";
         const importedType = normalizeImportedTransactionType(
-            dto.accountingVoucherType || importedTransactionTypeFromPath(importedPath)
+            dto.accountingVoucherType || importedTransactionTypeFromPath(suppliedCategoryPath)
         );
         if (!importedType) {
             throw new Error(`Inward note ${dto.voucherNo} requires a valid Type or Path column`);
@@ -3267,10 +3327,18 @@ export class ImportResolver {
             note = matching[0];
         }
 
-        if (note && note.importKey !== noteImportKey) {
+        if (note && (
+            note.importKey !== noteImportKey ||
+            (suppliedCategoryPath && note.categoryPath !== suppliedCategoryPath)
+        )) {
             await prisma.debitCreditNote.update({
                 where: { id: note.id },
-                data: { importKey: noteImportKey }
+                data: {
+                    importKey: noteImportKey,
+                    ...(suppliedCategoryPath
+                        ? { categoryPath: suppliedCategoryPath }
+                        : {})
+                }
             });
         }
 
@@ -3335,6 +3403,7 @@ export class ImportResolver {
                 branchId: purchase.branchId,
                 purchaseId: purchase.id,
                 importKey: noteImportKey,
+                categoryPath: suppliedCategoryPath || undefined,
                 noteDate: dto.date || new Date(),
                 narration: dto.particulars || `Imported ${dto.voucherType}`,
                 particulars: [{
