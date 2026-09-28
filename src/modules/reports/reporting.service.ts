@@ -364,9 +364,10 @@ export class ReportingService {
             Prisma.LedgerEntryWhereInput | undefined =
             buildTrialBalanceBranchFilter(branchId);
 
-        // Approved journals are the normal source. The two narrow exceptions
-        // below admit only Path-classified Purchase entries and the Purchase
-        // leg of an approved inward debit/credit note.
+        // Approved journals are the normal source. The narrow exceptions
+        // below admit Path-classified Purchase entries, the Purchase leg of
+        // an approved inward debit/credit note, and Sales ledger entries
+        // belonging to actual Sale vouchers.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
             OR: [
                 {
@@ -402,6 +403,12 @@ export class ReportingService {
                             }
                         },
                         { voucher: { voucherType: VoucherType.PURCHASE } }
+                    ]
+                },
+                {
+                    AND: [
+                        { ledger: { category: LedgerType.SALES } },
+                        { voucher: { voucherType: VoucherType.SALE } }
                     ]
                 }
             ]
