@@ -259,6 +259,12 @@ router.post(
  *           default: 10
  *
  *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search note number, invoice, agency, branch, narration, or particulars.
+ *
+ *       - in: query
  *         name: agencyId
  *         schema:
  *           type: string
