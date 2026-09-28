@@ -55,6 +55,7 @@ type CreateNotePayload = {
 type ListNoteQuery = {
     page?: number;
     limit?: number;
+    search?: string;
 
     agencyId?: string;
     branchId?: string;
@@ -1397,6 +1398,69 @@ export class DebitCreditNoteService {
 
         const where:
             Prisma.DebitCreditNoteWhereInput = {
+
+            ...(query.search?.trim() && {
+                OR: [
+                    {
+                        noteNo: {
+                            contains: query.search.trim(),
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        narration: {
+                            contains: query.search.trim(),
+                            mode: "insensitive"
+                        }
+                    },
+                    {
+                        agency: {
+                            name: {
+                                contains: query.search.trim(),
+                                mode: "insensitive"
+                            }
+                        }
+                    },
+                    {
+                        branch: {
+                            name: {
+                                contains: query.search.trim(),
+                                mode: "insensitive"
+                            }
+                        }
+                    },
+                    {
+                        sale: {
+                            is: {
+                                invoiceNo: {
+                                    contains: query.search.trim(),
+                                    mode: "insensitive"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        purchase: {
+                            is: {
+                                invoiceNo: {
+                                    contains: query.search.trim(),
+                                    mode: "insensitive"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        particulars: {
+                            some: {
+                                description: {
+                                    contains: query.search.trim(),
+                                    mode: "insensitive"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }),
 
             ...(query.agencyId && {
                 agencyId:

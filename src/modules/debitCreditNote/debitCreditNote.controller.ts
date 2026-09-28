@@ -77,6 +77,11 @@ export const listNotes = async (req: Request, res: Response, next: NextFunction)
             limit:
                 Number(req.query.limit) || 10,
 
+            search:
+                req.query.search
+                    ? String(req.query.search)
+                    : undefined,
+
             agencyId:
                 req.query.agencyId as string,
 
