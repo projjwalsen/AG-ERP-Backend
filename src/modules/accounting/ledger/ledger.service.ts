@@ -4854,6 +4854,322 @@ export class LedgerService {
     }
 
     /**
+     * Read-only audit of the vouchers currently contributing to a Purchase
+     * Account category. This deliberately does not create a group or ledger.
+     */
+    static async previewPurchaseVoucherClassification(
+        actor: any,
+        payload: {
+            path?: string;
+            headName?: string;
+            branchId?: string;
+            voucherNos?: string[];
+        }
+    ) {
+        if (!actor?.id) {
+            throw new ApiError("Unauthorized", 401);
+        }
+
+        let path = normalizeImportedTransactionPath(payload.path || payload.headName);
+        if (!path) {
+            throw new ApiError("Purchase hierarchy path is required", 400);
+        }
+        if (!/^PURCHASE ACCOUNTS?\s*\//i.test(path)) {
+            path = normalizeImportedTransactionPath(`Purchase Accounts / ${path}`);
+        }
+
+        const importedType = importedTransactionTypeFromPath(path);
+        const requestedVoucherNos = [...new Set(
+            (payload.voucherNos || []).map(String).map(value => value.trim()).filter(Boolean)
+        )];
+        const effectiveBranchId = actor.branchAccessType === "ALL"
+            ? payload.branchId
+            : actor.branchId;
+
+        const groups = await prisma.ledgerGroup.findMany({
+            select: { id: true, name: true, parentId: true, code: true }
+        });
+        const groupById = new Map(groups.map(group => [group.id, group]));
+        const groupPathCache = new Map<string, string>();
+        const getGroupPath = (groupId: string): string => {
+            const cached = groupPathCache.get(groupId);
+            if (cached) return cached;
+            const names: string[] = [];
+            const visited = new Set<string>();
+            let current = groupById.get(groupId);
+            while (current && !visited.has(current.id)) {
+                visited.add(current.id);
+                names.unshift(current.name);
+                current = current.parentId ? groupById.get(current.parentId) : undefined;
+            }
+            const result = normalizeImportedTransactionPath(names.join(" / "));
+            groupPathCache.set(groupId, result);
+            return result;
+        };
+
+        const targetPath = path.toUpperCase();
+        const targetCodePrefix = `PURCHASE-TYPE-${this.normalizeCode(importedType)}-`;
+        const candidateLedgers = await prisma.ledger.findMany({
+            where: {
+                isActive: true,
+                category: LedgerType.PURCHASE,
+                ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+            },
+            include: {
+                group: true,
+                branch: { select: { id: true, code: true, name: true } }
+            }
+        });
+        const targetLedgers = candidateLedgers.filter(
+            ledger => {
+                const normalizedName = normalizeImportedTransactionType(ledger.name)
+                    .replace(/\s+-\s+[^-]+$/, "")
+                    .trim();
+                const nameMatches = normalizedName === importedType;
+                const pathMatches = getGroupPath(ledger.groupId).toUpperCase() === targetPath;
+                const codeMatches = ledger.code.startsWith(targetCodePrefix);
+                // The report also supports older ledgers whose name was the
+                // imported category but whose code predates PURCHASE-TYPE.
+                return pathMatches || codeMatches || nameMatches;
+            }
+        );
+        const targetLedgerIds = targetLedgers.map(ledger => ledger.id);
+
+        const entries = targetLedgerIds.length > 0
+            ? await prisma.ledgerEntry.findMany({
+                where: {
+                    ledgerId: { in: targetLedgerIds },
+                    voucher: { voucherType: VoucherType.PURCHASE }
+                },
+                select: {
+                    ledgerId: true,
+                    entryType: true,
+                    amount: true,
+                    voucher: {
+                        select: {
+                            id: true,
+                            voucherNo: true,
+                            sourceId: true,
+                            voucherDate: true,
+                            voucherType: true,
+                            narration: true,
+                            totalDebit: true,
+                            totalCredit: true
+                        }
+                    }
+                }
+            })
+            : [];
+
+        const purchaseIds = [...new Set(entries.map(entry => entry.voucher.sourceId))];
+        const purchases = purchaseIds.length > 0
+            ? await prisma.purchase.findMany({
+                where: { id: { in: purchaseIds } },
+                select: {
+                    id: true,
+                    invoiceNo: true,
+                    branchId: true,
+                    status: true,
+                    voucherType: true,
+                    invoiceDate: true,
+                    grandTotal: true,
+                    agency: { select: { id: true, name: true } }
+                }
+            })
+            : [];
+        const purchaseById = new Map(purchases.map(purchase => [purchase.id, purchase]));
+        const ledgerById = new Map(targetLedgers.map(ledger => [ledger.id, ledger]));
+        const voucherRows = new Map<string, any>();
+
+        for (const entry of entries) {
+            const purchase = purchaseById.get(entry.voucher.sourceId);
+            const key = purchase?.id || entry.voucher.sourceId;
+            const current = voucherRows.get(key) || {
+                purchaseId: purchase?.id || null,
+                invoiceNo: purchase?.invoiceNo || null,
+                voucherNo: entry.voucher.voucherNo,
+                voucherId: entry.voucher.id,
+                voucherDate: entry.voucher.voucherDate,
+                status: purchase?.status || null,
+                sourceType: "PURCHASE",
+                voucherType: entry.voucher.voucherType,
+                purchaseVoucherType: purchase?.voucherType || null,
+                invoiceDate: purchase?.invoiceDate || null,
+                purchaseGrandTotal: purchase ? Number(purchase.grandTotal || 0) : null,
+                agency: purchase?.agency || null,
+                narration: entry.voucher.narration,
+                voucherTotalDebit: Number(entry.voucher.totalDebit || 0),
+                voucherTotalCredit: Number(entry.voucher.totalCredit || 0),
+                countedUnderPath: true,
+                ledger: ledgerById.get(entry.ledgerId)?.name || null,
+                debit: 0,
+                credit: 0
+            };
+            if (entry.entryType === EntryType.DEBIT) current.debit += Number(entry.amount);
+            else current.credit += Number(entry.amount);
+            voucherRows.set(key, current);
+        }
+
+        // Legacy reporting-only Purchase mappings are included by the Trial
+        // Balance report and therefore exposed as a separate audit source.
+        const legacyPurchases = await prisma.purchase.findMany({
+            where: {
+                ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+                status: PurchaseStatus.APPROVED,
+                remarks: { contains: "[[TB_PURCHASE_SUBGROUPS:" }
+            },
+            select: { id: true, invoiceNo: true, remarks: true }
+        });
+        const legacyRows: any[] = [];
+        for (const purchase of legacyPurchases) {
+            const match = purchase.remarks?.match(/\[\[TB_PURCHASE_SUBGROUPS:(.*?)\]\]/s);
+            if (!match) continue;
+            try {
+                const mappings = JSON.parse(match[1]);
+                for (const mapping of Array.isArray(mappings) ? mappings : []) {
+                    if (String(mapping?.name || "").trim().toUpperCase() !== importedType) continue;
+                    legacyRows.push({
+                        purchaseId: purchase.id,
+                        invoiceNo: purchase.invoiceNo,
+                        source: "LEGACY_REPORTING_MAPPING",
+                        type: "PURCHASE",
+                        entryType: mapping.entryType,
+                        amount: Number(mapping.amount || 0),
+                        countedUnderPath: true
+                    });
+                }
+            } catch {
+                // Ignore malformed legacy markers; the normal ledger data is unaffected.
+            }
+        }
+
+        const notes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                status: DebitCreditNoteStatus.APPROVED,
+                categoryPath: { equals: path, mode: "insensitive" }
+            },
+            select: {
+                id: true,
+                noteNo: true,
+                type: true,
+                totalAmount: true,
+                noteDate: true,
+                categoryPath: true,
+                purchase: { select: { id: true, invoiceNo: true, voucherType: true } },
+                agency: { select: { id: true, name: true } },
+                voucher: {
+                    select: {
+                        id: true,
+                        voucherNo: true,
+                        voucherType: true,
+                        totalDebit: true,
+                        totalCredit: true
+                    }
+                }
+            },
+            orderBy: { noteDate: "asc" }
+        });
+
+        // Requested numbers must be checked against the complete Purchase
+        // register, not only against vouchers already classified to this path.
+        // This is what distinguishes "missing" from "exists but not mapped".
+        const requestedPurchases = requestedVoucherNos.length > 0
+            ? await prisma.purchase.findMany({
+                where: {
+                    invoiceNo: { in: requestedVoucherNos },
+                    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+                },
+                select: { id: true, invoiceNo: true, status: true, branchId: true }
+            })
+            : [];
+        const requestedSystemVouchers = requestedVoucherNos.length > 0
+            ? await prisma.voucher.findMany({
+                where: {
+                    voucherNo: { in: requestedVoucherNos },
+                    voucherType: { in: [VoucherType.PURCHASE, VoucherType.IGST_PURCHASE, VoucherType.GST_PURCHASE, VoucherType.CST_PURCHASE, VoucherType.DISCOUNT_PURCHASE, VoucherType.HIGH_SEAS_PURCHASE, VoucherType.IMPORT_PURCHASE, VoucherType.VAT_PURCHASE, VoucherType.INTEREST_SAUNDRY_CREDITORS] },
+                    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+                },
+                select: { id: true, voucherNo: true, sourceId: true, voucherType: true }
+            })
+            : [];
+
+        const voucherList = [...voucherRows.values()];
+        const legacyPurchaseIds = new Set(legacyRows.map(row => row.purchaseId));
+        const requested = requestedVoucherNos.map(requested => {
+            const key = requested.toUpperCase();
+            const matchingVoucher = voucherList.filter(row =>
+                String(row.voucherNo || "").toUpperCase() === key ||
+                String(row.invoiceNo || "").toUpperCase() === key
+            );
+            const matchingPurchase = requestedPurchases.find(purchase =>
+                String(purchase.invoiceNo || "").toUpperCase() === key
+            );
+            const matchingSystemVoucher = requestedSystemVouchers.find(voucher =>
+                String(voucher.voucherNo || "").toUpperCase() === key
+            );
+            const legacy = legacyRows.filter(row =>
+                String(row.invoiceNo || "").toUpperCase() === key
+            );
+            const note = notes.filter(row => String(row.noteNo || "").toUpperCase() === key);
+            const exists = Boolean(
+                matchingVoucher.length ||
+                matchingPurchase ||
+                matchingSystemVoucher ||
+                legacy.length ||
+                note.length
+            );
+            return {
+                requestedVoucherNo: requested,
+                exists,
+                countedUnderPath: Boolean(matchingVoucher.length || legacy.length || note.length),
+                purchase: matchingVoucher[0] || matchingPurchase || null,
+                systemVoucher: matchingSystemVoucher || null,
+                legacyMappings: legacy,
+                notes: note
+            };
+        });
+
+        const duplicateRisk = voucherList
+            .filter(row => row.purchaseId && legacyPurchaseIds.has(row.purchaseId))
+            .map(row => ({ purchaseId: row.purchaseId, invoiceNo: row.invoiceNo }));
+
+        return {
+            path,
+            importedType,
+            branchId: effectiveBranchId || null,
+            targetLedgers: targetLedgers.map(ledger => ({
+                id: ledger.id,
+                code: ledger.code,
+                name: ledger.name,
+                groupPath: getGroupPath(ledger.groupId),
+                branch: ledger.branch
+            })),
+            summary: {
+                purchaseVouchersCounted: voucherList.length,
+                legacyPurchaseMappings: legacyRows.length,
+                inwardNotesCounted: notes.length,
+                requested: requestedVoucherNos.length,
+                requestedMissing: requested.filter(row => !row.exists).length,
+                requestedNotCounted: requested.filter(row => row.exists && !row.countedUnderPath).length,
+                duplicateRisk: duplicateRisk.length > 0
+            },
+            vouchers: voucherList,
+            legacyMappings: legacyRows,
+            inwardNotes: notes.map(note => ({
+                ...note,
+                sourceType: "INWARD_PURCHASE_NOTE",
+                trialBalanceSide: note.type === DebitCreditNoteType.CREDIT_NOTE
+                    ? "DEBIT"
+                    : "CREDIT"
+            })),
+            requested,
+            duplicateRisk
+        };
+    }
+
+    /**
      * Older inward-note imports incorrectly moved the linked Purchase
      * invoice's own entry into the debit/credit note Path. Restore only an
      * entry that is currently on that same note-path ledger; the note voucher
