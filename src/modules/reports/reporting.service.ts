@@ -66,6 +66,19 @@ const readPurchaseSubGroups = (remarks: string | null) => {
     }
 };
 
+// Imported note paths are stored as a normalized hierarchy, for example
+// "Purchase Accounts / IGST PURCHASE". Trial Balance displays the leaf as
+// the Purchase Accounts category.
+const purchaseCategoryFromImportedPath = (value: string | null) => {
+    const parts = String(value || "")
+        .replace(/\\/g, "/")
+        .split(/[/>]/)
+        .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+};
+
 
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
@@ -365,9 +378,10 @@ export class ReportingService {
             buildTrialBalanceBranchFilter(branchId);
 
         // Approved journals are the normal source. The narrow exceptions
-        // below admit Path-classified Purchase entries, the Purchase leg of
-        // an approved inward debit/credit note, and Sales ledger entries
-        // belonging to actual Sale vouchers.
+        // below admit Path-classified Purchase entries, legacy inward-note
+        // ledger entries without a saved Path, and Sales ledger entries
+        // belonging to actual Sale vouchers. New inward notes are totalled
+        // directly from DebitCreditNote.categoryPath below.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
             OR: [
                 {
@@ -389,7 +403,8 @@ export class ReportingService {
                                         debitCreditNotes: {
                                             some: {
                                                 sourceType: DebitCreditNoteSourceType.PURCHASE,
-                                                status: DebitCreditNoteStatus.APPROVED
+                                                status: DebitCreditNoteStatus.APPROVED,
+                                                categoryPath: null
                                             }
                                         }
                                     },
@@ -400,7 +415,8 @@ export class ReportingService {
                                                 debitCreditNote: {
                                                     is: {
                                                         sourceType: DebitCreditNoteSourceType.PURCHASE,
-                                                        status: DebitCreditNoteStatus.APPROVED
+                                                        status: DebitCreditNoteStatus.APPROVED,
+                                                        categoryPath: null
                                                     }
                                                 }
                                             }
@@ -959,6 +975,24 @@ export class ReportingService {
                 remarks: true
             }
         });
+        // New inward notes carry their own imported category path. Calculate
+        // them from the approved note amount instead of relying on the
+        // voucher LedgerEntry having been remapped successfully.
+        const categorizedInwardPurchaseNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(branchId ? { branchId } : {}),
+                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                status: DebitCreditNoteStatus.APPROVED,
+                categoryPath: { not: null },
+                noteDate: { lte: endDate }
+            },
+            select: {
+                categoryPath: true,
+                type: true,
+                totalAmount: true,
+                noteDate: true
+            }
+        });
         // These imported rows are subheads of Purchase Accounts itself. Use
         // its root group rather than the optional legacy PURCHASE child group;
         // otherwise databases without that child lose the rows when the Excel
@@ -984,6 +1018,26 @@ export class ReportingService {
                     mapping.amount;
                 purchaseSubGroupMovements.set(mapping.name, current);
             }
+        }
+
+        for (const note of categorizedInwardPurchaseNotes) {
+            const category = purchaseCategoryFromImportedPath(note.categoryPath);
+            if (!category) continue;
+
+            const amount = Number(note.totalAmount || 0);
+            if (!Number.isFinite(amount) || amount === 0) continue;
+
+            const current = purchaseSubGroupMovements.get(category) || {
+                prior: { debit: 0, credit: 0 },
+                period: { debit: 0, credit: 0 }
+            };
+            const target = note.noteDate < startDate ? current.prior : current.period;
+
+            // The import validates the original Excel convention: inward
+            // credit notes are debit-side Purchase movement; inward debit
+            // notes are credit-side Purchase movement.
+            target[note.type === DebitCreditNoteType.CREDIT_NOTE ? "debit" : "credit"] += amount;
+            purchaseSubGroupMovements.set(category, current);
         }
 
         const purchaseSubGroupRows = [...purchaseSubGroupMovements.entries()].map(

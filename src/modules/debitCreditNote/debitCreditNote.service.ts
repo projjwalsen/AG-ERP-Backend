@@ -41,6 +41,7 @@ type CreateNotePayload = {
     noteNo?: string;
     purchaseVoucherType?: VoucherType;
     importKey?: string;
+    categoryPath?: string;
 
     noteDate?: string | Date;
     narration?: string;
@@ -890,6 +891,9 @@ export class DebitCreditNoteService {
 
                         importKey:
                             payload.importKey || null,
+
+                        categoryPath:
+                            payload.categoryPath?.trim() || null,
 
                         type:
                             payload.type,
