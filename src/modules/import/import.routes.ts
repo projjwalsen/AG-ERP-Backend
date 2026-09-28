@@ -344,6 +344,41 @@ router.post(
     importOpeningBalanceJournalWorkbook
 );
 
+/**
+ * @openapi
+ * /api/migration/import/inward-debit-credit-notes:
+ *   post:
+ *     summary: Import inward debit and credit notes
+ *     description: >
+ *       Upload an Excel workbook containing Inward Debit Note and Inward
+ *       Credit Note rows. The Path column is resolved into the purchase
+ *       account hierarchy and existing notes are remapped when necessary.
+ *       This endpoint does not import ordinary journals or transactions.
+ *     tags:
+ *       - Import
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Excel file with Date, Particular, Voucher Type, Voucher No., Debit, Credit, and Path columns.
+ *     responses:
+ *       200:
+ *         description: Inward notes imported successfully.
+ *       400:
+ *         description: Invalid workbook or note data.
+ *       401:
+ *         description: Unauthorized.
+ */
 router.post(
     "/import/inward-debit-credit-notes",
     authMiddleware,

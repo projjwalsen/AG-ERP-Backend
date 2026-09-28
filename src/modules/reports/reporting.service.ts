@@ -371,13 +371,26 @@ export class ReportingService {
         // classifications of existing approved Purchases and do not create
         // accounting Journals or LedgerEntries.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
-            voucher: {
-                journals: {
-                    some: {
-                        status: JournalStatus.APPROVED
+            OR: [
+                {
+                    voucher: {
+                        journals: {
+                            some: {
+                                status: JournalStatus.APPROVED
+                            }
+                        }
+                    }
+                },
+                {
+                    voucher: {
+                        debitCreditNotes: {
+                            some: {
+                                status: DebitCreditNoteStatus.APPROVED
+                            }
+                        }
                     }
                 }
-            }
+            ]
         };
         const scopedJournalEntryFilter: Prisma.LedgerEntryWhereInput = {
             AND: [
