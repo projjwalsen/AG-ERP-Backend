@@ -10,7 +10,8 @@ import {
     getLedgerByAgencyId,
     getLedgerBySuspenseId,
     getCompanyLedger,
-    getGSTLedger
+    getGSTLedger,
+    classifyPurchaseVouchers
 } from "./ledger.controller";
 import { authMiddleware, checkPermission } from "../../../core/middleware/auth";
 
@@ -158,6 +159,62 @@ router.get("/trial-balance", checkPermission("LEDGER:VIEW"), getTrialBalance);
  *         description: Unauthorized
  */
 router.get("/get-all", checkPermission("LEDGER:VIEW"), getLedgers);
+
+/**
+ * @openapi
+ * /api/ledgers/purchase-vouchers/classify:
+ *   post:
+ *     summary: Link existing Purchase vouchers to a Purchase Account hierarchy
+ *     description: |
+ *       Moves only the Purchase ledger lines of selected approved Purchase
+ *       vouchers to the ledger represented by the supplied hierarchy path.
+ *       Purchase, vendor, GST, transaction and note records are unchanged.
+ *       Use `all: true` to classify every approved Purchase in the selected
+ *       branch (or every branch for an ALL-access user).
+ *     tags:
+ *       - Ledgers
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - path
+ *             properties:
+ *               path:
+ *                 type: string
+ *                 example: Purchase Accounts / IGST PURCHASE
+ *               branchId:
+ *                 type: string
+ *               purchaseIds:
+ *                 type: array
+ *                 items: { type: string }
+ *               voucherIds:
+ *                 type: array
+ *                 items: { type: string }
+ *               voucherNos:
+ *                 type: array
+ *                 items: { type: string }
+ *                 description: Voucher numbers or Purchase invoice numbers.
+ *               all:
+ *                 type: boolean
+ *                 example: false
+ *     responses:
+ *       200:
+ *         description: Purchase vouchers classified successfully.
+ *       400:
+ *         description: Invalid hierarchy path or selector.
+ *       404:
+ *         description: No approved Purchase vouchers matched the selector.
+ */
+router.post(
+    "/purchase-vouchers/classify",
+    checkPermission("PURCHASE:WRITE"),
+    classifyPurchaseVouchers
+);
 
 
 /**

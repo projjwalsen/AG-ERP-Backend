@@ -870,6 +870,32 @@ export const getTrialBalance = async (req: Request, res: Response, next: NextFun
 };
 
 /**
+ * Move existing Purchase voucher postings to a Tally-style Purchase Account
+ * hierarchy without changing the Purchase documents themselves.
+ */
+export const classifyPurchaseVouchers = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const actor = (req as any).user;
+        const result = await LedgerService.bulkClassifyPurchaseVouchers(
+            actor,
+            req.body || {}
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Purchase vouchers linked to the hierarchy successfully",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * @route   GET /api/ledger-groups
  * @desc    Get all hierarchical Tally-style ledger groups
  * @access  Protected
