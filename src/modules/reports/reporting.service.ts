@@ -1,4 +1,4 @@
-import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
@@ -384,12 +384,29 @@ export class ReportingService {
                         { ledger: { category: LedgerType.PURCHASE } },
                         {
                             voucher: {
-                                debitCreditNotes: {
-                                    some: {
-                                        sourceType: DebitCreditNoteSourceType.PURCHASE,
-                                        status: DebitCreditNoteStatus.APPROVED
+                                OR: [
+                                    {
+                                        debitCreditNotes: {
+                                            some: {
+                                                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                                                status: DebitCreditNoteStatus.APPROVED
+                                            }
+                                        }
+                                    },
+                                    {
+                                        transaction: {
+                                            some: {
+                                                status: TransactionStatus.APPROVED,
+                                                debitCreditNote: {
+                                                    is: {
+                                                        sourceType: DebitCreditNoteSourceType.PURCHASE,
+                                                        status: DebitCreditNoteStatus.APPROVED
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
-                                }
+                                ]
                             }
                         }
                     ]
