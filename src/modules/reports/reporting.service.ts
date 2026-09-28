@@ -364,12 +364,9 @@ export class ReportingService {
             Prisma.LedgerEntryWhereInput | undefined =
             buildTrialBalanceBranchFilter(branchId);
 
-        // The Trial Balance is primarily a journal-register view. A
-        // LedgerEntry is eligible only when its voucher belongs to an
-        // approved Journal record. Purchase Account subgroups imported from
-        // Tally are the explicit exception: they are reporting-only
-        // classifications of existing approved Purchases and do not create
-        // accounting Journals or LedgerEntries.
+        // Approved journals are the normal source. The two narrow exceptions
+        // below admit only Path-classified Purchase entries and the Purchase
+        // leg of an approved inward debit/credit note.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
             OR: [
                 {
@@ -394,6 +391,17 @@ export class ReportingService {
                                 }
                             }
                         }
+                    ]
+                },
+                {
+                    AND: [
+                        {
+                            ledger: {
+                                category: LedgerType.PURCHASE,
+                                code: { startsWith: "PURCHASE-TYPE-" }
+                            }
+                        },
+                        { voucher: { voucherType: VoucherType.PURCHASE } }
                     ]
                 }
             ]
