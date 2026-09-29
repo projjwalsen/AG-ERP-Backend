@@ -36,7 +36,10 @@ const PURCHASE_SUB_GROUP_MARKER = "TB_PURCHASE_SUBGROUPS";
 
 const readPurchaseSubGroups = (remarks: string | null) => {
     const match = remarks?.match(
-        new RegExp(`\\[\\[${PURCHASE_SUB_GROUP_MARKER}:(.*?)\\]\\]`, "s")
+        // The payload itself is a JSON array. Its closing `]` is immediately
+        // followed by the marker's `]]`, so a generic `(.*?)]]` expression
+        // incorrectly consumes the JSON closing bracket and JSON.parse fails.
+        new RegExp(`\\[\\[${PURCHASE_SUB_GROUP_MARKER}:(\\[[\\s\\S]*?\\])\\]\\]`)
     );
     if (!match) return [] as Array<{
         name: string;
