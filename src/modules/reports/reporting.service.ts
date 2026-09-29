@@ -32,10 +32,10 @@ const BANK_VOUCHER_TYPES = [
 const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
 ]);
-const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set([
-    "SUNDRY_DEBTORS",
-    "SUNDRY_CREDITORS"
-]);
+// Keep party ledgers visible in the Trial Balance tree. Collapsing these
+// control groups into a synthetic summary row hid the individual debtor /
+// creditor movements and caused the group name to appear twice in exports.
+const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set<string>();
 const PURCHASE_SUB_GROUP_MARKER = "TB_PURCHASE_SUBGROUPS";
 
 const readPurchaseSubGroups = (remarks: string | null) => {
