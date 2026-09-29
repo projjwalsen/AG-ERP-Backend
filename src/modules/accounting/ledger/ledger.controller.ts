@@ -895,6 +895,28 @@ export const classifyPurchaseVouchers = async (
     }
 };
 
+/** Restore Purchase ledger lines from each Purchase.voucherType. */
+export const restorePurchaseVoucherClassifications = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const result = await LedgerService.restorePurchaseVoucherClassifications(
+            (req as any).user,
+            { branchId: req.body?.branchId || req.query.branchId as string | undefined }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Purchase voucher classifications restored from Purchase voucher types",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 /**
  * Read-only report of Purchase vouchers and inward notes currently counted
  * under a Purchase Account hierarchy path.
