@@ -82,6 +82,16 @@ const purchaseCategoryFromImportedPath = (value: string | null) => {
     return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
 };
 
+const salesCategoryFromImportedPath = (value: string | null) => {
+    const parts = String(value || "")
+        .replace(/\\/g, "/")
+        .split(/[/>]/)
+        .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+};
+
 
 export class ReportingService {
     private static adjustedSaleTotal(sale: any) {
@@ -1098,6 +1108,91 @@ export class ReportingService {
             }
         );
 
+        // Categorized outward notes are Sales Accounts movement even when
+        // their voucher is a DEBIT_NOTE/CREDIT_NOTE rather than a SALE
+        // voucher. Include them from the approved note record itself so the
+        // imported category (for example Sales Accounts / GST SALES) is not
+        // lost by the normal SALE-voucher ledger filter.
+        const categorizedOutwardSaleNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(branchId ? { branchId } : {}),
+                sourceType: DebitCreditNoteSourceType.SALE,
+                status: DebitCreditNoteStatus.APPROVED,
+                categoryPath: { not: null },
+                noteDate: { lte: endDate }
+            },
+            select: {
+                categoryPath: true,
+                type: true,
+                totalAmount: true,
+                noteDate: true
+            }
+        });
+        const salesSubGroupMovements = new Map<string, {
+            prior: { debit: number; credit: number };
+            period: { debit: number; credit: number };
+        }>();
+
+        for (const note of categorizedOutwardSaleNotes) {
+            const category = salesCategoryFromImportedPath(note.categoryPath);
+            if (!category) continue;
+
+            const amount = Number(note.totalAmount || 0);
+            if (!Number.isFinite(amount) || amount === 0) continue;
+
+            const current = salesSubGroupMovements.get(category) || {
+                prior: { debit: 0, credit: 0 },
+                period: { debit: 0, credit: 0 }
+            };
+            const target = note.noteDate < startDate ? current.prior : current.period;
+
+            // Sale debit note: Dr customer / Cr sales adjustment.
+            // Sale credit note: Dr sales adjustment / Cr customer.
+            target[note.type === DebitCreditNoteType.DEBIT_NOTE ? "credit" : "debit"] += amount;
+            salesSubGroupMovements.set(category, current);
+        }
+
+        const salesSubGroupRows = [...salesSubGroupMovements.entries()].map(
+            ([subGroup, movement]) => {
+                const amounts = calculateTrialBalanceAmounts(
+                    {
+                        nature: LedgerNature.CREDIT,
+                        openingBalance: 0,
+                        openingDebit: 0,
+                        openingCredit: 0
+                    },
+                    movement.prior,
+                    movement.period,
+                    false
+                );
+
+                return {
+                    ledgerId: `sales-sub-group:${subGroup}:${branchId || "all"}`,
+                    ledgerCode: `SALES-SUB-GROUP-${subGroup}`
+                        .replace(/[^A-Z0-9_]+/gi, "_")
+                        .toUpperCase(),
+                    account: subGroup,
+                    parentGroup: salesGroup?.name || "Sales",
+                    groupCode: "SALES",
+                    groupId: salesGroup?.id || null,
+                    ledgerCategory: LedgerType.SALES,
+                    ledgerNature: LedgerNature.CREDIT,
+                    branchId: branchId || null,
+                    branchName: branch?.name || null,
+                    debit: amounts.closingDebit,
+                    credit: amounts.closingCredit,
+                    periodDebit: amounts.periodDebit,
+                    periodCredit: amounts.periodCredit,
+                    openingDebit: amounts.openingDebit,
+                    openingCredit: amounts.openingCredit,
+                    closingDebit: amounts.closingDebit,
+                    closingCredit: amounts.closingCredit,
+                    closingSigned: amounts.closingSigned,
+                    isSalesSubGroup: true
+                };
+            }
+        );
+
         // Purchase and sales accounts display only explicit imported Types.
         // The generic branch ledgers (for example
         // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are legacy control
@@ -1228,6 +1323,49 @@ export class ReportingService {
             ...purchaseSubGroupRows
         ]);
 
+        const mergeSalesAccountRows = (sourceRows: any[]) => {
+            const salesRoot = ledgerGroups.find(group => group.code === "SALES_ACCOUNTS") ||
+                ledgerGroups.find(group => group.code === "SALES");
+            const grouped = new Map<string, any[]>();
+            for (const row of sourceRows) {
+                const key = String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase();
+                if (key) grouped.set(key, [...(grouped.get(key) || []), row]);
+            }
+
+            return [...grouped.entries()].map(([key, rowsForCategory]) => {
+                const sum = (field: string) => Number(rowsForCategory
+                    .reduce((total, row) => total + Number(row[field] || 0), 0)
+                    .toFixed(2));
+                const openingSigned = sum("openingDebit") - sum("openingCredit");
+                const closingSigned = sum("closingSigned");
+                const first = rowsForCategory[0];
+
+                return {
+                    ...first,
+                    ledgerId: `aggregate:sales-account:${key}:${branchId || "all"}`,
+                    ledgerCode: `SALES_ACCOUNT_${key}`.replace(/[^A-Z0-9_]+/gi, "_").toUpperCase(),
+                    parentGroup: salesRoot?.name || "Sales Accounts",
+                    groupCode: salesRoot?.code || "SALES_ACCOUNTS",
+                    groupId: salesRoot?.id || null,
+                    periodDebit: sum("periodDebit"),
+                    periodCredit: sum("periodCredit"),
+                    openingDebit: openingSigned > 0 ? openingSigned : 0,
+                    openingCredit: openingSigned < 0 ? Math.abs(openingSigned) : 0,
+                    debit: closingSigned > 0 ? closingSigned : 0,
+                    credit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                    closingDebit: closingSigned > 0 ? closingSigned : 0,
+                    closingCredit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                    closingSigned
+                };
+            });
+        };
+
+        const salesAccountRows = mergeSalesAccountRows([
+            ...aggregateAccountRows(LedgerType.SALES),
+            ...typedSalesRows,
+            ...salesSubGroupRows
+        ]);
+
         const ledgerRows = [
             ...rawLedgerRows.filter(row =>
                 row.ledgerCategory !== LedgerType.PURCHASE &&
@@ -1237,8 +1375,7 @@ export class ReportingService {
                 )
             ),
             ...purchaseAccountRows,
-            ...aggregateAccountRows(LedgerType.SALES),
-            ...typedSalesRows
+            ...salesAccountRows
         ];
 
         const rawRows = ledgerRows;
