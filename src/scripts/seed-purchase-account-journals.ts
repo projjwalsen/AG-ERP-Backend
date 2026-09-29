@@ -74,7 +74,10 @@ const money = (value: unknown) => {
 
 const readPurchaseSubGroups = (remarks: string | null): PurchaseSubGroup[] => {
     const match = remarks?.match(
-        new RegExp(`\\[\\[${PURCHASE_SUB_GROUP_MARKER}:(.*?)\\]\\]`, "s")
+        // Payload ends with `]` and the marker ends with `]]`. Capture the
+        // JSON array explicitly, otherwise the first two of the three closing
+        // brackets are treated as the marker terminator.
+        new RegExp(`\\[\\[${PURCHASE_SUB_GROUP_MARKER}:(\\[[\\s\\S]*?\\])\\]\\]`)
     );
     if (!match) return [];
 
@@ -100,7 +103,10 @@ const readPurchaseSubGroups = (remarks: string | null): PurchaseSubGroup[] => {
 };
 
 const writePurchaseSubGroups = (remarks: string | null, groups: PurchaseSubGroup[]) => {
-    const marker = new RegExp(`\\s*\\[\\[${PURCHASE_SUB_GROUP_MARKER}:.*?\\]\\]`, "gs");
+    const marker = new RegExp(
+        `\\s*\\[\\[${PURCHASE_SUB_GROUP_MARKER}:\\[[\\s\\S]*?\\]\\]\\]`,
+        "g"
+    );
     const existingText = String(remarks || "").replace(marker, "").trimEnd();
     const payload = JSON.stringify(groups);
     return `${existingText}${existingText ? "\n" : ""}[[${PURCHASE_SUB_GROUP_MARKER}:${payload}]]`;
