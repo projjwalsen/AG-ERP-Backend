@@ -18,6 +18,10 @@ import {
 const CASH_VOUCHER_TYPES = [
     VoucherType.CASH_PAYMENT,
     (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT",
+    // Imported Receipt/Payment vouchers can use the plain voucher type
+    // while still posting to a CASH ledger.
+    VoucherType.RECEIPT,
+    VoucherType.PAYMENT,
     // Regular Journal imports can post directly to a CASH ledger.  They
     // must be included in Trial Balance movement totals along with the
     // explicit cash payment/receipt voucher types.
@@ -27,7 +31,11 @@ const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
 const BANK_VOUCHER_TYPES = [
     BANK_RECEIPT_TYPE,
-    BANK_PAYMENT_TYPE
+    BANK_PAYMENT_TYPE,
+    // Imported Receipt/Payment vouchers can use the plain voucher type
+    // while still posting to a BANK ledger.
+    VoucherType.RECEIPT,
+    VoucherType.PAYMENT
 ] as VoucherType[];
 const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
@@ -405,6 +413,25 @@ export class ReportingService {
         // accounting approval.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
             OR: [
+                // Receipt and payment imports are posted as balanced Voucher
+                // records.  Older imports may not have a Journal relation,
+                // so do not make their Trial Balance visibility depend on
+                // that relation.  LedgerEntry.entryType remains the source
+                // of the transaction Debit/Credit amount below.
+                {
+                    voucher: {
+                        voucherType: {
+                            in: [
+                                VoucherType.RECEIPT,
+                                VoucherType.PAYMENT,
+                                VoucherType.CASH_RECEIPT,
+                                VoucherType.CASH_PAYMENT,
+                                VoucherType.BANK_RECEIPT,
+                                VoucherType.BANK_PAYMENT
+                            ]
+                        }
+                    }
+                },
                 {
                     voucher: {
                         journals: {

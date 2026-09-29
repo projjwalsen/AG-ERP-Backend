@@ -5,6 +5,7 @@ import {
     DebitCreditNoteType,
     EntryType,
     JournalDirection,
+    JournalStatus,
     LedgerNature,
     LedgerType,
     PaymentMode,
@@ -2207,7 +2208,21 @@ export class LedgerService {
 
         const ledgers = await prisma.ledger.findMany({
             where: {
-                agencyId
+                OR: [
+                    { agencyId },
+                    {
+                        journalHeads: {
+                            some: {
+                                journals: {
+                                    some: {
+                                        agencyId,
+                                        status: JournalStatus.APPROVED
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
             },
 
             include: {
