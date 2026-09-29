@@ -17,7 +17,11 @@ import {
 // filter valid during a rolling schema/client update.
 const CASH_VOUCHER_TYPES = [
     VoucherType.CASH_PAYMENT,
-    (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT"
+    (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT",
+    // Regular Journal imports can post directly to a CASH ledger.  They
+    // must be included in Trial Balance movement totals along with the
+    // explicit cash payment/receipt voucher types.
+    VoucherType.JOURNAL
 ] as VoucherType[];
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
@@ -163,8 +167,9 @@ export class ReportingService {
             AND: [
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
                 { ledgerId: { in: cashLedgerIds } },
-                // Cash movements include only cash receipts/payments. Imported
-                // opening-balance vouchers are added separately below.
+                // Cash movements include explicit cash receipts/payments and
+                // regular imported Journal vouchers. Imported opening-balance
+                // vouchers are added separately below.
                 { voucher: { voucherType: { in: CASH_VOUCHER_TYPES } } }
             ]
         };
