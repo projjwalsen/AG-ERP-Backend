@@ -246,16 +246,26 @@ export class ImportResolver {
             String(dto.accountName || "").trim(),
             String(dto.particulars || "")
                 .replace(/\s*[-\u2013\u2014]?\s*\(?[DC]R\)?\s*$/i, "")
+                .trim(),
+            String(dto.accountName || "")
+                .replace(/\s*[-\u2013\u2014]?\s*\(?[DC]R\)?\s*$/i, "")
                 .trim()
         ].filter(Boolean)));
 
-        const agency = await prisma.agency.findFirst({
+        let agency = await prisma.agency.findFirst({
             where: {
                 OR: partyNames.map(name => ({
                     name: { equals: name, mode: "insensitive" as const }
                 }))
             }
         });
+        if (!agency) {
+            const normalizedNames = new Set(partyNames.map(normalizeImportedPartyName));
+            const agencies = await prisma.agency.findMany({
+                select: { id: true, name: true, type: true }
+            });
+            agency = agencies.find(item => normalizedNames.has(normalizeImportedPartyName(item.name)));
+        }
         if (!agency) {
             throw new ApiError(
                 `${isReceipt ? "Receipt" : "Payment"} party not found as an Agency: ${dto.particulars || dto.accountName}`,
