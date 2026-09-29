@@ -426,6 +426,20 @@ export class ReportingService {
                     }
                 },
                 {
+                    // Receipt/payment and other approved transaction
+                    // vouchers carry the debtor/creditor settlement entries.
+                    // They do not normally have a Journal row, so excluding
+                    // them leaves Sundry Debtors/Creditors with only opening
+                    // balances in Trial Balance.
+                    voucher: {
+                        transaction: {
+                            some: {
+                                status: TransactionStatus.APPROVED
+                            }
+                        }
+                    }
+                },
+                {
                     AND: [
                         { ledger: { category: LedgerType.PURCHASE } },
                         {
