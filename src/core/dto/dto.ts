@@ -241,6 +241,7 @@ export interface JournalImportDTO {
     subGroup3?: string;
     accountName?: string;
     narration?: string;
+    remarks?: string;
 
     importKey?: string;
 

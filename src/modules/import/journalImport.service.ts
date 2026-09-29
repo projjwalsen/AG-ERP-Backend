@@ -118,7 +118,7 @@ export class JournalImportService {
                     ImportResolver.isDebitCreditNoteImportRow(dto);
 
                 const isExplicitJournalVoucher =
-                    ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
+                    ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "RECEIPT", "PAYMENT", "OPENING BALANCE"].includes(voucherType);
 
                 const isTransaction =
                     isInvoiceTransaction || isCancelled || isDebitCreditNote;
@@ -179,7 +179,7 @@ export class JournalImportService {
                             ImportResolver.isDebitCreditNoteImportRow(dto);
 
                         const isExplicitJournalVoucher =
-                            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(voucherType);
+                            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "RECEIPT", "PAYMENT", "OPENING BALANCE"].includes(voucherType);
 
                         const isInwardNote = ImportResolver.isInwardDebitCreditNoteImportRow(dto);
 

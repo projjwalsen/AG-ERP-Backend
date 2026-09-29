@@ -1,4 +1,4 @@
-import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalDirection, JournalStatus, LedgerNature, LedgerType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalDirection, JournalStatus, LedgerNature, LedgerType, OutstandingType, PaymentMode, PaymentType, ProductUnit, PurchaseStatus, SalesStatus, SettlementType, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { AgencyImportDTO, ExcelRowDTO, GroupedVoucherDTO, JournalImportDTO, ParsedAddressDTO, ProductImportDTO } from "../../core/dto/dto";
@@ -24,6 +24,19 @@ import {
 
 export class ImportResolver {
 
+    private static importedRemarks(dto: JournalImportDTO) {
+        const values = [
+            ["Particulars", dto.particulars],
+            ["Narration", dto.narration],
+            ["Remarks", dto.remarks]
+        ]
+            .map(([label, value]) => [label, String(value || "").trim()] as const)
+            .filter(([, value]) => value.length > 0)
+            .map(([label, value]) => `${label}: ${value}`);
+
+        return values.join(" | ") || "Imported journal entry";
+    }
+
     static isJournalRegisterRow(dto: JournalImportDTO) {
         const type = String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
         return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup) &&
@@ -37,6 +50,20 @@ export class ImportResolver {
         const debit = Number(dto.debitAmount || 0);
         const credit = Number(dto.creditAmount || 0);
         if ((debit > 0) === (credit > 0)) throw new ApiError("Journal Register row must contain exactly one positive Debit or Credit amount", 400);
+        const normalizedVoucherType = String(dto.voucherType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+
+        if (normalizedVoucherType === "RECEIPT" || normalizedVoucherType === "PAYMENT") {
+            return this.importReceiptPaymentRegisterRow(
+                actor,
+                dto,
+                normalizedVoucherType === "RECEIPT"
+            );
+        }
+
         const branch = await prisma.branch.findFirst({
             where: actor?.branchId ? { id: actor.branchId, isActive: true } : { isActive: true },
             orderBy: { createdAt: "asc" }
@@ -164,7 +191,7 @@ export class ImportResolver {
                         : JournalDirection.INWARD,
                     paymentMode: PaymentMode.OFFLINE,
                     paymentThrough: null,
-                    remarks: dto.narration ?? dto.particulars ?? "",
+                    remarks: this.importedRemarks(dto),
                     journalDate: dto.date || new Date(),
                     status: JournalStatus.APPROVED,
                     createdById: actor?.id || null,
@@ -178,16 +205,224 @@ export class ImportResolver {
                     voucherType: VoucherType.JOURNAL,
                     sourceId: journal.id,
                     branchId: branch.id,
-                    narration: dto.narration ?? dto.particulars ?? "",
+                    narration: this.importedRemarks(dto),
                     totalDebit: debit,
                     totalCredit: credit,
                     voucherDate: dto.date || new Date(),
-                    entries: { create: { ledgerId: ledger.id, branchId: branch.id, entryType: debit > 0 ? EntryType.DEBIT : EntryType.CREDIT, amount: debit > 0 ? debit : credit, narration: dto.narration ?? dto.particulars ?? "" } }
+                    entries: { create: { ledgerId: ledger.id, branchId: branch.id, entryType: debit > 0 ? EntryType.DEBIT : EntryType.CREDIT, amount: debit > 0 ? debit : credit, narration: this.importedRemarks(dto) } }
                 }
             });
             const result = await tx.journal.update({ where: { id: journal.id }, data: { voucherId: voucher.id } });
             await LedgerService.syncCachedBalance(tx, ledger.id);
             return result;
+        });
+    }
+
+    /**
+     * Import plain RECEIPT/PAYMENT rows as balanced settlement vouchers.
+     * The generic Journal Register path intentionally creates a single-sided
+     * Journal ledger posting; that is not sufficient for party settlements.
+     */
+    private static async importReceiptPaymentRegisterRow(
+        actor: any,
+        dto: JournalImportDTO,
+        isReceipt: boolean
+    ) {
+        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            throw new ApiError("Receipt/Payment amount must be positive", 400);
+        }
+
+        const branch = await prisma.branch.findFirst({
+            where: actor?.branchId
+                ? { id: actor.branchId, isActive: true }
+                : { isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+        if (!branch) throw new ApiError("No active branch found", 400);
+
+        const partyNames = Array.from(new Set([
+            String(dto.particulars || "").trim(),
+            String(dto.accountName || "").trim(),
+            String(dto.particulars || "")
+                .replace(/\s*[-\u2013\u2014]?\s*\(?[DC]R\)?\s*$/i, "")
+                .trim()
+        ].filter(Boolean)));
+
+        const agency = await prisma.agency.findFirst({
+            where: {
+                OR: partyNames.map(name => ({
+                    name: { equals: name, mode: "insensitive" as const }
+                }))
+            }
+        });
+        if (!agency) {
+            throw new ApiError(
+                `${isReceipt ? "Receipt" : "Payment"} party not found as an Agency: ${dto.particulars || dto.accountName}`,
+                400
+            );
+        }
+
+        const paymentThrough = this.paymentThroughFromRow(dto.particulars, dto.raw);
+        return prisma.$transaction(async tx => {
+            const paymentLedger = await this.getImportedPaymentLedger(
+                tx,
+                branch.id,
+                paymentThrough
+            );
+            if (!paymentLedger) {
+                throw new ApiError(
+                    `No active ${paymentThrough === PaymentType.CASH ? "Cash" : "Bank"} ledger found for branch`,
+                    400
+                );
+            }
+
+            const existing = await tx.journal.findFirst({
+                where: { branchId: branch.id, serialNo: dto.sourceSerialNo }
+            });
+            if (existing) return existing;
+
+            const partyLedger = isReceipt
+                ? await LedgerService.getOrCreateCustomerLedger(tx, branch.id, agency.id)
+                : await LedgerService.getOrCreateVendorLedger(tx, branch.id, agency.id);
+            const journalDirection = isReceipt
+                ? JournalDirection.INWARD
+                : JournalDirection.OUTWARD;
+            const partyHeadType = isReceipt ? "INWARD" : "OUTWARD";
+
+            let partyHead = await tx.journalHead.findFirst({
+                where: {
+                    ledgerId: partyLedger.id,
+                    name: { equals: agency.name, mode: "insensitive" },
+                    type: partyHeadType
+                }
+            });
+            if (!partyHead) {
+                partyHead = await tx.journalHead.create({
+                    data: {
+                        name: agency.name,
+                        headType: "SUBHEAD",
+                        type: partyHeadType,
+                        ledgerId: partyLedger.id
+                    }
+                });
+            }
+
+            const category = await tx.journalCategory.findFirst({
+                where: {
+                    name: { equals: agency.name, mode: "insensitive" },
+                    journalHeadId: partyHead.id
+                }
+            }) || await tx.journalCategory.create({
+                data: {
+                    name: agency.name,
+                    journalHeadId: partyHead.id,
+                    isActive: true
+                }
+            });
+
+            const journal = await tx.journal.create({
+                data: {
+                    branchId: branch.id,
+                    agencyId: agency.id,
+                    journalHeadId: partyHead.id,
+                    categoryId: category.id,
+                    serialNo: dto.sourceSerialNo,
+                    voucherNo: dto.voucherNo || null,
+                    sourceSheet: dto.sourceSheet,
+                    sourceRow: dto.sourceRow,
+                    importKey: `JOURNAL_REGISTER:${branch.id}:${dto.sourceSerialNo}`,
+                    amount,
+                    direction: journalDirection,
+                    paymentMode: paymentThrough === PaymentType.CASH
+                        ? PaymentMode.OFFLINE
+                        : PaymentMode.ONLINE,
+                    paymentThrough,
+                    remarks: this.importedRemarks(dto),
+                    journalDate: dto.date || new Date(),
+                    status: JournalStatus.APPROVED,
+                    createdById: actor?.id || null,
+                    approvedById: actor?.id || null,
+                    approvedAt: new Date()
+                }
+            });
+
+            const voucherType = isReceipt
+                ? VoucherType.RECEIPT
+                : VoucherType.PAYMENT;
+            const entries = isReceipt
+                ? [
+                    { ledgerId: paymentLedger.id, entryType: EntryType.DEBIT },
+                    { ledgerId: partyLedger.id, entryType: EntryType.CREDIT }
+                ]
+                : [
+                    { ledgerId: partyLedger.id, entryType: EntryType.DEBIT },
+                    { ledgerId: paymentLedger.id, entryType: EntryType.CREDIT }
+                ];
+
+            const voucher = await tx.voucher.create({
+                data: {
+                    voucherNo: dto.voucherNo || `IMP-${dto.sourceSerialNo}`,
+                    voucherType,
+                    sourceId: journal.id,
+                    branchId: branch.id,
+                    narration: this.importedRemarks(dto),
+                    totalDebit: amount,
+                    totalCredit: amount,
+                    voucherDate: dto.date || new Date(),
+                    entries: {
+                        create: entries.map(entry => ({
+                            ledgerId: entry.ledgerId,
+                            branchId: branch.id,
+                            entryType: entry.entryType,
+                            amount,
+                            narration: this.importedRemarks(dto)
+                        }))
+                    }
+                }
+            });
+
+            await tx.journal.update({
+                where: { id: journal.id },
+                data: { voucherId: voucher.id }
+            });
+
+            await TransactionService.updatePersistentOutstanding(
+                tx,
+                agency.id,
+                branch.id,
+                amount,
+                isReceipt ? OutstandingType.CREDIT : OutstandingType.DEBIT,
+                "ADD"
+            );
+
+            await LedgerService.syncCachedBalance(tx, paymentLedger.id);
+            await LedgerService.syncCachedBalance(tx, partyLedger.id);
+            return tx.journal.findUnique({ where: { id: journal.id } });
+        });
+    }
+
+    private static async getImportedPaymentLedger(
+        client: any,
+        branchId: string,
+        paymentThrough: PaymentType
+    ) {
+        const category = paymentThrough === PaymentType.CASH
+            ? LedgerType.CASH
+            : LedgerType.BANK;
+        const existing = await client.ledger.findFirst({
+            where: { branchId, category, isActive: true },
+            orderBy: { createdAt: "asc" }
+        });
+        if (existing) return existing;
+
+        return LedgerService.getOrCreateLedger(client, {
+            code: `${category === LedgerType.CASH ? "CASH" : "BANK"}-JOURNAL-${branchId.slice(0, 8).toUpperCase()}`,
+            name: category === LedgerType.CASH ? "Cash-in-Hand" : "Bank Accounts",
+            category,
+            groupCode: category === LedgerType.CASH ? "CASH_IN_HAND" : "BANK_ACCOUNTS",
+            nature: LedgerNature.DEBIT,
+            branchId
         });
     }
 

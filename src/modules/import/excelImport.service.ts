@@ -1990,6 +1990,7 @@ export class ExcelImportService {
                     subGroup3: String(this.getValue(row, "Sub Grp 3", "Sub Group 3", "Sub Group3") || "").trim(),
                     accountName,
                     narration: String(this.getValue(row, "Narration") || ""),
+                    remarks: String(this.getValue(row, "Remarks", "Remark") || ""),
 
                     date:
                         this.toDate(
