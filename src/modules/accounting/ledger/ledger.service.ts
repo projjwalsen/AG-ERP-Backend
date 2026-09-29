@@ -1,6 +1,7 @@
 import {
     AgencyType,
     DebitCreditNoteSourceType,
+    DebitCreditNoteStatus,
     DebitCreditNoteType,
     EntryType,
     JournalDirection,
