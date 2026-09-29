@@ -192,12 +192,17 @@ export class ImportResolver {
     }
 
     static isDebitCreditNoteImportRow(dto: JournalImportDTO) {
+        const voucherType = String(dto.voucherType || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
         return [
             "INWARD DEBIT NOTE",
             "INWARD CREDIT NOTE",
             "OUTWARD DEBIT NOTE",
             "OUTWARD CREDIT NOTE"
-        ].includes((dto.voucherType || "").trim().toUpperCase());
+        ].includes(voucherType);
     }
 
     static isInwardDebitCreditNoteImportRow(dto: JournalImportDTO) {
@@ -3523,6 +3528,119 @@ export class ImportResolver {
         });
     }
 
+    /**
+     * Import only the DebitCreditNote document. This endpoint deliberately
+     * does not create or approve a Transaction, Journal, Voucher, or ledger
+     * entry. Existing approved invoices are linked when they can be resolved;
+     * otherwise the note remains an accounting-only pending document.
+     */
+    static async importDebitCreditNoteOnly(actor: any, dto: JournalImportDTO) {
+        const normalizedType = String(dto.voucherType || "")
+            .replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+        if (!this.isDebitCreditNoteImportRow(dto)) {
+            throw new Error(`Unsupported debit/credit note type: ${dto.voucherType}`);
+        }
+
+        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
+        const isInward = normalizedType.startsWith("INWARD ");
+        const isDebitNote = normalizedType.endsWith("DEBIT NOTE");
+        if (!Number.isFinite(amount) || amount <= 0 ||
+            (dto.debitAmount > 0 && dto.creditAmount > 0) ||
+            (isDebitNote &&
+                (dto.creditAmount <= 0 || dto.debitAmount > 0)) ||
+            (!isDebitNote &&
+                (dto.debitAmount <= 0 || dto.creditAmount > 0))) {
+            throw new Error(
+                `${normalizedType} ${dto.voucherNo} must have only one positive ` +
+                `${isDebitNote ? "Credit" : "Debit"} amount`
+            );
+        }
+
+        const sourceType = isInward
+            ? DebitCreditNoteSourceType.PURCHASE
+            : DebitCreditNoteSourceType.SALE;
+        const noteType = isDebitNote
+            ? DebitCreditNoteType.DEBIT_NOTE
+            : DebitCreditNoteType.CREDIT_NOTE;
+        const categoryPath = normalizeImportedTransactionPath(dto.path) || null;
+
+        // These resolvers only look up already-approved invoices. They do not
+        // create accounting entries.
+        const linkedPurchase = isInward
+            ? await this.resolvePurchaseForJournalTransaction(actor, dto, true, false)
+            : null;
+        const linkedSale = !isInward
+            ? await this.resolveSaleForJournalTransaction(actor, dto)
+            : null;
+        const linkedDocument = linkedPurchase || linkedSale;
+
+        const branch = linkedDocument
+            ? { id: linkedDocument.branchId }
+            : await prisma.branch.findFirst({
+                where: actor?.branchId
+                    ? { id: actor.branchId, isActive: true }
+                    : { isActive: true },
+                orderBy: { createdAt: "asc" }
+            });
+        if (!branch) throw new Error("No active branch found for debit/credit note import");
+
+        const partyName = normalizeImportedPartyName(dto.particulars);
+        if (!partyName) throw new Error(`${normalizedType} ${dto.voucherNo} requires a party`);
+        const agency = linkedDocument?.agency || await prisma.agency.findFirst({
+            where: { name: { equals: partyName, mode: "insensitive" } }
+        });
+        if (!agency) throw new Error(`Agency not found for ${dto.particulars}`);
+
+        const importKey = buildTransactionImportKey(
+            "DEBIT_CREDIT_NOTE_ONLY",
+            branch.id,
+            agency.id,
+            dto.voucherNo,
+            sourceType,
+            noteType,
+            categoryPath,
+            dto.date?.toISOString().slice(0, 10) || "",
+            amount
+        );
+        const noteNo = String(dto.voucherNo || "").trim();
+        const existing = await prisma.debitCreditNote.findFirst({
+            where: {
+                OR: [
+                    { importKey },
+                    { branchId: branch.id, agencyId: agency.id, noteNo, sourceType, type: noteType }
+                ]
+            }
+        });
+        const data = {
+            categoryPath,
+            noteDate: dto.date || new Date(),
+            narration: dto.particulars || `Imported ${dto.voucherType}`,
+            totalAmount: amount,
+            ...(linkedPurchase ? { purchaseId: linkedPurchase.id, saleId: null } : {}),
+            ...(linkedSale ? { saleId: linkedSale.id, purchaseId: null } : {})
+        };
+        if (existing) {
+            return prisma.debitCreditNote.update({ where: { id: existing.id }, data });
+        }
+
+        return prisma.debitCreditNote.create({
+            data: {
+                noteNo,
+                type: noteType,
+                sourceType,
+                agencyId: agency.id,
+                branchId: branch.id,
+                importKey,
+                status: DebitCreditNoteStatus.PENDING,
+                createdById: actor.id,
+                ...data,
+                particulars: {
+                    create: [{ description: categoryPath || `Imported ${normalizedType}`, amount }]
+                }
+            }
+        });
+    }
+
     static async importInvoiceTransaction(
         actor: any,
         dto: JournalImportDTO
@@ -4207,7 +4325,8 @@ export class ImportResolver {
     private static async resolvePurchaseForJournalTransaction(
         actor: any,
         dto: JournalImportDTO,
-        allowSettledFifo = false
+        allowSettledFifo = false,
+        allowVendorPartyFallback = true
     ) {
         const candidates = this.journalInvoiceCandidates(dto);
 
@@ -4282,6 +4401,7 @@ export class ImportResolver {
         }
 
         if (matches.length === 1) return matches[0];
+        if (!allowVendorPartyFallback) return null;
         if (!importedParty) return null;
 
         // Vch No. on note rows is the note number, not a Purchase invoice.

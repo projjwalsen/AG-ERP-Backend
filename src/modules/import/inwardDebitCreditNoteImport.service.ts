@@ -1,8 +1,9 @@
 import { Express } from "express";
 import { ExcelImportService } from "./excelImport.service";
 import { ImportResolver } from "./import.resolver";
+import { DebitCreditNoteService } from "../debitCreditNote/debitCreditNote.service";
 
-/** Dedicated importer for inward debit/credit notes. */
+/** Dedicated note-only importer for inward and outward debit/credit notes. */
 export class InwardDebitCreditNoteImportService {
     static async importWorkbook(
         actor: any,
@@ -20,7 +21,7 @@ export class InwardDebitCreditNoteImportService {
                 sheetName,
                 headerRow
             );
-        }).filter(dto => ImportResolver.isInwardDebitCreditNoteImportRow(dto));
+        }).filter(dto => ImportResolver.isDebitCreditNoteImportRow(dto));
 
         const summary = {
             total: rows.length,
@@ -33,7 +34,10 @@ export class InwardDebitCreditNoteImportService {
 
         for (const dto of rows) {
             try {
-                await ImportResolver.importInwardPurchaseNote(actor, dto, { resolvePath: true });
+                const note = await ImportResolver.importDebitCreditNoteOnly(actor, dto);
+                if (note.status === "PENDING") {
+                    await DebitCreditNoteService.approveNote(actor, note.id);
+                }
                 summary.success++;
             } catch (error: any) {
                 summary.failed++;
@@ -42,7 +46,8 @@ export class InwardDebitCreditNoteImportService {
                     voucherNo: dto.voucherNo,
                     particulars: dto.particulars,
                     path: dto.path,
-                    message: error?.message || "Import failed"
+                    message: error?.message || "Import failed",
+                    voucherType: dto.voucherType
                 });
             } finally {
                 summary.processed++;

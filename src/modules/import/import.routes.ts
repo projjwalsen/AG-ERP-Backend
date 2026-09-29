@@ -348,12 +348,15 @@ router.post(
  * @openapi
  * /api/migration/import/inward-debit-credit-notes:
  *   post:
- *     summary: Import inward debit and credit notes
+ *     summary: Import inward and outward debit and credit notes
  *     description: >
- *       Upload an Excel workbook containing Inward Debit Note and Inward
- *       Credit Note rows. The Path column is resolved into the purchase
- *       account hierarchy and existing notes are remapped when necessary.
- *       This endpoint does not import ordinary journals or transactions.
+ *       Upload an Excel workbook containing all four note types. Inward rows
+ *       use sourceType PURCHASE and outward rows use sourceType SALE. The
+ *       Purchase/Sale Invoice No. column is used to link each note to its
+ *       approved source invoice. Each note is then approved through the
+ *       Debit/Credit Note accounting workflow, which updates AgencyOutstanding
+ *       and creates the party/adjustment ledger voucher entries. The Path
+ *       column is persisted as categoryPath.
  *     tags:
  *       - Import
  *     security:
@@ -373,7 +376,7 @@ router.post(
  *                 description: Excel file with Date, Particular, Voucher Type, Voucher No., Debit, Credit, and Path columns.
  *     responses:
  *       200:
- *         description: Inward notes imported successfully.
+ *         description: All debit/credit note rows imported successfully.
  *       400:
  *         description: Invalid workbook or note data.
  *       401:

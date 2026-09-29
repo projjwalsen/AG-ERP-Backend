@@ -381,14 +381,28 @@ export class ReportingService {
         // below admit Path-classified Purchase entries, legacy inward-note
         // ledger entries without a saved Path, and Sales ledger entries
         // belonging to actual Sale vouchers. New inward notes are totalled
-        // directly from DebitCreditNote.categoryPath below.
+        // directly from DebitCreditNote.categoryPath below. Imports created
+        // through the regular Journal importer are approved Journals, while
+        // the dedicated note-only endpoint leaves notes PENDING until
+        // accounting approval.
         const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
             OR: [
                 {
                     voucher: {
                         journals: {
                             some: {
-                                status: JournalStatus.APPROVED
+                                status: JournalStatus.APPROVED,
+                                categoryPath: null
+                            }
+                        }
+                    }
+                },
+                {
+                    voucher: {
+                        journals: {
+                            some: {
+                                status: JournalStatus.APPROVED,
+                                categoryPath: { not: null }
                             }
                         }
                     }
