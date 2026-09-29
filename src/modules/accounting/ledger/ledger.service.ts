@@ -4855,6 +4855,128 @@ export class LedgerService {
     }
 
     /**
+     * Repair Purchase Accounts after an overly broad classification. Each
+     * approved Purchase is restored to the ledger represented by its persisted
+     * Purchase.voucherType. Only LedgerType.PURCHASE entries are moved.
+     */
+    static async restorePurchaseVoucherClassifications(
+        actor: any,
+        payload: { branchId?: string }
+    ) {
+        if (!actor?.id) throw new ApiError("Unauthorized", 401);
+
+        const effectiveBranchId = actor.branchAccessType === "ALL"
+            ? payload.branchId
+            : actor.branchId;
+
+        const purchaseTypes = new Set<VoucherType>([
+            VoucherType.PURCHASE,
+            VoucherType.RCM_PURCHASE,
+            VoucherType.IGST_PURCHASE,
+            VoucherType.GST_PURCHASE,
+            VoucherType.CST_PURCHASE,
+            VoucherType.DISCOUNT_PURCHASE,
+            VoucherType.HIGH_SEAS_PURCHASE,
+            VoucherType.IMPORT_PURCHASE,
+            VoucherType.VAT_PURCHASE,
+            VoucherType.INTEREST_SAUNDRY_CREDITORS
+        ]);
+
+        return prisma.$transaction(async tx => {
+            const purchases = await tx.purchase.findMany({
+                where: {
+                    status: PurchaseStatus.APPROVED,
+                    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
+                },
+                select: {
+                    id: true,
+                    invoiceNo: true,
+                    branchId: true,
+                    voucherType: true
+                }
+            });
+
+            const affectedLedgerIds = new Set<string>();
+            const movedByType = new Map<string, {
+                voucherType: string;
+                ledgerId: string;
+                ledgerName: string;
+                purchases: number;
+                entries: number;
+            }>();
+            const skipped: Array<{ purchaseId: string; invoiceNo: string; reason: string }> = [];
+
+            for (const purchase of purchases) {
+                const voucherType = purchase.voucherType || VoucherType.PURCHASE;
+                if (!purchaseTypes.has(voucherType)) {
+                    skipped.push({
+                        purchaseId: purchase.id,
+                        invoiceNo: purchase.invoiceNo,
+                        reason: `Unsupported Purchase voucher type ${String(voucherType)}`
+                    });
+                    continue;
+                }
+
+                const target = await this.getPurchaseLedger(
+                    tx,
+                    purchase.branchId,
+                    voucherType
+                );
+                const entries = await tx.ledgerEntry.findMany({
+                    where: {
+                        voucher: { sourceId: purchase.id },
+                        ledger: { category: LedgerType.PURCHASE }
+                    },
+                    select: { id: true, ledgerId: true }
+                });
+
+                if (entries.length === 0) {
+                    skipped.push({
+                        purchaseId: purchase.id,
+                        invoiceNo: purchase.invoiceNo,
+                        reason: "No Purchase ledger posting found"
+                    });
+                    continue;
+                }
+
+                for (const entry of entries) affectedLedgerIds.add(entry.ledgerId);
+                affectedLedgerIds.add(target.id);
+                await tx.ledgerEntry.updateMany({
+                    where: { id: { in: entries.map(entry => entry.id) } },
+                    data: { ledgerId: target.id }
+                });
+
+                const key = String(voucherType);
+                const summary = movedByType.get(key) || {
+                    voucherType: key,
+                    ledgerId: target.id,
+                    ledgerName: target.name,
+                    purchases: 0,
+                    entries: 0
+                };
+                summary.purchases += 1;
+                summary.entries += entries.length;
+                movedByType.set(key, summary);
+            }
+
+            for (const ledgerId of affectedLedgerIds) {
+                await this.syncCachedBalance(tx, ledgerId);
+            }
+
+            return {
+                branchId: effectiveBranchId || null,
+                approvedPurchases: purchases.length,
+                movedPurchases: [...movedByType.values()]
+                    .reduce((sum, row) => sum + row.purchases, 0),
+                movedEntries: [...movedByType.values()]
+                    .reduce((sum, row) => sum + row.entries, 0),
+                byVoucherType: [...movedByType.values()],
+                skipped
+            };
+        });
+    }
+
+    /**
      * Read-only audit of the vouchers currently contributing to a Purchase
      * Account category. This deliberately does not create a group or ledger.
      */

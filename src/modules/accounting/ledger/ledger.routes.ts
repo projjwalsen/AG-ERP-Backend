@@ -12,6 +12,7 @@ import {
     getCompanyLedger,
     getGSTLedger,
     classifyPurchaseVouchers,
+    restorePurchaseVoucherClassifications,
     previewPurchaseVoucherClassification
 } from "./ledger.controller";
 import { authMiddleware, checkPermission } from "../../../core/middleware/auth";
@@ -259,6 +260,35 @@ router.post(
     "/purchase-vouchers/classify",
     checkPermission("PURCHASE:WRITE"),
     classifyPurchaseVouchers
+);
+
+/**
+ * @openapi
+ * /api/ledgers/purchase-vouchers/classify/restore-by-type:
+ *   post:
+ *     summary: Restore Purchase Account categories from Purchase voucher types
+ *     description: Moves only Purchase ledger entries back to the category
+ *       represented by each Purchase.voucherType.
+ *     tags:
+ *       - Ledgers
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               branchId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Purchase classifications restored successfully.
+ */
+router.post(
+    "/purchase-vouchers/classify/restore-by-type",
+    checkPermission("PURCHASE:WRITE"),
+    restorePurchaseVoucherClassifications
 );
 
 
