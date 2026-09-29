@@ -252,7 +252,8 @@ export class ImportResolver {
                 .trim()
         ].filter(Boolean)));
 
-        let agency = await prisma.agency.findFirst({
+        let agency: { id: string; name: string; type: AgencyType } | null = await prisma.agency.findFirst({
+            select: { id: true, name: true, type: true },
             where: {
                 OR: partyNames.map(name => ({
                     name: { equals: name, mode: "insensitive" as const }
@@ -275,6 +276,9 @@ export class ImportResolver {
 
         const paymentThrough = this.paymentThroughFromRow(dto.particulars, dto.raw);
         return prisma.$transaction(async tx => {
+            const voucherType = isReceipt
+                ? VoucherType.RECEIPT
+                : VoucherType.PAYMENT;
             const paymentLedger = await this.getImportedPaymentLedger(
                 tx,
                 branch.id,
@@ -288,9 +292,14 @@ export class ImportResolver {
             }
 
             const existing = await tx.journal.findFirst({
-                where: { branchId: branch.id, serialNo: dto.sourceSerialNo }
+                where: { branchId: branch.id, serialNo: dto.sourceSerialNo },
+                include: { voucher: true }
             });
-            if (existing) return existing;
+            // A previous import could have created a generic Journal with
+            // this serial number before Receipt/Payment voucher support was
+            // added. Return only when the requested voucher already exists;
+            // otherwise repair/reuse the existing Journal below.
+            if (existing?.voucher?.voucherType === voucherType) return existing;
 
             const partyLedger = isReceipt
                 ? await LedgerService.getOrCreateCustomerLedger(tx, branch.id, agency.id)
@@ -331,8 +340,7 @@ export class ImportResolver {
                 }
             });
 
-            const journal = await tx.journal.create({
-                data: {
+            const journalData = {
                     branchId: branch.id,
                     agencyId: agency.id,
                     journalHeadId: partyHead.id,
@@ -354,12 +362,14 @@ export class ImportResolver {
                     createdById: actor?.id || null,
                     approvedById: actor?.id || null,
                     approvedAt: new Date()
-                }
-            });
+            };
+            const journal = existing
+                ? await tx.journal.update({
+                    where: { id: existing.id },
+                    data: journalData
+                })
+                : await tx.journal.create({ data: journalData });
 
-            const voucherType = isReceipt
-                ? VoucherType.RECEIPT
-                : VoucherType.PAYMENT;
             const entries = isReceipt
                 ? [
                     { ledgerId: paymentLedger.id, entryType: EntryType.DEBIT },
@@ -370,8 +380,7 @@ export class ImportResolver {
                     { ledgerId: paymentLedger.id, entryType: EntryType.CREDIT }
                 ];
 
-            const voucher = await tx.voucher.create({
-                data: {
+            const voucherData = {
                     voucherNo: dto.voucherNo || `IMP-${dto.sourceSerialNo}`,
                     voucherType,
                     sourceId: journal.id,
@@ -389,8 +398,19 @@ export class ImportResolver {
                             narration: this.importedRemarks(dto)
                         }))
                     }
-                }
-            });
+            };
+            const voucher = existing?.voucher
+                ? await tx.voucher.update({
+                    where: { id: existing.voucher.id },
+                    data: {
+                        ...voucherData,
+                        entries: {
+                            deleteMany: {},
+                            create: voucherData.entries.create
+                        }
+                    }
+                })
+                : await tx.voucher.create({ data: { ...voucherData, sourceId: journal.id } });
 
             await tx.journal.update({
                 where: { id: journal.id },
