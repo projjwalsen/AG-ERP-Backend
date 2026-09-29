@@ -190,7 +190,16 @@ export class JournalImportService {
                             (type === "TRANSACTION" || type === "BOTH") &&
                             isInwardNote
                         ) {
-                            await ImportResolver.importInwardPurchaseNote(actor, dto);
+                            // The regular Journal Import UI posts here. Give
+                            // inward notes the same Excel Path handling as
+                            // the dedicated inward-note endpoint so the
+                            // categoryPath is persisted and the Purchase
+                            // ledger mapping is repaired when needed.
+                            await ImportResolver.importInwardPurchaseNote(
+                                actor,
+                                dto,
+                                { resolvePath: true }
+                            );
                         } else if (
                             (
                             (

@@ -436,7 +436,7 @@ export const importInwardDebitCreditNoteWorkbook = async (
         );
         return res.status(200).json({
             success: true,
-            message: "Inward debit/credit notes imported successfully.",
+            message: "Inward and outward debit/credit notes imported successfully.",
             data: result
         });
     } catch (error) {

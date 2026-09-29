@@ -1945,6 +1945,8 @@ export class ExcelImportService {
                         this.getValue(
                             row,
                             "Purchase Invoice No",
+                            "Purchase/Sale Invoice No",
+                            "Purchase/Sale Invoice Number",
                             "Source Purchase Invoice No",
                             "Supplier Invoice No",
                             "Invoice No"
