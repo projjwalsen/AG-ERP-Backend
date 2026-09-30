@@ -13,20 +13,6 @@ import {
     sumTrialBalanceEntryGroups
 } from "./trial-balance.utils";
 
-// Older generated Prisma clients do not expose CASH_RECEIPT yet. Keep this
-// filter valid during a rolling schema/client update.
-const CASH_VOUCHER_TYPES = [
-    VoucherType.CASH_PAYMENT,
-    (VoucherType as any).CASH_RECEIPT ?? "CASH_RECEIPT",
-    // Imported Receipt/Payment vouchers can use the plain voucher type
-    // while still posting to a CASH ledger.
-    VoucherType.RECEIPT,
-    VoucherType.PAYMENT,
-    // Regular Journal imports can post directly to a CASH ledger.  They
-    // must be included in Trial Balance movement totals along with the
-    // explicit cash payment/receipt voucher types.
-    VoucherType.JOURNAL
-] as VoucherType[];
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
 const BANK_VOUCHER_TYPES = [
@@ -37,6 +23,22 @@ const BANK_VOUCHER_TYPES = [
     VoucherType.RECEIPT,
     VoucherType.PAYMENT
 ] as VoucherType[];
+// Trial Balance cash-in-hand is intentionally limited to the Journal
+// voucher whose subhead is Cash under the Cash in Hand journal head.
+const CASH_IN_HAND_JOURNAL_VOUCHER_FILTER: Prisma.VoucherWhereInput = {
+    voucherType: VoucherType.JOURNAL,
+    journals: {
+        some: {
+            status: JournalStatus.APPROVED,
+            journalHead: {
+                name: { equals: "Cash", mode: "insensitive" },
+                parent: {
+                    name: { equals: "Cash in Hand", mode: "insensitive" }
+                }
+            }
+        }
+    }
+};
 const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
 ]);
@@ -165,10 +167,9 @@ export class ReportingService {
             AND: [
                 ...(branchEntryFilter ? [branchEntryFilter] : []),
                 { ledgerId: { in: cashLedgerIds } },
-                // Cash movements include explicit cash receipts/payments and
-                // regular imported Journal vouchers. Imported opening-balance
-                // vouchers are added separately below.
-                { voucher: { voucherType: { in: CASH_VOUCHER_TYPES } } }
+                // Cash movements are restricted to the approved Cash journal
+                // subhead. Imported opening-balance vouchers are excluded.
+                { voucher: CASH_IN_HAND_JOURNAL_VOUCHER_FILTER }
             ]
         };
         const periodCashEntryWhere: Prisma.LedgerEntryWhereInput = {
@@ -492,6 +493,24 @@ export class ReportingService {
                         { ledger: { category: LedgerType.SALES } },
                         { voucher: { voucherType: VoucherType.SALE } }
                     ]
+                },
+                {
+                    AND: [
+                        // Sale invoices debit the agency's customer ledger by
+                        // the invoice grand total. Include that posting so it
+                        // is visible under the Sundry Debtors control head.
+                        { ledger: { category: LedgerType.CUSTOMER } },
+                        { voucher: { voucherType: VoucherType.SALE } }
+                    ]
+                },
+                {
+                    AND: [
+                        // Purchase invoices credit the agency's vendor ledger
+                        // by the invoice grand total. Include that posting so
+                        // it is visible under the Sundry Creditors control head.
+                        { ledger: { category: LedgerType.VENDOR } },
+                        { voucher: { voucherType: VoucherType.PURCHASE } }
+                    ]
                 }
             ]
         };
@@ -605,6 +624,7 @@ export class ReportingService {
                 const mayUseOpening =
                     (!branchId || ledger.branchId === branchId) &&
                     ledger.category !== LedgerType.BANK &&
+                    ledger.category !== LedgerType.CASH &&
                     openingAppliesAt(ledger.openingBalanceDate, endDate);
                 const openingDate = mayUseOpening
                     ? ledger.openingBalanceDate || undefined
@@ -672,10 +692,12 @@ export class ReportingService {
                                                 category: { notIn: [LedgerType.CASH, LedgerType.BANK] }
                                             }
                                         },
-                                        // Cash in Hand is driven only by cash receipts/payments.
+                                        // Cash in Hand is driven only by the
+                                        // approved Journal / Cash in Hand / Cash
+                                        // subhead combination.
                                         {
                                             ledger: { category: LedgerType.CASH },
-                                            voucher: { voucherType: { in: CASH_VOUCHER_TYPES } }
+                                            voucher: CASH_IN_HAND_JOURNAL_VOUCHER_FILTER
                                         },
                                         // Bank accounts are driven only by
                                         // explicit bank receipts/payments.
@@ -715,7 +737,7 @@ export class ReportingService {
                     scopedJournalEntryFilter,
                     {
                         ledgerId: { in: ledgers.map(ledger => ledger.id) },
-                        ledger: { category: { not: LedgerType.BANK } },
+                        ledger: { category: { notIn: [LedgerType.BANK, LedgerType.CASH] } },
                         voucher: {
                             voucherType: VoucherType.OPENING_BALANCE,
                             voucherDate: { lte: endDate }
@@ -755,6 +777,7 @@ export class ReportingService {
                  */
                 const shouldUseLedgerOpening =
                     ledger.category !== LedgerType.BANK &&
+                    ledger.category !== LedgerType.CASH &&
                     (!branchId || ledger.branchId === branchId) &&
                     openingAppliesAt(
                         ledger.openingBalanceDate,
