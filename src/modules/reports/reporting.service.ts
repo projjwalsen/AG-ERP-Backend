@@ -775,6 +775,49 @@ export class ReportingService {
         });
         const openingMap = sumTrialBalanceEntryGroups(openingGroups);
 
+        // Older journal imports created a separate JOURNAL ledger for a
+        // party, while the opening-balance import also stored the opening on
+        // the canonical CUSTOMER/VENDOR ledger.  In that situation the
+        // opening voucher on the legacy ledger is the same opening amount,
+        // not another opening.  Suppress only that duplicate opening
+        // voucher; keep the legacy ledger's ordinary journal movements.
+        const partyBaseName = (value: unknown) => String(value || "")
+            .replace(/\s+-\s+Sundry\s+(?:Debtor|Creditor)\s*$/i, "")
+            .trim()
+            .replace(/\s+/g, " ")
+            .toUpperCase();
+        const canonicalPartyOpenings = new Map<string, boolean>();
+
+        for (const ledger of ledgers) {
+            if (ledger.category !== LedgerType.CUSTOMER &&
+                ledger.category !== LedgerType.VENDOR) continue;
+
+            const hasOpening =
+                Number(ledger.openingDebit || 0) !== 0 ||
+                Number(ledger.openingCredit || 0) !== 0 ||
+                Number(ledger.openingBalance || 0) !== 0;
+            if (!hasOpening) continue;
+
+            canonicalPartyOpenings.set(
+                `${ledger.branchId || ""}|${ledger.category}|${partyBaseName(ledger.name)}`,
+                true
+            );
+        }
+
+        const duplicateLegacyOpeningLedgerIds = new Set<string>();
+        for (const ledger of ledgers) {
+            if (ledger.category !== LedgerType.JOURNAL) continue;
+
+            const base = partyBaseName(ledger.name);
+            const branch = ledger.branchId || "";
+            if (
+                canonicalPartyOpenings.has(`${branch}|${LedgerType.CUSTOMER}|${base}`) ||
+                canonicalPartyOpenings.has(`${branch}|${LedgerType.VENDOR}|${base}`)
+            ) {
+                duplicateLegacyOpeningLedgerIds.add(ledger.id);
+            }
+        }
+
         /**
          * ============================================================
          * 8. BUILD ACCOUNT-WISE TRIAL BALANCE
@@ -830,7 +873,8 @@ export class ReportingService {
                     Number(ledger.openingDebit || 0) !== 0 ||
                     Number(ledger.openingCredit || 0) !== 0 ||
                     Number(ledger.openingBalance || 0) !== 0;
-                const importedOpening = !hasStoredOpening
+                const importedOpening = !hasStoredOpening &&
+                    !duplicateLegacyOpeningLedgerIds.has(ledger.id)
                     ? (openingMap.get(ledger.id) || {
                         debit: 0,
                         credit: 0
@@ -1590,6 +1634,21 @@ export class ReportingService {
                         .toFixed(2)
                 );
 
+                // A number of older journal imports created a JOURNAL ledger
+                // for the same party as the canonical CUSTOMER ledger. The
+                // duplicate opening voucher is suppressed above; exclude
+                // only those confirmed duplicate ledgers from the control
+                // opening columns. Other JOURNAL ledgers in this group may
+                // have legitimate opening balances and must remain included.
+                const openingRows = sourceRows.filter(row =>
+                    !duplicateLegacyOpeningLedgerIds.has(row.ledgerId)
+                );
+                const sumOpening = (key: string) => Number(
+                    openingRows
+                        .reduce((total, row) => total + Number(row[key] || 0), 0)
+                        .toFixed(2)
+                );
+
                 return {
                     ...sourceRows[0],
                     ledgerId: `aggregate:ledger-group:${group.code}:${branchId || "all"}`,
@@ -1600,8 +1659,8 @@ export class ReportingService {
                     groupId: group.id,
                     periodDebit: sum("periodDebit"),
                     periodCredit: sum("periodCredit"),
-                    openingDebit: sum("openingDebit"),
-                    openingCredit: sum("openingCredit"),
+                    openingDebit: sumOpening("openingDebit"),
+                    openingCredit: sumOpening("openingCredit"),
                     debit: sum("closingDebit"),
                     credit: sum("closingCredit"),
                     closingDebit: sum("closingDebit"),
