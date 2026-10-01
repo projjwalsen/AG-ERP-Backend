@@ -921,6 +921,67 @@ export class ReportingService {
             });
 
         /*
+         * Older journal imports could create a JOURNAL ledger using the
+         * party's plain name (for example, "ACME-DR"), while receipts and
+         * sales use the canonical CUSTOMER ledger ("ACME-DR - Sundry
+         * Debtor").  Those are the same accounting party, but the legacy
+         * JOURNAL ledger is outside the Sundry Debtors hierarchy.  Fold the
+         * legacy row into its matching CUSTOMER row for Trial Balance so
+         * opening/journal debits and receipt credits are shown together.
+         * This is report aggregation only; it does not duplicate postings.
+         */
+        const normalizePartyLedgerName = (value: unknown) => String(value || "")
+            .trim()
+            .toUpperCase()
+            .replace(/\s*-\s*SUNDRY\s+(DEBTOR|CREDITOR)\s*$/i, "")
+            .replace(/\s+/g, " ");
+        const roundAmount = (value: number) =>
+            Math.round(value * 100) / 100;
+
+        const customerRowsByParty = new Map<string, any>();
+        for (const row of rawLedgerRows) {
+            if (row.ledgerCategory === LedgerType.CUSTOMER) {
+                customerRowsByParty.set(
+                    `${row.branchId || ""}|${normalizePartyLedgerName(row.account)}`,
+                    row
+                );
+            }
+        }
+
+        const legacyJournalRows = new Set<any>();
+        for (const row of rawLedgerRows) {
+            if (row.ledgerCategory !== LedgerType.JOURNAL) continue;
+
+            const target = customerRowsByParty.get(
+                `${row.branchId || ""}|${normalizePartyLedgerName(row.account)}`
+            );
+            if (!target) continue;
+
+            for (const field of [
+                "periodDebit",
+                "periodCredit",
+                "openingDebit",
+                "openingCredit",
+                "debit",
+                "credit",
+                "closingDebit",
+                "closingCredit"
+            ]) {
+                target[field] = roundAmount(
+                    Number(target[field] || 0) + Number(row[field] || 0)
+                );
+            }
+            target.closingSigned = roundAmount(
+                Number(target.closingDebit || 0) - Number(target.closingCredit || 0)
+            );
+            legacyJournalRows.add(row);
+        }
+
+        const normalizedLedgerRows = rawLedgerRows.filter(
+            row => !legacyJournalRows.has(row)
+        );
+
+        /*
          * Older imports stored the Excel Type on Transaction but posted the
          * sale voucher to the generic SALES-* ledger.  Until a ledger repair
          * is run, that left valid heads such as GST SALES invisible in Trial
@@ -1436,7 +1497,7 @@ export class ReportingService {
         ]);
 
         const ledgerRows = [
-            ...rawLedgerRows.filter(row =>
+            ...normalizedLedgerRows.filter(row =>
                 row.ledgerCategory !== LedgerType.PURCHASE &&
                 row.ledgerCategory !== LedgerType.SALES ||
                 CUSTOM_TRIAL_BALANCE_GROUP_CODES.has(
