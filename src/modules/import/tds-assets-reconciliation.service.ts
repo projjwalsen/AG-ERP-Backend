@@ -167,9 +167,25 @@ export class TdsAssetsReconciliationService {
                     continue;
                 }
 
-                const vouchers = row.voucherId
-                    ? await tx.voucher.findMany({ where: { id: row.voucherId, voucherType: VoucherType.JOURNAL }, include: { entries: { include: { ledger: true } }, journals: true } })
-                    : await tx.voucher.findMany({
+                const voucherInclude = {
+                    entries: { include: { ledger: true } },
+                    journals: true
+                } as const;
+                let vouchers = row.voucherId
+                    ? await tx.voucher.findMany({
+                        where: {
+                            id: row.voucherId,
+                            voucherType: VoucherType.JOURNAL
+                        },
+                        include: voucherInclude
+                    })
+                    : [];
+
+                // Voucher IDs in external ER/Tally reports are not always
+                // the application's UUIDs. If the supplied ID is absent,
+                // safely fall back to the stable voucher/serial number.
+                if (vouchers.length === 0) {
+                    vouchers = await tx.voucher.findMany({
                         where: {
                             voucherType: VoucherType.JOURNAL,
                             OR: [
@@ -178,8 +194,9 @@ export class TdsAssetsReconciliationService {
                                 { journals: { some: { voucherNo: row.voucherNo } } }
                             ]
                         },
-                        include: { entries: { include: { ledger: true } }, journals: true }
+                        include: voucherInclude
                     });
+                }
                 if (vouchers.length !== 1) {
                     failures.push({ row: row.row, voucherNo: row.voucherNo, error: `Expected exactly one existing JOURNAL voucher, found ${vouchers.length}` });
                     continue;
@@ -223,7 +240,19 @@ export class TdsAssetsReconciliationService {
             }
 
             if (failures.length) {
-                throw new ApiError(`TDS reconciliation aborted; ${failures.length} rows could not be matched`, 400);
+                const failureCounts = new Map<string, number>();
+                for (const failure of failures) {
+                    const reason = String(failure.error || "Unknown failure");
+                    const key = reason.replace(/,? found \d+$/, ", found <count>");
+                    failureCounts.set(key, (failureCounts.get(key) || 0) + 1);
+                }
+                const breakdown = [...failureCounts.entries()]
+                    .map(([reason, count]) => `${reason}: ${count}`)
+                    .join("; ");
+                throw new ApiError(
+                    `TDS reconciliation aborted; ${failures.length} rows could not be matched. ${breakdown}`,
+                    400
+                );
             }
             if (dryRun) return { dryRun: true, workbookRows: parsed.length, uniqueRows: rows.length, updated: plans.length };
 
