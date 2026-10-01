@@ -12,6 +12,7 @@ import { OpeningBalanceJournalImportService } from "./opening-balance-journal-im
 import { InwardDebitCreditNoteImportService } from "./inwardDebitCreditNoteImport.service";
 import { ProductMasterImportService } from "./productImport.service";
 import { AgencyImportService } from "./agencyImport.service";
+import { TdsAssetsReconciliationService } from "./tds-assets-reconciliation.service";
 
 
 export const importWorkbook = async (
@@ -415,6 +416,29 @@ export const importOpeningBalanceJournalWorkbook = async (
             }
         })}\n\n`);
         res.end();
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const reconcileTdsAssetsWorkbook = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Excel file is required." });
+        }
+        const dryRun = String(req.query.dryRun ?? req.body.dryRun ?? "false").toLowerCase() === "true";
+        const result = await TdsAssetsReconciliationService.reconcile(req.file.buffer, dryRun);
+        return res.status(200).json({
+            success: true,
+            message: dryRun
+                ? "TDS Assets reconciliation validated successfully; no changes were applied."
+                : "TDS Assets vouchers reconciled successfully.",
+            data: result
+        });
     } catch (error) {
         next(error);
     }

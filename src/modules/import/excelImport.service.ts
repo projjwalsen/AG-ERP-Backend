@@ -1743,6 +1743,9 @@ export class ExcelImportService {
             const openingBalance = openingBalanceValue === undefined
                 ? undefined
                 : this.toNumber(openingBalanceValue);
+            const openingBalanceText = String(openingBalanceValue ?? "");
+            const openingIsCredit = /\bCR\b/i.test(openingBalanceText);
+            const openingIsDebit = /\bDR\b/i.test(openingBalanceText);
             const explicitOpeningDebit = openingDebitValue === undefined
                 ? 0
                 : this.toNumber(openingDebitValue);
@@ -1796,14 +1799,31 @@ export class ExcelImportService {
 
             const openingBalanceDebit = explicitOpeningDebit || (
                 openingBalance !== undefined && type === AgencyType.CLIENT
-                    ? openingBalance
+                    ? openingIsCredit
+                        ? 0
+                        : openingBalance
                     : 0
             );
             const openingBalanceCredit = explicitOpeningCredit || (
                 openingBalance !== undefined && type === AgencyType.VENDOR
-                    ? openingBalance
+                    ? openingIsDebit
+                        ? 0
+                        : openingBalance
                     : 0
             );
+
+            // A generic opening column can contain a signed Tally display
+            // value such as `3,233,918.96 Cr`. Preserve that explicit side
+            // even when the agency type's normal nature is the opposite;
+            // otherwise the opening is silently imported on the wrong side.
+            const signedOpeningDebit = openingBalance !== undefined &&
+                openingIsDebit && !explicitOpeningDebit && !explicitOpeningCredit
+                ? openingBalance
+                : openingBalanceDebit;
+            const signedOpeningCredit = openingBalance !== undefined &&
+                openingIsCredit && !explicitOpeningDebit && !explicitOpeningCredit
+                ? openingBalance
+                : openingBalanceCredit;
 
             agencies.set(key, {
 
@@ -1829,8 +1849,8 @@ export class ExcelImportService {
                     ).trim(),
 
                 openingBalance,
-                openingBalanceDebit,
-                openingBalanceCredit,
+                openingBalanceDebit: signedOpeningDebit,
+                openingBalanceCredit: signedOpeningCredit,
                 openingBalanceDate,
 
                 type
