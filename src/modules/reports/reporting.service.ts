@@ -727,9 +727,11 @@ export class ReportingService {
         const periodMap = sumTrialBalanceEntryGroups(periodGroups);
         const priorMap = sumTrialBalanceEntryGroups(priorGroups);
 
-        // Imported opening-balance vouchers are not stored on the ledger's
-        // openingBalance fields. Read them separately so they can be shown
-        // as an opening row and included in the closing balance calculation.
+        // Imported opening-balance vouchers are used only for ledgers that do
+        // not already have an opening value stored on the ledger itself.
+        // Some older imports populated both the Ledger opening fields and an
+        // OPENING_BALANCE voucher; adding both would double the opening
+        // balance in Trial Balance.
         const openingGroups = await prisma.ledgerEntry.groupBy({
             by: ["ledgerId", "entryType"],
             where: {
@@ -800,16 +802,27 @@ export class ReportingService {
                         credit: 0
                     };
 
-                const importedOpening = openingMap.get(ledger.id) || {
-                    debit: 0,
-                    credit: 0
-                };
+                const hasStoredOpening =
+                    Number(ledger.openingDebit || 0) !== 0 ||
+                    Number(ledger.openingCredit || 0) !== 0 ||
+                    Number(ledger.openingBalance || 0) !== 0;
+                const importedOpening = !hasStoredOpening
+                    ? (openingMap.get(ledger.id) || {
+                        debit: 0,
+                        credit: 0
+                    })
+                    : {
+                        debit: 0,
+                        credit: 0
+                    };
+
+                const openingFromVoucher = importedOpening;
                 const ledgerWithImportedOpening = {
                     ...ledger,
-                    openingDebit: Number(ledger.openingDebit || 0) + importedOpening.debit,
-                    openingCredit: Number(ledger.openingCredit || 0) + importedOpening.credit,
+                    openingDebit: Number(ledger.openingDebit || 0) + openingFromVoucher.debit,
+                    openingCredit: Number(ledger.openingCredit || 0) + openingFromVoucher.credit,
                     openingBalance: Number(ledger.openingBalance || 0) +
-                        importedOpening.debit - importedOpening.credit
+                        openingFromVoucher.debit - openingFromVoucher.credit
                 };
 
                 const amounts = calculateTrialBalanceAmounts(
