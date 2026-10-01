@@ -75,7 +75,7 @@ type LedgerSeed = {
     code: string;
     name: string;
     category: LedgerType;
-    groupCode: string;
+    groupCode?: string;
     groupId?: string;
     nature: LedgerNature;
     branchId?: string | null;

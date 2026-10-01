@@ -3222,8 +3222,8 @@ export class ImportResolver {
             )
             : candidates;
 
-        if (matches.length === 1 && matches[0].categoryPath !== categoryPath) {
-            await prisma.debitCreditNote.update({
+        if (matches.length === 1 && (matches[0] as any).categoryPath !== categoryPath) {
+            await (prisma.debitCreditNote as any).update({
                 where: { id: matches[0].id },
                 data: { categoryPath }
             });
