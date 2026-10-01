@@ -402,7 +402,7 @@ export class ReportingService {
         // through the regular Journal importer are approved Journals, while
         // the dedicated note-only endpoint leaves notes PENDING until
         // accounting approval.
-        const journalEntryFilter: Prisma.LedgerEntryWhereInput = {
+        const journalEntryFilter: Prisma.LedgerEntryWhereInput = ({
             OR: [
                 // Receipt and payment imports are posted as balanced Voucher
                 // records.  Older imports may not have a Journal relation,
@@ -513,7 +513,7 @@ export class ReportingService {
                     ]
                 }
             ]
-        };
+        } as any);
         const scopedJournalEntryFilter: Prisma.LedgerEntryWhereInput = {
             AND: [
                 journalEntryFilter,

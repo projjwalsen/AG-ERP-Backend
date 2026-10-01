@@ -67,7 +67,6 @@ type ListNoteQuery = {
     sourceType?: DebitCreditNoteSourceType;
     type?: DebitCreditNoteType;
     status?: DebitCreditNoteStatus;
-    search?: string;
 };
 
 /* ============================================================
