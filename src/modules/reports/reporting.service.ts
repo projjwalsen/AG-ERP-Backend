@@ -1,4 +1,4 @@
-import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
+import { DebitCreditNoteSourceType, DebitCreditNoteStatus, DebitCreditNoteType, EntryType, JournalDirection, JournalStatus, LedgerNature, LedgerType, OutstandingType, Prisma, PurchaseStatus, SalesStatus, TransactionDirection, TransactionStatus, VoucherType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
@@ -529,6 +529,16 @@ export class ReportingService {
                 },
                 {
                     AND: [
+                        // TDS Assets reconciliation remaps the existing
+                        // journal posting to the customer ledger. Include
+                        // that posting by ledger/category even when the
+                        // source Journal relation is unavailable.
+                        { ledger: { category: LedgerType.CUSTOMER } },
+                        { voucher: { voucherType: VoucherType.JOURNAL } }
+                    ]
+                },
+                {
+                    AND: [
                         // Purchase invoices credit the agency's vendor ledger
                         // by the invoice grand total. Include that posting so
                         // it is visible under the Sundry Creditors control head.
@@ -580,9 +590,22 @@ export class ReportingService {
 
             isActive: true,
 
-            entries: {
-                some: scopedJournalEntryFilter
-            }
+            OR: [
+                { entries: { some: scopedJournalEntryFilter } },
+                {
+                    journalHeads: {
+                        some: {
+                            journals: {
+                                some: {
+                                    status: JournalStatus.APPROVED,
+                                    voucherId: null,
+                                    ...(branchId ? { branchId } : {})
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
         };
 
         /**
@@ -737,6 +760,35 @@ export class ReportingService {
                     });
 
                     groups.push(...batch);
+
+                    // Legacy journal imports can remain as approved Journal
+                    // rows without a Voucher/LedgerEntry. Include those
+                    // postings in Trial Balance; otherwise the ledger
+                    // balance and Trial Balance disagree.
+                    const directJournals = await prisma.journal.findMany({
+                        where: {
+                            journalHead: { ledgerId: { in: ledgerIds } },
+                            status: JournalStatus.APPROVED,
+                            voucherId: null,
+                            ...(branchId ? { branchId } : {}),
+                            journalDate: voucherDate
+                        },
+                        select: {
+                            amount: true,
+                            direction: true,
+                            journalHead: { select: { ledgerId: true, type: true } }
+                        }
+                    });
+
+                    groups.push(...directJournals.map(journal => ({
+                        ledgerId: journal.journalHead.ledgerId,
+                        entryType: (
+                            (journal.direction || journal.journalHead.type) === JournalDirection.INWARD
+                                ? EntryType.DEBIT
+                                : EntryType.CREDIT
+                        ),
+                        _sum: { amount: journal.amount }
+                    })));
                 }
             }
 
