@@ -13,6 +13,7 @@ import { InwardDebitCreditNoteImportService } from "./inwardDebitCreditNoteImpor
 import { ProductMasterImportService } from "./productImport.service";
 import { AgencyImportService } from "./agencyImport.service";
 import { TdsAssetsReconciliationService } from "./tds-assets-reconciliation.service";
+import { AgencyLedgerReconciliationService } from "./agency-ledger-reconciliation.service";
 
 
 export const importWorkbook = async (
@@ -437,6 +438,40 @@ export const reconcileTdsAssetsWorkbook = async (
             message: dryRun
                 ? "TDS Assets reconciliation validated successfully; no changes were applied."
                 : "TDS Assets vouchers reconciled successfully.",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const reconcileAgencyLedgerWorkbook = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Excel file is required." });
+        }
+        const agencyName = String(req.body.agencyName || req.query.agencyName || "").trim();
+        if (!agencyName) {
+            return res.status(400).json({ success: false, message: "agencyName is required." });
+        }
+        const apply = String(req.query.apply ?? req.body.apply ?? "false").toLowerCase() === "true";
+        const branchId = String(req.body.branchId || req.query.branchId || "").trim() || undefined;
+        const result = await AgencyLedgerReconciliationService.reconcile(
+            (req as any).user,
+            agencyName,
+            req.file.buffer,
+            branchId,
+            apply
+        );
+        return res.status(200).json({
+            success: true,
+            message: apply
+                ? "Agency ledger reconciliation completed."
+                : "Agency ledger reconciliation preview completed; no changes were applied.",
             data: result
         });
     } catch (error) {

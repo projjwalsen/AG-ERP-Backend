@@ -1341,6 +1341,24 @@ export class JournalService {
                 ? {
                     OR: [
                         {
+                            voucherNo: {
+                                contains: search,
+                                mode: "insensitive"
+                            }
+                        },
+
+                        {
+                            voucher: {
+                                is: {
+                                    voucherNo: {
+                                        contains: search,
+                                        mode: "insensitive"
+                                    }
+                                }
+                            }
+                        },
+
+                        {
                             remarks: {
                                 contains: search,
                                 mode: "insensitive"

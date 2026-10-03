@@ -46,9 +46,10 @@ const CASH_IN_HAND_JOURNAL_VOUCHER_FILTER: Prisma.VoucherWhereInput = {
 const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
 ]);
-const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set([
-    "SUNDRY_CREDITORS"
-]);
+// Keep party ledgers visible in the Trial Balance tree. Collapsing these
+// control groups into a synthetic summary row hid the individual debtor /
+// creditor movements and caused the group name to appear twice in exports.
+const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set<string>();
 const PURCHASE_SUB_GROUP_MARKER = "TB_PURCHASE_SUBGROUPS";
 
 const readPurchaseSubGroups = (remarks: string | null) => {
@@ -97,6 +98,23 @@ const purchaseCategoryFromImportedPath = (value: string | null) => {
         .filter(Boolean);
 
     return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+};
+
+const salesCategoryFromImportedPath = (value: string | null) => {
+    const parts = String(value || "")
+        .replace(/\\/g, "/")
+        .split(/[/>]/)
+        .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
+        .filter(Boolean);
+
+    if (parts.length < 2 || parts[0].toUpperCase() !== "SALES ACCOUNTS") {
+        return "";
+    }
+
+    const category = parts[parts.length - 1].toUpperCase();
+    return category === "GST SALES" || category === "IGST SALES"
+        ? category
+        : "";
 };
 
 
@@ -447,6 +465,20 @@ export class ReportingService {
                     }
                 },
                 {
+                    // Receipt/payment and other approved transaction
+                    // vouchers carry the debtor/creditor settlement entries.
+                    // They do not normally have a Journal row, so excluding
+                    // them leaves Sundry Debtors/Creditors with only opening
+                    // balances in Trial Balance.
+                    voucher: {
+                        transaction: {
+                            some: {
+                                status: TransactionStatus.APPROVED
+                            }
+                        }
+                    }
+                },
+                {
                     AND: [
                         { ledger: { category: LedgerType.PURCHASE } },
                         {
@@ -523,6 +555,75 @@ export class ReportingService {
                         // it is visible under the Sundry Creditors control head.
                         { ledger: { category: LedgerType.VENDOR } },
                         { voucher: { voucherType: VoucherType.PURCHASE } }
+                    ]
+                },
+                {
+                    AND: [
+                        // Approved sale credit/debit notes post to the customer
+                        // ledger directly. Include those entries so note credits
+                        // offset the original sale invoices in Sundry Debtors.
+                        { ledger: { category: LedgerType.CUSTOMER } },
+                        {
+                            voucher: {
+                                OR: [
+                                    {
+                                        debitCreditNotes: {
+                                            some: {
+                                                sourceType: DebitCreditNoteSourceType.SALE,
+                                                status: DebitCreditNoteStatus.APPROVED
+                                            }
+                                        }
+                                    },
+                                    {
+                                        transaction: {
+                                            some: {
+                                                status: TransactionStatus.APPROVED,
+                                                debitCreditNote: {
+                                                    is: {
+                                                        sourceType: DebitCreditNoteSourceType.SALE,
+                                                        status: DebitCreditNoteStatus.APPROVED
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    AND: [
+                        // Approved purchase notes similarly update the vendor
+                        // balance, independently of the purchase adjustment ledger.
+                        { ledger: { category: LedgerType.VENDOR } },
+                        {
+                            voucher: {
+                                OR: [
+                                    {
+                                        debitCreditNotes: {
+                                            some: {
+                                                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                                                status: DebitCreditNoteStatus.APPROVED
+                                            }
+                                        }
+                                    },
+                                    {
+                                        transaction: {
+                                            some: {
+                                                status: TransactionStatus.APPROVED,
+                                                debitCreditNote: {
+                                                    is: {
+                                                        sourceType: DebitCreditNoteSourceType.PURCHASE,
+                                                        status: DebitCreditNoteStatus.APPROVED
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
                     ]
                 }
             ]
@@ -613,6 +714,13 @@ export class ReportingService {
                             id: true,
                             name: true,
                             code: true
+                        }
+                    },
+
+                    agency: {
+                        select: {
+                            id: true,
+                            name: true
                         }
                     }
                 },
@@ -838,9 +946,18 @@ export class ReportingService {
         const seenOpeningPostings = new Set<string>();
         const openingGroups = [...openingByVoucher.values()]
             .filter(posting => {
+                // Imports may create a repeated opening voucher for any
+                // ledger category. Compare the business date in India because
+                // midnight local time can be stored as the previous UTC date.
+                const indiaDate = new Intl.DateTimeFormat("en-CA", {
+                    timeZone: "Asia/Kolkata",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit"
+                }).format(posting.voucherDate);
                 const key = [
                     posting.ledgerId,
-                    posting.voucherDate.toISOString(),
+                    indiaDate,
                     posting.entryType,
                     posting.amount.toFixed(2)
                 ].join("|");
@@ -1018,6 +1135,14 @@ export class ReportingService {
                         branch?.name ||
                         null,
 
+                    agencyId:
+                        ledger.agency?.id ||
+                        null,
+
+                    agencyName:
+                        ledger.agency?.name ||
+                        null,
+
                     /**
                      * Trial balance columns show the closing balance.
                      * Period movement is retained for diagnostics.
@@ -1056,6 +1181,67 @@ export class ReportingService {
                         amounts.closingSigned
                 };
             });
+
+        /*
+         * Older journal imports could create a JOURNAL ledger using the
+         * party's plain name (for example, "ACME-DR"), while receipts and
+         * sales use the canonical CUSTOMER ledger ("ACME-DR - Sundry
+         * Debtor").  Those are the same accounting party, but the legacy
+         * JOURNAL ledger is outside the Sundry Debtors hierarchy.  Fold the
+         * legacy row into its matching CUSTOMER row for Trial Balance so
+         * opening/journal debits and receipt credits are shown together.
+         * This is report aggregation only; it does not duplicate postings.
+         */
+        const normalizePartyLedgerName = (value: unknown) => String(value || "")
+            .trim()
+            .toUpperCase()
+            .replace(/\s*-\s*SUNDRY\s+(DEBTOR|CREDITOR)\s*$/i, "")
+            .replace(/\s+/g, " ");
+        const roundAmount = (value: number) =>
+            Math.round(value * 100) / 100;
+
+        const customerRowsByParty = new Map<string, any>();
+        for (const row of rawLedgerRows) {
+            if (row.ledgerCategory === LedgerType.CUSTOMER) {
+                customerRowsByParty.set(
+                    `${row.branchId || ""}|${normalizePartyLedgerName(row.account)}`,
+                    row
+                );
+            }
+        }
+
+        const legacyJournalRows = new Set<any>();
+        for (const row of rawLedgerRows) {
+            if (row.ledgerCategory !== LedgerType.JOURNAL) continue;
+
+            const target = customerRowsByParty.get(
+                `${row.branchId || ""}|${normalizePartyLedgerName(row.account)}`
+            );
+            if (!target) continue;
+
+            for (const field of [
+                "periodDebit",
+                "periodCredit",
+                "openingDebit",
+                "openingCredit",
+                "debit",
+                "credit",
+                "closingDebit",
+                "closingCredit"
+            ]) {
+                target[field] = roundAmount(
+                    Number(target[field] || 0) + Number(row[field] || 0)
+                );
+            }
+            target.closingSigned = roundAmount(
+                Number(target.closingDebit || 0) - Number(target.closingCredit || 0)
+            );
+            legacyJournalRows.add(row);
+        }
+
+        const normalizedLedgerRows = rawLedgerRows.filter(
+            row => !legacyJournalRows.has(row)
+        );
 
         /*
          * Older imports stored the Excel Type on Transaction but posted the
@@ -1314,6 +1500,91 @@ export class ReportingService {
             }
         );
 
+        // Categorized outward notes are Sales Accounts movement even when
+        // their voucher is a DEBIT_NOTE/CREDIT_NOTE rather than a SALE
+        // voucher. Include them from the approved note record itself so the
+        // imported category (for example Sales Accounts / GST SALES) is not
+        // lost by the normal SALE-voucher ledger filter.
+        const categorizedOutwardSaleNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(branchId ? { branchId } : {}),
+                sourceType: DebitCreditNoteSourceType.SALE,
+                status: DebitCreditNoteStatus.APPROVED,
+                categoryPath: { not: null },
+                noteDate: { lte: endDate }
+            },
+            select: {
+                categoryPath: true,
+                type: true,
+                totalAmount: true,
+                noteDate: true
+            }
+        });
+        const salesSubGroupMovements = new Map<string, {
+            prior: { debit: number; credit: number };
+            period: { debit: number; credit: number };
+        }>();
+
+        for (const note of categorizedOutwardSaleNotes) {
+            const category = salesCategoryFromImportedPath(note.categoryPath);
+            if (!category) continue;
+
+            const amount = Number(note.totalAmount || 0);
+            if (!Number.isFinite(amount) || amount === 0) continue;
+
+            const current = salesSubGroupMovements.get(category) || {
+                prior: { debit: 0, credit: 0 },
+                period: { debit: 0, credit: 0 }
+            };
+            const target = note.noteDate < startDate ? current.prior : current.period;
+
+            // Sale debit note: Dr customer / Cr sales adjustment.
+            // Sale credit note: Dr sales adjustment / Cr customer.
+            target[note.type === DebitCreditNoteType.DEBIT_NOTE ? "credit" : "debit"] += amount;
+            salesSubGroupMovements.set(category, current);
+        }
+
+        const salesSubGroupRows = [...salesSubGroupMovements.entries()].map(
+            ([subGroup, movement]) => {
+                const amounts = calculateTrialBalanceAmounts(
+                    {
+                        nature: LedgerNature.CREDIT,
+                        openingBalance: 0,
+                        openingDebit: 0,
+                        openingCredit: 0
+                    },
+                    movement.prior,
+                    movement.period,
+                    false
+                );
+
+                return {
+                    ledgerId: `sales-sub-group:${subGroup}:${branchId || "all"}`,
+                    ledgerCode: `SALES-SUB-GROUP-${subGroup}`
+                        .replace(/[^A-Z0-9_]+/gi, "_")
+                        .toUpperCase(),
+                    account: subGroup,
+                    parentGroup: salesGroup?.name || "Sales",
+                    groupCode: "SALES",
+                    groupId: salesGroup?.id || null,
+                    ledgerCategory: LedgerType.SALES,
+                    ledgerNature: LedgerNature.CREDIT,
+                    branchId: branchId || null,
+                    branchName: branch?.name || null,
+                    debit: amounts.closingDebit,
+                    credit: amounts.closingCredit,
+                    periodDebit: amounts.periodDebit,
+                    periodCredit: amounts.periodCredit,
+                    openingDebit: amounts.openingDebit,
+                    openingCredit: amounts.openingCredit,
+                    closingDebit: amounts.closingDebit,
+                    closingCredit: amounts.closingCredit,
+                    closingSigned: amounts.closingSigned,
+                    isSalesSubGroup: true
+                };
+            }
+        );
+
         // Purchase and sales accounts display only explicit imported Types.
         // The generic branch ledgers (for example
         // "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH") are legacy control
@@ -1444,8 +1715,51 @@ export class ReportingService {
             ...purchaseSubGroupRows
         ]);
 
+        const mergeSalesAccountRows = (sourceRows: any[]) => {
+            const salesRoot = ledgerGroups.find(group => group.code === "SALES_ACCOUNTS") ||
+                ledgerGroups.find(group => group.code === "SALES");
+            const grouped = new Map<string, any[]>();
+            for (const row of sourceRows) {
+                const key = String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase();
+                if (key) grouped.set(key, [...(grouped.get(key) || []), row]);
+            }
+
+            return [...grouped.entries()].map(([key, rowsForCategory]) => {
+                const sum = (field: string) => Number(rowsForCategory
+                    .reduce((total, row) => total + Number(row[field] || 0), 0)
+                    .toFixed(2));
+                const openingSigned = sum("openingDebit") - sum("openingCredit");
+                const closingSigned = sum("closingSigned");
+                const first = rowsForCategory[0];
+
+                return {
+                    ...first,
+                    ledgerId: `aggregate:sales-account:${key}:${branchId || "all"}`,
+                    ledgerCode: `SALES_ACCOUNT_${key}`.replace(/[^A-Z0-9_]+/gi, "_").toUpperCase(),
+                    parentGroup: salesRoot?.name || "Sales Accounts",
+                    groupCode: salesRoot?.code || "SALES_ACCOUNTS",
+                    groupId: salesRoot?.id || null,
+                    periodDebit: sum("periodDebit"),
+                    periodCredit: sum("periodCredit"),
+                    openingDebit: openingSigned > 0 ? openingSigned : 0,
+                    openingCredit: openingSigned < 0 ? Math.abs(openingSigned) : 0,
+                    debit: closingSigned > 0 ? closingSigned : 0,
+                    credit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                    closingDebit: closingSigned > 0 ? closingSigned : 0,
+                    closingCredit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                    closingSigned
+                };
+            });
+        };
+
+        const salesAccountRows = mergeSalesAccountRows([
+            ...aggregateAccountRows(LedgerType.SALES),
+            ...typedSalesRows,
+            ...salesSubGroupRows
+        ]);
+
         const ledgerRows = [
-            ...rawLedgerRows.filter(row =>
+            ...normalizedLedgerRows.filter(row =>
                 row.ledgerCategory !== LedgerType.PURCHASE &&
                 row.ledgerCategory !== LedgerType.SALES ||
                 CUSTOM_TRIAL_BALANCE_GROUP_CODES.has(
@@ -1453,8 +1767,7 @@ export class ReportingService {
                 )
             ),
             ...purchaseAccountRows,
-            ...aggregateAccountRows(LedgerType.SALES),
-            ...typedSalesRows
+            ...salesAccountRows
         ];
 
         const debtorRows = ledgerRows.filter(row =>
@@ -1512,7 +1825,7 @@ export class ReportingService {
         // Sundry Creditors remains a collapsed control head. Sundry Debtors
         // stays expanded so the Tally-listed agency ledgers are leaf rows.
         const collapsedGroupIds = new Set<string>();
-        const collapsedRowsByGroup = new Map<string, any[]>();
+        const collapsedRowsByGroup = new Map<string, Map<string, any[]>>();
 
         for (const group of ledgerGroups) {
             let current: LedgerGroupReportRow | undefined = group;
@@ -1536,8 +1849,14 @@ export class ReportingService {
 
             while (current) {
                 if (COLLAPSED_TRIAL_BALANCE_GROUP_CODES.has(current.code)) {
-                    const rowsForGroup = collapsedRowsByGroup.get(current.id) || [];
-                    rowsForGroup.push(row);
+                    const rowsForGroup = collapsedRowsByGroup.get(current.id) || new Map<string, any[]>();
+                    // A branch can contain duplicate legacy ledgers for the
+                    // same agency. Merge them so opening balance, movement,
+                    // and closing balance are shown in one agency row.
+                    const agencyKey = row.agencyId || row.ledgerId;
+                    const rowsForAgency = rowsForGroup.get(agencyKey) || [];
+                    rowsForAgency.push(row);
+                    rowsForGroup.set(agencyKey, rowsForAgency);
                     collapsedRowsByGroup.set(current.id, rowsForGroup);
                     break;
                 }
@@ -1549,7 +1868,7 @@ export class ReportingService {
         }
 
         const collapsedSummaryRows = [...collapsedRowsByGroup.entries()]
-            .map(([groupId, sourceRows]) => {
+            .flatMap(([groupId, rowsByAgency]) => [...rowsByAgency.values()].map(sourceRows => {
                 const group = groupById.get(groupId);
                 if (!group || sourceRows.length === 0) return null;
 
@@ -1577,8 +1896,8 @@ export class ReportingService {
                 return {
                     ...sourceRows[0],
                     ledgerId: `aggregate:ledger-group:${group.code}:${branchId || "all"}`,
-                    ledgerCode: `LEDGER_GROUP_${group.code}_TOTAL`,
-                    account: group.name,
+                    ledgerCode: `LEDGER_GROUP_${group.code}_${sourceRows[0].agencyId || sourceRows[0].ledgerId}`,
+                    account: sourceRows[0].agencyName || sourceRows[0].account,
                     parentGroup: group.name,
                     groupCode: group.code,
                     groupId: group.id,
@@ -1593,7 +1912,7 @@ export class ReportingService {
                     closingSigned: sum("closingSigned"),
                     isCollapsedTrialBalanceGroup: true
                 };
-            })
+            }))
             .filter(Boolean) as any[];
         const collapsedSummaryGroupIds = new Set(
             collapsedSummaryRows.map(row => row.groupId)
@@ -1601,7 +1920,7 @@ export class ReportingService {
 
         const collapsedSourceLedgerIds = new Set(
             [...collapsedRowsByGroup.values()]
-                .flat()
+                .flatMap(rowsByAgency => [...rowsByAgency.values()].flat())
                 .map(row => row.ledgerId)
         );
 

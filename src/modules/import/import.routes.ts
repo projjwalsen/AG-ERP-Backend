@@ -7,6 +7,7 @@ import {
     importJournalWorkbook,
     importOpeningBalanceJournalWorkbook,
     reconcileTdsAssetsWorkbook,
+    reconcileAgencyLedgerWorkbook,
     importInwardDebitCreditNoteWorkbook,
     importProductWorkbook,
     importWorkbook
@@ -392,6 +393,63 @@ router.post(
     authMiddleware,
     importExcel.single("file"),
     reconcileTdsAssetsWorkbook
+);
+
+/**
+ * @openapi
+ * /api/migration/import/agency-ledger/reconcile:
+ *   post:
+ *     summary: Reconcile an agency ledger workbook
+ *     description: >
+ *       Match the vouchers in an agency's Tally Ledger Account workbook to
+ *       existing system vouchers and move a safely identified party posting
+ *       to that agency's branch ledger. Missing or ambiguous vouchers are
+ *       reported and are never created or guessed. Preview mode is the default;
+ *       set apply=true to commit safe matches.
+ *     tags:
+ *       - Import
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: apply
+ *         schema: { type: boolean, default: false }
+ *         description: Apply safe reconciliation changes; defaults to preview only.
+ *       - in: query
+ *         name: branchId
+ *         schema: { type: string }
+ *         description: Required when the actor has access to all branches and the agency has multiple ledgers.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file, agencyName]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               agencyName:
+ *                 type: string
+ *               branchId:
+ *                 type: string
+ *               apply:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       200:
+ *         description: Preview or reconciliation result.
+ *       400:
+ *         description: Invalid workbook, agency, or branch.
+ *       409:
+ *         description: Reconciliation contains ambiguous rows; no changes applied.
+ */
+router.post(
+    "/import/agency-ledger/reconcile",
+    authMiddleware,
+    importExcel.single("file"),
+    reconcileAgencyLedgerWorkbook
 );
 
 /**
