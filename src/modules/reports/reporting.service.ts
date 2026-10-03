@@ -12,6 +12,10 @@ import {
     resolveTrialBalancePeriod,
     sumTrialBalanceEntryGroups
 } from "./trial-balance.utils";
+import {
+    normalizeTallySundryDebtorName,
+    TALLY_SUNDRY_DEBTOR_ALLOWLIST
+} from "./tally-sundry-debtors.allowlist";
 
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
@@ -43,7 +47,6 @@ const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
 ]);
 const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set([
-    "SUNDRY_DEBTORS",
     "SUNDRY_CREDITORS"
 ]);
 const PURCHASE_SUB_GROUP_MARKER = "TB_PURCHASE_SUBGROUPS";
@@ -784,11 +787,14 @@ export class ReportingService {
         // Some older imports populated both the Ledger opening fields and an
         // OPENING_BALANCE voucher; adding both would double the opening
         // balance in Trial Balance.
-        const openingGroups = await prisma.ledgerEntry.groupBy({
-            by: ["ledgerId", "entryType"],
+        const openingEntries = await prisma.ledgerEntry.findMany({
             where: {
                 AND: [
-                    scopedJournalEntryFilter,
+                    // Opening vouchers are deliberately excluded from the
+                    // ordinary movement filter. Read them separately, with
+                    // only the branch scope applied, so imported openings
+                    // can be used when the ledger has no stored opening.
+                    ...(branchEntryFilter ? [branchEntryFilter] : []),
                     {
                         ledgerId: { in: ledgers.map(ledger => ledger.id) },
                         ledger: { category: { notIn: [LedgerType.BANK, LedgerType.CASH] } },
@@ -799,8 +805,54 @@ export class ReportingService {
                     }
                 ]
             },
-            _sum: { amount: true }
+            select: {
+                ledgerId: true,
+                voucherId: true,
+                entryType: true,
+                amount: true,
+                voucher: { select: { voucherDate: true } }
+            }
         });
+
+        // Some imports create two opening vouchers for the same ledger with
+        // the same date, direction, and amount. Treat those identical postings
+        // as one opening while preserving distinct or split opening amounts.
+        const openingByVoucher = new Map<string, {
+            ledgerId: string;
+            voucherId: string;
+            entryType: EntryType;
+            amount: number;
+            voucherDate: Date;
+        }>();
+        for (const entry of openingEntries) {
+            const key = `${entry.voucherId}|${entry.ledgerId}|${entry.entryType}`;
+            const current = openingByVoucher.get(key);
+            openingByVoucher.set(key, {
+                ledgerId: entry.ledgerId,
+                voucherId: entry.voucherId,
+                entryType: entry.entryType,
+                amount: (current?.amount || 0) + Number(entry.amount || 0),
+                voucherDate: entry.voucher.voucherDate
+            });
+        }
+        const seenOpeningPostings = new Set<string>();
+        const openingGroups = [...openingByVoucher.values()]
+            .filter(posting => {
+                const key = [
+                    posting.ledgerId,
+                    posting.voucherDate.toISOString(),
+                    posting.entryType,
+                    posting.amount.toFixed(2)
+                ].join("|");
+                if (seenOpeningPostings.has(key)) return false;
+                seenOpeningPostings.add(key);
+                return true;
+            })
+            .map(posting => ({
+                ledgerId: posting.ledgerId,
+                entryType: posting.entryType,
+                _sum: { amount: posting.amount }
+            }));
         const openingMap = sumTrialBalanceEntryGroups(openingGroups);
 
         // Older journal imports created a separate JOURNAL ledger for a
@@ -897,28 +949,28 @@ export class ReportingService {
                         credit: 0
                     };
 
-                const hasStoredOpening =
-                    Number(ledger.openingDebit || 0) !== 0 ||
-                    Number(ledger.openingCredit || 0) !== 0 ||
-                    Number(ledger.openingBalance || 0) !== 0;
-                const importedOpening = !hasStoredOpening &&
-                    !duplicateLegacyOpeningLedgerIds.has(ledger.id)
-                    ? (openingMap.get(ledger.id) || {
-                        debit: 0,
-                        credit: 0
-                    })
-                    : {
-                        debit: 0,
-                        credit: 0
-                    };
-
-                const openingFromVoucher = importedOpening;
+                const isDuplicateLegacyOpening = duplicateLegacyOpeningLedgerIds.has(ledger.id);
+                const voucherOpening = openingMap.get(ledger.id);
+                // The imported opening vouchers are the source detail for the
+                // ledger opening. Prefer their deduplicated total when present:
+                // legacy imports can also have copied that same amount into
+                // the Ledger fields (sometimes twice).
+                const openingFromVoucher = !isDuplicateLegacyOpening && voucherOpening
+                    ? voucherOpening
+                    : { debit: 0, credit: 0 };
+                const useVoucherOpening = openingFromVoucher.debit !== 0 ||
+                    openingFromVoucher.credit !== 0;
                 const ledgerWithImportedOpening = {
                     ...ledger,
-                    openingDebit: Number(ledger.openingDebit || 0) + openingFromVoucher.debit,
-                    openingCredit: Number(ledger.openingCredit || 0) + openingFromVoucher.credit,
-                    openingBalance: Number(ledger.openingBalance || 0) +
-                        openingFromVoucher.debit - openingFromVoucher.credit
+                    openingDebit: useVoucherOpening
+                        ? openingFromVoucher.debit
+                        : isDuplicateLegacyOpening ? 0 : Number(ledger.openingDebit || 0),
+                    openingCredit: useVoucherOpening
+                        ? openingFromVoucher.credit
+                        : isDuplicateLegacyOpening ? 0 : Number(ledger.openingCredit || 0),
+                    openingBalance: useVoucherOpening
+                        ? openingFromVoucher.debit - openingFromVoucher.credit
+                        : isDuplicateLegacyOpening ? 0 : Number(ledger.openingBalance || 0)
                 };
 
                 const amounts = calculateTrialBalanceAmounts(
@@ -1405,7 +1457,22 @@ export class ReportingService {
             ...typedSalesRows
         ];
 
-        const rawRows = ledgerRows;
+        const debtorRows = ledgerRows.filter(row =>
+            String(row.groupCode || "").toUpperCase() === "SUNDRY_DEBTORS"
+        );
+        const allowedDebtorRows = debtorRows.filter(row =>
+            TALLY_SUNDRY_DEBTOR_ALLOWLIST.has(
+                normalizeTallySundryDebtorName(row.account)
+            )
+        );
+        // Only Tally-listed debtor ledgers belong in this report. Excluding
+        // the others here also keeps their balances out of group totals.
+        const rawRows = [
+            ...ledgerRows.filter(row =>
+                String(row.groupCode || "").toUpperCase() !== "SUNDRY_DEBTORS"
+            ),
+            ...allowedDebtorRows
+        ];
 
         const cashDiagnostics = await this.getCashDiagnostics(
             ledgers,
@@ -1422,10 +1489,28 @@ export class ReportingService {
 
         const groupById = new Map(ledgerGroups.map(group => [group.id, group]));
         const groupByCode = new Map(ledgerGroups.map(group => [group.code, group]));
+        const duplicateCurrentAssetsParentById = new Map<string, string>();
+        for (const group of ledgerGroups) {
+            const parent = group.parentId ? groupById.get(group.parentId) : undefined;
+            const sameCurrentAssetsName =
+                String(group.name).trim().replace(/\s+/g, " ").toLowerCase() === "current assets" &&
+                String(parent?.name || "").trim().replace(/\s+/g, " ").toLowerCase() === "current assets";
+            if (sameCurrentAssetsName && parent) {
+                duplicateCurrentAssetsParentById.set(group.id, parent.id);
+            }
+        }
+        const displayGroupId = (id: string) => {
+            let current = id;
+            const seen = new Set<string>();
+            while (duplicateCurrentAssetsParentById.has(current) && !seen.has(current)) {
+                seen.add(current);
+                current = duplicateCurrentAssetsParentById.get(current)!;
+            }
+            return current;
+        };
 
-        // Sundry Debtors and Sundry Creditors are control heads in the
-        // Trial Balance. Keep their party ledgers available to detailed
-        // reports, but expose one cumulative row for each control head here.
+        // Sundry Creditors remains a collapsed control head. Sundry Debtors
+        // stays expanded so the Tally-listed agency ledgers are leaf rows.
         const collapsedGroupIds = new Set<string>();
         const collapsedRowsByGroup = new Map<string, any[]>();
 
@@ -1529,9 +1614,11 @@ export class ReportingService {
         // same expandable structure shown by Tally: accounting head -> group
         // -> ledger, rather than a flat list of ledger balances.
         const rowsWithHierarchy = trialBalanceRows.map(row => {
-            const group = row.groupId
+            const sourceGroup = row.groupId
                 ? groupById.get(row.groupId)
                 : groupByCode.get(String(row.groupCode || ""));
+            const displayId = sourceGroup ? displayGroupId(sourceGroup.id) : undefined;
+            const group = displayId ? groupById.get(displayId) : sourceGroup;
             const parentGroup = group?.parentId
                 ? groupById.get(group.parentId)
                 : undefined;
@@ -1556,11 +1643,17 @@ export class ReportingService {
 
         const filteredRows =
             rowsWithHierarchy.filter(row => {
+                const isImportedCurrentAssetsPlaceholder =
+                    String(row.groupCode || "").toUpperCase() === "CURRENT_ASSETS" &&
+                    normalizeTallySundryDebtorName(row.account) === "CURRENTASSETS";
 
-                if (query?.includeZero) {
-                    return true;
+                // This imported control ledger duplicates the Current Assets
+                // group total. Hide it and exclude its balance from the tree.
+                if (isImportedCurrentAssetsPlaceholder) {
+                    return false;
                 }
 
+                if (query?.includeZero) return true;
                 return hasTrialBalanceActivity(row);
             });
 
@@ -1597,6 +1690,7 @@ export class ReportingService {
 
         const treeNodes = new Map<string, any>();
         for (const group of ledgerGroups) {
+            if (duplicateCurrentAssetsParentById.has(group.id)) continue;
             if (!query?.includeZero && !visibleGroupIds.has(group.id)) continue;
             if (
                 collapsedGroupIds.has(group.id) &&
@@ -1609,7 +1703,7 @@ export class ReportingService {
                 code: group.code,
                 name: group.name,
                 rowType: "accountingHeader",
-                parentId: group.parentId ? `group:${group.parentId}` : null,
+                parentId: group.parentId ? `group:${displayGroupId(group.parentId)}` : null,
                 level: 0,
                 periodDebit: 0,
                 periodCredit: 0,
