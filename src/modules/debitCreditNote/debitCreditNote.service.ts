@@ -1093,6 +1093,13 @@ export class DebitCreditNoteService {
                         );
                     }
 
+                    if (!note.agencyId) {
+                        throw new ApiError(
+                            "This note has no recorded party and cannot be approved or posted to agency ledgers",
+                            400
+                        );
+                    }
+
                     /*
                      * Revalidate source invoice.
                      */

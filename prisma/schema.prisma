@@ -1385,8 +1385,10 @@ model DebitCreditNote {
 
   purchaseVoucherType VoucherType?
 
-  agencyId String
-  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  // Imported rows may explicitly have no recorded party. Such notes remain
+  // pending and must not affect agency outstanding or agency ledgers.
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: Restrict)
 
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)

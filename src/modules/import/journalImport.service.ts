@@ -27,11 +27,17 @@ export class JournalImportService {
         const workbook =
             ExcelImportService.readExcel(file.buffer);
 
-        const sources = workbook.SheetNames.map(sheetName => ({
-            sheetName,
-            worksheet: ExcelImportService.getWorkSheet(workbook, sheetName),
-            headerRow: 8
-        }));
+        const sources = workbook.SheetNames.map(sheetName => {
+            const worksheet = ExcelImportService.getWorkSheet(workbook, sheetName);
+            return {
+                sheetName,
+                worksheet,
+                // Journal exports do not all place their report title on the
+                // same number of rows. Detect the actual register header so
+                // RCM Purchase columns are not silently read as empty data.
+                headerRow: ExcelImportService.detectJournalHeaderRow(worksheet)
+            };
+        });
 
         const limit = pLimit(1);
 
@@ -112,10 +118,13 @@ export class JournalImportService {
                     ImportResolver.isCancelledTransactionImportRow(dto);
 
                 const isInvoiceTransaction =
-                    ["PURCHASE", "TAX INVOICE", "RCM PURCHASE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
+                    ["PURCHASE", "TAX INVOICE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
 
                 const isDebitCreditNote =
                     ImportResolver.isDebitCreditNoteImportRow(dto);
+
+                const isRcmNoteRegister =
+                    ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(voucherType);
 
                 const isExplicitJournalVoucher =
                     ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "RECEIPT", "PAYMENT", "OPENING BALANCE"].includes(voucherType);
@@ -126,7 +135,7 @@ export class JournalImportService {
                 switch (type) {
 
                     case "JOURNAL":
-                        return !isTransaction;
+                        return !isTransaction || isRcmNoteRegister;
 
                     case "TRANSACTION":
                         return isTransaction || isDebitCreditNote || isExplicitJournalVoucher;
@@ -174,9 +183,12 @@ export class JournalImportService {
                         const isCancelled =
                             ImportResolver.isCancelledTransactionImportRow(dto);
                         const isInvoiceTransaction =
-                            ["PURCHASE", "TAX INVOICE", "RCM PURCHASE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
+                            ["PURCHASE", "TAX INVOICE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
+
+                        const isRcmNoteRegister =
+                            ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(voucherType);
 
                         const isExplicitJournalVoucher =
                             ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "RECEIPT", "PAYMENT", "OPENING BALANCE"].includes(voucherType);
@@ -189,6 +201,7 @@ export class JournalImportService {
                         if (
                             (type === "TRANSACTION" || type === "BOTH") &&
                             isInwardNote
+                            && !isRcmNoteRegister
                         ) {
                             // The regular Journal Import UI posts here. Give
                             // inward notes the same Excel Path handling as
