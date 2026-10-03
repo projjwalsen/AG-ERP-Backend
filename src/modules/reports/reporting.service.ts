@@ -103,7 +103,14 @@ const salesCategoryFromImportedPath = (value: string | null) => {
         .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
         .filter(Boolean);
 
-    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+    if (parts.length < 2 || parts[0].toUpperCase() !== "SALES ACCOUNTS") {
+        return "";
+    }
+
+    const category = parts[parts.length - 1].toUpperCase();
+    return category === "GST SALES" || category === "IGST SALES"
+        ? category
+        : "";
 };
 
 
@@ -635,6 +642,13 @@ export class ReportingService {
                             name: true,
                             code: true
                         }
+                    },
+
+                    agency: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
                     }
                 },
 
@@ -988,6 +1002,14 @@ export class ReportingService {
                     branchName:
                         ledger.branch?.name ||
                         branch?.name ||
+                        null,
+
+                    agencyId:
+                        ledger.agency?.id ||
+                        null,
+
+                    agencyName:
+                        ledger.agency?.name ||
                         null,
 
                     /**
@@ -1639,7 +1661,7 @@ export class ReportingService {
         // Trial Balance. Keep their party ledgers available to detailed
         // reports, but expose one cumulative row for each control head here.
         const collapsedGroupIds = new Set<string>();
-        const collapsedRowsByGroup = new Map<string, any[]>();
+        const collapsedRowsByGroup = new Map<string, Map<string, any[]>>();
 
         for (const group of ledgerGroups) {
             let current: LedgerGroupReportRow | undefined = group;
@@ -1663,8 +1685,14 @@ export class ReportingService {
 
             while (current) {
                 if (COLLAPSED_TRIAL_BALANCE_GROUP_CODES.has(current.code)) {
-                    const rowsForGroup = collapsedRowsByGroup.get(current.id) || [];
-                    rowsForGroup.push(row);
+                    const rowsForGroup = collapsedRowsByGroup.get(current.id) || new Map<string, any[]>();
+                    // A branch can contain duplicate legacy ledgers for the
+                    // same agency. Merge them so opening balance, movement,
+                    // and closing balance are shown in one agency row.
+                    const agencyKey = row.agencyId || row.ledgerId;
+                    const rowsForAgency = rowsForGroup.get(agencyKey) || [];
+                    rowsForAgency.push(row);
+                    rowsForGroup.set(agencyKey, rowsForAgency);
                     collapsedRowsByGroup.set(current.id, rowsForGroup);
                     break;
                 }
@@ -1676,7 +1704,7 @@ export class ReportingService {
         }
 
         const collapsedSummaryRows = [...collapsedRowsByGroup.entries()]
-            .map(([groupId, sourceRows]) => {
+            .flatMap(([groupId, rowsByAgency]) => [...rowsByAgency.values()].map(sourceRows => {
                 const group = groupById.get(groupId);
                 if (!group || sourceRows.length === 0) return null;
 
@@ -1704,8 +1732,8 @@ export class ReportingService {
                 return {
                     ...sourceRows[0],
                     ledgerId: `aggregate:ledger-group:${group.code}:${branchId || "all"}`,
-                    ledgerCode: `LEDGER_GROUP_${group.code}_TOTAL`,
-                    account: group.name,
+                    ledgerCode: `LEDGER_GROUP_${group.code}_${sourceRows[0].agencyId || sourceRows[0].ledgerId}`,
+                    account: sourceRows[0].agencyName || sourceRows[0].account,
                     parentGroup: group.name,
                     groupCode: group.code,
                     groupId: group.id,
@@ -1720,7 +1748,7 @@ export class ReportingService {
                     closingSigned: sum("closingSigned"),
                     isCollapsedTrialBalanceGroup: true
                 };
-            })
+            }))
             .filter(Boolean) as any[];
         const collapsedSummaryGroupIds = new Set(
             collapsedSummaryRows.map(row => row.groupId)
@@ -1728,7 +1756,7 @@ export class ReportingService {
 
         const collapsedSourceLedgerIds = new Set(
             [...collapsedRowsByGroup.values()]
-                .flat()
+                .flatMap(rowsByAgency => [...rowsByAgency.values()].flat())
                 .map(row => row.ledgerId)
         );
 
