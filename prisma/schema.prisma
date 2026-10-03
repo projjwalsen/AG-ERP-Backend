@@ -1383,10 +1383,20 @@ model DebitCreditNote {
   // Normalized Excel Path for imported debit/credit-note classification.
   categoryPath String?
 
+  // Purchase/Sale invoice number from the import row, retained for
+  // three-field duplicate detection when no source document is linked.
+  sourceInvoiceNo String?
+
+  // For imported inward notes, this stores the Excel-side adjustment entry.
+  // It allows a debit note row to be represented on either Debit or Credit.
+  accountingEntryType EntryType?
+
   purchaseVoucherType VoucherType?
 
-  agencyId String
-  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Restrict)
+  // Imported rows may explicitly have no recorded party. Such notes remain
+  // pending and must not affect agency outstanding or agency ledgers.
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id], onDelete: Restrict)
 
   branchId String
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
@@ -1426,7 +1436,7 @@ model DebitCreditNote {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([branchId, agencyId, noteNo])
+  @@index([branchId, noteNo])
   @@index([agencyId])
   @@index([branchId])
   @@index([saleId])
@@ -1447,6 +1457,8 @@ model DebitCreditNoteParticular {
 
   description String
   amount      Decimal @db.Decimal(18, 2)
+  // Nullable preserves the legacy note-level accounting side.
+  entryType   EntryType?
 
   createdAt DateTime @default(now())
 

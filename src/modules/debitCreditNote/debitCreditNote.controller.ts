@@ -150,6 +150,14 @@ export const approveNote = async (
         const filename =
             `${note.noteNo}.pdf`;
 
+        if (!pdf) {
+            return res.status(200).json({
+                success: true,
+                message: "Note approved without agency ledger posting because no party was recorded.",
+                data: { note }
+            });
+        }
+
         res.setHeader(
             "Content-Type",
             "application/pdf"

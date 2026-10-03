@@ -2,6 +2,7 @@ import {
     DebitCreditNoteSourceType,
     DebitCreditNoteStatus,
     DebitCreditNoteType,
+    EntryType,
     OutstandingType,
     Prisma,
     PurchaseStatus,
@@ -26,6 +27,7 @@ import { DebitCreditNoteRenderer } from "../../core/utils/DRCRRender";
 type NoteParticularPayload = {
     description: string;
     amount: number;
+    entryType?: EntryType;
 };
 
 type CreateNotePayload = {
@@ -42,6 +44,7 @@ type CreateNotePayload = {
     purchaseVoucherType?: VoucherType;
     importKey?: string;
     categoryPath?: string;
+    accountingEntryType?: EntryType;
 
     noteDate?: string | Date;
     narration?: string;
@@ -231,9 +234,20 @@ export class DebitCreditNoteService {
                     );
                 }
 
+                if (
+                    particular.entryType !== undefined &&
+                    !Object.values(EntryType).includes(particular.entryType)
+                ) {
+                    throw new ApiError(
+                        `Particular ${index + 1} entry type must be DEBIT or CREDIT`,
+                        400
+                    );
+                }
+
                 return {
                     description,
-                    amount
+                    amount,
+                    entryType: particular.entryType || null
                 };
             }
         );
@@ -894,6 +908,9 @@ export class DebitCreditNoteService {
                         categoryPath:
                             payload.categoryPath?.trim() || null,
 
+                        accountingEntryType:
+                            payload.accountingEntryType || null,
+
                         type:
                             payload.type,
 
@@ -991,8 +1008,17 @@ export class DebitCreditNoteService {
 
     private static resolveOutstandingType(
         sourceType: DebitCreditNoteSourceType,
-        noteType: DebitCreditNoteType
+        noteType: DebitCreditNoteType,
+        accountingEntryType?: EntryType | null
     ): OutstandingType {
+
+        // Imported notes may explicitly carry the Excel adjustment side.
+        // That side determines the outstanding movement when supplied.
+        if (accountingEntryType) {
+            return accountingEntryType === EntryType.DEBIT
+                ? OutstandingType.DEBIT
+                : OutstandingType.CREDIT;
+        }
 
         /**
          * SALE
@@ -1093,28 +1119,39 @@ export class DebitCreditNoteService {
                         );
                     }
 
+                    // A note imported without a recorded party is still a
+                    // valid document. Approve it without any agency,
+                    // outstanding, voucher, or ledger side effects.
+                    if (!note.agencyId) {
+                        return tx.debitCreditNote.update({
+                            where: { id: note.id },
+                            data: {
+                                status: DebitCreditNoteStatus.APPROVED,
+                                approvedById: actor.id,
+                                approvedAt: new Date()
+                            },
+                            include: includeNoteDetails
+                        });
+                    }
+
                     /*
                      * Revalidate source invoice.
                      */
-                    await this.validateInvoiceContext(
-                        tx,
-                        {
-                            agencyId:
-                                note.agencyId,
-
-                            branchId:
-                                note.branchId,
-
-                            sourceType:
-                                note.sourceType,
-
-                            saleId:
-                                note.saleId || undefined,
-
-                            purchaseId:
-                                note.purchaseId || undefined
-                        }
-                    );
+                    // Imported notes may be accounting-only when the source
+                    // invoice is not present. In that case approval still
+                    // updates the agency and posts the note voucher.
+                    if (note.saleId || note.purchaseId) {
+                        await this.validateInvoiceContext(
+                            tx,
+                            {
+                                agencyId: note.agencyId,
+                                branchId: note.branchId,
+                                sourceType: note.sourceType,
+                                saleId: note.saleId || undefined,
+                                purchaseId: note.purchaseId || undefined
+                            }
+                        );
+                    }
 
                     /*
                      * Lock note.
@@ -1150,21 +1187,41 @@ export class DebitCreditNoteService {
                     /*
                      * Update AgencyOutstanding.
                      */
-                    const outstandingType =
-                        this.resolveOutstandingType(
-                            note.sourceType,
-                            note.type
-                        );
+                    // A note can contain both debit and credit particulars.
+                    // Apply each side independently so the outstanding
+                    // record reflects the actual journal lines.
+                    const defaultEntryType = note.accountingEntryType || (
+                        note.type === DebitCreditNoteType.DEBIT_NOTE
+                            ? EntryType.CREDIT
+                            : EntryType.DEBIT
+                    );
+                    const debitAmount = note.particulars
+                        .filter(particular =>
+                            ((particular as any).entryType || defaultEntryType) === EntryType.DEBIT
+                        )
+                        .reduce((sum, particular) => sum + Number(particular.amount), 0);
+                    const creditAmount = note.particulars
+                        .filter(particular =>
+                            ((particular as any).entryType || defaultEntryType) === EntryType.CREDIT
+                        )
+                        .reduce((sum, particular) => sum + Number(particular.amount), 0);
 
-                    await TransactionService
-                        .updatePersistentOutstanding(
+                    for (const [entryType, entryAmount] of [
+                        [EntryType.DEBIT, debitAmount],
+                        [EntryType.CREDIT, creditAmount]
+                    ] as const) {
+                        if (entryAmount <= 0) continue;
+                        await TransactionService.updatePersistentOutstanding(
                             tx,
                             note.agencyId,
                             note.branchId,
-                            Number(note.totalAmount),
-                            outstandingType,
+                            entryAmount,
+                            entryType === EntryType.DEBIT
+                                ? OutstandingType.DEBIT
+                                : OutstandingType.CREDIT,
                             "ADD"
                         );
+                    }
 
                     /*
                      * Post accounting voucher / ledger.
@@ -1200,6 +1257,10 @@ export class DebitCreditNoteService {
          *
          * Now generate PDF.
          */
+        if (!approvedNote.agencyId) {
+            return { note: approvedNote, pdf: null };
+        }
+
         const setting =
             await prisma.setting.findFirst();
 

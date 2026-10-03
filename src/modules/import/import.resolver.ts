@@ -39,13 +39,18 @@ export class ImportResolver {
 
     static isJournalRegisterRow(dto: JournalImportDTO) {
         const type = String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+        const isRcmNoteRegister = ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(type);
         return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup) &&
             !["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(type) &&
-            !this.isDebitCreditNoteImportRow(dto) &&
-            !["PURCHASE", "TAX INVOICE", "RCM PURCHASE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type);
+            (isRcmNoteRegister || !this.isDebitCreditNoteImportRow(dto)) &&
+            !["PURCHASE", "TAX INVOICE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type);
     }
 
-    static async importJournalRegisterRow(actor: any, dto: JournalImportDTO) {
+    static async importJournalRegisterRow(
+        actor: any,
+        dto: JournalImportDTO,
+        options?: { skipBalanceSync?: boolean }
+    ) {
         if (!dto.sourceSerialNo) throw new ApiError("Journal Register Sr No is required", 400);
         const debit = Number(dto.debitAmount || 0);
         const credit = Number(dto.creditAmount || 0);
@@ -178,6 +183,14 @@ export class ImportResolver {
                     voucherNo: dto.voucherNo || null,
                     sourceSheet: dto.sourceSheet,
                     sourceRow: dto.sourceRow,
+                    // Keep the source hierarchy on the journal as well as on
+                    // the generated ledger group. RCM purchase/debit-note
+                    // registers use Path instead of a normal account field,
+                    // and reporting/reconciliation needs the original path
+                    // to remain available after import.
+                    categoryPath: dto.path
+                        ? normalizeImportedTransactionPath(dto.path)
+                        : null,
                     importKey: `JOURNAL_REGISTER:${branch.id}:${dto.sourceSerialNo}`,
                     amount: debit > 0 ? debit : credit,
                     // Preserve the Excel side on the Journal as well as on
@@ -202,7 +215,17 @@ export class ImportResolver {
             const voucher = await tx.voucher.create({
                 data: {
                     voucherNo: dto.voucherNo || "",
-                    voucherType: VoucherType.JOURNAL,
+                    // RCM Purchase rows are imported through the Journal
+                    // Register path, but retain their source voucher type so
+                    // day-book, ledger and Trial Balance reports can
+                    // distinguish them from ordinary journals.
+                    voucherType: normalizedVoucherType === "RCM PURCHASE"
+                        ? VoucherType.RCM_PURCHASE
+                        : normalizedVoucherType === "RCM DEBIT NOTE"
+                            ? VoucherType.DEBIT_NOTE
+                            : normalizedVoucherType === "RCM CREDIT NOTE"
+                                ? VoucherType.CREDIT_NOTE
+                                : VoucherType.JOURNAL,
                     sourceId: journal.id,
                     branchId: branch.id,
                     narration: this.importedRemarks(dto),
@@ -213,7 +236,9 @@ export class ImportResolver {
                 }
             });
             const result = await tx.journal.update({ where: { id: journal.id }, data: { voucherId: voucher.id } });
-            await LedgerService.syncCachedBalance(tx, ledger.id);
+            if (!options?.skipBalanceSync) {
+                await LedgerService.syncCachedBalance(tx, ledger.id);
+            }
             return result;
         });
     }
@@ -457,11 +482,8 @@ export class ImportResolver {
     }
 
     static isDebitCreditNoteImportRow(dto: JournalImportDTO) {
-        const voucherType = String(dto.voucherType || "")
-            .replace(/_/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .toUpperCase();
+        const voucherType = this.normalizeDebitCreditNoteVoucherType(dto.voucherType);
+
         return [
             "INWARD DEBIT NOTE",
             "INWARD CREDIT NOTE",
@@ -470,12 +492,22 @@ export class ImportResolver {
         ].includes(voucherType);
     }
 
-    static isInwardDebitCreditNoteImportRow(dto: JournalImportDTO) {
-        const voucherType = String(dto.voucherType || "")
+    private static normalizeDebitCreditNoteVoucherType(value: unknown) {
+        const voucherType = String(value || "")
             .replace(/_/g, " ")
             .replace(/\s+/g, " ")
             .trim()
             .toUpperCase();
+
+        // RCM debit notes are purchase-side inward debit notes in the
+        // imported RCM register format.
+        return voucherType === "RCM DEBIT NOTE"
+            ? "INWARD DEBIT NOTE"
+            : voucherType;
+    }
+
+    static isInwardDebitCreditNoteImportRow(dto: JournalImportDTO) {
+        const voucherType = this.normalizeDebitCreditNoteVoucherType(dto.voucherType);
 
         return ["INWARD DEBIT NOTE", "INWARD CREDIT NOTE"].includes(voucherType);
     }
@@ -3800,27 +3832,13 @@ export class ImportResolver {
      * otherwise the note remains an accounting-only pending document.
      */
     static async importDebitCreditNoteOnly(actor: any, dto: JournalImportDTO) {
-        const normalizedType = String(dto.voucherType || "")
-            .replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+        const normalizedType = this.normalizeDebitCreditNoteVoucherType(dto.voucherType);
         if (!this.isDebitCreditNoteImportRow(dto)) {
             throw new Error(`Unsupported debit/credit note type: ${dto.voucherType}`);
         }
 
-        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
         const isInward = normalizedType.startsWith("INWARD ");
         const isDebitNote = normalizedType.endsWith("DEBIT NOTE");
-        if (!Number.isFinite(amount) || amount <= 0 ||
-            (dto.debitAmount > 0 && dto.creditAmount > 0) ||
-            (isDebitNote &&
-                (dto.creditAmount <= 0 || dto.debitAmount > 0)) ||
-            (!isDebitNote &&
-                (dto.debitAmount <= 0 || dto.creditAmount > 0))) {
-            throw new Error(
-                `${normalizedType} ${dto.voucherNo} must have only one positive ` +
-                `${isDebitNote ? "Credit" : "Debit"} amount`
-            );
-        }
-
         const sourceType = isInward
             ? DebitCreditNoteSourceType.PURCHASE
             : DebitCreditNoteSourceType.SALE;
@@ -3828,13 +3846,77 @@ export class ImportResolver {
             ? DebitCreditNoteType.DEBIT_NOTE
             : DebitCreditNoteType.CREDIT_NOTE;
         const categoryPath = normalizeImportedTransactionPath(dto.path) || null;
+        const noteNo = String(dto.voucherNo || "").trim();
+        if (!noteNo) {
+            throw new Error(`${normalizedType} requires a voucher number`);
+        }
+
+        const importedInvoiceNo = String(dto.invoiceNo || "")
+            .trim()
+            .toUpperCase();
+        const importedPath = categoryPath
+            .trim()
+            .toUpperCase();
+        const duplicateValue = (value: unknown) =>
+            String(value || "").trim().toUpperCase();
+
+        // A row is a duplicate only when voucher number, source invoice
+        // number, and normalized Path all match. A mismatch in any one field
+        // must be imported as a separate note.
+        const existingCandidates = await prisma.debitCreditNote.findMany({
+            where: {
+                noteNo,
+                sourceType,
+                type: noteType
+            },
+            select: {
+                id: true,
+                status: true,
+                agencyId: true,
+                categoryPath: true,
+                sourceInvoiceNo: true,
+                purchase: { select: { invoiceNo: true } },
+                sale: { select: { invoiceNo: true } }
+            }
+        });
+        const matchingExisting = existingCandidates.filter(candidate =>
+            duplicateValue(candidate.categoryPath) === importedPath &&
+            duplicateValue(
+                candidate.sourceInvoiceNo ||
+                candidate.purchase?.invoiceNo ||
+                candidate.sale?.invoiceNo
+            ) === importedInvoiceNo
+        );
+        if (matchingExisting.length > 1) {
+            throw new Error(
+                `Multiple existing ${normalizedType} notes match voucher ${noteNo}, invoice ${dto.invoiceNo || "(blank)"}, and Path ${dto.path || "(blank)"}; duplicate prevention cannot choose safely`
+            );
+        }
+        if (matchingExisting.length === 1) {
+            return { note: matchingExisting[0], skipped: true };
+        }
+
+        const amount = Number(dto.debitAmount || dto.creditAmount || 0);
+        const hasDebit = dto.debitAmount > 0;
+        const hasCredit = dto.creditAmount > 0;
+        // A note's document type does not restrict the accounting side.
+        const validSide = hasDebit !== hasCredit;
+        if (!Number.isFinite(amount) || amount <= 0 || !validSide) {
+            throw new Error(
+                `${normalizedType} ${dto.voucherNo} must have exactly one positive Debit or Credit amount`
+            );
+        }
+
+        const partyName = normalizeImportedPartyName(dto.particulars);
+        const isUnrecordedParty =
+            !partyName || /^PARTY\s+NOT\s+RECORDED$/i.test(partyName);
 
         // These resolvers only look up already-approved invoices. They do not
         // create accounting entries.
-        const linkedPurchase = isInward
+        const linkedPurchase = isInward && !isUnrecordedParty
             ? await this.resolvePurchaseForJournalTransaction(actor, dto, true, false)
             : null;
-        const linkedSale = !isInward
+        const linkedSale = !isInward && !isUnrecordedParty
             ? await this.resolveSaleForJournalTransaction(actor, dto)
             : null;
         const linkedDocument = linkedPurchase || linkedSale;
@@ -3849,17 +3931,37 @@ export class ImportResolver {
             });
         if (!branch) throw new Error("No active branch found for debit/credit note import");
 
-        const partyName = normalizeImportedPartyName(dto.particulars);
-        if (!partyName) throw new Error(`${normalizedType} ${dto.voucherNo} requires a party`);
-        const agency = linkedDocument?.agency || await prisma.agency.findFirst({
+        if (!partyName && !isUnrecordedParty) {
+            throw new Error(`${normalizedType} ${noteNo} requires a party`);
+        }
+        let agency = isUnrecordedParty
+            ? null
+            : linkedDocument?.agency || await prisma.agency.findFirst({
             where: { name: { equals: partyName, mode: "insensitive" } }
         });
-        if (!agency) throw new Error(`Agency not found for ${dto.particulars}`);
+        if (!agency && !isUnrecordedParty) {
+            const agencyType = isInward ? AgencyType.VENDOR : AgencyType.CLIENT;
+            const createdAgency = await prisma.agency.create({
+                data: {
+                    name: partyName,
+                    type: agencyType
+                }
+            });
+            await prisma.$transaction(tx =>
+                LedgerService.ensureAgencyLedgers(
+                    tx,
+                    createdAgency.id,
+                    [branch.id],
+                    agencyType
+                )
+            );
+            agency = createdAgency;
+        }
 
         const importKey = buildTransactionImportKey(
             "DEBIT_CREDIT_NOTE_ONLY",
             branch.id,
-            agency.id,
+            agency?.id || "UNRECORDED_PARTY",
             dto.voucherNo,
             sourceType,
             noteType,
@@ -3867,43 +3969,72 @@ export class ImportResolver {
             dto.date?.toISOString().slice(0, 10) || "",
             amount
         );
-        const noteNo = String(dto.voucherNo || "").trim();
-        const existing = await prisma.debitCreditNote.findFirst({
-            where: {
-                OR: [
-                    { importKey },
-                    { branchId: branch.id, agencyId: agency.id, noteNo, sourceType, type: noteType }
-                ]
-            }
-        });
         const data = {
             categoryPath,
+            sourceInvoiceNo: dto.invoiceNo?.trim() || null,
+            accountingEntryType: dto.debitAmount > 0
+                ? EntryType.DEBIT
+                : EntryType.CREDIT,
             noteDate: dto.date || new Date(),
             narration: dto.particulars || `Imported ${dto.voucherType}`,
             totalAmount: amount,
             ...(linkedPurchase ? { purchaseId: linkedPurchase.id, saleId: null } : {}),
             ...(linkedSale ? { saleId: linkedSale.id, purchaseId: null } : {})
         };
-        if (existing) {
-            return prisma.debitCreditNote.update({ where: { id: existing.id }, data });
-        }
-
-        return prisma.debitCreditNote.create({
-            data: {
-                noteNo,
-                type: noteType,
-                sourceType,
-                agencyId: agency.id,
-                branchId: branch.id,
-                importKey,
-                status: DebitCreditNoteStatus.PENDING,
-                createdById: actor.id,
-                ...data,
-                particulars: {
-                    create: [{ description: categoryPath || `Imported ${normalizedType}`, amount }]
+        try {
+            const note = await prisma.debitCreditNote.create({
+                data: {
+                    noteNo,
+                    type: noteType,
+                    sourceType,
+                    agencyId: agency?.id || null,
+                    branchId: branch.id,
+                    importKey,
+                    status: DebitCreditNoteStatus.PENDING,
+                    createdById: actor.id,
+                    ...data,
+                    particulars: {
+                        create: [{
+                            description: categoryPath || `Imported ${normalizedType}`,
+                            amount,
+                            entryType: dto.debitAmount > 0
+                                ? EntryType.DEBIT
+                                : EntryType.CREDIT
+                        }]
+                    }
+                }
+            });
+            return { note, skipped: false };
+        } catch (error: any) {
+            // The schema also protects branch + agency + note number. If two
+            // uploads race, treat the winner as the duplicate to skip.
+            if (error?.code === "P2002") {
+                const duplicateCandidates = await prisma.debitCreditNote.findMany({
+                    where: { noteNo, sourceType, type: noteType },
+                    select: {
+                        id: true,
+                        status: true,
+                        agencyId: true,
+                        categoryPath: true,
+                        sourceInvoiceNo: true,
+                        purchase: { select: { invoiceNo: true } },
+                        sale: { select: { invoiceNo: true } }
+                    }
+                });
+                const duplicate = duplicateCandidates.filter(candidate =>
+                    duplicateValue(candidate.categoryPath) === importedPath &&
+                    duplicateValue(
+                        candidate.sourceInvoiceNo ||
+                        candidate.purchase?.invoiceNo ||
+                        candidate.sale?.invoiceNo
+                    ) === importedInvoiceNo
+                );
+                if (duplicate.length === 1) {
+                    return { note: duplicate[0], skipped: true };
                 }
             }
-        });
+            throw error;
+        }
     }
 
     static async importInvoiceTransaction(

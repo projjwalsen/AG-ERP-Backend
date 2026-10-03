@@ -426,7 +426,20 @@ router.post(
  *                 description: Excel file with Date, Particular, Voucher Type, Voucher No., Debit, Credit, and Path columns.
  *     responses:
  *       200:
- *         description: All debit/credit note rows imported successfully.
+ *         description: Import completed. Existing notes matching voucher number are skipped.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total: { type: integer }
+ *                     processed: { type: integer }
+ *                     success: { type: integer }
+ *                     skipped: { type: integer, description: Existing notes skipped by voucher number }
+ *                     failed: { type: integer }
  *       400:
  *         description: Invalid workbook or note data.
  *       401:

@@ -1984,12 +1984,22 @@ export class ExcelImportService {
                     ).trim();
 
                 const particulars = this.getJournalParticulars(row);
-                const sourceSerialNo = String(this.getValue(
+                const sourceSerialNoValue = String(this.getValue(
                     row, "Sr.No", "Sr. No", "Sr No", "Serial No", "S No"
                 ) || "").trim();
+                const rawPath = String(this.getValue(
+                    row, "Path", "Account Path", "Ledger Path"
+                ) || "").trim();
+                const pathParts = rawPath.split(/[\\/]/).map(value => value.trim()).filter(Boolean);
                 const accountName = String(this.getValue(
                     row, "Ledger / Account Name", "Account/Ledger", "Account / Ledger", "Ledger", "Account Name"
-                ) || particulars || "").trim();
+                ) || pathParts[pathParts.length - 1] || particulars || "").trim();
+                const normalizedVoucherType = voucherType.replace(/_/g, " ").replace(/\s+/g, " ").trim();
+                const sourceSerialNo = sourceSerialNoValue || (
+                    ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(normalizedVoucherType)
+                        ? `${voucherNo}:${index + 1}`
+                        : ""
+                );
 
                 if (this.isTotalRow(row, particulars)) {
                     return null;
@@ -2004,10 +2014,10 @@ export class ExcelImportService {
 
                     sourceRow: index + headerRow + 1,
                     sourceSerialNo,
-                    journalGroup: String(this.getValue(row, "Jrn Grp", "Journal Group", "Jrn Group") || "").trim(),
-                    subGroup: String(this.getValue(row, "Sub Grp", "Sub Group") || "").trim(),
-                    subGroup2: String(this.getValue(row, "Sub Grp 2", "Sub Group 2", "Sub Group2") || "").trim(),
-                    subGroup3: String(this.getValue(row, "Sub Grp 3", "Sub Group 3", "Sub Group3") || "").trim(),
+                    journalGroup: String(this.getValue(row, "Jrn Grp", "Journal Group", "Jrn Group") || pathParts[0] || "").trim(),
+                    subGroup: String(this.getValue(row, "Sub Grp", "Sub Group") || pathParts[1] || "").trim(),
+                    subGroup2: String(this.getValue(row, "Sub Grp 2", "Sub Group 2", "Sub Group2") || pathParts[2] || "").trim(),
+                    subGroup3: String(this.getValue(row, "Sub Grp 3", "Sub Group 3", "Sub Group3") || pathParts[3] || "").trim(),
                     accountName,
                     narration: String(this.getValue(row, "Narration") || ""),
                     remarks: String(this.getValue(row, "Remarks", "Remark") || ""),

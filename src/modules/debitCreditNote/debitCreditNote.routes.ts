@@ -171,6 +171,10 @@ router.get(
  *                       format: double
  *                       minimum: 0.01
  *                       example: 3000
+ *                     entryType:
+ *                       type: string
+ *                       enum: [DEBIT, CREDIT]
+ *                       description: Optional per-line accounting side. If omitted, the note's legacy/default side is used.
  *
  *           examples:
  *

@@ -516,8 +516,39 @@ export class ReportingService {
                                 code: { startsWith: "PURCHASE-TYPE-" }
                             }
                         },
-                        { voucher: { voucherType: VoucherType.PURCHASE } }
+                        {
+                            voucher: {
+                                voucherType: {
+                                    in: [
+                                        VoucherType.PURCHASE,
+                                        VoucherType.RCM_PURCHASE
+                                    ]
+                                }
+                            }
+                        }
                     ]
+                },
+                {
+                    // RCM purchase journals can be posted through the
+                    // Journal Import flow and may not have a PURCHASE-type
+                    // ledger. Include the voucher explicitly so its ledger
+                    // entries are available to Trial Balance.
+                    voucher: {
+                        voucherType: VoucherType.RCM_PURCHASE
+                    }
+                },
+                {
+                    // Debit/credit-note imports are also voucher-backed
+                    // journal rows. Do not make their Trial Balance
+                    // visibility depend on the Journal relation being
+                    // present/approved: the LedgerEntry already contains
+                    // the authoritative debit or credit side and its ledger
+                    // belongs to the imported header/subheader hierarchy.
+                    voucher: {
+                        voucherType: {
+                            in: [VoucherType.DEBIT_NOTE, VoucherType.CREDIT_NOTE]
+                        }
+                    }
                 },
                 {
                     AND: [
@@ -550,7 +581,16 @@ export class ReportingService {
                         // by the invoice grand total. Include that posting so
                         // it is visible under the Sundry Creditors control head.
                         { ledger: { category: LedgerType.VENDOR } },
-                        { voucher: { voucherType: VoucherType.PURCHASE } }
+                        {
+                            voucher: {
+                                voucherType: {
+                                    in: [
+                                        VoucherType.PURCHASE,
+                                        VoucherType.RCM_PURCHASE
+                                    ]
+                                }
+                            }
+                        }
                     ]
                 }
             ]
@@ -605,7 +645,13 @@ export class ReportingService {
                             journals: {
                                 some: {
                                     status: JournalStatus.APPROVED,
-                                    voucherId: null,
+                                    OR: [
+                                        { voucherId: null },
+                                        {
+                                            voucherId: { not: null },
+                                            voucher: { entries: { none: {} } }
+                                        }
+                                    ],
                                     ...(branchId ? { branchId } : {})
                                 }
                             }
@@ -783,7 +829,19 @@ export class ReportingService {
                         where: {
                             journalHead: { ledgerId: { in: ledgerIds } },
                             status: JournalStatus.APPROVED,
-                            voucherId: null,
+                            // A normal voucher-backed journal is represented
+                            // by its LedgerEntry. Older imports can have the
+                            // Journal and Voucher but no LedgerEntry, so
+                            // include those rows as a fallback. The `none`
+                            // condition prevents double-counting healthy
+                            // voucher-backed journals.
+                            OR: [
+                                { voucherId: null },
+                                {
+                                    voucherId: { not: null },
+                                    voucher: { entries: { none: {} } }
+                                }
+                            ],
                             ...(branchId ? { branchId } : {}),
                             journalDate: voucherDate
                         },
@@ -1051,6 +1109,62 @@ export class ReportingService {
                 };
             });
 
+        // Imports can create more than one ledger for the same journal head
+        // name (for example, one ledger from the RCM journal register and a
+        // second one from the debit-note register). They can therefore look
+        // like duplicate accounts in Trial Balance even though their voucher
+        // postings are different. Merge only JOURNAL ledgers with the same
+        // name, branch, and top-level accounting group; unrelated groups are
+        // kept separate.
+        const topLevelGroupCode = (groupId: string) => {
+            let group = ledgerGroups.find(item => item.id === groupId);
+            while (group?.parentId) {
+                group = ledgerGroups.find(item => item.id === group!.parentId);
+            }
+            return group?.code || groupId;
+        };
+        const mergedJournalRows = new Map<string, any>();
+        const nonMergedRows: any[] = [];
+
+        for (const row of rawLedgerRows) {
+            if (row.ledgerCategory !== LedgerType.JOURNAL) {
+                nonMergedRows.push(row);
+                continue;
+            }
+
+            const key = [
+                row.branchId || "",
+                String(row.account || "").trim().replace(/\s+/g, " ").toUpperCase(),
+                topLevelGroupCode(row.groupId)
+            ].join("|");
+            const existing = mergedJournalRows.get(key);
+            if (!existing) {
+                mergedJournalRows.set(key, { ...row });
+                continue;
+            }
+
+            for (const field of [
+                "periodDebit",
+                "periodCredit",
+                "openingDebit",
+                "openingCredit",
+                "debit",
+                "credit",
+                "closingDebit",
+                "closingCredit",
+                "closingSigned"
+            ]) {
+                existing[field] = Math.round(
+                    (Number(existing[field] || 0) + Number(row[field] || 0)) * 100
+                ) / 100;
+            }
+        }
+
+        const consolidatedRawLedgerRows = [
+            ...nonMergedRows,
+            ...mergedJournalRows.values()
+        ];
+
         /*
          * Older journal imports could create a JOURNAL ledger using the
          * party's plain name (for example, "ACME-DR"), while receipts and
@@ -1070,7 +1184,7 @@ export class ReportingService {
             Math.round(value * 100) / 100;
 
         const customerRowsByParty = new Map<string, any>();
-        for (const row of rawLedgerRows) {
+        for (const row of consolidatedRawLedgerRows) {
             if (row.ledgerCategory === LedgerType.CUSTOMER) {
                 customerRowsByParty.set(
                     `${row.branchId || ""}|${normalizePartyLedgerName(row.account)}`,
@@ -1080,7 +1194,7 @@ export class ReportingService {
         }
 
         const legacyJournalRows = new Set<any>();
-        for (const row of rawLedgerRows) {
+        for (const row of consolidatedRawLedgerRows) {
             if (row.ledgerCategory !== LedgerType.JOURNAL) continue;
 
             const target = customerRowsByParty.get(
@@ -1108,7 +1222,7 @@ export class ReportingService {
             legacyJournalRows.add(row);
         }
 
-        const normalizedLedgerRows = rawLedgerRows.filter(
+        const normalizedLedgerRows = consolidatedRawLedgerRows.filter(
             row => !legacyJournalRows.has(row)
         );
 
@@ -1460,7 +1574,7 @@ export class ReportingService {
         // ledgers, not accounting heads, and must not create a separate
         // "Purchase" or "Sales" row in the Trial Balance.
         const aggregateAccountRows = (category: LedgerType) => {
-            const sourceRows = rawLedgerRows.filter(
+            const sourceRows = consolidatedRawLedgerRows.filter(
                 row => row.ledgerCategory === category &&
                     !CUSTOM_TRIAL_BALANCE_GROUP_CODES.has(
                         String(row.groupCode || "").toUpperCase()

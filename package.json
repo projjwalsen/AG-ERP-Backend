@@ -17,6 +17,9 @@
     "seed:trial-balance-journal-heads": "tsx src/scripts/seed-trial-balance-journal-heads.ts",
     "seed:opening-balances": "tsx src/scripts/seed-opening-balances.ts",
     "repair:opening-balance-journal-tree": "tsx src/scripts/repair-opening-balance-journal-tree.ts",
+    "repair:opening-balance-amounts": "tsx src/scripts/repair-opening-balance-amounts.ts",
+    "dedupe:opening-balances": "tsx src/scripts/dedupe-opening-balance-entries.ts",
+    "remove:duplicate-opening-balances": "tsx src/scripts/remove-duplicate-opening-balance-entries.ts",
     "seed:purchase-account-journals": "tsx src/scripts/seed-purchase-account-journals.ts",
     "repair:inward-note-purchase-ledgers": "tsx src/scripts/repair-inward-note-purchase-ledgers.ts",
     "diagnose:inward-note-trial-balance": "tsx src/scripts/diagnose-inward-note-trial-balance.ts",
@@ -45,7 +48,8 @@
     "repair:pending-transaction": "tsx src/scripts/repair-approved-transaction.ts",
     "repair:imported-sales-ledgers": "tsx src/scripts/repair-imported-sales-ledgers.ts",
     "diagnose:bank-receipt-mismatch": "tsx src/scripts/diagnose-bank-receipt-mismatch.ts",
-    "recover:missing-bank-receipts": "tsx src/scripts/recover-missing-bank-receipts.ts"
+    "recover:missing-bank-receipts": "tsx src/scripts/recover-missing-bank-receipts.ts",
+    "repair:rcm-purchase-journal": "tsx src/scripts/repair-rcm-purchase-journal.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",
