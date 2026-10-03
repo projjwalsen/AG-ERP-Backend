@@ -13,7 +13,9 @@ export class InwardDebitCreditNoteImportService {
     ) {
         if (!actor?.id) throw new Error("Unauthorized");
 
+        console.log("[inward-note-import] reading workbook");
         const workbook = ExcelImportService.readExcel(file.buffer);
+        console.log(`[inward-note-import] workbook sheets: ${workbook.SheetNames.join(", ")}`);
         const rows = workbook.SheetNames.flatMap(sheetName => {
             const worksheet = ExcelImportService.getWorkSheet(workbook, sheetName);
             const headerRow = ExcelImportService.detectJournalHeaderRow(worksheet);
@@ -23,6 +25,7 @@ export class InwardDebitCreditNoteImportService {
                 headerRow
             );
         }).filter(dto => ImportResolver.isDebitCreditNoteImportRow(dto));
+        console.log(`[inward-note-import] parsed matching rows: ${rows.length}`);
 
         // RCM Debit/Credit Note exports from Tally are journal-register
         // workbooks: one voucher is split across balanced debit/credit lines
@@ -62,6 +65,10 @@ export class InwardDebitCreditNoteImportService {
 
         for (const dto of rows) {
             try {
+                console.log(
+                    `[inward-note-import] processing row=${dto.sourceRow ?? "?"}` +
+                    ` voucher=${dto.voucherNo ?? ""}`
+                );
                 const normalizedVoucherType = String(dto.voucherType || "")
                     .replace(/_/g, " ")
                     .replace(/\s+/g, " ")
@@ -81,6 +88,10 @@ export class InwardDebitCreditNoteImportService {
                     await ImportResolver.importJournalRegisterRow(actor, dto);
                 } else {
                     const result = await ImportResolver.importDebitCreditNoteOnly(actor, dto);
+                    console.log(
+                        `[inward-note-import] resolved voucher=${dto.voucherNo ?? ""}` +
+                        ` skipped=${result.skipped}`
+                    );
                     if (result.skipped) {
                         summary.skipped++;
                     } else {
