@@ -16,6 +16,7 @@
     "seed:land-journal-heads": "tsx src/scripts/seed-land-journal-heads.ts",
     "seed:trial-balance-journal-heads": "tsx src/scripts/seed-trial-balance-journal-heads.ts",
     "seed:opening-balances": "tsx src/scripts/seed-opening-balances.ts",
+    "repair:opening-balance-journal-tree": "tsx src/scripts/repair-opening-balance-journal-tree.ts",
     "seed:purchase-account-journals": "tsx src/scripts/seed-purchase-account-journals.ts",
     "repair:inward-note-purchase-ledgers": "tsx src/scripts/repair-inward-note-purchase-ledgers.ts",
     "diagnose:inward-note-trial-balance": "tsx src/scripts/diagnose-inward-note-trial-balance.ts",
