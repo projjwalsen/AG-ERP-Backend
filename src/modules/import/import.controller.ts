@@ -485,14 +485,20 @@ export const importInwardDebitCreditNoteWorkbook = async (
     next: NextFunction
 ) => {
     try {
+        console.log("[inward-note-import] request received");
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Excel file is required." });
         }
+        console.log(`[inward-note-import] file received: ${req.file.originalname} (${req.file.size} bytes)`);
         const result = await InwardDebitCreditNoteImportService.importWorkbook(
             (req as any).user,
             req.file,
-            summary => undefined
+            summary => console.log(
+                `[inward-note-import] progress ${summary.processed}/${summary.total}` +
+                ` success=${summary.success} skipped=${summary.skipped} failed=${summary.failed}`
+            )
         );
+        console.log("[inward-note-import] completed");
         return res.status(200).json({
             success: true,
             message: "Inward and outward debit/credit notes imported successfully.",

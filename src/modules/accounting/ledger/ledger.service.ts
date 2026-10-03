@@ -5837,23 +5837,9 @@ export class LedgerService {
         const isPurchase = note.sourceType ===
             DebitCreditNoteSourceType.PURCHASE;
 
-        if(isSale && !note.sale) {
-            throw new ApiError(
-                "Sale invoice not found for the debit/credit note",
-                404
-            );
-        }
-
-        if(isPurchase && !note.purchase) {
-            throw new ApiError(
-                "Purchase invoice not found for the debit/credit note",
-                404
-            );
-        }
-
         const invoiceNo = isSale ?
-            note.sale!.invoiceNo :
-            note.purchase!.invoiceNo;
+            note.sale?.invoiceNo || note.noteNo :
+            note.purchase?.invoiceNo || note.noteNo;
 
         /**
          * PARTY LEDGER
@@ -5961,17 +5947,11 @@ export class LedgerService {
             * Cr Vendor
         */
 
-        const partyEntryType = 
-            note.type ===
-            DebitCreditNoteType.DEBIT_NOTE
-                ? EntryType.DEBIT
-                : EntryType.CREDIT;
-
-        const particularEntryType =
-            note.type ===
-            DebitCreditNoteType.DEBIT_NOTE
+        const defaultParticularEntryType = note.accountingEntryType || (
+            note.type === DebitCreditNoteType.DEBIT_NOTE
                 ? EntryType.CREDIT
-                : EntryType.DEBIT;
+                : EntryType.DEBIT
+        );
 
         /**
          * Each user particular becomes its own
@@ -5982,7 +5962,7 @@ export class LedgerService {
                 particular => ({
                     ledgerId: noteLedger.id,
                     
-                    entryType: particularEntryType,
+                    entryType: particular.entryType || defaultParticularEntryType,
 
                     amount: Number(particular.amount),
 
@@ -5993,6 +5973,17 @@ export class LedgerService {
                 })
             );
 
+        const debitTotal = particularEntries
+            .filter(entry => entry.entryType === EntryType.DEBIT)
+            .reduce((sum, entry) => sum + entry.amount, 0);
+        const creditTotal = particularEntries
+            .filter(entry => entry.entryType === EntryType.CREDIT)
+            .reduce((sum, entry) => sum + entry.amount, 0);
+        const partyAmount = Math.abs(debitTotal - creditTotal);
+        const partyEntryType = debitTotal > creditTotal
+            ? EntryType.CREDIT
+            : EntryType.DEBIT;
+
 
         return this.createVoucher({
             voucherType,
@@ -6002,14 +5993,14 @@ export class LedgerService {
             narration,
             entries: 
                 [
-                    {
+                    ...(partyAmount > 0 ? [{
                         ledgerId: partyLedger.id,
                         entryType: partyEntryType,
-                        amount,
+                        amount: partyAmount,
                         branchId: note.branchId,
                         narration: 
                             `${note.type} ${note.noteNo} | Invoice:${invoiceNo}`
-                    },
+                    }] : []),
                     ...particularEntries
                 ]
         }, tx);

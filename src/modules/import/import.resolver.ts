@@ -3851,45 +3851,72 @@ export class ImportResolver {
             throw new Error(`${normalizedType} requires a voucher number`);
         }
 
-        // Voucher number is the idempotency key for this dedicated endpoint.
-        // Check it before party resolution so a repeat upload is safely ignored
-        // even when the repeat row has no Particulars/party value.
-        const existingByVoucherNo = await prisma.debitCreditNote.findMany({
+        const importedInvoiceNo = String(dto.invoiceNo || "")
+            .trim()
+            .toUpperCase();
+        const importedPath = categoryPath
+            .trim()
+            .toUpperCase();
+        const duplicateValue = (value: unknown) =>
+            String(value || "").trim().toUpperCase();
+
+        // A row is a duplicate only when voucher number, source invoice
+        // number, and normalized Path all match. A mismatch in any one field
+        // must be imported as a separate note.
+        const existingCandidates = await prisma.debitCreditNote.findMany({
             where: {
                 noteNo,
                 sourceType,
                 type: noteType
             },
-            select: { id: true, status: true, agencyId: true }
+            select: {
+                id: true,
+                status: true,
+                agencyId: true,
+                categoryPath: true,
+                sourceInvoiceNo: true,
+                purchase: { select: { invoiceNo: true } },
+                sale: { select: { invoiceNo: true } }
+            }
         });
-        if (existingByVoucherNo.length > 1) {
+        const matchingExisting = existingCandidates.filter(candidate =>
+            duplicateValue(candidate.categoryPath) === importedPath &&
+            duplicateValue(
+                candidate.sourceInvoiceNo ||
+                candidate.purchase?.invoiceNo ||
+                candidate.sale?.invoiceNo
+            ) === importedInvoiceNo
+        );
+        if (matchingExisting.length > 1) {
             throw new Error(
-                `Multiple existing ${normalizedType} notes match voucher ${noteNo}; duplicate prevention cannot choose safely`
+                `Multiple existing ${normalizedType} notes match voucher ${noteNo}, invoice ${dto.invoiceNo || "(blank)"}, and Path ${dto.path || "(blank)"}; duplicate prevention cannot choose safely`
             );
         }
-        if (existingByVoucherNo.length === 1) {
-            return { note: existingByVoucherNo[0], skipped: true };
+        if (matchingExisting.length === 1) {
+            return { note: matchingExisting[0], skipped: true };
         }
 
         const amount = Number(dto.debitAmount || dto.creditAmount || 0);
-        if (!Number.isFinite(amount) || amount <= 0 ||
-            (dto.debitAmount > 0 && dto.creditAmount > 0) ||
-            (isDebitNote &&
-                (dto.creditAmount <= 0 || dto.debitAmount > 0)) ||
-            (!isDebitNote &&
-                (dto.debitAmount <= 0 || dto.creditAmount > 0))) {
+        const hasDebit = dto.debitAmount > 0;
+        const hasCredit = dto.creditAmount > 0;
+        // A note's document type does not restrict the accounting side.
+        const validSide = hasDebit !== hasCredit;
+        if (!Number.isFinite(amount) || amount <= 0 || !validSide) {
             throw new Error(
-                `${normalizedType} ${dto.voucherNo} must have only one positive ` +
-                `${isDebitNote ? "Credit" : "Debit"} amount`
+                `${normalizedType} ${dto.voucherNo} must have exactly one positive Debit or Credit amount`
             );
         }
 
+        const partyName = normalizeImportedPartyName(dto.particulars);
+        const isUnrecordedParty =
+            !partyName || /^PARTY\s+NOT\s+RECORDED$/i.test(partyName);
+
         // These resolvers only look up already-approved invoices. They do not
         // create accounting entries.
-        const linkedPurchase = isInward
+        const linkedPurchase = isInward && !isUnrecordedParty
             ? await this.resolvePurchaseForJournalTransaction(actor, dto, true, false)
             : null;
-        const linkedSale = !isInward
+        const linkedSale = !isInward && !isUnrecordedParty
             ? await this.resolveSaleForJournalTransaction(actor, dto)
             : null;
         const linkedDocument = linkedPurchase || linkedSale;
@@ -3904,18 +3931,31 @@ export class ImportResolver {
             });
         if (!branch) throw new Error("No active branch found for debit/credit note import");
 
-        const partyName = normalizeImportedPartyName(dto.particulars);
-        const isUnrecordedParty = !linkedDocument?.agency && (
-            !partyName || /^party\s+not\s+recorded$/i.test(partyName)
-        );
-        if (!partyName && !linkedDocument?.agency && !isUnrecordedParty) {
+        if (!partyName && !isUnrecordedParty) {
             throw new Error(`${normalizedType} ${noteNo} requires a party`);
         }
-        const agency = linkedDocument?.agency || await prisma.agency.findFirst({
+        let agency = isUnrecordedParty
+            ? null
+            : linkedDocument?.agency || await prisma.agency.findFirst({
             where: { name: { equals: partyName, mode: "insensitive" } }
         });
         if (!agency && !isUnrecordedParty) {
-            throw new Error(`Agency not found for ${dto.particulars || noteNo}`);
+            const agencyType = isInward ? AgencyType.VENDOR : AgencyType.CLIENT;
+            const createdAgency = await prisma.agency.create({
+                data: {
+                    name: partyName,
+                    type: agencyType
+                }
+            });
+            await prisma.$transaction(tx =>
+                LedgerService.ensureAgencyLedgers(
+                    tx,
+                    createdAgency.id,
+                    [branch.id],
+                    agencyType
+                )
+            );
+            agency = createdAgency;
         }
 
         const importKey = buildTransactionImportKey(
@@ -3931,6 +3971,10 @@ export class ImportResolver {
         );
         const data = {
             categoryPath,
+            sourceInvoiceNo: dto.invoiceNo?.trim() || null,
+            accountingEntryType: dto.debitAmount > 0
+                ? EntryType.DEBIT
+                : EntryType.CREDIT,
             noteDate: dto.date || new Date(),
             narration: dto.particulars || `Imported ${dto.voucherType}`,
             totalAmount: amount,
@@ -3950,7 +3994,13 @@ export class ImportResolver {
                     createdById: actor.id,
                     ...data,
                     particulars: {
-                        create: [{ description: categoryPath || `Imported ${normalizedType}`, amount }]
+                        create: [{
+                            description: categoryPath || `Imported ${normalizedType}`,
+                            amount,
+                            entryType: dto.debitAmount > 0
+                                ? EntryType.DEBIT
+                                : EntryType.CREDIT
+                        }]
                     }
                 }
             });
@@ -3959,10 +4009,26 @@ export class ImportResolver {
             // The schema also protects branch + agency + note number. If two
             // uploads race, treat the winner as the duplicate to skip.
             if (error?.code === "P2002") {
-                const duplicate = await prisma.debitCreditNote.findMany({
+                const duplicateCandidates = await prisma.debitCreditNote.findMany({
                     where: { noteNo, sourceType, type: noteType },
-                    select: { id: true, status: true, agencyId: true }
+                    select: {
+                        id: true,
+                        status: true,
+                        agencyId: true,
+                        categoryPath: true,
+                        sourceInvoiceNo: true,
+                        purchase: { select: { invoiceNo: true } },
+                        sale: { select: { invoiceNo: true } }
+                    }
                 });
+                const duplicate = duplicateCandidates.filter(candidate =>
+                    duplicateValue(candidate.categoryPath) === importedPath &&
+                    duplicateValue(
+                        candidate.sourceInvoiceNo ||
+                        candidate.purchase?.invoiceNo ||
+                        candidate.sale?.invoiceNo
+                    ) === importedInvoiceNo
+                );
                 if (duplicate.length === 1) {
                     return { note: duplicate[0], skipped: true };
                 }
