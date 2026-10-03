@@ -3569,8 +3569,42 @@ export class LedgerService {
             );
         }
 
+        // Imported journal registers create a ledger-backed JournalHead for
+        // every level of the hierarchy. Vouchers are posted to the leaf
+        // ledger, while a statement opened from a parent/subheader must show
+        // the entries from all of its descendant heads as well.
+        const statementLedgerIds = new Set<string>([ledgerId]);
+        const statementJournalHeadIds = new Set<string>();
+        let journalHeadIds = (
+            await prisma.journalHead.findMany({
+                where: { ledgerId },
+                select: { id: true, ledgerId: true }
+            })
+        ).map((head) => {
+            statementJournalHeadIds.add(head.id);
+            statementLedgerIds.add(head.ledgerId);
+            return head.id;
+        });
+
+        while (journalHeadIds.length > 0) {
+            const childHeads = await prisma.journalHead.findMany({
+                where: { parentId: { in: journalHeadIds } },
+                select: { id: true, ledgerId: true }
+            });
+            journalHeadIds = childHeads
+                .filter((head) => !statementJournalHeadIds.has(head.id))
+                .map((head) => {
+                    statementJournalHeadIds.add(head.id);
+                    statementLedgerIds.add(head.ledgerId);
+                    return head.id;
+                });
+        }
+
+        const statementLedgerIdList = [...statementLedgerIds];
+        const statementJournalHeadIdList = [...statementJournalHeadIds];
+
         const periodWhere: Prisma.LedgerEntryWhereInput = {
-            ledgerId,
+            ledgerId: { in: statementLedgerIdList },
             ...(startDate || endDate
                 ? {
                     voucher: {
@@ -3584,7 +3618,7 @@ export class LedgerService {
         };
 
         const priorWhere: Prisma.LedgerEntryWhereInput = {
-            ledgerId,
+            ledgerId: { in: statementLedgerIdList },
             ...(startDate
                 ? {
                     voucher: {
@@ -3672,11 +3706,50 @@ export class LedgerService {
                 : Promise.resolve(null)
         ]);
 
+        const statementCategoryPaths = [
+            ...new Set(
+                (
+                    await prisma.journal.findMany({
+                        where: {
+                            OR: [
+                                { journalHeadId: { in: statementJournalHeadIdList } },
+                                {
+                                    voucher: {
+                                        entries: {
+                                            some: {
+                                                ledgerId: { in: statementLedgerIdList }
+                                            }
+                                        }
+                                    }
+                                }
+                            ],
+                            categoryPath: { not: null },
+                            ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                        },
+                        select: { categoryPath: true }
+                    })
+                )
+                    .map((journal) => journal.categoryPath)
+                    .filter((path): path is string => Boolean(path))
+            )
+        ];
+
+        const journalScope = [
+            { journalHeadId: { in: statementJournalHeadIdList } },
+            ...(statementCategoryPaths.length > 0
+                ? [{ categoryPath: { in: statementCategoryPaths } }]
+                : [])
+        ];
+
+        const journalCommonWhere = {
+            OR: journalScope,
+            status: "APPROVED" as const,
+            ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+        };
+
         const ledgerJournals = await prisma.journal.findMany({
             where: {
-                journalHead: { ledgerId },
-                status: "APPROVED",
-                voucherId: null,
+                ...journalCommonWhere,
                 ...(startDate || endDate ? { journalDate: {
                     ...(startDate && { gte: startDate }),
                     ...(endDate && { lte: endDate })
@@ -3688,10 +3761,40 @@ export class LedgerService {
 
         const priorJournals = startDate
             ? await prisma.journal.findMany({
-                where: { journalHead: { ledgerId }, status: "APPROVED", voucherId: null, journalDate: { lt: startDate } },
+                where: { ...journalCommonWhere, journalDate: { lt: startDate } },
                 include: { journalHead: true }
             })
             : [];
+
+        const periodVoucherIds = new Set(
+            (
+                await prisma.ledgerEntry.findMany({
+                    where: periodWhere,
+                    select: { voucherId: true }
+                })
+            ).map((entry) => entry.voucherId)
+        );
+        const priorVoucherIds = startDate
+            ? new Set(
+                (
+                    await prisma.ledgerEntry.findMany({
+                        where: priorWhere,
+                        select: { voucherId: true }
+                    })
+                ).map((entry) => entry.voucherId)
+            )
+            : new Set<string>();
+
+        // Journals linked to a voucher are normally represented by its
+        // LedgerEntry. Keep only journals that are not already represented,
+        // while still including matching categoryPath rows posted elsewhere
+        // in the same imported path.
+        const statementJournals = ledgerJournals.filter(
+            (journal) => !periodVoucherIds.has(journal.voucherId || "")
+        );
+        const openingJournals = priorJournals.filter(
+            (journal) => !priorVoucherIds.has(journal.voucherId || "")
+        );
 
         const sourceIds = [
             ...new Set(
@@ -3767,11 +3870,11 @@ export class LedgerService {
                 )?._sum?.amount || 0
             );
 
-        for (const journal of priorJournals) {
+        for (const journal of openingJournals) {
             if (getJournalDirection(journal) === JournalDirection.INWARD) priorDebit += money(journal.amount);
             else priorCredit += money(journal.amount);
         }
-        for (const journal of ledgerJournals) {
+        for (const journal of statementJournals) {
             if (getJournalDirection(journal) === JournalDirection.INWARD) periodDebit += money(journal.amount);
             else periodCredit += money(journal.amount);
         }
@@ -3852,7 +3955,7 @@ export class LedgerService {
 
             const counterLedgers =
                 entry.voucher.entries
-                    .filter(x => x.ledgerId !== ledgerId)
+                    .filter(x => !statementLedgerIds.has(x.ledgerId))
                     .map(x => ({
                         id: x.ledger.id,
                         code: x.ledger.code,
@@ -3936,7 +4039,7 @@ export class LedgerService {
             })
         );
 
-        statementRows.push(...ledgerJournals.map(journal => {
+        statementRows.push(...statementJournals.map(journal => {
             const amount = money(journal.amount);
             const debit = getJournalDirection(journal) === JournalDirection.INWARD ? amount : 0;
             const credit = getJournalDirection(journal) === JournalDirection.OUTWARD ? amount : 0;
@@ -5825,8 +5928,12 @@ export class LedgerService {
          * PURCHASE -> VENDOR/SAUNDRY CREDITOR
          */
 
-        const partyLedger = 
-            isSale 
+        // Notes without an agency still need a balanced voucher so they are
+        // visible in Trial Balance. Use the branch suspense ledger for the
+        // unidentified party side; no agency outstanding is updated.
+        const partyLedger = !note.agencyId
+            ? await this.getSuspenseLedger(tx, note.branchId)
+            : isSale
                 ? await this.getOrCreateCustomerLedger(
                     tx,
                     note.branchId,
@@ -5899,7 +6006,7 @@ export class LedgerService {
                 note.type,
                 note.noteNo,
                 `Invoice:${invoiceNo}`,
-                note.agency.name,
+                note.agency?.name || "PARTY NOT RECORDED",
                 note.narration
             ]
             .filter(Boolean)

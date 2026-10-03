@@ -364,18 +364,18 @@ export class DebitCreditNoteService {
             payload.sourceType ===
             DebitCreditNoteSourceType.PURCHASE
         ) {
-            if (!payload.purchaseId) {
-                throw new ApiError(
-                    "Purchase ID is required",
-                    400
-                );
-            }
-
             if (payload.saleId) {
                 throw new ApiError(
                     "saleId cannot be provided for PURCHASE note",
                     400
                 );
+            }
+
+            // Imported/accounting-only purchase notes may not have a source
+            // Purchase row. They can still be approved and posted against
+            // the vendor ledger when agencyId is available.
+            if (!payload.purchaseId) {
+                return null;
             }
 
             const purchase =
@@ -1070,7 +1070,8 @@ export class DebitCreditNoteService {
 
     static async approveNote(
         actor: any,
-        noteId: string
+        noteId: string,
+        generatePdf = true
     ) {
 
         await this.ensurePermission(
@@ -1117,21 +1118,6 @@ export class DebitCreditNoteService {
                             "Only pending Debit/Credit notes can be approved",
                             400
                         );
-                    }
-
-                    // A note imported without a recorded party is still a
-                    // valid document. Approve it without any agency,
-                    // outstanding, voucher, or ledger side effects.
-                    if (!note.agencyId) {
-                        return tx.debitCreditNote.update({
-                            where: { id: note.id },
-                            data: {
-                                status: DebitCreditNoteStatus.APPROVED,
-                                approvedById: actor.id,
-                                approvedAt: new Date()
-                            },
-                            include: includeNoteDetails
-                        });
                     }
 
                     /*
@@ -1210,7 +1196,7 @@ export class DebitCreditNoteService {
                         [EntryType.DEBIT, debitAmount],
                         [EntryType.CREDIT, creditAmount]
                     ] as const) {
-                        if (entryAmount <= 0) continue;
+                        if (!note.agencyId || entryAmount <= 0) continue;
                         await TransactionService.updatePersistentOutstanding(
                             tx,
                             note.agencyId,
@@ -1257,7 +1243,14 @@ export class DebitCreditNoteService {
          *
          * Now generate PDF.
          */
-        if (!approvedNote.agencyId) {
+        // Accounting-only imported notes can be approved and posted without a
+        // source invoice, but the invoice-based PDF template cannot render
+        // without sale/purchase details.
+        if (
+            !approvedNote.agencyId ||
+            !approvedNote.sale && !approvedNote.purchase ||
+            !generatePdf
+        ) {
             return { note: approvedNote, pdf: null };
         }
 
@@ -1279,6 +1272,96 @@ export class DebitCreditNoteService {
         return {
             note: approvedNote,
             pdf
+        };
+    }
+
+    /**
+     * Approve accounting-only purchase notes through the normal approval
+     * workflow. This deliberately does not perform a direct SQL status update:
+     * approval must also create the voucher, update outstanding, and make the
+     * entry visible to ledger/trial-balance reports.
+     */
+    static async approvePendingWithoutPurchase(actor: any) {
+        await this.ensurePermission(actor, "SALE:APPROVE");
+
+        const pendingNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                status: DebitCreditNoteStatus.PENDING,
+                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                purchaseId: null
+            },
+            select: { id: true }
+        });
+
+        const approved: string[] = [];
+        const failed: Array<{ id: string; error: string }> = [];
+
+        for (const pendingNote of pendingNotes) {
+            try {
+                await this.approveNote(actor, pendingNote.id, false);
+                approved.push(pendingNote.id);
+            } catch (error: any) {
+                failed.push({
+                    id: pendingNote.id,
+                    error: error?.message || "Approval failed"
+                });
+            }
+        }
+
+        return {
+            total: pendingNotes.length,
+            approved: approved.length,
+            failed: failed.length,
+            approvedIds: approved,
+            failures: failed
+        };
+    }
+
+    /** Backfill accounting for notes approved before voucher posting was
+     * enabled for purchase-less or agency-less notes. */
+    static async repairApprovedNotesWithoutVoucher(actor: any) {
+        await this.ensurePermission(actor, "SALE:APPROVE");
+
+        const notes = await prisma.debitCreditNote.findMany({
+            where: {
+                status: DebitCreditNoteStatus.APPROVED,
+                voucherId: null
+            },
+            select: { id: true }
+        });
+
+        const repaired: string[] = [];
+        const failed: Array<{ id: string; error: string }> = [];
+
+        for (const note of notes) {
+            try {
+                await prisma.$transaction(async tx => {
+                    const current = await tx.debitCreditNote.findUnique({
+                        where: { id: note.id },
+                        select: { id: true, status: true, voucherId: true }
+                    });
+                    if (!current || current.status !== DebitCreditNoteStatus.APPROVED || current.voucherId) {
+                        return;
+                    }
+
+                    const voucher = await LedgerService.postDebitCreditNoteApproval(tx, note.id);
+                    await tx.debitCreditNote.update({
+                        where: { id: note.id, voucherId: null },
+                        data: { voucherId: voucher.id }
+                    });
+                });
+                repaired.push(note.id);
+            } catch (error: any) {
+                failed.push({ id: note.id, error: error?.message || "Repair failed" });
+            }
+        }
+
+        return {
+            total: notes.length,
+            repaired: repaired.length,
+            failed: failed.length,
+            repairedIds: repaired,
+            failures: failed
         };
     }
 
@@ -1655,6 +1738,13 @@ export class DebitCreditNoteService {
             throw new ApiError(
                 "Accounting voucher is missing for this approved Debit/Credit note",
                 409
+            );
+        }
+
+        if (!note.sale && !note.purchase) {
+            throw new ApiError(
+                "PDF is unavailable for an accounting-only Debit/Credit note without a source invoice",
+                400
             );
         }
 

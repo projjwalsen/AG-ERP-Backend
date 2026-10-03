@@ -143,7 +143,7 @@ router.get(
  *               purchaseId:
  *                 type: string
  *                 nullable: true
- *                 description: Required when sourceType is PURCHASE
+ *                 description: Optional source purchase invoice. Omit for accounting-only purchase notes.
  *
  *               noteDate:
  *                 type: string
@@ -456,6 +456,86 @@ router.patch(
     "/:noteId/approve",
     checkPermission("DRCR_NOTE:APPROVE"),
     controller.approveNote
+);
+
+/**
+ * Approve all pending accounting-only notes without a purchase invoice.
+ * Uses the normal approval workflow so vouchers, outstanding, ledgers and
+ * trial-balance reports are updated consistently.
+ */
+router.patch(
+    "/approve-pending-without-purchase",
+    checkPermission("DRCR_NOTE:APPROVE"),
+    controller.approvePendingWithoutPurchase
+);
+
+/**
+ * @openapi
+ * /api/debit-credit-notes/repair-approved-without-voucher:
+ *   patch:
+ *     summary: Repair approved Debit/Credit Notes without vouchers
+ *     description: >
+ *       Finds approved Debit/Credit Notes whose voucherId is null and posts
+ *       their accounting entries through the normal ledger workflow. This
+ *       makes the notes visible in ledgers, Trial Balance, and other reports.
+ *       Notes without an agency are posted to the branch suspense ledger.
+ *       The operation is idempotent and does not require a request body.
+ *     tags:
+ *       - Debit Credit Notes
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: false
+ *       description: No request payload is required.
+ *       content: {}
+ *     responses:
+ *       200:
+ *         description: Repair completed. Individual failures are returned in the response.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                       example: 3
+ *                     repaired:
+ *                       type: integer
+ *                       example: 3
+ *                     failed:
+ *                       type: integer
+ *                       example: 0
+ *                     repairedIds:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                         format: uuid
+ *                     failures:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           error:
+ *                             type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: DRCR_NOTE:APPROVE permission is required
+ */
+router.patch(
+    "/repair-approved-without-voucher",
+    checkPermission("DRCR_NOTE:APPROVE"),
+    controller.repairApprovedNotesWithoutVoucher
 );
 
 
