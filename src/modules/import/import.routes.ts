@@ -6,6 +6,7 @@ import {
     importAgencyWorkbook,
     importJournalWorkbook,
     importOpeningBalanceJournalWorkbook,
+    reconcileTdsAssetsWorkbook,
     importInwardDebitCreditNoteWorkbook,
     importProductWorkbook,
     importWorkbook
@@ -342,6 +343,55 @@ router.post(
     authMiddleware,
     importExcel.single("file"),
     importOpeningBalanceJournalWorkbook
+);
+
+/**
+ * @openapi
+ * /api/migration/import/tds-assets/reconcile:
+ *   post:
+ *     summary: Reconcile TDS Assets journal vouchers
+ *     description: >
+ *       Upload an ER TD ID Report to move existing TDS Assets journal
+ *       postings onto the matching agency Sundry Debtor ledger. Use
+ *       dryRun=true to validate without changing data.
+ *     tags:
+ *       - Import
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: dryRun
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Validate the workbook without applying changes.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: ER TD ID Report Excel workbook.
+ *     responses:
+ *       200:
+ *         description: TDS Assets reconciliation completed.
+ *       400:
+ *         description: Invalid workbook or unmatched voucher rows.
+ *       401:
+ *         description: Unauthorized.
+ */
+router.post(
+    "/import/tds-assets/reconcile",
+    authMiddleware,
+    importExcel.single("file"),
+    reconcileTdsAssetsWorkbook
 );
 
 /**

@@ -75,7 +75,7 @@ type LedgerSeed = {
     code: string;
     name: string;
     category: LedgerType;
-    groupCode: string;
+    groupCode?: string;
     groupId?: string;
     nature: LedgerNature;
     branchId?: string | null;
@@ -4871,8 +4871,8 @@ export class LedgerService {
 
     /**
      * Repair Purchase Accounts after an overly broad classification. Each
-     * approved Purchase is restored to the ledger represented by its persisted
-     * Purchase.voucherType. Only LedgerType.PURCHASE entries are moved.
+     * posted Purchase voucher is restored to the ledger represented by its
+     * Voucher.voucherType. Only LedgerType.PURCHASE entries are moved.
      */
     static async restorePurchaseVoucherClassifications(
         actor: any,
@@ -4898,15 +4898,19 @@ export class LedgerService {
         ]);
 
         return prisma.$transaction(async tx => {
-            const purchases = await tx.purchase.findMany({
+            // The posted Voucher is the source of truth. Purchase.voucherType
+            // can be null or generic even when the accounting voucher was
+            // created as GST/IGST/CST/etc.
+            const vouchers = await tx.voucher.findMany({
                 where: {
-                    status: PurchaseStatus.APPROVED,
+                    voucherType: { in: [...purchaseTypes] },
                     ...(effectiveBranchId ? { branchId: effectiveBranchId } : {})
                 },
                 select: {
                     id: true,
-                    invoiceNo: true,
+                    sourceId: true,
                     branchId: true,
+                    voucherNo: true,
                     voucherType: true
                 }
             });
@@ -4921,25 +4925,25 @@ export class LedgerService {
             }>();
             const skipped: Array<{ purchaseId: string; invoiceNo: string; reason: string }> = [];
 
-            for (const purchase of purchases) {
-                const voucherType = purchase.voucherType || VoucherType.PURCHASE;
-                if (!purchaseTypes.has(voucherType)) {
+            for (const voucher of vouchers) {
+                const voucherType = voucher.voucherType;
+                const branchId = voucher.branchId || effectiveBranchId || actor.branchId;
+                if (!branchId) {
                     skipped.push({
-                        purchaseId: purchase.id,
-                        invoiceNo: purchase.invoiceNo,
-                        reason: `Unsupported Purchase voucher type ${String(voucherType)}`
+                        purchaseId: voucher.sourceId,
+                        invoiceNo: voucher.voucherNo,
+                        reason: "Purchase voucher has no branch"
                     });
                     continue;
                 }
-
                 const target = await this.getPurchaseLedger(
                     tx,
-                    purchase.branchId,
+                    branchId,
                     voucherType
                 );
                 const entries = await tx.ledgerEntry.findMany({
                     where: {
-                        voucher: { sourceId: purchase.id },
+                        voucherId: voucher.id,
                         ledger: { category: LedgerType.PURCHASE }
                     },
                     select: { id: true, ledgerId: true }
@@ -4947,8 +4951,8 @@ export class LedgerService {
 
                 if (entries.length === 0) {
                     skipped.push({
-                        purchaseId: purchase.id,
-                        invoiceNo: purchase.invoiceNo,
+                        purchaseId: voucher.sourceId,
+                        invoiceNo: voucher.voucherNo,
                         reason: "No Purchase ledger posting found"
                     });
                     continue;
@@ -4980,7 +4984,7 @@ export class LedgerService {
 
             return {
                 branchId: effectiveBranchId || null,
-                approvedPurchases: purchases.length,
+                purchaseVouchers: vouchers.length,
                 movedPurchases: [...movedByType.values()]
                     .reduce((sum, row) => sum + row.purchases, 0),
                 movedEntries: [...movedByType.values()]
