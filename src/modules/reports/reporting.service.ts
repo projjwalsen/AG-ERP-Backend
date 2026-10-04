@@ -83,9 +83,10 @@ const readPurchaseSubGroups = (remarks: string | null) => {
     }
 };
 
-// Imported note paths are stored as a normalized hierarchy, for example
-// "Purchase Accounts / IGST PURCHASE". Trial Balance displays the leaf as
-// the Purchase Accounts category.
+// Imported inward-note paths are stored as a hierarchy, for example
+// "Purchase Accounts / Carriage Outward-URD". Trial Balance displays the
+// leaf category as the Purchase Accounts sub-row. Some approved notes do not
+// have a purchaseId, so their category must be resolved from this path.
 const purchaseCategoryFromImportedPath = (value: string | null) => {
     const parts = String(value || "")
         .replace(/\\/g, "/")
@@ -93,7 +94,9 @@ const purchaseCategoryFromImportedPath = (value: string | null) => {
         .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
         .filter(Boolean);
 
-    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "";
+    return parts.length > 0
+        ? parts[parts.length - 1].toUpperCase()
+        : "";
 };
 
 const salesCategoryFromImportedPath = (value: string | null) => {
@@ -551,6 +554,19 @@ export class ReportingService {
                     }
                 },
                 {
+                    // Some approved notes are attached to a voucher whose
+                    // voucherType is not DEBIT_NOTE/CREDIT_NOTE. The note
+                    // relation is authoritative in that case, especially
+                    // for imported notes without a purchaseId.
+                    voucher: {
+                        debitCreditNotes: {
+                            some: {
+                                status: DebitCreditNoteStatus.APPROVED
+                            }
+                        }
+                    }
+                },
+                {
                     AND: [
                         { ledger: { category: LedgerType.SALES } },
                         { voucher: { voucherType: VoucherType.SALE } }
@@ -721,7 +737,10 @@ export class ReportingService {
             })
         ]) as [any[], LedgerGroupReportRow[]];
 
-        const aggregateWindows = async (window: "period" | "prior") => {
+        const aggregateWindows = async (
+            window: "period" | "prior",
+            purchaseAccountsOnly = false
+        ) => {
             const byCutoff = new Map<string, {
                 cutoff?: Date;
                 ledgerIds: string[];
@@ -785,11 +804,20 @@ export class ReportingService {
                             AND: [
                                 scopedJournalEntryFilter,
                                 {
-                                    ledgerId: { in: ledgerIds },
-                                    voucher: {
-                                        voucherDate,
-                                        voucherType: { not: VoucherType.OPENING_BALANCE }
-                                    }
+                                        ledgerId: { in: ledgerIds },
+                                        voucher: {
+                                            voucherDate,
+                                            voucherType: purchaseAccountsOnly
+                                            ? {
+                                                in: [
+                                                    VoucherType.PURCHASE,
+                                                    VoucherType.RCM_PURCHASE,
+                                                    VoucherType.DEBIT_NOTE,
+                                                    VoucherType.CREDIT_NOTE
+                                                ]
+                                            }
+                                            : { not: VoucherType.OPENING_BALANCE }
+                                        }
                                 },
                                 {
                                     OR: [
@@ -820,6 +848,8 @@ export class ReportingService {
                     });
 
                     groups.push(...batch);
+
+                    if (purchaseAccountsOnly) continue;
 
                     // Legacy journal imports can remain as approved Journal
                     // rows without a Voucher/LedgerEntry. Include those
@@ -868,12 +898,146 @@ export class ReportingService {
             return groups;
         };
 
-        const [periodGroups, priorGroups] = await Promise.all([
+        const [periodGroups, priorGroups, purchasePeriodGroups, purchasePriorGroups] = await Promise.all([
             aggregateWindows("period"),
-            aggregateWindows("prior")
+            aggregateWindows("prior"),
+            aggregateWindows("period", true),
+            aggregateWindows("prior", true)
         ]);
         const periodMap = sumTrialBalanceEntryGroups(periodGroups);
         const priorMap = sumTrialBalanceEntryGroups(priorGroups);
+        const purchasePeriodMap = sumTrialBalanceEntryGroups(purchasePeriodGroups);
+        const purchasePriorMap = sumTrialBalanceEntryGroups(purchasePriorGroups);
+
+        // Accounting-only inward notes are posted by the approval workflow to
+        // the generic "Purchase ... Note Adjustments" journal ledger. When
+        // the note has an imported categoryPath, the Trial Balance must show
+        // that movement under the actual category ledger as well. Move the
+        // adjustment-side movement report-wise; this keeps the Trial Balance
+        // total unchanged while making, for example, Carriage Outward-URD
+        // include its approved debit notes.
+        const categoryNoteIds = new Set<string>();
+        const categorizedInwardNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(branchId ? { branchId } : {}),
+                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                status: DebitCreditNoteStatus.APPROVED,
+                purchaseId: null,
+                OR: [
+                    { noteNo: { startsWith: "PDN/" } },
+                    { noteNo: { startsWith: "PCN/" } }
+                ],
+                categoryPath: { not: null },
+                noteDate: { lte: endDate },
+                voucherId: { not: null }
+            },
+            select: {
+                id: true,
+                branchId: true,
+                noteNo: true,
+                categoryPath: true,
+                noteDate: true,
+                voucher: {
+                    select: {
+                        entries: {
+                            select: {
+                                entryType: true,
+                                amount: true,
+                                narration: true,
+                                ledger: {
+                                    select: { id: true, name: true, category: true }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const normalizedName = (value: unknown) => String(value || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+
+        const categoryLeaf = (value: string | null) => {
+            const parts = String(value || "")
+                .replace(/\\/g, "/")
+                .split(/[/>]/)
+                .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
+                .filter(Boolean);
+            return parts.length > 0
+                ? parts[parts.length - 1].toUpperCase()
+                : "";
+        };
+
+        const processedCategoryNotes = new Set<string>();
+        for (const note of categorizedInwardNotes) {
+            const noteKey = [
+                note.branchId,
+                note.noteNo,
+                normalizedName(note.categoryPath),
+                String(note.voucher?.entries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0) || 0)
+            ].join("|");
+            if (processedCategoryNotes.has(noteKey)) {
+                categoryNoteIds.add(note.id);
+                continue;
+            }
+            processedCategoryNotes.add(noteKey);
+            const targetName = categoryLeaf(note.categoryPath);
+            const targetLedger = ledgers.find(ledger =>
+                ledger.branchId === (branchId || note.branchId) &&
+                normalizedName(ledger.name) === normalizedName(targetName) &&
+                [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
+            );
+            if (!targetLedger) continue;
+
+            // The same imported note may already have a journal-register
+            // posting on the target category ledger. In that case the target
+            // movement is already present and must not be added again from
+            // the accounting-only note voucher.
+            const alreadyPostedToTarget = await prisma.ledgerEntry.findFirst({
+                where: {
+                    ledgerId: targetLedger.id,
+                    OR: [
+                        { narration: { contains: note.noteNo } },
+                        {
+                            voucher: {
+                                narration: { contains: note.noteNo }
+                            }
+                        }
+                    ]
+                },
+                select: { id: true }
+            });
+            if (alreadyPostedToTarget) continue;
+
+            const sourceEntries = note.voucher?.entries.filter(entry =>
+                entry.ledger.category === LedgerType.JOURNAL &&
+                (!entry.narration || entry.narration.includes(note.categoryPath || ""))
+            ) || [];
+            if (sourceEntries.length === 0) continue;
+
+            const sourceTotals = new Map<string, { debit: number; credit: number }>();
+            for (const entry of sourceEntries) {
+                const current = sourceTotals.get(entry.ledger.id) || { debit: 0, credit: 0 };
+                current[entry.entryType === EntryType.DEBIT ? "debit" : "credit"] += Number(entry.amount || 0);
+                sourceTotals.set(entry.ledger.id, current);
+            }
+
+            const targetMap = note.noteDate < startDate ? priorMap : periodMap;
+            const targetTotals = targetMap.get(targetLedger.id) || { debit: 0, credit: 0 };
+            for (const [sourceLedgerId, totals] of sourceTotals) {
+                const sourceMap = targetMap.get(sourceLedgerId) || { debit: 0, credit: 0 };
+                sourceMap.debit -= totals.debit;
+                sourceMap.credit -= totals.credit;
+                targetMap.set(sourceLedgerId, sourceMap);
+                targetTotals.debit += totals.debit;
+                targetTotals.credit += totals.credit;
+            }
+            targetMap.set(targetLedger.id, targetTotals);
+            categoryNoteIds.add(note.id);
+        }
 
         // Imported opening-balance vouchers are used only for ledgers that do
         // not already have an opening value stored on the ledger itself.
@@ -977,8 +1141,15 @@ export class ReportingService {
                         endDate
                     );
 
+                const movementPriorMap = ledger.category === LedgerType.PURCHASE
+                    ? purchasePriorMap
+                    : priorMap;
+                const movementPeriodMap = ledger.category === LedgerType.PURCHASE
+                    ? purchasePeriodMap
+                    : periodMap;
+
                 const prior =
-                    priorMap.get(
+                    movementPriorMap.get(
                         ledger.id
                     ) || {
                         debit: 0,
@@ -986,7 +1157,7 @@ export class ReportingService {
                     };
 
                 const period =
-                    periodMap.get(
+                    movementPeriodMap.get(
                         ledger.id
                     ) || {
                         debit: 0,
@@ -1377,24 +1548,6 @@ export class ReportingService {
                 remarks: true
             }
         });
-        // New inward notes carry their own imported category path. Calculate
-        // them from the approved note amount instead of relying on the
-        // voucher LedgerEntry having been remapped successfully.
-        const categorizedInwardPurchaseNotes = await prisma.debitCreditNote.findMany({
-            where: {
-                ...(branchId ? { branchId } : {}),
-                sourceType: DebitCreditNoteSourceType.PURCHASE,
-                status: DebitCreditNoteStatus.APPROVED,
-                categoryPath: { not: null },
-                noteDate: { lte: endDate }
-            },
-            select: {
-                categoryPath: true,
-                type: true,
-                totalAmount: true,
-                noteDate: true
-            }
-        });
         // These imported rows are subheads of Purchase Accounts itself. Use
         // its root group rather than the optional legacy PURCHASE child group;
         // otherwise databases without that child lose the rows when the Excel
@@ -1405,6 +1558,58 @@ export class ReportingService {
             prior: { debit: number; credit: number };
             period: { debit: number; credit: number };
         }>();
+
+        // Approved inward purchase notes without a purchaseId are valid
+        // accounting records. They are commonly posted to a JOURNAL
+        // adjustment ledger rather than a PURCHASE ledger, so the normal
+        // Purchase-category aggregation cannot create their imported
+        // category row. Include them directly, except when the voucher
+        // already contains a PURCHASE-category entry (which is already
+        // represented by the normal ledger aggregation).
+        const unlinkedInwardNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(branchId ? { branchId } : {}),
+                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                status: DebitCreditNoteStatus.APPROVED,
+                purchaseId: null,
+                categoryPath: { not: null },
+                noteDate: { lte: endDate },
+                AND: [
+                    {
+                        OR: [
+                            { noteNo: { startsWith: "PDN/" } },
+                            { noteNo: { startsWith: "PCN/" } }
+                        ]
+                    },
+                    {
+                        OR: [
+                            { voucherId: null },
+                            {
+                                voucher: {
+                                    is: {
+                                        entries: {
+                                            none: {
+                                                ledger: {
+                                                    category: LedgerType.PURCHASE
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            select: {
+                id: true,
+                categoryPath: true,
+                type: true,
+                accountingEntryType: true,
+                totalAmount: true,
+                noteDate: true
+            }
+        });
 
         for (const purchase of classifiedPurchases) {
             const purchaseDate = purchase.invoiceDate || purchase.createdAt;
@@ -1422,23 +1627,24 @@ export class ReportingService {
             }
         }
 
-        for (const note of categorizedInwardPurchaseNotes) {
+        for (const note of unlinkedInwardNotes) {
+            if (categoryNoteIds.has(note.id)) continue;
             const category = purchaseCategoryFromImportedPath(note.categoryPath);
-            if (!category) continue;
-
             const amount = Number(note.totalAmount || 0);
-            if (!Number.isFinite(amount) || amount === 0) continue;
+            if (!category || !Number.isFinite(amount) || amount === 0) continue;
 
             const current = purchaseSubGroupMovements.get(category) || {
                 prior: { debit: 0, credit: 0 },
                 period: { debit: 0, credit: 0 }
             };
             const target = note.noteDate < startDate ? current.prior : current.period;
+            const entryType = note.accountingEntryType || (
+                note.type === DebitCreditNoteType.CREDIT_NOTE
+                    ? EntryType.DEBIT
+                    : EntryType.CREDIT
+            );
 
-            // The import validates the original Excel convention: inward
-            // credit notes are debit-side Purchase movement; inward debit
-            // notes are credit-side Purchase movement.
-            target[note.type === DebitCreditNoteType.CREDIT_NOTE ? "debit" : "credit"] += amount;
+            target[entryType === EntryType.DEBIT ? "debit" : "credit"] += amount;
             purchaseSubGroupMovements.set(category, current);
         }
 

@@ -3545,7 +3545,10 @@ export class LedgerService {
 
         endDate.setHours(23, 59, 59, 999);
 
-        const ledger = await prisma.ledger.findUnique({
+        // The statement endpoint is normally called with a Ledger id. Journal
+        // screens may also pass a JournalHead/Journal id, so resolve those
+        // ids to the Ledger before building the statement scope.
+        let ledger: any = await prisma.ledger.findUnique({
             where: { id: ledgerId },
             include: {
                 group: true,
@@ -3555,8 +3558,40 @@ export class LedgerService {
         });
 
         if (!ledger) {
+            const journalHead = await prisma.journalHead.findUnique({
+                where: { id: ledgerId },
+                include: {
+                    ledger: {
+                        include: { group: true, branch: true, agency: true }
+                    }
+                }
+            });
+
+            ledger = journalHead?.ledger;
+        }
+
+        if (!ledger) {
+            const journal = await prisma.journal.findUnique({
+                where: { id: ledgerId },
+                include: {
+                    journalHead: {
+                        include: {
+                            ledger: {
+                                include: { group: true, branch: true, agency: true }
+                            }
+                        }
+                    }
+                }
+            });
+
+            ledger = journal?.journalHead.ledger;
+        }
+
+        if (!ledger) {
             throw new ApiError("Ledger not found", 404);
         }
+
+        const selectedLedgerId = ledger.id;
 
         if (
             actor.branchAccessType !== "ALL" &&
@@ -3573,11 +3608,11 @@ export class LedgerService {
         // every level of the hierarchy. Vouchers are posted to the leaf
         // ledger, while a statement opened from a parent/subheader must show
         // the entries from all of its descendant heads as well.
-        const statementLedgerIds = new Set<string>([ledgerId]);
+        const statementLedgerIds = new Set<string>([selectedLedgerId]);
         const statementJournalHeadIds = new Set<string>();
         let journalHeadIds = (
             await prisma.journalHead.findMany({
-                where: { ledgerId },
+                where: { ledgerId: selectedLedgerId },
                 select: { id: true, ledgerId: true }
             })
         ).map((head) => {
@@ -3598,6 +3633,56 @@ export class LedgerService {
                     statementLedgerIds.add(head.ledgerId);
                     return head.id;
                 });
+        }
+
+        // Trial Balance can combine several ledger rows that belong to the
+        // same imported category path. Discover that path from journals
+        // already attached to this ledger/head, then expand the statement
+        // ledger scope to every journal head using the same path. This is
+        // what brings the debit-side Journal vouchers into a statement that
+        // otherwise contains only the debit-note ledger entries.
+        const statementCategoryPaths = [
+            ...new Set(
+                (
+                    await prisma.journal.findMany({
+                        where: {
+                            OR: [
+                                { journalHeadId: { in: [...statementJournalHeadIds] } },
+                                {
+                                    voucher: {
+                                        entries: {
+                                            some: { ledgerId: { in: [...statementLedgerIds] } }
+                                        }
+                                    }
+                                }
+                            ],
+                            categoryPath: { not: null },
+                            ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                        },
+                        select: { categoryPath: true }
+                    })
+                )
+                    .map((journal) => journal.categoryPath)
+                    .filter((path): path is string => Boolean(path))
+            )
+        ];
+
+        if (statementCategoryPaths.length > 0) {
+            const pathJournals = await prisma.journal.findMany({
+                where: {
+                    categoryPath: { in: statementCategoryPaths },
+                    status: "APPROVED",
+                    ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                },
+                select: {
+                    journalHeadId: true,
+                    journalHead: { select: { ledgerId: true } }
+                }
+            });
+            for (const journal of pathJournals) {
+                statementJournalHeadIds.add(journal.journalHeadId);
+                statementLedgerIds.add(journal.journalHead.ledgerId);
+            }
         }
 
         const statementLedgerIdList = [...statementLedgerIds];
@@ -3705,34 +3790,6 @@ export class LedgerService {
                 })
                 : Promise.resolve(null)
         ]);
-
-        const statementCategoryPaths = [
-            ...new Set(
-                (
-                    await prisma.journal.findMany({
-                        where: {
-                            OR: [
-                                { journalHeadId: { in: statementJournalHeadIdList } },
-                                {
-                                    voucher: {
-                                        entries: {
-                                            some: {
-                                                ledgerId: { in: statementLedgerIdList }
-                                            }
-                                        }
-                                    }
-                                }
-                            ],
-                            categoryPath: { not: null },
-                            ...(ledger.branchId ? { branchId: ledger.branchId } : {})
-                        },
-                        select: { categoryPath: true }
-                    })
-                )
-                    .map((journal) => journal.categoryPath)
-                    .filter((path): path is string => Boolean(path))
-            )
-        ];
 
         const journalScope = [
             { journalHeadId: { in: statementJournalHeadIdList } },
@@ -3919,6 +3976,26 @@ export class LedgerService {
                         ledger.nature
                     )
             });
+        }
+
+        // Imported journal rows can be attached to different JournalHeads
+        // while still representing the same account. Include every head whose
+        // Ledger name matches the selected Ledger, so the statement contains
+        // all related journal vouchers when opened with either a Ledger,
+        // JournalHead, or Journal id.
+        const sameNameJournalHeads = await prisma.journalHead.findMany({
+            where: {
+                ledger: {
+                    name: { equals: ledger.name, mode: "insensitive" },
+                    ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                }
+            },
+            select: { id: true, ledgerId: true }
+        });
+
+        for (const head of sameNameJournalHeads) {
+            statementJournalHeadIds.add(head.id);
+            statementLedgerIds.add(head.ledgerId);
         }
                 
         statementRows.push(...entries.map(entry => {
