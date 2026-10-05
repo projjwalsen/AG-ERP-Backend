@@ -553,7 +553,8 @@ export class ExcelService {
             "Particulars", "Party Name", "Voucher Count", "Taxable Amount",
             "IGST", "CGST", "SGST/UTGST", "Cess", "Tax Amount", "Invoice Amount"
         ];
-        const branch = report.rows?.[0];
+        const branch = report.rows?.[0] || report.branch;
+        const gstrStatus = report.gstrStatus || {};
         const period = report.period?.startDate && report.period?.endDate
             ? `${new Date(report.period.startDate).toLocaleDateString("en-IN")} to ${new Date(report.period.endDate).toLocaleDateString("en-IN")}`
             : "";
@@ -561,9 +562,14 @@ export class ExcelService {
         const titleRows = [
             [branch?.branchName || ""], [""], [options.title || "GSTR-1"], [period],
             ["GST Registration:", branch?.branchGst || ""],
-            ["Status:", "Not Filed"],
-            ["Check Vouchers Having Potential Conflicts with Masters", "Yes"]
+            ["Status:", gstrStatus.filingStatus || "Not Filed"],
+            ...(gstrStatus.conflictsWithMasters == null
+                ? [["Check Vouchers Having Potential Conflicts with Masters", "Yes"]]
+                : [["Vouchers Having Conflicts with Masters", gstrStatus.conflictsWithMasters]])
         ];
+        if (gstrStatus.lastOnlineActivity) {
+            titleRows.splice(6, 0, ["Last online GST activity:", gstrStatus.lastOnlineActivity]);
+        }
         titleRows.forEach((values, index) => {
             if (!values[1]) {
                 worksheet.mergeCells(index + 1, 1, index + 1, columns.length);
@@ -574,15 +580,17 @@ export class ExcelService {
 
         // Match the Tally layout: voucher-status block, then the GST summary header.
         worksheet.getRow(10).values = ["Particulars", "Voucher Count"];
-        worksheet.getRow(11).values = ["Total Vouchers", (report.summary?.totalInvoices || 0) + (report.creditDebitNoteSummary || []).reduce((sum: number, row: any) => sum + Number(row.voucher_count || 0), 0)];
-        worksheet.getRow(12).values = ["Included in Return", report.summary?.totalInvoices || 0];
-        worksheet.getRow(13).values = ["Ready for Upload", 0];
-        worksheet.getRow(14).values = ["Modified in Books After Upload/Export", 0];
-        worksheet.getRow(15).values = ["No Action Required", report.summary?.totalInvoices || 0];
-        worksheet.getRow(16).values = ["Not Relevant for This Return", 0];
-        worksheet.getRow(17).values = ["Uncertain Transactions (Corrections needed)", 0];
-        worksheet.getRow(18).values = ["Marked for Deletion on Portal", 0];
-        worksheet.getRow(19).values = ["Check Vouchers Having Potential Conflicts with Masters", "Yes"];
+        worksheet.getRow(11).values = ["Total Vouchers", gstrStatus.totalVouchers ?? (report.summary?.totalInvoices || 0) + (report.creditDebitNoteSummary || []).reduce((sum: number, row: any) => sum + Number(row.voucher_count || 0), 0)];
+        worksheet.getRow(12).values = ["Included in Return", gstrStatus.includedInReturn ?? report.summary?.totalInvoices ?? 0];
+        worksheet.getRow(13).values = ["Ready for Upload", gstrStatus.readyForUpload ?? 0];
+        worksheet.getRow(14).values = ["Modified in Books After Upload/Export", gstrStatus.modifiedAfterExport ?? 0];
+        worksheet.getRow(15).values = ["No Action Required", gstrStatus.noActionRequired ?? report.summary?.totalInvoices ?? 0];
+        worksheet.getRow(16).values = ["Not Relevant for This Return", gstrStatus.notRelevant ?? 0];
+        worksheet.getRow(17).values = ["Uncertain Transactions (Corrections needed)", gstrStatus.uncertain ?? 0];
+        worksheet.getRow(18).values = ["Marked for Deletion on Portal", gstrStatus.markedForDeletion ?? 0];
+        worksheet.getRow(19).values = gstrStatus.conflictsWithMasters == null
+            ? ["Check Vouchers Having Potential Conflicts with Masters", "Yes"]
+            : ["Vouchers Having Conflicts with Masters", gstrStatus.conflictsWithMasters];
         worksheet.getRow(10).eachCell(cell => { cell.font = { bold: true }; });
         worksheet.getRow(11).eachCell(cell => { cell.font = { bold: true }; });
 
@@ -620,6 +628,7 @@ export class ExcelService {
             styleSection(section);
             section.getCell(2).font = { bold: true };
             for (const row of data) {
+                if (row.summaryOnly) continue;
                 const detail = worksheet.addRow([row.customer_gstin || "", row.agency_name || "", row.voucher_count || 0, money(row.taxable_value), money(row.igst_rate_amount), money(row.cgst_rate_amount), money(row.sgst_rate_amount), money(row.cess_amount), money(row.gst_amount), money(row.invoice_total)]);
                 detail.eachCell(cell => { cell.border = { bottom: { style: "hair" } }; });
             }

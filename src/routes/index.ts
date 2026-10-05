@@ -15,6 +15,8 @@ import productLedgerRoute from "../modules/accounting/productLedger/productLedge
 import financialLedgerRoute from "../modules/accounting/ledger/ledger.routes";
 import reportingRoute from "../modules/reports/reporting.routes";
 import fakeTrialBalanceRoute from "../modules/reports/fake-trial-balance.routes";
+import fakeAPARRoute from "../modules/reports/fake-ap-ar.routes";
+import fakeGSTR1Route from "../modules/reports/fake-gstr1.routes";
 import dashboardRoute from "../modules/dashboard/kpi.routes";
 import importRoute from "../modules/import/import.routes";
 import bankRoute from "../modules/bank/bank.routes";
@@ -42,6 +44,8 @@ router.use("/product-ledger", productLedgerRoute);
 router.use("/ledgers", financialLedgerRoute);
 router.use("/reports", reportingRoute);
 router.use("/reports/fake-trial-balance", fakeTrialBalanceRoute);
+router.use("/reports/fake-ap-ar", fakeAPARRoute);
+router.use("/reports/fake-gstr1", fakeGSTR1Route);
 router.use("/dashboard", dashboardRoute);
 router.use("/migration", importRoute);
 router.use("/journal", journalRoute);
