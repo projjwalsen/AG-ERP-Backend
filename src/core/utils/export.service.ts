@@ -3428,7 +3428,6 @@ export class ExcelService {
         const worksheet = workbook.addWorksheet(
             options.sheetName || "Trial Balance"
         );
-        worksheet.properties.defaultRowHeight = 14.4;
 
         /* ============================================================
            PAGE SETUP
@@ -3454,11 +3453,10 @@ export class ExcelService {
            COLUMNS
         ============================================================ */
 
-        worksheet.getColumn(1).width = 66.55;
-        worksheet.getColumn(2).width = 11.89;
-        worksheet.getColumn(3).width = 11.89;
-        worksheet.getColumn(4).width = 12.33;
-        worksheet.getColumn(5).width = 12.33;
+        worksheet.getColumn(1).width = 52.1;
+        for (let column = 2; column <= 5; column++) {
+            worksheet.getColumn(column).width = 13.33;
+        }
 
         /* ============================================================
            ROW 1 - COMPANY
@@ -3469,7 +3467,7 @@ export class ExcelService {
             value: string,
             style: Partial<ExcelJS.Font> = {}
         ) => {
-            worksheet.mergeCells(rowNumber, 1, rowNumber, 3);
+            worksheet.mergeCells(rowNumber, 1, rowNumber, 5);
             const cell = worksheet.getCell(rowNumber, 1);
             cell.value = value;
             cell.font = {
@@ -3479,7 +3477,7 @@ export class ExcelService {
                 ...style
             };
             cell.alignment = { horizontal: "left", vertical: "top" };
-            if (rowNumber === 1) worksheet.getRow(rowNumber).height = 15.6;
+            worksheet.getRow(rowNumber).height = 15;
         };
 
         writeCompanyLine(1, options.companyName, { bold: true, size: 12 });
@@ -3493,17 +3491,15 @@ export class ExcelService {
            ROW 2 - TITLE
         ============================================================ */
 
-        worksheet.mergeCells("A6:C6");
+        worksheet.mergeCells("A6:E6");
 
         const titleCell = worksheet.getCell("A6");
 
         titleCell.value = "Trial Balance";
 
         titleCell.font = {
-            name: "Arial",
-            color: { argb: "FF000000" },
             bold: true,
-            size: 12
+            size: 13
         };
 
         titleCell.alignment = {
@@ -3511,13 +3507,14 @@ export class ExcelService {
             vertical: "top"
         };
 
+        titleCell.border = { top: { style: "thin" } };
         worksheet.getRow(6).height = 18;
 
         /* ============================================================
            ROW 3 - BRANCH / PERIOD
         ============================================================ */
 
-        worksheet.mergeCells("A7:C7");
+        worksheet.mergeCells("A7:E7");
         const periodCell = worksheet.getCell("A7");
         periodCell.value = options.period;
         periodCell.font = { name: "Arial", size: 10, color: { argb: "FF000000" } };
@@ -3535,21 +3532,23 @@ export class ExcelService {
             ? `${options.branchName} (from ${options.period.split(" to ")[0]})`
             : "";
         branchCell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF000000" } };
-        branchCell.alignment = { horizontal: "center", vertical: "middle" };
-        worksheet.getRow(8).height = 14;
+        branchCell.alignment = { horizontal: "left", vertical: "top", indent: 3 };
+        branchCell.border = { top: { style: "thin" } };
+        worksheet.getRow(8).height = 15;
 
         /* ============================================================
            ROW 5 - TABLE HEADER
         ============================================================ */
 
         const headerRowNumber = 11;
+        worksheet.mergeCells("A9:A11");
         worksheet.mergeCells("B9:E9");
         worksheet.mergeCells("B10:C10");
         worksheet.mergeCells("D10:E10");
         worksheet.getCell("A9").value = "Particulars";
         worksheet.getCell("B9").value = options.period;
-        worksheet.getCell("B10").value = "Opening Balance";
-        worksheet.getCell("D10").value = "Closing Balance";
+        worksheet.getCell("B10").value = "Opening";
+        worksheet.getCell("D10").value = "Closing";
         worksheet.getCell("B11").value = "Debit";
         worksheet.getCell("C11").value = "Credit";
         worksheet.getCell("D11").value = "Debit";
@@ -3557,7 +3556,7 @@ export class ExcelService {
 
         for (const rowNumber of [9, 10, 11]) {
             const currentHeaderRow = worksheet.getRow(rowNumber);
-            currentHeaderRow.height = rowNumber === 9 ? 16 : 14;
+            currentHeaderRow.height = 15;
             for (let column = 1; column <= 5; column++) {
                 const cell = currentHeaderRow.getCell(column);
 
@@ -3570,14 +3569,31 @@ export class ExcelService {
                 }
             };
 
-            cell.fill = { type: "pattern", pattern: "none" };
-
-            cell.alignment = {
-                horizontal: rowNumber === 9 && column === 1 ? "left" : "center",
-                vertical: "middle"
+            cell.fill = {
+                type: "pattern",
+                pattern: "none"
             };
 
-            cell.border = {};
+            cell.alignment = {
+                horizontal: column === 1 ? "left" : "center",
+                vertical: "top",
+                ...(column === 1 ? { indent: 3 } : {})
+            };
+
+            cell.border = {
+                top: {
+                    style: "thin"
+                },
+                left: {
+                    style: "thin"
+                },
+                bottom: {
+                    style: "thin"
+                },
+                right: {
+                    style: "thin"
+                }
+            };
             }
         }
 
@@ -3764,7 +3780,7 @@ export class ExcelService {
             row: ExcelJS.Row,
             bold = false
         ) => {
-            row.height = 13.5;
+            row.height = 15;
             row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
                 cell.font = {
                     name: "Arial",
@@ -3775,9 +3791,14 @@ export class ExcelService {
                 cell.alignment = {
                     horizontal: columnNumber === 1 ? "left" : "right",
                     vertical: "top",
-                    ...(columnNumber === 1 ? { indent: 0 } : {})
+                    ...(columnNumber === 1 ? { indent: 3 } : {})
                 };
-                cell.border = {};
+                if (bold) {
+                    cell.border = {
+                        top: { style: "thin" },
+                        bottom: { style: "thin" }
+                    };
+                }
             });
             for (let column = 2; column <= 5; column++) {
                 row.getCell(column).numFmt = '#,##0.00;[Red](#,##0.00);-';
@@ -3815,12 +3836,15 @@ export class ExcelService {
                 amountValue(closingDebit),
                 amountValue(closingCredit)
             ]);
-            applyReportRowStyle(row, node.rowType === "accountingHeader" && level === 0);
+            applyReportRowStyle(row, node.rowType === "accountingHeader");
             row.getCell(1).alignment = {
                 horizontal: "left",
-                vertical: "middle",
-                indent: Math.min(level, 15)
+                vertical: "top",
+                indent: 1 + level * 3
             };
+            if (node.rowType === "accountingHeader") {
+                row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
+            }
             for (const child of node.children || []) appendTreeNode(child, level + 1);
         };
 
@@ -3834,8 +3858,18 @@ export class ExcelService {
                     ""
                 ]);
 
-                parentRow.font = { name: "Arial", bold: true, size: 9, color: { argb: "FF000000" } };
-                parentRow.fill = { type: "pattern", pattern: "none" };
+                worksheet.mergeCells(
+                    parentRow.number,
+                    1,
+                    parentRow.number,
+                    5
+                );
+
+                parentRow.font = { name: "Arial", bold: true, size: 9 };
+                parentRow.fill = {
+                    type: "pattern",
+                    pattern: "none"
+                };
 
                 previousParentKey = group.parentKey;
             }
@@ -3870,7 +3904,7 @@ export class ExcelService {
                     amountValue(groupClosingCredit)
                 ]);
 
-                applyReportRowStyle(groupRow, false);
+                applyReportRowStyle(groupRow, true);
                 groupRow.fill = {
                     type: "pattern",
                     pattern: "none"
@@ -3913,9 +3947,8 @@ export class ExcelService {
             amountValue(Number(options.summary.totalClosingDebit.toFixed(2))),
             amountValue(Number(options.summary.totalClosingCredit.toFixed(2)))
         ]);
-        worksheet.pageSetup.printArea = `A1:E${totalRow.number}`;
 
-        totalRow.height = 14;
+        totalRow.height = 15;
 
         totalRow.font = {
             name: "Arial",
@@ -3926,16 +3959,23 @@ export class ExcelService {
         totalRow.getCell(1).alignment = {
             horizontal: "left",
             vertical: "top",
-            indent: 0
+            indent: 3
         };
 
         for (let column = 2; column <= 5; column++) {
             totalRow.getCell(column).numFmt = '#,##0.00;[Red](#,##0.00);-';
-            totalRow.getCell(column).alignment = { horizontal: "right", vertical: "middle" };
+            totalRow.getCell(column).alignment = { horizontal: "right" };
         }
 
         for (let column = 1; column <= 5; column++) {
-            totalRow.getCell(column).border = {};
+            totalRow.getCell(column).border = {
+                top: {
+                    style: "thin"
+                },
+                bottom: {
+                    style: "thin"
+                }
+            };
         }
 
         /* ============================================================
@@ -3945,12 +3985,12 @@ export class ExcelService {
         worksheet.views = [
             {
                 state: "frozen",
-                ySplit: 11
+                ySplit: headerRowNumber
             }
         ];
 
         worksheet.pageSetup.printTitlesRow =
-            `1:11`;
+            `${headerRowNumber}:${headerRowNumber}`;
 
         // Tally uses a plain Arial/black presentation without the blue
         // application theme. Preserve bold/size settings while normalising
