@@ -1,4 +1,4 @@
-import tallyTrialBalance from "./fakeTrial/TALLYTRIALBAL.json";
+import tallyTrialBalance from "./Trial/TALLYTRIALBAL.json";
 
 type TallySideBalance = {
     debit?: number | null;
@@ -34,8 +34,8 @@ const parseTallyDate = (value: string) => {
     return new Date(Date.UTC(year, monthIndex, Number(match[1])));
 };
 
-export class FakeTrialBalanceService {
-    static getFakeTrialBalanceReport() {
+export class Srv1TrialBalanceService {
+    static getSrv1TrialBalanceReport() {
         const source = tallyTrialBalance as {
             company: string;
             report: string;
@@ -60,7 +60,7 @@ export class FakeTrialBalanceService {
             path: string[],
             level: number
         ): any => {
-            const id = `fake:${[...path, account.name].join("/")}`;
+            const id = `srv1:${[...path, account.name].join("/")}`;
             const openingDebit = amount(account.opening?.debit);
             const openingCredit = amount(account.opening?.credit);
             const closingDebit = amount(account.closing?.debit);
@@ -118,7 +118,7 @@ export class FakeTrialBalanceService {
                     reportParentName: path[0] || "",
                     reportChildCode: path[path.length - 1]?.toUpperCase().replace(/[^A-Z0-9]+/g, "_") || "",
                     reportChildName: parentGroup,
-                    ledgerCategory: "FAKE",
+                    ledgerCategory: "TALLY",
                     ledgerNature: closingSigned >= 0 ? "DEBIT" : "CREDIT",
                     branchId: null,
                     branchName: source.company,
@@ -153,7 +153,7 @@ export class FakeTrialBalanceService {
         const closingDifference = Number((totalClosingDebit - totalClosingCredit).toFixed(2));
 
         return {
-            reportName: "Trial Balance",
+            reportName: "SRV1 Trial Balance",
             generatedAt: new Date(),
             branchId: null,
             branch: { id: null, name: source.company },
@@ -190,7 +190,7 @@ export class FakeTrialBalanceService {
                 isBalanced: Math.abs(closingDifference) < 0.01
             },
             diagnostics: {
-                source: "TALLYTRIALBAL.json",
+                source: "SRV1/Trial/TALLYTRIALBAL.json",
                 movementsAvailable: false,
                 message: "The source JSON has opening and closing balances but no transaction debit/credit totals."
             },

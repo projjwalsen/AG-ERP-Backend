@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { ExcelService } from "../../core/utils/export.service";
 import { formatISTDateOnly } from "../../core/utils/loc.utils";
-import { FakeTrialBalanceService } from "./fake-trial-balance.service";
+import { Srv1TrialBalanceService } from "./trial-balance.service";
 
-export const getFakeTrialBalanceReport = async (
+export const getSrv1TrialBalanceReport = async (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const report = FakeTrialBalanceService.getFakeTrialBalanceReport();
+        const report = Srv1TrialBalanceService.getSrv1TrialBalanceReport();
         const isExport = String(req.query.export).toLowerCase() === "true";
 
         if (isExport) {
@@ -18,8 +18,8 @@ export const getFakeTrialBalanceReport = async (
                 : "Beginning"} to ${formatISTDateOnly(report.period.endDate)}`;
 
             return ExcelService.exportTrialBalance(res, {
-                filename: "trial-balance",
-                sheetName: "Trial Balance",
+                filename: "srv1-trial-balance",
+                sheetName: "SRV1 Trial Balance",
                 companyName: report.branch.name,
                 branchName: report.branch.name,
                 period,
@@ -31,7 +31,7 @@ export const getFakeTrialBalanceReport = async (
 
         return res.status(200).json({
             success: true,
-            message: "Fake trial balance report generated successfully",
+            message: "SRV1 Trial Balance report generated successfully",
             data: report
         });
     } catch (error) {

@@ -1,5 +1,5 @@
-import payableRows from "./fakeAPAR/AP.json";
-import receivableRows from "./fakeAPAR/AR.json";
+import payableRows from "./APAR/AP.json";
+import receivableRows from "./APAR/AR.json";
 
 type ReportType = "PAYABLE" | "RECEIVABLE";
 type SourceRow = Record<string, string | number | null | undefined>;
@@ -37,8 +37,8 @@ const bucketFor = (days: number) => {
     return "bucket_180_plus_days" as const;
 };
 
-export class FakeAPARService {
-    static getFakeAPARReport(type: ReportType, includeExportData = false) {
+export class Srv1APARService {
+    static getSrv1APARReport(type: ReportType, includeExportData = false) {
         const source = (type === "PAYABLE" ? payableRows : receivableRows) as SourceRow[];
         const headerRow = source.find(row => Object.values(row).some(value => value === "Date")) || {};
         const companyKey = Object.keys(headerRow).find(key => !key.startsWith("__EMPTY")) ||
@@ -72,7 +72,7 @@ export class FakeAPARService {
                     : 0;
             const agingBucket = bucketFor(agingDays);
             const agencyKey = agencyName.toLocaleLowerCase();
-            const agencyId = `fake-agency:${agencyKey.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+            const agencyId = `srv1-agency:${agencyKey.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
             let agency = agencies.get(agencyKey);
             if (!agency) {
                 agency = {
@@ -99,7 +99,7 @@ export class FakeAPARService {
             agency[agingBucket].amount += pendingAmount;
 
             agency[agingBucket].invoices.push({
-                invoiceId: `fake-${type.toLowerCase()}-${parsedInvoiceCount + 1}`,
+                invoiceId: `srv1-${type.toLowerCase()}-${parsedInvoiceCount + 1}`,
                 invoiceType: type === "PAYABLE" ? "PURCHASE" : "SALE",
                 invoiceNo: billNo,
                 invoiceDate: billDate,
@@ -161,7 +161,9 @@ export class FakeAPARService {
         };
 
         return {
-            reportName: type === "PAYABLE" ? "Accounts Payable Aging Report" : "Accounts Receivable Aging Report",
+            reportName: type === "PAYABLE"
+                ? "SRV1 Accounts Payable Aging Report"
+                : "SRV1 Accounts Receivable Aging Report",
             generatedAt: new Date(),
             branchId: null,
             agency: null,
@@ -170,7 +172,7 @@ export class FakeAPARService {
             summary,
             rows,
             diagnostics: {
-                source: type === "PAYABLE" ? "fakeAPAR/AP.json" : "fakeAPAR/AR.json",
+                source: type === "PAYABLE" ? "SRV1/APAR/AP.json" : "SRV1/APAR/AR.json",
                 sourceTitle: type === "PAYABLE" ? "Bills Payable" : "Bills Receivable",
                 sourcePendingTotal: footerTotal == null ? null : amount(footerTotal),
                 parsedPendingTotal: Number(pendingTotal.toFixed(2)),

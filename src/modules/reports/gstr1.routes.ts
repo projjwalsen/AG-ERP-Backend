@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, checkPermission } from "../../core/middleware/auth";
-import { getFakeGSTR1Report } from "./fake-gstr1.controller";
+import { getSrv1GSTR1Report } from "./gstr1.controller";
 
 const router = Router();
 
@@ -8,12 +8,12 @@ router.use(authMiddleware);
 
 /**
  * @openapi
- * /api/reports/fake-gstr1:
+ * /api/reports/srv1-gstr1:
  *   get:
- *     summary: Fake GSTR-1 Summary Report
+ *     summary: SRV1 GSTR-1 Summary Report
  *     description: |
- *       Returns the GSTR-1 report summary from the static
- *       `fakeGSTR-1/GSTR-1 (1).json` Tally export. The source contains
+ *       Returns the GSTR-1 report summary from the SRV1
+ *       `GSTR-1/GSTR-1 (1).json` Tally export. The source contains
  *       summarized B2B and registered credit/debit note figures, return
  *       status counts, GST registration, and the reporting period.
  *
@@ -34,7 +34,7 @@ router.use(authMiddleware);
  *         description: Set true to download the Excel report.
  *     responses:
  *       200:
- *         description: Fake GSTR-1 summary generated successfully.
+ *         description: SRV1 GSTR-1 summary generated successfully.
  *         content:
  *           application/json:
  *             schema:
@@ -45,7 +45,7 @@ router.use(authMiddleware);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Fake GSTR-1 report generated successfully
+ *                   example: SRV1 GSTR-1 report generated successfully
  *                 data:
  *                   type: object
  *                   description: GSTR-1 report including period, summary, B2B summary, registered credit/debit note summary, status counts, and diagnostics.
@@ -58,6 +58,6 @@ router.use(authMiddleware);
  *       403:
  *         description: Forbidden.
  */
-router.get("/", checkPermission("GSTR1:VIEW"), getFakeGSTR1Report);
+router.get("/", checkPermission("GSTR1:VIEW"), getSrv1GSTR1Report);
 
 export default router;
