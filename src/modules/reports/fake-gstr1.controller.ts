@@ -13,7 +13,7 @@ export const getFakeGSTR1Report = async (
 
         if (isExport) {
             return ExcelService.exportGSTR1Summary(res, report, {
-                filename: "fake-gstr1-report",
+                filename: "gstr1-report",
                 sheetName: "GSTR-1",
                 title: "Fake GSTR-1 - Summary"
             });
