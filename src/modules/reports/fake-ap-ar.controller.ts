@@ -28,7 +28,7 @@ export const getFakeAPARReport = async (
         switch (exportType) {
             case "DETAILS":
                 return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "Fake AP Details" : "Fake AR Details",
+                    filename: type === "PAYABLE" ? "AP Details" : "AR Details",
                     sheetName: type === "PAYABLE" ? "AP Details" : "AR Details",
                     title: type === "PAYABLE"
                         ? "Fake Accounts Payable Details Report"
@@ -40,7 +40,7 @@ export const getFakeAPARReport = async (
                 });
             case "AGING":
                 return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "Fake AP Aging" : "Fake AR Aging",
+                    filename: type === "PAYABLE" ? "AP Aging" : "AR Aging",
                     sheetName: "Aging",
                     title: type === "PAYABLE"
                         ? "Fake Accounts Payable Aging Report"
@@ -52,7 +52,7 @@ export const getFakeAPARReport = async (
                 });
             case "TRUE":
                 return ExcelService.export(res, {
-                    filename: "Fake AP AR Report",
+                    filename: "AP AR Report",
                     sheetName: "Outstanding",
                     title: "Fake AP / AR Report",
                     columns: outstandingColumns,

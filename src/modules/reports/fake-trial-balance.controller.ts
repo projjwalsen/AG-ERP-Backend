@@ -18,7 +18,7 @@ export const getFakeTrialBalanceReport = async (
                 : "Beginning"} to ${formatISTDateOnly(report.period.endDate)}`;
 
             return ExcelService.exportTrialBalance(res, {
-                filename: "fake-trial-balance",
+                filename: "trial-balance",
                 sheetName: "Trial Balance",
                 companyName: report.branch.name,
                 branchName: report.branch.name,
