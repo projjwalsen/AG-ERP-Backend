@@ -237,12 +237,13 @@ export class AgencyLedgerReconciliationService {
                     }
                 }
 
-                // Journal account exports use the journal serial number,
-                // which can differ from Voucher.voucherNo.
+                // Match the Tally voucher number only. Journal.serialNo is
+                // an internal sequence and can collide with a different
+                // Tally voucher number in the same branch.
                 if (row.voucherType === VoucherType.JOURNAL) {
                     const journals = await tx.journal.findMany({
                         where: {
-                            OR: [{ serialNo: row.voucherNo }, { voucherNo: row.voucherNo }],
+                            voucherNo: row.voucherNo,
                             ...(reconciliationBranchId ? { branchId: reconciliationBranchId } : {})
                         },
                         select: { voucherId: true }
@@ -282,18 +283,21 @@ export class AgencyLedgerReconciliationService {
                     } else if (voucher.voucherType === VoucherType.PURCHASE) {
                         const purchase = await tx.purchase.findUnique({ where: { id: voucher.sourceId }, select: { agencyId: true } });
                         if (purchase) sourceAgencyIds.push(purchase.agencyId);
-                    } else if ([
-                        VoucherType.RECEIPT, VoucherType.PAYMENT,
-                        VoucherType.CASH_RECEIPT, VoucherType.CASH_PAYMENT,
-                        VoucherType.BANK_RECEIPT, VoucherType.BANK_PAYMENT
-                    ].includes(voucher.voucherType)) {
+                    } else if (
+                        voucher.voucherType === VoucherType.RECEIPT ||
+                        voucher.voucherType === VoucherType.PAYMENT ||
+                        voucher.voucherType === VoucherType.CASH_RECEIPT ||
+                        voucher.voucherType === VoucherType.CASH_PAYMENT ||
+                        voucher.voucherType === VoucherType.BANK_RECEIPT ||
+                        voucher.voucherType === VoucherType.BANK_PAYMENT
+                    ) {
                         const transaction = await tx.transaction.findUnique({
                             where: { id: voucher.sourceId },
                             select: { agencyId: true, thirdPartyAgencyId: true }
                         });
                         if (transaction) sourceAgencyIds.push(transaction.agencyId, transaction.thirdPartyAgencyId);
                     }
-                    if ([VoucherType.DEBIT_NOTE, VoucherType.CREDIT_NOTE].includes(voucher.voucherType)) {
+                    if (voucher.voucherType === VoucherType.DEBIT_NOTE || voucher.voucherType === VoucherType.CREDIT_NOTE) {
                         sourceAgencyIds.push(...voucher.debitCreditNotes.map(note => note.agencyId));
                     }
                     const sourceBelongsToAgency = sourceAgencyIds.includes(agency.id);
@@ -304,7 +308,11 @@ export class AgencyLedgerReconciliationService {
                             entry.entryType === expectedType &&
                             Math.abs(Number(entry.amount) - expectedAmount) < 0.005 &&
                             (trustedLedger || entry.ledger.agencyId === agency.id ||
-                                (sourceBelongsToAgency && [LedgerType.CUSTOMER, LedgerType.VENDOR, LedgerType.JOURNAL].includes(entry.ledger.category)));
+                                (sourceBelongsToAgency && (
+                                    entry.ledger.category === LedgerType.CUSTOMER ||
+                                    entry.ledger.category === LedgerType.VENDOR ||
+                                    entry.ledger.category === LedgerType.JOURNAL
+                                )));
                     });
                     if (candidates.length === 1) movable.push({ voucher, entry: candidates[0] });
                 }
@@ -389,6 +397,226 @@ export class AgencyLedgerReconciliationService {
                     debit: plan.row.debit,
                     credit: plan.row.credit
                 }))
+            };
+        }, { maxWait: 60_000, timeout: 5 * 60_000 });
+    }
+
+    static async unlinkExtraCreditPostings(
+        actor: any,
+        agencyName: string,
+        buffer: Buffer,
+        requestedBranchId?: string,
+        allowUnlink = false
+    ) {
+        if (!actor?.id) throw new ApiError("Unauthorized", 401);
+        const requestedAgency = normalizeAgencyName(agencyName);
+        if (!requestedAgency) throw new ApiError("agencyName is required", 400);
+
+        const branchId = actor.branchAccessType === "ALL" ? requestedBranchId : actor.branchId;
+        if (!branchId && actor.branchAccessType !== "ALL") {
+            throw new ApiError("A branch is required to check agency vouchers", 400);
+        }
+        if (requestedBranchId && actor.branchAccessType !== "ALL" && requestedBranchId !== actor.branchId) {
+            throw new ApiError("You do not have access to this branch", 403);
+        }
+
+        const rows = parseAgencyLedgerWorkbook(buffer, agencyName);
+        const agencies = await prisma.agency.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true, type: true }
+        });
+        const matches = agencies.filter(item => normalizeAgencyName(item.name) === requestedAgency);
+        if (matches.length !== 1) {
+            throw new ApiError(matches.length === 0
+                ? `Active agency "${agencyName}" was not found`
+                : `Agency name "${agencyName}" is ambiguous; use a more specific name`, 400);
+        }
+        const agency = matches[0];
+        if (agency.type !== "CLIENT") {
+            throw new ApiError(`"${agency.name}" is not a client agency with a Sundry Debtor ledger`, 400);
+        }
+
+        const ledgers = await prisma.ledger.findMany({
+            where: { agencyId: agency.id, category: LedgerType.CUSTOMER, isActive: true, ...(branchId ? { branchId } : {}) },
+            select: { id: true, name: true, branchId: true }
+        });
+        if (ledgers.length !== 1) {
+            throw new ApiError(ledgers.length === 0
+                ? `No active Sundry Debtor ledger found for "${agency.name}"${branchId ? " in the selected branch" : ""}`
+                : `Agency "${agency.name}" has ledgers in multiple branches; supply branchId`, 400);
+        }
+        const targetLedger = ledgers[0];
+        const reconciliationBranchId = branchId || targetLedger.branchId || undefined;
+
+        return prisma.$transaction(async tx => {
+            const vouchers = await tx.voucher.findMany({
+                where: {
+                    ...(reconciliationBranchId ? { branchId: reconciliationBranchId } : {}),
+                    entries: { some: { ledgerId: targetLedger.id } }
+                },
+                include: {
+                    entries: { include: { ledger: true } },
+                    journals: true,
+                    debitCreditNotes: true
+                }
+            });
+            const saleIds = vouchers
+                .filter(voucher => voucher.voucherType === VoucherType.SALE)
+                .map(voucher => voucher.sourceId)
+                .filter((id): id is string => Boolean(id));
+            const sales = saleIds.length
+                ? await tx.sale.findMany({ where: { id: { in: saleIds } }, select: { id: true, invoiceNo: true } })
+                : [];
+            const saleById = new Map(sales.map(sale => [sale.id, sale]));
+            const workbookByKey = new Map(rows.map(row => [`${row.voucherType}|${row.voucherNo}`, row]));
+            const creditGroups = new Map<string, {
+                voucher: typeof vouchers[number];
+                entry: typeof vouchers[number]["entries"][number];
+                tallyVoucherNo: string;
+            }[]>();
+
+            for (const voucher of vouchers) {
+                if (voucher.voucherType === VoucherType.OPENING_BALANCE) continue;
+                const tallyVoucherNo = voucher.voucherType === VoucherType.SALE && voucher.sourceId
+                    ? saleById.get(voucher.sourceId)?.invoiceNo || voucher.voucherNo || ""
+                    : voucher.voucherType === VoucherType.JOURNAL
+                        ? voucher.journals.find(journal => journal.voucherNo)?.voucherNo || voucher.voucherNo || ""
+                        : (voucher.voucherType === VoucherType.DEBIT_NOTE || voucher.voucherType === VoucherType.CREDIT_NOTE)
+                            ? voucher.debitCreditNotes.find(note => note.noteNo)?.noteNo || voucher.voucherNo || ""
+                            : voucher.voucherNo || "";
+                if (!tallyVoucherNo) continue;
+                const key = `${voucher.voucherType}|${tallyVoucherNo}`;
+                for (const entry of voucher.entries.filter(item => item.ledgerId === targetLedger.id && item.entryType === EntryType.CREDIT)) {
+                    const group = creditGroups.get(key) || [];
+                    group.push({ voucher, entry, tallyVoucherNo });
+                    creditGroups.set(key, group);
+                }
+            }
+
+            const extras: Array<{
+                row?: number;
+                voucherNo: string;
+                systemVoucherNo: string;
+                voucherType: VoucherType;
+                voucherId: string;
+                sourceId: string;
+                entryId: string;
+                date: Date;
+                narration: string;
+                amount: number;
+                ledger: string;
+                workbookDebit: number;
+                workbookCredit: number;
+                reason: string;
+                canUnlink: boolean;
+                unlinkToLedger?: { id: string; name: string };
+                status: string;
+            }> = [];
+
+            for (const [key, group] of creditGroups) {
+                const workbookRow = workbookByKey.get(key);
+                const workbookCredit = workbookRow?.credit || 0;
+                const systemCredit = group.reduce((sum, item) => sum + Number(item.entry.amount), 0);
+                let excess: typeof group = [];
+                let excessIsUniquelyIdentified = true;
+
+                if (workbookCredit === 0) {
+                    excess = group;
+                } else if (systemCredit > workbookCredit + 0.005) {
+                    // Only detach a whole line if removing it leaves exactly the workbook amount.
+                    const uniquelyExcessive = group.filter(item =>
+                        Math.abs(systemCredit - Number(item.entry.amount) - workbookCredit) < 0.005
+                    );
+                    if (uniquelyExcessive.length === 1) {
+                        excess = uniquelyExcessive;
+                    } else {
+                        excess = group;
+                        excessIsUniquelyIdentified = false;
+                    }
+                }
+
+                for (const item of excess) {
+                    const oppositeEntries = item.voucher.entries.filter(entry =>
+                        entry.id !== item.entry.id && entry.ledgerId !== targetLedger.id && entry.entryType === EntryType.DEBIT &&
+                        Math.abs(Number(entry.amount) - Number(item.entry.amount)) < 0.005
+                    );
+                    const uniqueCounterpart = oppositeEntries.length === 1 ? oppositeEntries[0] : undefined;
+                    const hasRequiredAgencySource = item.voucher.voucherType === VoucherType.SALE || item.voucher.voucherType === VoucherType.PURCHASE;
+                    const isBalanced = Math.abs(Number(item.voucher.totalDebit) - Number(item.voucher.totalCredit)) < 0.005;
+                    const canUnlink = excessIsUniquelyIdentified && Boolean(uniqueCounterpart) && isBalanced && !hasRequiredAgencySource;
+                    extras.push({
+                        row: workbookRow?.row,
+                        voucherNo: item.tallyVoucherNo,
+                        systemVoucherNo: item.voucher.voucherNo,
+                        voucherType: item.voucher.voucherType,
+                        voucherId: item.voucher.id,
+                        sourceId: item.voucher.sourceId,
+                        entryId: item.entry.id,
+                        date: item.voucher.voucherDate,
+                        narration: item.voucher.narration || "",
+                        amount: Number(item.entry.amount),
+                        ledger: targetLedger.name,
+                        workbookDebit: workbookRow?.debit || 0,
+                        workbookCredit: workbookCredit,
+                        reason: workbookCredit === 0
+                            ? workbookRow?.debit
+                                ? "System has a credit posting, while the workbook lists this voucher on the debit side"
+                                : "Credit posting is absent from the workbook"
+                            : "System credit total exceeds the workbook credit amount",
+                        canUnlink,
+                        unlinkToLedger: uniqueCounterpart ? { id: uniqueCounterpart.ledgerId, name: uniqueCounterpart.ledger.name } : undefined,
+                        status: !allowUnlink ? (canUnlink ? "preview" : "needs_review") : (canUnlink ? "unlinked" : "not_unlinked")
+                    });
+                }
+            }
+
+            const applied: string[] = [];
+            if (allowUnlink) {
+                const affectedLedgerIds = new Set<string>();
+                for (const extra of extras.filter(item => item.canUnlink)) {
+                    const current = await tx.ledgerEntry.findUnique({
+                        where: { id: extra.entryId },
+                        select: { id: true, ledgerId: true }
+                    });
+                    if (!current || current.ledgerId !== targetLedger.id) {
+                        throw new ApiError(`Voucher ${extra.voucherNo} changed during unlink; transaction rolled back`, 409);
+                    }
+                    const target = extra.unlinkToLedger!;
+                    await tx.ledgerEntry.update({ where: { id: current.id }, data: { ledgerId: target.id } });
+                    affectedLedgerIds.add(targetLedger.id);
+                    affectedLedgerIds.add(target.id);
+
+                    await tx.journal.updateMany({
+                        where: { voucherId: extra.voucherId, agencyId: agency.id },
+                        data: { agencyId: null }
+                    });
+                    await tx.transaction.updateMany({
+                        where: { id: extra.sourceId, agencyId: agency.id },
+                        data: { agencyId: null }
+                    });
+                    await tx.transaction.updateMany({
+                        where: { id: extra.sourceId, thirdPartyAgencyId: agency.id },
+                        data: { thirdPartyAgencyId: null }
+                    });
+                    await tx.$executeRaw`
+                        UPDATE "DebitCreditNote"
+                        SET "agencyId" = NULL
+                        WHERE "voucherId" = ${extra.voucherId} AND "agencyId" = ${agency.id}
+                    `;
+                    applied.push(extra.entryId);
+                }
+                for (const ledgerId of affectedLedgerIds) await LedgerService.syncCachedBalance(tx, ledgerId);
+            }
+
+            return {
+                agency: { id: agency.id, name: agency.name },
+                branchId: reconciliationBranchId,
+                allowUnlink,
+                workbookRows: rows.length,
+                extraCreditPostings: extras,
+                extraCount: extras.length,
+                unlinked: applied.length,
+                notUnlinked: extras.filter(item => allowUnlink && !item.canUnlink).length
             };
         }, { maxWait: 60_000, timeout: 5 * 60_000 });
     }

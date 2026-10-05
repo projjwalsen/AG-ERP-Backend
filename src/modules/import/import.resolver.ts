@@ -4009,6 +4009,27 @@ export class ImportResolver {
             // The schema also protects branch + agency + note number. If two
             // uploads race, treat the winner as the duplicate to skip.
             if (error?.code === "P2002") {
+                // importKey is the authoritative idempotency key and is a
+                // standalone unique field. The note-number/path lookup below
+                // cannot find rows whose note metadata differs, so always
+                // resolve the unique-key conflict first (especially when two
+                // uploads race).
+                const duplicateByImportKey = await prisma.debitCreditNote.findUnique({
+                    where: { importKey },
+                    select: {
+                        id: true,
+                        status: true,
+                        agencyId: true,
+                        categoryPath: true,
+                        sourceInvoiceNo: true,
+                        purchase: { select: { invoiceNo: true } },
+                        sale: { select: { invoiceNo: true } }
+                    }
+                });
+                if (duplicateByImportKey) {
+                    return { note: duplicateByImportKey, skipped: true };
+                }
+
                 const duplicateCandidates = await prisma.debitCreditNote.findMany({
                     where: { noteNo, sourceType, type: noteType },
                     select: {

@@ -8,6 +8,7 @@ import {
     importOpeningBalanceJournalWorkbook,
     reconcileTdsAssetsWorkbook,
     reconcileAgencyLedgerWorkbook,
+    unlinkExtraAgencyLedgerVouchers,
     importInwardDebitCreditNoteWorkbook,
     importProductWorkbook,
     importWorkbook
@@ -450,6 +451,59 @@ router.post(
     authMiddleware,
     importExcel.single("file"),
     reconcileAgencyLedgerWorkbook
+);
+
+/**
+ * @openapi
+ * /api/migration/import/agency-ledger/unlink-extras:
+ *   post:
+ *     summary: Preview or unlink extra Sundry Debtor credit postings
+ *     description: >
+ *       Compare credit postings on the named client's Sundry Debtor ledger
+ *       with a Tally ledger workbook. The default is preview-only. Set
+ *       allowUnlink=true to move safely paired extra postings off that debtor
+ *       ledger while preserving balanced vouchers. Postings without one
+ *       identifiable counter-entry are returned for review and left unchanged.
+ *     tags:
+ *       - Import
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         schema: { type: string }
+ *         description: Required for users with access to all branches when the agency has multiple ledgers.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file, agencyName]
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *               agencyName:
+ *                 type: string
+ *               branchId:
+ *                 type: string
+ *               allowUnlink:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       200:
+ *         description: Extra credit postings and unlink results.
+ *       400:
+ *         description: Invalid workbook, agency, or allowUnlink value.
+ *       409:
+ *         description: Agency or ledger changed during reconciliation.
+ */
+router.post(
+    "/import/agency-ledger/unlink-extras",
+    authMiddleware,
+    importExcel.single("file"),
+    unlinkExtraAgencyLedgerVouchers
 );
 
 /**

@@ -479,6 +479,45 @@ export const reconcileAgencyLedgerWorkbook = async (
     }
 };
 
+export const unlinkExtraAgencyLedgerVouchers = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Excel file is required." });
+        }
+        const agencyName = String(req.body.agencyName || req.query.agencyName || "").trim();
+        if (!agencyName) {
+            return res.status(400).json({ success: false, message: "agencyName is required." });
+        }
+        const rawAllowUnlink = req.body.allowUnlink ?? req.query.allowUnlink ?? false;
+        const normalizedAllowUnlink = String(rawAllowUnlink).trim().toLowerCase();
+        if (!["true", "false"].includes(normalizedAllowUnlink)) {
+            return res.status(400).json({ success: false, message: "allowUnlink must be true or false." });
+        }
+        const allowUnlink = normalizedAllowUnlink === "true";
+        const branchId = String(req.body.branchId || req.query.branchId || "").trim() || undefined;
+        const result = await AgencyLedgerReconciliationService.unlinkExtraCreditPostings(
+            (req as any).user,
+            agencyName,
+            req.file.buffer,
+            branchId,
+            allowUnlink
+        );
+        return res.status(200).json({
+            success: true,
+            message: allowUnlink
+                ? "Extra agency credit postings checked; safe postings were unlinked."
+                : "Extra agency credit posting preview completed; no changes were applied.",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const importInwardDebitCreditNoteWorkbook = async (
     req: Request,
     res: Response,
