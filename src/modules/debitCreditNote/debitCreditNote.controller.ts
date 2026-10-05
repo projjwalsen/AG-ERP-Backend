@@ -153,7 +153,7 @@ export const approveNote = async (
         if (!pdf) {
             return res.status(200).json({
                 success: true,
-                message: "Note approved without agency ledger posting because no party was recorded.",
+                message: "Note approved and accounting posted. PDF is unavailable because no source invoice was recorded.",
                 data: { note }
             });
         }
@@ -177,6 +177,44 @@ export const approveNote = async (
             Buffer.from(pdf)
         );
 
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const approvePendingWithoutPurchase = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const result = await DebitCreditNoteService
+            .approvePendingWithoutPurchase(actor(req));
+
+        return res.status(200).json({
+            success: true,
+            message: "Pending purchase-less debit/credit notes processed",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const repairApprovedNotesWithoutVoucher = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const result = await DebitCreditNoteService
+            .repairApprovedNotesWithoutVoucher(actor(req));
+
+        return res.status(200).json({
+            success: true,
+            message: "Approved debit/credit notes repaired and posted to accounting",
+            data: result
+        });
     } catch (error) {
         next(error);
     }

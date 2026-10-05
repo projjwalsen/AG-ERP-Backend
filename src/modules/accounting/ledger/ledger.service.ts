@@ -3545,7 +3545,10 @@ export class LedgerService {
 
         endDate.setHours(23, 59, 59, 999);
 
-        const ledger = await prisma.ledger.findUnique({
+        // The statement endpoint is normally called with a Ledger id. Journal
+        // screens may also pass a JournalHead/Journal id, so resolve those
+        // ids to the Ledger before building the statement scope.
+        let ledger: any = await prisma.ledger.findUnique({
             where: { id: ledgerId },
             include: {
                 group: true,
@@ -3555,8 +3558,40 @@ export class LedgerService {
         });
 
         if (!ledger) {
+            const journalHead = await prisma.journalHead.findUnique({
+                where: { id: ledgerId },
+                include: {
+                    ledger: {
+                        include: { group: true, branch: true, agency: true }
+                    }
+                }
+            });
+
+            ledger = journalHead?.ledger;
+        }
+
+        if (!ledger) {
+            const journal = await prisma.journal.findUnique({
+                where: { id: ledgerId },
+                include: {
+                    journalHead: {
+                        include: {
+                            ledger: {
+                                include: { group: true, branch: true, agency: true }
+                            }
+                        }
+                    }
+                }
+            });
+
+            ledger = journal?.journalHead.ledger;
+        }
+
+        if (!ledger) {
             throw new ApiError("Ledger not found", 404);
         }
+
+        const selectedLedgerId = ledger.id;
 
         if (
             actor.branchAccessType !== "ALL" &&
@@ -3569,8 +3604,92 @@ export class LedgerService {
             );
         }
 
+        // Imported journal registers create a ledger-backed JournalHead for
+        // every level of the hierarchy. Vouchers are posted to the leaf
+        // ledger, while a statement opened from a parent/subheader must show
+        // the entries from all of its descendant heads as well.
+        const statementLedgerIds = new Set<string>([selectedLedgerId]);
+        const statementJournalHeadIds = new Set<string>();
+        let journalHeadIds = (
+            await prisma.journalHead.findMany({
+                where: { ledgerId: selectedLedgerId },
+                select: { id: true, ledgerId: true }
+            })
+        ).map((head) => {
+            statementJournalHeadIds.add(head.id);
+            statementLedgerIds.add(head.ledgerId);
+            return head.id;
+        });
+
+        while (journalHeadIds.length > 0) {
+            const childHeads = await prisma.journalHead.findMany({
+                where: { parentId: { in: journalHeadIds } },
+                select: { id: true, ledgerId: true }
+            });
+            journalHeadIds = childHeads
+                .filter((head) => !statementJournalHeadIds.has(head.id))
+                .map((head) => {
+                    statementJournalHeadIds.add(head.id);
+                    statementLedgerIds.add(head.ledgerId);
+                    return head.id;
+                });
+        }
+
+        // Trial Balance can combine several ledger rows that belong to the
+        // same imported category path. Discover that path from journals
+        // already attached to this ledger/head, then expand the statement
+        // ledger scope to every journal head using the same path. This is
+        // what brings the debit-side Journal vouchers into a statement that
+        // otherwise contains only the debit-note ledger entries.
+        const statementCategoryPaths = [
+            ...new Set(
+                (
+                    await prisma.journal.findMany({
+                        where: {
+                            OR: [
+                                { journalHeadId: { in: [...statementJournalHeadIds] } },
+                                {
+                                    voucher: {
+                                        entries: {
+                                            some: { ledgerId: { in: [...statementLedgerIds] } }
+                                        }
+                                    }
+                                }
+                            ],
+                            categoryPath: { not: null },
+                            ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                        },
+                        select: { categoryPath: true }
+                    })
+                )
+                    .map((journal) => journal.categoryPath)
+                    .filter((path): path is string => Boolean(path))
+            )
+        ];
+
+        if (statementCategoryPaths.length > 0) {
+            const pathJournals = await prisma.journal.findMany({
+                where: {
+                    categoryPath: { in: statementCategoryPaths },
+                    status: "APPROVED",
+                    ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                },
+                select: {
+                    journalHeadId: true,
+                    journalHead: { select: { ledgerId: true } }
+                }
+            });
+            for (const journal of pathJournals) {
+                statementJournalHeadIds.add(journal.journalHeadId);
+                statementLedgerIds.add(journal.journalHead.ledgerId);
+            }
+        }
+
+        const statementLedgerIdList = [...statementLedgerIds];
+        const statementJournalHeadIdList = [...statementJournalHeadIds];
+
         const periodWhere: Prisma.LedgerEntryWhereInput = {
-            ledgerId,
+            ledgerId: { in: statementLedgerIdList },
             ...(startDate || endDate
                 ? {
                     voucher: {
@@ -3584,7 +3703,7 @@ export class LedgerService {
         };
 
         const priorWhere: Prisma.LedgerEntryWhereInput = {
-            ledgerId,
+            ledgerId: { in: statementLedgerIdList },
             ...(startDate
                 ? {
                     voucher: {
@@ -3672,11 +3791,22 @@ export class LedgerService {
                 : Promise.resolve(null)
         ]);
 
+        const journalScope = [
+            { journalHeadId: { in: statementJournalHeadIdList } },
+            ...(statementCategoryPaths.length > 0
+                ? [{ categoryPath: { in: statementCategoryPaths } }]
+                : [])
+        ];
+
+        const journalCommonWhere = {
+            OR: journalScope,
+            status: "APPROVED" as const,
+            ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+        };
+
         const ledgerJournals = await prisma.journal.findMany({
             where: {
-                journalHead: { ledgerId },
-                status: "APPROVED",
-                voucherId: null,
+                ...journalCommonWhere,
                 ...(startDate || endDate ? { journalDate: {
                     ...(startDate && { gte: startDate }),
                     ...(endDate && { lte: endDate })
@@ -3688,10 +3818,40 @@ export class LedgerService {
 
         const priorJournals = startDate
             ? await prisma.journal.findMany({
-                where: { journalHead: { ledgerId }, status: "APPROVED", voucherId: null, journalDate: { lt: startDate } },
+                where: { ...journalCommonWhere, journalDate: { lt: startDate } },
                 include: { journalHead: true }
             })
             : [];
+
+        const periodVoucherIds = new Set(
+            (
+                await prisma.ledgerEntry.findMany({
+                    where: periodWhere,
+                    select: { voucherId: true }
+                })
+            ).map((entry) => entry.voucherId)
+        );
+        const priorVoucherIds = startDate
+            ? new Set(
+                (
+                    await prisma.ledgerEntry.findMany({
+                        where: priorWhere,
+                        select: { voucherId: true }
+                    })
+                ).map((entry) => entry.voucherId)
+            )
+            : new Set<string>();
+
+        // Journals linked to a voucher are normally represented by its
+        // LedgerEntry. Keep only journals that are not already represented,
+        // while still including matching categoryPath rows posted elsewhere
+        // in the same imported path.
+        const statementJournals = ledgerJournals.filter(
+            (journal) => !periodVoucherIds.has(journal.voucherId || "")
+        );
+        const openingJournals = priorJournals.filter(
+            (journal) => !priorVoucherIds.has(journal.voucherId || "")
+        );
 
         const sourceIds = [
             ...new Set(
@@ -3767,11 +3927,11 @@ export class LedgerService {
                 )?._sum?.amount || 0
             );
 
-        for (const journal of priorJournals) {
+        for (const journal of openingJournals) {
             if (getJournalDirection(journal) === JournalDirection.INWARD) priorDebit += money(journal.amount);
             else priorCredit += money(journal.amount);
         }
-        for (const journal of ledgerJournals) {
+        for (const journal of statementJournals) {
             if (getJournalDirection(journal) === JournalDirection.INWARD) periodDebit += money(journal.amount);
             else periodCredit += money(journal.amount);
         }
@@ -3796,6 +3956,28 @@ export class LedgerService {
 
         const statementRows: any[] = [];
 
+        const seenOpeningVoucherKeys = new Set<string>();
+        const visibleEntries = entries.filter(entry => {
+            if (entry.voucher.voucherType !== VoucherType.OPENING_BALANCE) return true;
+
+            const indiaDate = new Intl.DateTimeFormat("en-CA", {
+                timeZone: "Asia/Kolkata",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit"
+            }).format(entry.voucher.voucherDate);
+            const key = [
+                entry.ledgerId,
+                indiaDate,
+                entry.entryType,
+                money(entry.amount).toFixed(2)
+            ].join("|");
+
+            if (seenOpeningVoucherKeys.has(key)) return false;
+            seenOpeningVoucherKeys.add(key);
+            return true;
+        });
+
         if (startDate) {
             statementRows.push({
                 type: "OPENING",
@@ -3817,8 +3999,28 @@ export class LedgerService {
                     )
             });
         }
+
+        // Imported journal rows can be attached to different JournalHeads
+        // while still representing the same account. Include every head whose
+        // Ledger name matches the selected Ledger, so the statement contains
+        // all related journal vouchers when opened with either a Ledger,
+        // JournalHead, or Journal id.
+        const sameNameJournalHeads = await prisma.journalHead.findMany({
+            where: {
+                ledger: {
+                    name: { equals: ledger.name, mode: "insensitive" },
+                    ...(ledger.branchId ? { branchId: ledger.branchId } : {})
+                }
+            },
+            select: { id: true, ledgerId: true }
+        });
+
+        for (const head of sameNameJournalHeads) {
+            statementJournalHeadIds.add(head.id);
+            statementLedgerIds.add(head.ledgerId);
+        }
                 
-        statementRows.push(...entries.map(entry => {
+        statementRows.push(...visibleEntries.map(entry => {
 
             const transaction =
                 transactionMap.get(
@@ -3852,7 +4054,7 @@ export class LedgerService {
 
             const counterLedgers =
                 entry.voucher.entries
-                    .filter(x => x.ledgerId !== ledgerId)
+                    .filter(x => !statementLedgerIds.has(x.ledgerId))
                     .map(x => ({
                         id: x.ledger.id,
                         code: x.ledger.code,
@@ -3936,7 +4138,7 @@ export class LedgerService {
             })
         );
 
-        statementRows.push(...ledgerJournals.map(journal => {
+        statementRows.push(...statementJournals.map(journal => {
             const amount = money(journal.amount);
             const debit = getJournalDirection(journal) === JournalDirection.INWARD ? amount : 0;
             const credit = getJournalDirection(journal) === JournalDirection.OUTWARD ? amount : 0;
@@ -5825,8 +6027,12 @@ export class LedgerService {
          * PURCHASE -> VENDOR/SAUNDRY CREDITOR
          */
 
-        const partyLedger = 
-            isSale 
+        // Notes without an agency still need a balanced voucher so they are
+        // visible in Trial Balance. Use the branch suspense ledger for the
+        // unidentified party side; no agency outstanding is updated.
+        const partyLedger = !note.agencyId
+            ? await this.getSuspenseLedger(tx, note.branchId)
+            : isSale
                 ? await this.getOrCreateCustomerLedger(
                     tx,
                     note.branchId,
@@ -5899,7 +6105,7 @@ export class LedgerService {
                 note.type,
                 note.noteNo,
                 `Invoice:${invoiceNo}`,
-                note.agency.name,
+                note.agency?.name || "PARTY NOT RECORDED",
                 note.narration
             ]
             .filter(Boolean)
