@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authMiddleware, checkPermission } from "../../core/middleware/auth";
-import { getFakeAPARReport } from "./fake-ap-ar.controller";
+import { authMiddleware } from "../../core/middleware/auth";
+import { getSrv1APARReport } from "./ap-ar.controller";
 
 const router = Router();
 
@@ -8,13 +8,13 @@ router.use(authMiddleware);
 
 /**
  * @openapi
- * /api/reports/fake-ap-ar:
+ * /api/reports/srv1-ap-ar:
  *   get:
- *     summary: Fake Accounts Payable / Receivable Report
+ *     summary: SRV1 Accounts Payable / Receivable Report
  *     description: |
- *       Returns a Tally pending-bills report using the static AP or AR JSON
- *       fixture instead of live database records. Select `PAYABLE` to read
- *       `fakeAPAR/AP.json` or `RECEIVABLE` to read `fakeAPAR/AR.json`.
+ *       Returns a Tally pending-bills report using the SRV1 AP or AR export.
+ *       Select `PAYABLE` to read `APAR/AP.json` or
+ *       `RECEIVABLE` to read `APAR/AR.json`.
  *
  *       The source provides pending amount, bill reference, party, bill date,
  *       due date, and overdue days. It does not include original invoice,
@@ -54,7 +54,7 @@ router.use(authMiddleware);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Fake AP / AR report generated successfully
+ *                   example: SRV1 AP / AR report generated successfully
  *                 data:
  *                   type: object
  *                   description: Outstanding report with summary, agency rows, aging buckets, source diagnostics, and invoice details.
@@ -69,6 +69,6 @@ router.use(authMiddleware);
  *       403:
  *         description: Forbidden.
  */
-router.get("/", getFakeAPARReport);
+router.get("/", getSrv1APARReport);
 
 export default router;

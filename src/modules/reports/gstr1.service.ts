@@ -1,4 +1,4 @@
-import gstr1Source from "./fakeGSTR-1/GSTR-1 (1).json";
+import gstr1Source from "./GSTR-1/GSTR-1 (1).json";
 
 type SourceRow = Record<string, string | number | null | undefined>;
 
@@ -21,8 +21,8 @@ const parseTallyDate = (value: string) => {
     return new Date(Date.UTC(year, month, Number(match[1])));
 };
 
-export class FakeGSTR1Service {
-    static getFakeGSTR1Report() {
+export class Srv1GSTR1Service {
+    static getSrv1GSTR1Report() {
         const rows = gstr1Source as SourceRow[];
         const companyName = Object.keys(rows[0] || {})[0] || "Company";
         const registration = valueFor(rows, "GST Registration:");
@@ -83,7 +83,7 @@ export class FakeGSTR1Service {
         };
 
         return {
-            reportName: "GSTR-1 Outward Supplies Report",
+            reportName: "SRV1 GSTR-1 Outward Supplies Report",
             generatedAt: new Date(),
             period: {
                 startDate: parseTallyDate(fromLabel || ""),
@@ -103,7 +103,7 @@ export class FakeGSTR1Service {
             rows: [],
             gstrStatus,
             diagnostics: {
-                source: "fakeGSTR-1/GSTR-1 (1).json",
+                source: "SRV1/GSTR-1/GSTR-1 (1).json",
                 voucherLevelRowsAvailable: false,
                 sourceB2BSummary: b2bSource ? toSummary(b2bSource, "B2B Invoices") : null,
                 sourceGrandTotal: grandTotalSource ? toSummary(grandTotalSource, "Total") : null,

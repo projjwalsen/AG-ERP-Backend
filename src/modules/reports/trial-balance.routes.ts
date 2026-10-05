@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
-import { getFakeTrialBalanceReport } from "./fake-trial-balance.controller";
+import { getSrv1TrialBalanceReport } from "./trial-balance.controller";
 
 const router = Router();
 
@@ -8,13 +8,12 @@ router.use(authMiddleware);
 
 /**
  * @openapi
- * /api/reports/fake-trial-balance:
+ * /api/reports/srv1-trial-balance:
  *   get:
- *     summary: Fake Trial Balance Report
+ *     summary: SRV1 Trial Balance Report
  *     description: |
- *       Returns a Tally-style Trial Balance built from
- *       `src/modules/reports/fakeTrial/TALLYTRIALBAL.json` rather than live
- *       database records. The report includes the opening and closing
+ *       Returns a Tally-style Trial Balance built from the SRV1 JSON
+ *       fixture at `Trial/TALLYTRIALBAL.json`. The report includes the opening and closing
  *       balances, flat ledger rows, and an expandable account hierarchy.
  *
  *       The JSON source has no transaction movement totals. Transaction
@@ -36,7 +35,7 @@ router.use(authMiddleware);
  *         description: Set true to download the Excel report.
  *     responses:
  *       200:
- *         description: Fake Trial Balance generated successfully. Returns JSON unless export=true, in which case it returns an Excel workbook.
+ *         description: SRV1 Trial Balance generated successfully. Returns JSON unless export=true, in which case it returns an Excel workbook.
  *         content:
  *           application/json:
  *             schema:
@@ -47,7 +46,7 @@ router.use(authMiddleware);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: Fake trial balance report generated successfully
+ *                   example: SRV1 Trial Balance report generated successfully
  *                 data:
  *                   type: object
  *                   description: Trial Balance report with period, summary, diagnostics, rows, tree, and accountGroups.
@@ -58,6 +57,6 @@ router.use(authMiddleware);
  *       401:
  *         description: Unauthorized.
  */
-router.get("/", getFakeTrialBalanceReport);
+router.get("/", getSrv1TrialBalanceReport);
 
 export default router;

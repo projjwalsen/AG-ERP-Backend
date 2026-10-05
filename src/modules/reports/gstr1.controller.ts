@@ -1,27 +1,27 @@
 import { Request, Response, NextFunction } from "express";
 import { ExcelService } from "../../core/utils/export.service";
-import { FakeGSTR1Service } from "./fake-gstr1.service";
+import { Srv1GSTR1Service } from "./gstr1.service";
 
-export const getFakeGSTR1Report = async (
+export const getSrv1GSTR1Report = async (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const report = FakeGSTR1Service.getFakeGSTR1Report();
+        const report = Srv1GSTR1Service.getSrv1GSTR1Report();
         const isExport = String(req.query.export || "").toLowerCase() === "true";
 
         if (isExport) {
             return ExcelService.exportGSTR1Summary(res, report, {
-                filename: "gstr1-report",
-                sheetName: "GSTR-1",
-                title: "Fake GSTR-1 - Summary"
+                filename: "srv1-gstr1-report",
+                sheetName: "SRV1 GSTR-1",
+                title: "SRV1 GSTR-1 - Summary"
             });
         }
 
         return res.status(200).json({
             success: true,
-            message: "Fake GSTR-1 report generated successfully",
+            message: "SRV1 GSTR-1 report generated successfully",
             data: report
         });
     } catch (error) {

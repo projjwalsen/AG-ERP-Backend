@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { ExcelService } from "../../core/utils/export.service";
 import { outstandingAgingColumns, outstandingColumns, outstandingDetailColumns } from "../exports/branch.export";
-import { FakeAPARService } from "./fake-ap-ar.service";
+import { Srv1APARService } from "./ap-ar.service";
 
 type ReportType = "PAYABLE" | "RECEIVABLE";
 
-export const getFakeAPARReport = async (
+export const getSrv1APARReport = async (
     req: Request,
     res: Response,
     next: NextFunction
@@ -20,7 +20,7 @@ export const getFakeAPARReport = async (
         }
 
         const exportType = String(req.query.export || "").toUpperCase();
-        const report = FakeAPARService.getFakeAPARReport(
+        const report = Srv1APARService.getSrv1APARReport(
             type,
             ["DETAILS", "AGING", "TRUE"].includes(exportType)
         );
@@ -28,42 +28,42 @@ export const getFakeAPARReport = async (
         switch (exportType) {
             case "DETAILS":
                 return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "AP Details" : "AR Details",
-                    sheetName: type === "PAYABLE" ? "AP Details" : "AR Details",
+                    filename: type === "PAYABLE" ? "SRV1 AP Details" : "SRV1 AR Details",
+                    sheetName: type === "PAYABLE" ? "SRV1 AP Details" : "SRV1 AR Details",
                     title: type === "PAYABLE"
-                        ? "Fake Accounts Payable Details Report"
-                        : "Fake Accounts Receivable Details Report",
+                        ? "SRV1 Accounts Payable Details Report"
+                        : "SRV1 Accounts Receivable Details Report",
                     columns: outstandingDetailColumns,
-                    companyName: "ASHTAVINAYAKA",
+                    companyName: "SRV1 - ASHTAVINAYAKA",
                     showCompanyName: true,
                     data: report.exportData
                 });
             case "AGING":
                 return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "AP Aging" : "AR Aging",
-                    sheetName: "Aging",
+                    filename: type === "PAYABLE" ? "SRV1 AP Aging" : "SRV1 AR Aging",
+                    sheetName: "SRV1 Aging",
                     title: type === "PAYABLE"
-                        ? "Fake Accounts Payable Aging Report"
-                        : "Fake Accounts Receivable Aging Report",
+                        ? "SRV1 Accounts Payable Aging Report"
+                        : "SRV1 Accounts Receivable Aging Report",
                     columns: outstandingAgingColumns(type),
-                    companyName: "ASHTAVINAYAKA",
+                    companyName: "SRV1 - ASHTAVINAYAKA",
                     showCompanyName: true,
                     data: report.rows
                 });
             case "TRUE":
                 return ExcelService.export(res, {
-                    filename: "AP AR Report",
-                    sheetName: "Outstanding",
-                    title: "Fake AP / AR Report",
+                    filename: "SRV1 AP AR Report",
+                    sheetName: "SRV1 Outstanding",
+                    title: "SRV1 AP / AR Report",
                     columns: outstandingColumns,
-                    companyName: "ASHTAVINAYAKA",
+                    companyName: "SRV1 - ASHTAVINAYAKA",
                     showCompanyName: true,
                     data: report.rows
                 });
             default:
                 return res.status(200).json({
                     success: true,
-                    message: "Fake AP / AR report generated successfully",
+                    message: "SRV1 AP / AR report generated successfully",
                     data: report
                 });
         }
