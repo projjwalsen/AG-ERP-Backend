@@ -18,8 +18,8 @@ export const getSrv1TrialBalanceReport = async (
                 : "Beginning"} to ${formatISTDateOnly(report.period.endDate)}`;
 
             return ExcelService.exportTrialBalance(res, {
-                filename: "srv1-trial-balance",
-                sheetName: "SRV1 Trial Balance",
+                filename: "trial-balance",
+                sheetName: "Trial Balance",
                 companyName: report.branch.name,
                 branchName: report.branch.name,
                 period,

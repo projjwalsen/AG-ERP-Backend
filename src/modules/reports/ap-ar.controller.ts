@@ -28,35 +28,35 @@ export const getSrv1APARReport = async (
         switch (exportType) {
             case "DETAILS":
                 return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "SRV1 AP Details" : "SRV1 AR Details",
-                    sheetName: type === "PAYABLE" ? "SRV1 AP Details" : "SRV1 AR Details",
+                    filename: type === "PAYABLE" ? "AP Details" : "AR Details",
+                    sheetName: type === "PAYABLE" ? "AP Details" : "AR Details",
                     title: type === "PAYABLE"
-                        ? "SRV1 Accounts Payable Details Report"
-                        : "SRV1 Accounts Receivable Details Report",
+                        ? "Accounts Payable Details Report"
+                        : "Accounts Receivable Details Report",
                     columns: outstandingDetailColumns,
-                    companyName: "SRV1 - ASHTAVINAYAKA",
+                    companyName: "ASHTAVINAYAKA",
                     showCompanyName: true,
                     data: report.exportData
                 });
             case "AGING":
                 return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "SRV1 AP Aging" : "SRV1 AR Aging",
-                    sheetName: "SRV1 Aging",
+                    filename: type === "PAYABLE" ? "AP Aging" : "AR Aging",
+                    sheetName: "Aging",
                     title: type === "PAYABLE"
-                        ? "SRV1 Accounts Payable Aging Report"
-                        : "SRV1 Accounts Receivable Aging Report",
+                        ? "Accounts Payable Aging Report"
+                        : "Accounts Receivable Aging Report",
                     columns: outstandingAgingColumns(type),
-                    companyName: "SRV1 - ASHTAVINAYAKA",
+                    companyName: "ASHTAVINAYAKA",
                     showCompanyName: true,
                     data: report.rows
                 });
             case "TRUE":
                 return ExcelService.export(res, {
-                    filename: "SRV1 AP AR Report",
-                    sheetName: "SRV1 Outstanding",
-                    title: "SRV1 AP / AR Report",
+                    filename: "AP AR Report",
+                    sheetName: "Outstanding",
+                    title: "AP / AR Report",
                     columns: outstandingColumns,
-                    companyName: "SRV1 - ASHTAVINAYAKA",
+                    companyName: "ASHTAVINAYAKA",
                     showCompanyName: true,
                     data: report.rows
                 });
