@@ -13,9 +13,9 @@ export const getSrv1GSTR1Report = async (
 
         if (isExport) {
             return ExcelService.exportGSTR1Summary(res, report, {
-                filename: "srv1-gstr1-report",
-                sheetName: "SRV1 GSTR-1",
-                title: "SRV1 GSTR-1 - Summary"
+                filename: "gstr1-report",
+                sheetName: "GSTR-1",
+                title: "GSTR-1 - Summary"
             });
         }
 
