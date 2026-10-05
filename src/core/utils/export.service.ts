@@ -3415,6 +3415,8 @@ export class ExcelService {
                 totalPeriodDebit: number;
                 totalPeriodCredit: number;
                 isBalanced: boolean;
+                totalOpeningDebit?: number;
+                totalOpeningCredit?: number;
             };
         }
     ) {
@@ -3789,11 +3791,23 @@ export class ExcelService {
             return node.children.reduce((sum: number, child: any) => sum + sumTreeSide(child, side), 0);
         };
 
+        const hasSourceBalances =
+            options.summary.totalOpeningDebit !== undefined &&
+            options.summary.totalOpeningCredit !== undefined;
+
         const appendTreeNode = (node: any, level = 0) => {
-            const openingDebit = sumTreeSide(node, "openingDebit");
-            const openingCredit = sumTreeSide(node, "openingCredit");
-            const closingDebit = sumTreeSide(node, "closingDebit");
-            const closingCredit = sumTreeSide(node, "closingCredit");
+            const openingDebit = hasSourceBalances
+                ? Number(node.openingDebit || 0)
+                : sumTreeSide(node, "openingDebit");
+            const openingCredit = hasSourceBalances
+                ? Number(node.openingCredit || 0)
+                : sumTreeSide(node, "openingCredit");
+            const closingDebit = hasSourceBalances
+                ? Number(node.closingDebit || 0)
+                : sumTreeSide(node, "closingDebit");
+            const closingCredit = hasSourceBalances
+                ? Number(node.closingCredit || 0)
+                : sumTreeSide(node, "closingCredit");
             const row = worksheet.addRow([
                 node.name || node.account || "",
                 amountValue(openingDebit),
@@ -3888,8 +3902,10 @@ export class ExcelService {
            TOTAL ROW
         ============================================================ */
 
-        const totalOpeningDebit = options.data.reduce((sum, item) => sum + Number(item.openingDebit || 0), 0);
-        const totalOpeningCredit = options.data.reduce((sum, item) => sum + Number(item.openingCredit || 0), 0);
+        const totalOpeningDebit = options.summary.totalOpeningDebit ??
+            options.data.reduce((sum, item) => sum + Number(item.openingDebit || 0), 0);
+        const totalOpeningCredit = options.summary.totalOpeningCredit ??
+            options.data.reduce((sum, item) => sum + Number(item.openingCredit || 0), 0);
         const totalRow = worksheet.addRow([
             "Grand Total",
             amountValue(totalOpeningDebit),
