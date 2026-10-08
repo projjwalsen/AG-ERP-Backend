@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { ExcelService } from "../../core/utils/export.service";
-import { outstandingAgingColumns, outstandingColumns, outstandingDetailColumns } from "../exports/branch.export";
 import { Srv1APARService } from "./ap-ar.service";
 
 type ReportType = "PAYABLE" | "RECEIVABLE";
@@ -20,53 +19,23 @@ export const getSrv1APARReport = async (
         }
 
         const exportType = String(req.query.export || "").toUpperCase();
-        const report = Srv1APARService.getSrv1APARReport(
-            type,
-            ["DETAILS", "AGING", "TRUE"].includes(exportType)
+        const report = await Srv1APARService.getSrv1APARReport(
+            type
         );
 
-        switch (exportType) {
-            case "DETAILS":
-                return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "AP Details" : "AR Details",
-                    sheetName: type === "PAYABLE" ? "AP Details" : "AR Details",
-                    title: type === "PAYABLE"
-                        ? "Accounts Payable Details Report"
-                        : "Accounts Receivable Details Report",
-                    columns: outstandingDetailColumns,
-                    companyName: "ASHTAVINAYAKA",
-                    showCompanyName: true,
-                    data: report.exportData
-                });
-            case "AGING":
-                return ExcelService.export(res, {
-                    filename: type === "PAYABLE" ? "AP Aging" : "AR Aging",
-                    sheetName: "Aging",
-                    title: type === "PAYABLE"
-                        ? "Accounts Payable Aging Report"
-                        : "Accounts Receivable Aging Report",
-                    columns: outstandingAgingColumns(type),
-                    companyName: "ASHTAVINAYAKA",
-                    showCompanyName: true,
-                    data: report.rows
-                });
-            case "TRUE":
-                return ExcelService.export(res, {
-                    filename: "AP AR Report",
-                    sheetName: "Outstanding",
-                    title: "AP / AR Report",
-                    columns: outstandingColumns,
-                    companyName: "ASHTAVINAYAKA",
-                    showCompanyName: true,
-                    data: report.rows
-                });
-            default:
-                return res.status(200).json({
-                    success: true,
-                    message: "SRV1 AP / AR report generated successfully",
-                    data: report
-                });
+        if (["DETAILS", "AGING", "TRUE"].includes(exportType)) {
+            return ExcelService.exportSrv1APARGroupReport(res, {
+                filename: type === "PAYABLE" ? "Debtor" : "Credtor",
+                sheetName: type === "PAYABLE" ? "Sundry Debtor" : "Sundry Creditor",
+                report
+            });
         }
+
+        return res.status(200).json({
+            success: true,
+            message: "SRV1 AP / AR report generated successfully",
+            data: report
+        });
     } catch (error) {
         next(error);
     }

@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import { ExcelService } from "../../core/utils/export.service";
-import { formatISTDateOnly } from "../../core/utils/loc.utils";
 import { Srv1TrialBalanceService } from "./trial-balance.service";
 
 export const getSrv1TrialBalanceReport = async (
@@ -13,19 +12,10 @@ export const getSrv1TrialBalanceReport = async (
         const isExport = String(req.query.export).toLowerCase() === "true";
 
         if (isExport) {
-            const period = `${report.period.startDate
-                ? formatISTDateOnly(report.period.startDate)
-                : "Beginning"} to ${formatISTDateOnly(report.period.endDate)}`;
-
-            return ExcelService.exportTrialBalance(res, {
+            return ExcelService.exportTrialBalanceSourceRows(res, {
                 filename: "trial-balance",
                 sheetName: "Trial Balance",
-                companyName: report.branch.name,
-                branchName: report.branch.name,
-                period,
-                data: report.rows,
-                tree: report.tree,
-                summary: report.summary
+                report
             });
         }
 

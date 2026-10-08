@@ -14,6 +14,8 @@ import { ProductMasterImportService } from "./productImport.service";
 import { AgencyImportService } from "./agencyImport.service";
 import { TdsAssetsReconciliationService } from "./tds-assets-reconciliation.service";
 import { AgencyLedgerReconciliationService } from "./agency-ledger-reconciliation.service";
+import { TrialBalanceLedgerVoucherService } from "./trial-balance-ledger-voucher.service";
+import { PaymentVoucherRepairService } from "./payment-voucher-repair.service";
 
 
 export const importWorkbook = async (
@@ -512,6 +514,199 @@ export const unlinkExtraAgencyLedgerVouchers = async (
                 ? "Extra agency credit postings checked; safe postings were unlinked."
                 : "Extra agency credit posting preview completed; no changes were applied.",
             data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const importTrialBalanceLedgerVouchers = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: "Excel file is required." });
+        const ledgerName = String(req.body.ledgerName || req.query.ledgerName || "").trim();
+        if (!ledgerName) return res.status(400).json({ success: false, message: "ledgerName is required." });
+        const rawAccept = req.body.accept ?? req.query.accept ?? "false";
+        const acceptValue = String(rawAccept).trim().toLowerCase();
+        if (!["true", "false"].includes(acceptValue)) return res.status(400).json({ success: false, message: "accept must be true or false." });
+        const branchId = String(req.body.branchId || req.query.branchId || "").trim() || undefined;
+        const offsetLedgerName = String(req.body.offsetLedgerName || req.query.offsetLedgerName || "").trim() || undefined;
+        const rawAllowUnlink = req.body.allowUnlink ?? req.query.allowUnlink ?? "false";
+        const allowUnlinkValue = String(rawAllowUnlink).trim().toLowerCase();
+        if (!["true", "false"].includes(allowUnlinkValue)) {
+            return res.status(400).json({ success: false, message: "allowUnlink must be true or false." });
+        }
+        if (acceptValue === "true" && allowUnlinkValue === "true") {
+            return res.status(400).json({
+                success: false,
+                message: "Run voucher creation and extra-posting unlinking as separate requests so each change can be reviewed independently."
+            });
+        }
+        const result = await TrialBalanceLedgerVoucherService.import(
+            (req as any).user, ledgerName, req.file.buffer, acceptValue === "true", branchId, offsetLedgerName,
+            allowUnlinkValue === "true"
+        );
+        return res.status(200).json({
+            success: true,
+            message: [
+                acceptValue === "true" ? "Missing dated PAYMENT, RECEIPT, and JOURNAL vouchers were imported." : "Missing vouchers were previewed.",
+                allowUnlinkValue === "true" ? "Safe extra postings were reassigned to their unique counter-ledgers." : "Extra postings were previewed; no unlinking was applied."
+            ].join(" "),
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const reconcilePaymentVoucherRegister = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    const rawEntry = req.body?.entry ?? req.query.entry ?? req.body?.enable ?? req.query.enable ?? "false";
+    const entryValue = String(rawEntry).trim().toLowerCase();
+    // Stream preview and entry runs by default. Clients can explicitly send
+    // stream=false to retain the single JSON response format.
+    const streamValue = String(req.body?.stream ?? req.query.stream ?? "true").trim().toLowerCase();
+    const streaming = streamValue === "true";
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: "Excel file is required." });
+        if (!["true", "false"].includes(entryValue)) {
+            return res.status(400).json({ success: false, message: "entry must be true or false." });
+        }
+        if (!["true", "false"].includes(streamValue)) {
+            return res.status(400).json({ success: false, message: "stream must be true or false." });
+        }
+        const branchId = String(req.body.branchId || req.query.branchId || "").trim() || undefined;
+        if (streaming) {
+            res.status(200);
+            res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache, no-transform");
+            res.setHeader("X-Accel-Buffering", "no");
+            res.flushHeaders();
+            res.write(`${JSON.stringify({ event: "started", data: { branchId, entry: entryValue === "true" } })}\n`);
+            (res as any).flush?.();
+        }
+        const result = await PaymentVoucherRepairService.reconcile(
+            (req as any).user,
+            req.file.buffer,
+            entryValue === "true",
+            branchId,
+            streaming
+                ? voucher => {
+                    res.write(`${JSON.stringify({ event: "voucher", data: voucher })}\n`);
+                    (res as any).flush?.();
+                }
+                : undefined,
+            streaming
+                ? progress => {
+                    res.write(`${JSON.stringify({ event: "progress", data: progress })}\n`);
+                    (res as any).flush?.();
+                }
+                : undefined
+        );
+        if (streaming) {
+            res.write(`${JSON.stringify({
+                event: "complete",
+                data: {
+                    branchId: result.branchId,
+                    entry: result.entry,
+                    voucherType: result.voucherType,
+                    workbookVouchers: result.workbookVouchers,
+                    created: result.created,
+                    summary: result.summary
+                }
+            })}\n`);
+            return res.end();
+        }
+        return res.status(200).json({
+            success: true,
+            message: entryValue === "true"
+                ? "Missing Payment vouchers were created as they were validated. Existing subgroup discrepancies are included in the report."
+                : "Payment voucher reconciliation preview completed; no changes were applied.",
+            // Keep the full per-voucher report directly visible in the HTTP
+            // response as well as under `data` for existing clients.
+            summary: result.summary,
+            vouchers: result.vouchers,
+            data: result
+        });
+    } catch (error) {
+        if (streaming && res.headersSent) {
+            const message = error instanceof Error ? error.message : "Payment voucher stream failed";
+            res.write(`${JSON.stringify({ event: "error", data: { message } })}\n`);
+            return res.end();
+        }
+        next(error);
+    }
+};
+
+export const listPaymentVoucherSubgroupIssues = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Excel file is required." });
+        }
+        const mismatchStatuses = [
+            "ledgerPathNotFound",
+            "postingMissing",
+            "ledgerPathAmbiguous",
+            "wrongSubGroup"
+        ] as const;
+        const rawStatuses = req.body.status ?? req.query.status;
+        const requestedStatuses = rawStatuses === undefined
+            ? [...mismatchStatuses]
+            : (Array.isArray(rawStatuses) ? rawStatuses : [rawStatuses])
+                .flatMap(value => String(value).split(","))
+                .map(value => value.trim())
+                .filter(Boolean);
+        const invalidStatuses = requestedStatuses.filter(status =>
+            !mismatchStatuses.includes(status as typeof mismatchStatuses[number])
+        );
+        if (invalidStatuses.length) {
+            return res.status(400).json({
+                success: false,
+                message: `Unsupported status filter: ${invalidStatuses.join(", ")}`,
+                allowedStatuses: mismatchStatuses
+            });
+        }
+        const selectedStatuses = new Set(requestedStatuses);
+        const branchId = String(req.body.branchId || req.query.branchId || "").trim() || undefined;
+        const result = await PaymentVoucherRepairService.reconcile(
+            (req as any).user,
+            req.file.buffer,
+            false,
+            branchId
+        );
+        const vouchers = result.vouchers
+            .filter(voucher => voucher.reconciliationStatus === "existsWithSubGroupIssues")
+            .map(voucher => ({
+                ...voucher,
+                rows: (voucher.rows as Array<Record<string, unknown>>).filter(row =>
+                    selectedStatuses.has(String(row.status))
+                )
+            }))
+            .filter(voucher => voucher.rows.length > 0);
+        const statusCounts = Object.fromEntries(mismatchStatuses.map(status => [
+            status,
+            vouchers.reduce((count, voucher) => count + voucher.rows.filter(row => row.status === status).length, 0)
+        ]));
+        return res.status(200).json({
+            success: true,
+            message: "Payment voucher subgroup mismatch rows retrieved. Correct rows were excluded; no entries were changed.",
+            branchId: result.branchId,
+            voucherType: result.voucherType,
+            workbookVouchers: result.workbookVouchers,
+            filteredStatuses: [...selectedStatuses],
+            issueVoucherCount: vouchers.length,
+            mismatchRowCounts: statusCounts,
+            vouchers
         });
     } catch (error) {
         next(error);
