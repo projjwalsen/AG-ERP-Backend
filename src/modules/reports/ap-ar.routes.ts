@@ -12,16 +12,17 @@ router.use(authMiddleware);
  *   get:
  *     summary: SRV1 Accounts Payable / Receivable Report
  *     description: |
- *       Returns a Tally pending-bills report using the SRV1 AP or AR export.
- *       Select `PAYABLE` to read `APAR/AP.json` or
- *       `RECEIVABLE` to read `APAR/AR.json`.
+ *       Returns the Tally Sundry Creditors or Sundry Debtors ledger summary.
+ *       Select `PAYABLE` to read `APAR/crs31.03.2026.json` or
+ *       `RECEIVABLE` to read `APAR/drs31.03.2026.json`.
  *
- *       The source provides pending amount, bill reference, party, bill date,
- *       due date, and overdue days. It does not include original invoice,
- *       paid, GST, or TDS totals; the response diagnostics identify this limit.
+ *       The response includes each ledger's opening balance, transaction debit
+ *       and credit, closing balance, and Grand Total. It also includes
+ *       `agingRows`, which groups pending bills by party and reports the
+ *       summed outstanding amount and oldest overdue age in days.
  *
- *       Use `export=DETAILS`, `export=AGING`, or `export=TRUE` to download
- *       the corresponding Excel layout used by the live outstanding report.
+ *       Use `export=DETAILS`, `export=AGING`, or `export=TRUE` to download the
+ *       party-level outstanding and aging report as an Excel workbook.
  *     tags:
  *       - Reports
  *     security:
@@ -33,14 +34,14 @@ router.use(authMiddleware);
  *         schema:
  *           type: string
  *           enum: [PAYABLE, RECEIVABLE]
- *         description: Select the AP or AR JSON source.
+ *         description: PAYABLE uses Sundry Creditors; RECEIVABLE uses Sundry Debtors.
  *       - in: query
  *         name: export
  *         required: false
  *         schema:
  *           type: string
  *           enum: [DETAILS, AGING, TRUE]
- *         description: Omit for JSON. DETAILS, AGING, or TRUE downloads the matching Excel report.
+ *         description: Omit for JSON. Any listed value downloads the source-based ledger report.
  *     responses:
  *       200:
  *         description: Report returned as JSON or as an Excel workbook.
@@ -57,7 +58,7 @@ router.use(authMiddleware);
  *                   example: SRV1 AP / AR report generated successfully
  *                 data:
  *                   type: object
- *                   description: Outstanding report with summary, agency rows, aging buckets, source diagnostics, and invoice details.
+ *                   description: Ledger rows with opening, transaction, closing, and source Grand Total balances.
  *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
  *             schema:
  *               type: string

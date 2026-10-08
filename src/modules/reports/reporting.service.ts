@@ -2078,6 +2078,73 @@ export class ReportingService {
                 duplicateDisplayGroupById.set(group.id, parent.id);
             }
         }
+
+        const displayGroupId = (id: string) => {
+            let current = id;
+            const seen = new Set<string>();
+            while (duplicateDisplayGroupById.has(current) && !seen.has(current)) {
+                seen.add(current);
+                current = duplicateDisplayGroupById.get(current)!;
+            }
+            return current;
+        };
+
+        // Imported Tally loan groups can contain a second copy of the same
+        // group (for example Loans (Liability) > Secured Loans > Secured
+        // Loans). Some of those copies also repeat their child groups under
+        // the duplicate parent. Flatten those repeated headings in this
+        // report while retaining every ledger row and its balance.
+        const normalizeDisplayGroupName = (name: string) =>
+            String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+        const groupDepth = (group: LedgerGroupReportRow) => {
+            let depth = 0;
+            let current: LedgerGroupReportRow | undefined = group;
+            const seen = new Set<string>();
+            while (current?.parentId && !seen.has(current.id)) {
+                seen.add(current.id);
+                depth += 1;
+                current = groupById.get(current.parentId);
+            }
+            return depth;
+        };
+        const isUnderImportedLoansLiability = (group: LedgerGroupReportRow) => {
+            let current: LedgerGroupReportRow | undefined = group;
+            const seen = new Set<string>();
+            while (current && !seen.has(current.id)) {
+                if (
+                    current.code.startsWith("JRNIMP-") &&
+                    normalizeDisplayGroupName(current.name) === "loans (liability)"
+                ) return true;
+                seen.add(current.id);
+                current = current.parentId ? groupById.get(current.parentId) : undefined;
+            }
+            return false;
+        };
+
+        const importedLoanGroups = ledgerGroups
+            .filter(isUnderImportedLoansLiability)
+            .sort((a, b) => groupDepth(a) - groupDepth(b) || a.id.localeCompare(b.id));
+        const displayedLoanSiblings = new Map<string, string>();
+        for (const group of importedLoanGroups) {
+            const parent = group.parentId ? groupById.get(group.parentId) : undefined;
+            if (!parent) continue;
+
+            const canonicalParentId = displayGroupId(parent.id);
+            const groupName = normalizeDisplayGroupName(group.name);
+            if (groupName === normalizeDisplayGroupName(parent.name)) {
+                duplicateDisplayGroupById.set(group.id, canonicalParentId);
+                continue;
+            }
+
+            const siblingKey = `${canonicalParentId}|${groupName}`;
+            const canonicalSiblingId = displayedLoanSiblings.get(siblingKey);
+            if (canonicalSiblingId) {
+                duplicateDisplayGroupById.set(group.id, canonicalSiblingId);
+            } else {
+                displayedLoanSiblings.set(siblingKey, displayGroupId(group.id));
+            }
+        }
+
         // Journal-register imports produced duplicate Bank Accounts headings.
         // Map those headings to the canonical Current Assets / Bank Accounts
         // group so Tally's single hierarchy is represented in the report.
@@ -2110,16 +2177,6 @@ export class ReportingService {
                 }
             }
         }
-        const displayGroupId = (id: string) => {
-            let current = id;
-            const seen = new Set<string>();
-            while (duplicateDisplayGroupById.has(current) && !seen.has(current)) {
-                seen.add(current);
-                current = duplicateDisplayGroupById.get(current)!;
-            }
-            return current;
-        };
-
         // Sundry Creditors remains a collapsed control head. Sundry Debtors
         // stays expanded so the Tally-listed agency ledgers are leaf rows.
         const collapsedGroupIds = new Set<string>();

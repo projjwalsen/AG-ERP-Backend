@@ -3609,6 +3609,18 @@ export class LedgerService {
         // ledger, while a statement opened from a parent/subheader must show
         // the entries from all of its descendant heads as well.
         const statementLedgerIds = new Set<string>([selectedLedgerId]);
+        // Legacy imports may have created same-name ledger records under
+        // different paths. A statement opened from either record should show
+        // the combined postings for that logical account.
+        const sameNameLedgers = await prisma.ledger.findMany({
+            where: {
+                name: { equals: ledger.name, mode: "insensitive" },
+                isActive: true,
+                ...(ledger.branchId ? { branchId: ledger.branchId } : { branchId: null })
+            },
+            select: { id: true }
+        });
+        for (const sameNameLedger of sameNameLedgers) statementLedgerIds.add(sameNameLedger.id);
         const statementJournalHeadIds = new Set<string>();
         let journalHeadIds = (
             await prisma.journalHead.findMany({
@@ -3688,8 +3700,35 @@ export class LedgerService {
         const statementLedgerIdList = [...statementLedgerIds];
         const statementJournalHeadIdList = [...statementJournalHeadIds];
 
+        // Opening voucher rows whose narration explicitly names another
+        // ledger are duplicated/misassigned opening balances from legacy
+        // imports. Keep them out of this logical account's statement; the
+        // correctly linked opening voucher remains on the named ledger.
+        const openingEntries = await prisma.ledgerEntry.findMany({
+            where: {
+                ledgerId: { in: statementLedgerIdList },
+                voucher: { voucherType: VoucherType.OPENING_BALANCE }
+            },
+            select: { id: true, voucherId: true, narration: true }
+        });
+        const normalizeOpeningAccount = (value: string) => value
+            .replace(/^opening balance\s*:\s*/i, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLocaleLowerCase();
+        const misassignedOpeningEntryIds = openingEntries
+            .filter(entry => Boolean(entry.narration?.match(/^opening balance\s*:/i)) &&
+                normalizeOpeningAccount(entry.narration || "") !== ledger.name.replace(/\s+/g, " ").trim().toLocaleLowerCase())
+            .map(entry => entry.id);
+        const misassignedOpeningVoucherIds = [...new Set(
+            openingEntries
+                .filter(entry => misassignedOpeningEntryIds.includes(entry.id))
+                .map(entry => entry.voucherId)
+        )];
+
         const periodWhere: Prisma.LedgerEntryWhereInput = {
             ledgerId: { in: statementLedgerIdList },
+            ...(misassignedOpeningEntryIds.length ? { id: { notIn: misassignedOpeningEntryIds } } : {}),
             ...(startDate || endDate
                 ? {
                     voucher: {
@@ -3704,6 +3743,7 @@ export class LedgerService {
 
         const priorWhere: Prisma.LedgerEntryWhereInput = {
             ledgerId: { in: statementLedgerIdList },
+            ...(misassignedOpeningEntryIds.length ? { id: { notIn: misassignedOpeningEntryIds } } : {}),
             ...(startDate
                 ? {
                     voucher: {
@@ -3804,7 +3844,7 @@ export class LedgerService {
             ...(ledger.branchId ? { branchId: ledger.branchId } : {})
         };
 
-        const ledgerJournals = await prisma.journal.findMany({
+        const ledgerJournals = (await prisma.journal.findMany({
             where: {
                 ...journalCommonWhere,
                 ...(startDate || endDate ? { journalDate: {
@@ -3814,13 +3854,13 @@ export class LedgerService {
             },
             include: { branch: true, journalHead: true },
             orderBy: { journalDate: "asc" }
-        });
+        })).filter(journal => !misassignedOpeningVoucherIds.includes(journal.voucherId || ""));
 
         const priorJournals = startDate
-            ? await prisma.journal.findMany({
+            ? (await prisma.journal.findMany({
                 where: { ...journalCommonWhere, journalDate: { lt: startDate } },
                 include: { journalHead: true }
-            })
+            })).filter(journal => !misassignedOpeningVoucherIds.includes(journal.voucherId || ""))
             : [];
 
         const periodVoucherIds = new Set(
@@ -3841,6 +3881,71 @@ export class LedgerService {
                 ).map((entry) => entry.voucherId)
             )
             : new Set<string>();
+
+        // Imported inward notes can be classified to this ledger by their
+        // categoryPath while their accounting voucher remains on suspense
+        // and adjustment ledgers. Surface the classified note as a virtual
+        // statement row without moving or duplicating its actual postings.
+        const categorizedInwardNotes = await prisma.debitCreditNote.findMany({
+            where: {
+                ...(ledger.branchId ? { branchId: ledger.branchId } : {}),
+                sourceType: DebitCreditNoteSourceType.PURCHASE,
+                status: DebitCreditNoteStatus.APPROVED,
+                purchaseId: null,
+                categoryPath: { not: null },
+                OR: [
+                    { noteNo: { startsWith: "PDN/" } },
+                    { noteNo: { startsWith: "PCN/" } }
+                ]
+            },
+            include: {
+                particulars: true,
+                voucher: { select: { entries: { select: { ledgerId: true } } } }
+            },
+            orderBy: { noteDate: "asc" }
+        });
+        const normalizeStatementPath = (value: string) => value
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLocaleLowerCase();
+        const statementNotes = categorizedInwardNotes.filter(note => {
+            const pathParts = String(note.categoryPath || "")
+                .replace(/\\/g, "/")
+                .split(/[/>]/)
+                .map(normalizeStatementPath)
+                .filter(Boolean);
+            if (pathParts[pathParts.length - 1] !== normalizeStatementPath(ledger.name)) return false;
+            if (note.voucherId && (periodVoucherIds.has(note.voucherId) || priorVoucherIds.has(note.voucherId))) return false;
+            return !note.voucher?.entries.some(entry => statementLedgerIds.has(entry.ledgerId));
+        });
+        const siblingNotes = statementNotes.length
+            ? await prisma.debitCreditNote.findMany({
+                where: {
+                    ...(ledger.branchId ? { branchId: ledger.branchId } : {}),
+                    noteNo: { in: statementNotes.map(note => note.noteNo) },
+                    status: DebitCreditNoteStatus.APPROVED,
+                    categoryPath: { not: null }
+                },
+                select: { noteNo: true, categoryPath: true }
+            })
+            : [];
+        const statementNoteSide = (note: typeof statementNotes[number]) =>
+            note.accountingEntryType ||
+            note.particulars.find(particular => particular.entryType)?.entryType ||
+            (note.type === DebitCreditNoteType.CREDIT_NOTE ? EntryType.DEBIT : EntryType.CREDIT);
+        const statementNoteParticulars = (note: typeof statementNotes[number]) => {
+            const notePath = normalizeStatementPath(note.categoryPath || "");
+            const sibling = siblingNotes.find(item =>
+                item.noteNo === note.noteNo && normalizeStatementPath(item.categoryPath || "") !== notePath
+            );
+            const parts = String(sibling?.categoryPath || "")
+                .replace(/\\/g, "/")
+                .split(/[/>]/)
+                .map(part => part.trim())
+                .filter(Boolean);
+            return parts[parts.length - 1] || note.narration || note.particulars[0]?.description || "Inward debit note";
+        };
 
         // Journals linked to a voucher are normally represented by its
         // LedgerEntry. Keep only journals that are not already represented,
@@ -3926,6 +4031,18 @@ export class LedgerService {
                     x => x.entryType === EntryType.CREDIT
                 )?._sum?.amount || 0
             );
+
+        for (const note of statementNotes) {
+            const amount = money(note.totalAmount);
+            const side = statementNoteSide(note);
+            if (startDate && note.noteDate < startDate) {
+                if (side === EntryType.DEBIT) priorDebit += amount;
+                else priorCredit += amount;
+            } else if (note.noteDate <= endDate) {
+                if (side === EntryType.DEBIT) periodDebit += amount;
+                else periodCredit += amount;
+            }
+        }
 
         for (const journal of openingJournals) {
             if (getJournalDirection(journal) === JournalDirection.INWARD) priorDebit += money(journal.amount);
@@ -4160,6 +4277,52 @@ export class LedgerService {
             };
         }));
 
+        const periodStatementNotes = statementNotes.filter(note =>
+            (!startDate || note.noteDate >= startDate) && note.noteDate <= endDate
+        );
+        statementRows.push(...periodStatementNotes.map(note => {
+            const amount = money(note.totalAmount);
+            const side = statementNoteSide(note);
+            return {
+                id: note.id,
+                date: note.noteDate,
+                voucherId: note.voucherId,
+                voucherNo: note.noteNo,
+                voucherType: VoucherType.DEBIT_NOTE,
+                narration: statementNoteParticulars(note),
+                debit: side === EntryType.DEBIT ? amount : 0,
+                credit: side === EntryType.CREDIT ? amount : 0,
+                runningBalance: 0,
+                balanceType: "DR",
+                branch: ledger.branch ? { id: ledger.branch.id, name: ledger.branch.name, code: ledger.branch.code } : null,
+                sourceDocument: {
+                    sourceId: note.id,
+                    voucherType: VoucherType.DEBIT_NOTE,
+                    voucherNo: note.noteNo
+                }
+            };
+        }));
+
+        // Ledger entries, journal rows, and category-path notes come from
+        // separate stores. Keep the statement chronologically correct and
+        // recalculate balances after combining them.
+        statementRows.sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+        runningBalance = periodOpening;
+        for (const row of statementRows) {
+            if (row.type === "OPENING") {
+                row.runningBalance = Math.abs(periodOpening);
+                row.balanceType = resolveBalanceType(periodOpening, ledger.nature);
+                continue;
+            }
+            const debit = money(row.debit || 0);
+            const credit = money(row.credit || 0);
+            runningBalance = ledger.nature === LedgerNature.DEBIT
+                ? money(runningBalance + debit - credit)
+                : money(runningBalance + credit - debit);
+            row.runningBalance = Math.abs(runningBalance);
+            row.balanceType = resolveBalanceType(runningBalance, ledger.nature);
+        }
+
         const periodClosing =
             runningBalance;
 
@@ -4233,7 +4396,7 @@ export class LedgerService {
             entries: statementRows,
 
             meta: {
-                total,
+                total: total + periodStatementNotes.length,
                 page,
                 limit,
 
