@@ -20,11 +20,22 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction
 ) => {
-  const statusCode = err instanceof ApiError ? err.statusCode : 500;
+  const prismaCode =
+    "code" in err && typeof err.code === "string" ? err.code : undefined;
+  const databaseUnavailable = ["P1001", "P1002", "P2024"].includes(
+    prismaCode ?? ""
+  );
+  const statusCode = err instanceof ApiError
+    ? err.statusCode
+    : databaseUnavailable
+      ? 503
+      : 500;
 
   const message =
     process.env.NODE_ENV === "production" && statusCode >= 500
-      ? "Internal Server Error"
+      ? databaseUnavailable
+        ? "Database is temporarily unavailable"
+        : "Internal Server Error"
       : err.message || "Internal Server Error";
 
   if (statusCode >= 500) {

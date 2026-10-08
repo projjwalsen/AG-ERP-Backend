@@ -76,6 +76,21 @@ export class ImportResolver {
         if (!branch) throw new ApiError("No active branch found", 400);
 
         return prisma.$transaction(async tx => {
+            if (dto.voucherNo?.trim()) {
+                const existingByVoucherNo = await tx.journal.findFirst({
+                    where: {
+                        voucherNo: {
+                            equals: dto.voucherNo.trim(),
+                            mode: "insensitive"
+                        }
+                    },
+                    select: { id: true }
+                });
+                if (existingByVoucherNo) {
+                    throw new ApiError("SKIP_ALREADY_IMPORTED", 409);
+                }
+            }
+
             const existing = await tx.journal.findFirst({ where: { branchId: branch.id, serialNo: dto.sourceSerialNo } });
             if (existing) {
                 const direction = debit > 0
@@ -301,6 +316,21 @@ export class ImportResolver {
 
         const paymentThrough = this.paymentThroughFromRow(dto.particulars, dto.raw);
         return prisma.$transaction(async tx => {
+            if (dto.voucherNo?.trim()) {
+                const existingByVoucherNo = await tx.journal.findFirst({
+                    where: {
+                        voucherNo: {
+                            equals: dto.voucherNo.trim(),
+                            mode: "insensitive"
+                        }
+                    },
+                    select: { id: true }
+                });
+                if (existingByVoucherNo) {
+                    throw new ApiError("SKIP_ALREADY_IMPORTED", 409);
+                }
+            }
+
             const voucherType = isReceipt
                 ? VoucherType.RECEIPT
                 : VoucherType.PAYMENT;
@@ -3139,6 +3169,21 @@ export class ImportResolver {
                 409
             );
 
+        }
+
+        if (dto.voucherNo?.trim()) {
+            const existingByVoucherNo = await prisma.journal.findFirst({
+                where: {
+                    voucherNo: {
+                        equals: dto.voucherNo.trim(),
+                        mode: "insensitive"
+                    }
+                },
+                select: { id: true }
+            });
+            if (existingByVoucherNo) {
+                throw new ApiError("SKIP_ALREADY_IMPORTED", 409);
+            }
         }
 
         const journalHead =

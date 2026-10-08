@@ -658,6 +658,31 @@ export class ReportingService {
          * ============================================================
          */
 
+        const [activeCategoryNames, journalHierarchy] = await Promise.all([
+            prisma.journalCategory.findMany({
+                where: { isActive: true },
+                select: { name: true }
+            }),
+            prisma.journalHead.findMany({
+                where: { isActive: true },
+                select: {
+                    name: true,
+                    ledgerId: true,
+                    categories: {
+                        where: { isActive: true },
+                        select: { id: true, name: true }
+                    },
+                    children: {
+                        where: { isActive: true },
+                        select: { id: true }
+                    }
+                }
+            })
+        ]);
+        const activeCategoryNameList = activeCategoryNames
+            .map(category => category.name.trim())
+            .filter(Boolean);
+
         const ledgerWhere:
             Prisma.LedgerWhereInput = {
 
@@ -684,6 +709,15 @@ export class ReportingService {
                         }
                     }
                 }
+                , ...(activeCategoryNameList.length > 0
+                    ? [{
+                        // A category ledger can legitimately have no current
+                        // LedgerEntry (for example an opening-only account),
+                        // but it must still be available to the report while
+                        // the category is active.
+                        name: { in: activeCategoryNameList, mode: "insensitive" }
+                    } as Prisma.LedgerWhereInput]
+                    : [])
                 , ...(branchId === TALLY_BANK_ACCOUNT_BRANCH_ID
                     ? [{
                         // Include the Tally-listed accounts even when their
@@ -716,6 +750,21 @@ export class ReportingService {
 
                 include: {
                     group: true,
+
+                    journalHeads: {
+                        select: {
+                            id: true,
+                            isActive: true,
+                            categories: {
+                                where: { isActive: true },
+                                select: { id: true }
+                            },
+                            children: {
+                                where: { isActive: true },
+                                select: { id: true }
+                            }
+                        }
+                    },
 
                     branch: {
                         select: {
@@ -756,6 +805,39 @@ export class ReportingService {
             })
         ]) as [any[], LedgerGroupReportRow[]];
 
+        const normalizedName = (value: unknown) => String(value || "")
+            .replace(/_/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+        const activeCategoryNameSet = new Set(
+            activeCategoryNames.map(category => normalizedName(category.name))
+        );
+
+        // A head ledger is a wrapper when its active head owns categories or
+        // active child heads. Rendering that ledger as a leaf duplicates the
+        // same balance below it (for example Building -> Building/Bunglow).
+        // Category ledgers whose old head is inactive are intentionally not
+        // treated as wrappers, so repaired categories such as Factory Assets
+        // remain visible.
+        const wrapperLedgerIds = new Set(
+            journalHierarchy
+                .filter(head => {
+                    const headName = normalizedName(head.name);
+                    const hasSameNameCategory = activeCategoryNameSet.has(headName) ||
+                        head.categories.some(category => normalizedName(category.name) === headName);
+
+                    // A same-name category is a real leaf ledger, not a
+                    // wrapper. Hide only parent/container ledgers whose name
+                    // has no matching active category, such as a stale
+                    // Building wrapper.
+                    return !hasSameNameCategory &&
+                        (head.categories.length > 0 || head.children.length > 0);
+                })
+                .map(head => head.ledgerId)
+        );
+        const reportLedgers = ledgers.filter(ledger => !wrapperLedgerIds.has(ledger.id));
+
         const aggregateWindows = async (
             window: "period" | "prior",
             purchaseAccountsOnly = false
@@ -765,7 +847,7 @@ export class ReportingService {
                 ledgerIds: string[];
             }>();
 
-            for (const ledger of ledgers) {
+            for (const ledger of reportLedgers) {
                 const mayUseOpening =
                     (!branchId || ledger.branchId === branchId) &&
                     ledger.category !== LedgerType.BANK &&
@@ -895,21 +977,35 @@ export class ReportingService {
                             journalDate: voucherDate
                         },
                         select: {
+                            branchId: true,
                             amount: true,
                             direction: true,
+                            category: { select: { name: true } },
                             journalHead: { select: { ledgerId: true, type: true } }
                         }
                     });
 
-                    groups.push(...directJournals.map(journal => ({
-                        ledgerId: journal.journalHead.ledgerId,
-                        entryType: (
-                            (journal.direction || journal.journalHead.type) === JournalDirection.INWARD
-                                ? EntryType.DEBIT
-                                : EntryType.CREDIT
-                        ),
-                        _sum: { amount: journal.amount }
-                    })));
+                    groups.push(...directJournals.map(journal => {
+                        const categoryLedger = journal.category?.name
+                            ? reportLedgers.find(ledger =>
+                                normalizedName(ledger.name) === normalizedName(journal.category!.name) &&
+                                (ledger.branchId === (branchId || journal.branchId) || ledger.branchId === null)
+                            )
+                            : undefined;
+
+                        return {
+                            // Categorized legacy journals belong to the
+                            // category ledger. Use the head ledger only when
+                            // no category ledger can be resolved.
+                            ledgerId: categoryLedger?.id || journal.journalHead.ledgerId,
+                            entryType: (
+                                (journal.direction || journal.journalHead.type) === JournalDirection.INWARD
+                                    ? EntryType.DEBIT
+                                    : EntryType.CREDIT
+                            ),
+                            _sum: { amount: journal.amount }
+                        };
+                    }));
                 }
             }
 
@@ -973,12 +1069,6 @@ export class ReportingService {
             }
         });
 
-        const normalizedName = (value: unknown) => String(value || "")
-            .replace(/_/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .toUpperCase();
-
         const categoryLeaf = (value: string | null) => {
             const parts = String(value || "")
                 .replace(/\\/g, "/")
@@ -1004,11 +1094,20 @@ export class ReportingService {
             }
             processedCategoryNotes.add(noteKey);
             const targetName = categoryLeaf(note.categoryPath);
-            const targetLedger = ledgers.find(ledger =>
-                ledger.branchId === (branchId || note.branchId) &&
+            const targetBranchId = branchId || note.branchId;
+            const targetLedgerCandidates = reportLedgers.filter(ledger =>
                 normalizedName(ledger.name) === normalizedName(targetName) &&
-                [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
+                [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category) &&
+                // Imported category ledgers may be shared across branches
+                // (branchId = null), while their voucher entries carry the
+                // actual branch. Prefer an exact branch ledger, but allow a
+                // shared ledger as the fallback so categorized debit notes
+                // are not silently left on the generic adjustment ledger.
+                (ledger.branchId === targetBranchId || ledger.branchId === null)
             );
+            const targetLedger = targetLedgerCandidates.find(ledger =>
+                ledger.branchId === targetBranchId
+            ) || targetLedgerCandidates.find(ledger => ledger.branchId === null);
             if (!targetLedger) continue;
 
             // The same imported note may already have a journal-register
@@ -1072,7 +1171,7 @@ export class ReportingService {
                     // can be used when the ledger has no stored opening.
                     ...(branchEntryFilter ? [branchEntryFilter] : []),
                     {
-                        ledgerId: { in: ledgers.map(ledger => ledger.id) },
+                        ledgerId: { in: reportLedgers.map(ledger => ledger.id) },
                         ledger: { category: { notIn: [LedgerType.BANK, LedgerType.CASH] } },
                         voucher: {
                             voucherType: VoucherType.OPENING_BALANCE,
@@ -1086,9 +1185,36 @@ export class ReportingService {
                 voucherId: true,
                 entryType: true,
                 amount: true,
-                voucher: { select: { voucherDate: true } }
+                voucher: { select: { voucherDate: true, narration: true } }
             }
         });
+
+        // Some older opening imports posted a leaf amount to the parent
+        // ledger, while keeping the complete hierarchy in the voucher
+        // narration. Resolve that posting to the leaf named at the end of
+        // the imported path so parent and child rows do not share openings.
+        const openingLedgerId = (entry: typeof openingEntries[number]) => {
+            const narration = String(entry.voucher.narration || "");
+            const path = narration.match(/Opening balance import:\s*(.*?)\s*\|/i)?.[1];
+            if (!path) return entry.ledgerId;
+
+            const leafName = path
+                .split(/[>/]/)
+                .map(part => part.trim())
+                .filter(Boolean)
+                .pop();
+            if (!leafName) return entry.ledgerId;
+
+            const target = reportLedgers.find(ledger =>
+                normalizedName(ledger.name) === normalizedName(leafName) &&
+                ledger.branchId === (branchId || ledger.branchId)
+            ) || reportLedgers.find(ledger =>
+                normalizedName(ledger.name) === normalizedName(leafName) &&
+                ledger.branchId === null
+            );
+
+            return target?.id || entry.ledgerId;
+        };
 
         // Some imports create two opening vouchers for the same ledger with
         // the same date, direction, and amount. Treat those identical postings
@@ -1101,10 +1227,11 @@ export class ReportingService {
             voucherDate: Date;
         }>();
         for (const entry of openingEntries) {
-            const key = `${entry.voucherId}|${entry.ledgerId}|${entry.entryType}`;
+            const targetLedgerId = openingLedgerId(entry);
+            const key = `${entry.voucherId}|${targetLedgerId}|${entry.entryType}`;
             const current = openingByVoucher.get(key);
             openingByVoucher.set(key, {
-                ledgerId: entry.ledgerId,
+                ledgerId: targetLedgerId,
                 voucherId: entry.voucherId,
                 entryType: entry.entryType,
                 amount: (current?.amount || 0) + Number(entry.amount || 0),
@@ -1153,7 +1280,7 @@ export class ReportingService {
             .toUpperCase();
         const canonicalPartyOpenings = new Map<string, boolean>();
 
-        for (const ledger of ledgers) {
+        for (const ledger of reportLedgers) {
             if (ledger.category !== LedgerType.CUSTOMER &&
                 ledger.category !== LedgerType.VENDOR) continue;
 
@@ -1170,7 +1297,7 @@ export class ReportingService {
         }
 
         const duplicateLegacyOpeningLedgerIds = new Set<string>();
-        for (const ledger of ledgers) {
+        for (const ledger of reportLedgers) {
             if (ledger.category !== LedgerType.JOURNAL) continue;
 
             const base = partyBaseName(ledger.name);
@@ -1202,7 +1329,7 @@ export class ReportingService {
          */
 
         const rawLedgerRows =
-            ledgers
+            reportLedgers
             .map(ledger => {
 
                 /**
@@ -2336,6 +2463,9 @@ export class ReportingService {
                 rowType: "accountingHeader",
                 parentId: group.parentId ? `group:${displayGroupId(group.parentId)}` : null,
                 level: 0,
+                openingDebit: 0,
+                openingCredit: 0,
+                openingBalance: 0,
                 periodDebit: 0,
                 periodCredit: 0,
                 closingDebit: 0,
@@ -2351,6 +2481,9 @@ export class ReportingService {
 
             groupNode.periodDebit = summary.periodDebit;
             groupNode.periodCredit = summary.periodCredit;
+            groupNode.openingDebit = summary.openingDebit;
+            groupNode.openingCredit = summary.openingCredit;
+            groupNode.openingBalance = Number((summary.openingDebit - summary.openingCredit).toFixed(2));
             groupNode.closingDebit = summary.closingDebit;
             groupNode.closingCredit = summary.closingCredit;
             groupNode.closingSigned = summary.closingSigned;
@@ -2396,6 +2529,8 @@ export class ReportingService {
                 if (child.rowType === "accountingHeader") finalizeNode(child, level + 1);
                 node.periodDebit += Number(child.periodDebit || 0);
                 node.periodCredit += Number(child.periodCredit || 0);
+                node.openingDebit += Number(child.openingDebit || 0);
+                node.openingCredit += Number(child.openingCredit || 0);
                 node.closingDebit += Number(child.closingDebit || 0);
                 node.closingCredit += Number(child.closingCredit || 0);
                 node.closingSigned += Number(child.closingSigned || 0);
@@ -2403,6 +2538,9 @@ export class ReportingService {
 
             node.periodDebit = Number(node.periodDebit.toFixed(2));
             node.periodCredit = Number(node.periodCredit.toFixed(2));
+            node.openingDebit = Number(node.openingDebit.toFixed(2));
+            node.openingCredit = Number(node.openingCredit.toFixed(2));
+            node.openingBalance = Number((node.openingDebit - node.openingCredit).toFixed(2));
             node.closingDebit = Number(node.closingDebit.toFixed(2));
             node.closingCredit = Number(node.closingCredit.toFixed(2));
             node.closingSigned = Number(node.closingSigned.toFixed(2));

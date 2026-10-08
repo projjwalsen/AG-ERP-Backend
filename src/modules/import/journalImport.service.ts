@@ -158,6 +158,8 @@ export class JournalImportService {
 
             success: 0,
 
+            skipped: 0,
+
             failed: 0,
 
             percentage: 0,
@@ -195,6 +197,15 @@ export class JournalImportService {
 
                         const isInwardNote = ImportResolver.isInwardDebitCreditNoteImportRow(dto);
 
+                        const isJournalImportRow =
+                            (
+                                type === "JOURNAL" ||
+                                type === "BOTH" ||
+                                (type === "TRANSACTION" && (isDebitCreditNote || isExplicitJournalVoucher))
+                            ) &&
+                            !isInvoiceTransaction &&
+                            !isCancelled;
+
                         // -----------------------------
                         // Journal Import
                         // -----------------------------
@@ -213,17 +224,7 @@ export class JournalImportService {
                                 dto,
                                 { resolvePath: true }
                             );
-                        } else if (
-                            (
-                            (
-                                type === "JOURNAL" ||
-                                type === "BOTH" ||
-                            (type === "TRANSACTION" && (isDebitCreditNote || isExplicitJournalVoucher))
-                            ) &&
-                            !isInvoiceTransaction &&
-                            !isCancelled
-                            )
-                        ) {
+                        } else if (isJournalImportRow) {
                             if (ImportResolver.isJournalRegisterRow(dto)) {
                                 await ImportResolver.importJournalRegisterRow(actor, dto);
                             } else {
@@ -255,6 +256,16 @@ export class JournalImportService {
                     }
 
                     catch (error: any) {
+
+                        if (error instanceof Error && error.message === "SKIP_ALREADY_IMPORTED") {
+                            summary.skipped++;
+                            summary.processed++;
+                            summary.percentage = Number(
+                                (summary.processed / summary.total * 100).toFixed(2)
+                            );
+                            onProgress?.(summary);
+                            return;
+                        }
 
                         summary.failed++;
 

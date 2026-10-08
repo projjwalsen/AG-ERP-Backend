@@ -651,19 +651,23 @@ export class JournalService {
         if (!existing) throw new ApiError("Journal category not found.", 404);
 
         const name = dto.name?.trim();
+        const effectiveJournalHeadId = dto.journalHeadId !== undefined
+            ? dto.journalHeadId
+            : existing.journalHeadId;
         if (name) {
             const duplicate = await prisma.journalCategory.findFirst({
                 where: {
                     id: { not: id },
-                    name: { equals: name, mode: "insensitive" }
+                    name: { equals: name, mode: "insensitive" },
+                    journalHeadId: effectiveJournalHeadId
                 }
             });
             if (duplicate) throw new ApiError("Journal category already exists.", 409);
         }
 
-        if (dto.journalHeadId) {
+        if (effectiveJournalHeadId) {
             const journalHead = await prisma.journalHead.findUnique({
-                where: { id: dto.journalHeadId }
+                where: { id: effectiveJournalHeadId }
             });
             if (!journalHead) throw new ApiError("Journal head not found.", 404);
             if (journalHead.headType !== "SUBHEAD") {
@@ -691,13 +695,39 @@ export class JournalService {
         return prisma.journalCategory.findMany({
             where: {
                 ...(params?.search && {
-                    name: { contains: params.search, mode: "insensitive" }
+                    OR: [
+                        { name: { contains: params.search, mode: "insensitive" } },
+                        { journalHead: { name: { contains: params.search, mode: "insensitive" } } }
+                    ]
                 }),
                 ...(params?.isActive !== undefined ? { isActive: params.isActive } : {})
             },
             include: { journalHead: { include: { parent: true } } },
             orderBy: { name: "asc" }
         });
+    }
+
+    static async deleteJournalCategory(actor: any, id: string) {
+        if (!actor?.id) throw new ApiError("Unauthorized", 401);
+
+        const existing = await prisma.journalCategory.findUnique({
+            where: { id },
+            select: { id: true, name: true }
+        });
+        if (!existing) throw new ApiError("Journal category not found.", 404);
+
+        const result = await prisma.$transaction(async tx => {
+            const detachedJournals = await tx.journal.updateMany({
+                where: { categoryId: id },
+                data: { categoryId: null, updatedAt: new Date() }
+            });
+
+            await tx.journalCategory.delete({ where: { id } });
+
+            return { detachedJournals: detachedJournals.count };
+        });
+
+        return { ...existing, ...result };
     }
 
     static async getJournalCategoryById(id: string) {

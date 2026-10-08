@@ -74,6 +74,8 @@ router.post("/category/create", checkPermission("JOURNAL:WRITE"), JournalControl
  */
 router.put("/category/:categoryId", checkPermission("JOURNAL:WRITE"), JournalController.updateJournalCategory);
 
+router.delete("/category/:categoryId", checkPermission("JOURNAL:WRITE"), JournalController.deleteJournalCategory);
+
 /**
  * @openapi
  * /api/journal/categories:

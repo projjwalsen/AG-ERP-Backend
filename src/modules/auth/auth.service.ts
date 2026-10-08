@@ -85,7 +85,14 @@ export class AuthService {
   }
 
   static async login(payload: LoginPayload) {
-    const normalizedEmail = payload.email.trim().toLowerCase();
+    const email = typeof payload?.email === "string" ? payload.email.trim() : "";
+    const password = typeof payload?.password === "string" ? payload.password : "";
+
+    if (!email || !password) {
+      throw new ApiError("Email and password are required", 400);
+    }
+
+    const normalizedEmail = email.toLowerCase();
 
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
@@ -108,7 +115,7 @@ export class AuthService {
     }
 
     const isPasswordValid = await bcrypt.compare(
-      payload.password,
+      password,
       user.password
     );
 

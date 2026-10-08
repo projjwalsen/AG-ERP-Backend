@@ -3960,6 +3960,24 @@ export class LedgerService {
         const visibleEntries = entries.filter(entry => {
             if (entry.voucher.voucherType !== VoucherType.OPENING_BALANCE) return true;
 
+            // A parent/imported journal head expands its statement to include
+            // descendant ledgers so that their normal movements remain
+            // visible. Opening balances are different: they belong to the
+            // exact ledger/category selected by the user. Older imports can
+            // also have a leaf opening posted to its parent ledger, so use
+            // the hierarchy path in the narration when it is available.
+            const openingPath = String(entry.voucher.narration || "")
+                .match(/Opening balance import:\s*(.*?)\s*\|/i)?.[1];
+            const openingLeaf = openingPath
+                ?.split(/[>/]/)
+                .map(part => part.trim())
+                .filter(Boolean)
+                .pop();
+            const selectedName = String(ledger.name || "").trim().toUpperCase();
+            const pathMatchesSelected = openingLeaf?.trim().toUpperCase() === selectedName;
+            if (entry.ledgerId !== selectedLedgerId && !pathMatchesSelected) return false;
+            if (entry.ledgerId === selectedLedgerId && openingLeaf && !pathMatchesSelected) return false;
+
             const indiaDate = new Intl.DateTimeFormat("en-CA", {
                 timeZone: "Asia/Kolkata",
                 year: "numeric",

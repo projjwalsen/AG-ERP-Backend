@@ -80,6 +80,28 @@ export const listJournalCategories = async (
     }
 };
 
+export const deleteJournalCategory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const category = await JournalService.deleteJournalCategory(
+            (req as any).user,
+            (req as any).params.categoryId
+        );
+        return res.status(200).json({
+            success: true,
+            message: category.detachedJournals
+                ? `Journal category deleted; ${category.detachedJournals} journal(s) were unlinked.`
+                : "Journal category deleted successfully.",
+            data: { category }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 /** ---------------- JOURNAL HEAD ---------------- */
 
 export const createJournalHead = async (

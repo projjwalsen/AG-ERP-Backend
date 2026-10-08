@@ -51,7 +51,13 @@
     "repair:imported-sales-ledgers": "tsx src/scripts/repair-imported-sales-ledgers.ts",
     "diagnose:bank-receipt-mismatch": "tsx src/scripts/diagnose-bank-receipt-mismatch.ts",
     "recover:missing-bank-receipts": "tsx src/scripts/recover-missing-bank-receipts.ts",
-    "repair:rcm-purchase-journal": "tsx src/scripts/repair-rcm-purchase-journal.ts"
+    "repair:rcm-purchase-journal": "tsx src/scripts/repair-rcm-purchase-journal.ts",
+    "repair:air-conditioner-office-opening": "tsx src/scripts/repair-air-conditioner-office-opening-ledger.ts",
+    "repair:air-conditioner-category-hierarchy": "tsx src/scripts/repair-air-conditioner-category-hierarchy.ts",
+    "repair:bunglow-ledger-hierarchy": "tsx src/scripts/repair-bunglow-ledger-hierarchy.ts",
+    "repair:factory-construction-category": "tsx src/scripts/repair-factory-construction-category.ts",
+    "repair:factory-building-categories": "tsx src/scripts/repair-factory-building-categories.ts",
+    "repair:flatten-factory-building-ledgers": "tsx src/scripts/flatten-factory-building-category-ledgers.ts"
   },
   "keywords": [],
   "author": "Soumalya-Chakraborty",
