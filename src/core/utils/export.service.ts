@@ -1,6 +1,13 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
 import { formatISTDate, getByPath } from "./loc.utils";
+
+const normalizeAgencyKey = (value: unknown) => String(value ?? "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/\s*(?:[-(]\s*)?(?:DRS?|CRS?|VENDOR)\s*\)?$/i, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleUpperCase();
 export interface ExcelReportHeader {
     title: string;
     subtitle?: string;
@@ -206,91 +213,132 @@ export class ExcelService {
         options: { filename: string; sheetName?: string; report: any }
     ) {
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet(options.sheetName || "Outstanding");
+        const worksheet = workbook.addWorksheet(options.sheetName || "Sundry Debtor");
         const report = options.report;
         const company = String(report.company || "");
         const period = String(report.period?.label || "");
-        const agingRows: any[] = report.agingRows || [];
+        const agingByAgency = new Map<string, number>();
+        for (const row of report.agingRows || []) {
+            agingByAgency.set(normalizeAgencyKey(row.agencyName), Number(row.agingDays || 0));
+        }
         const highlightYellow = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFC000" } };
+        const groupLabel = report.type === "PAYABLE" ? "Sundry Debtor" : "Sundry Creditor";
 
         worksheet.pageSetup = {
-            orientation: "portrait",
+            orientation: "landscape",
             fitToPage: true,
             fitToWidth: 1,
-            fitToHeight: 1,
+            fitToHeight: 0,
             paperSize: 9,
             margins: { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 }
         };
-        [15, 35, 35, 20, 19, 17, 15].forEach((width, index) => { worksheet.getColumn(index + 1).width = width; });
+        worksheet.getColumn(1).width = 52.1;
+        for (let column = 2; column <= 6; column++) worksheet.getColumn(column).width = 15;
 
-        for (const [rowNumber, value, size, bold] of [
-            [1, "ASHTAVINAYAKA", 14, true],
-            [2, report.type === "PAYABLE" ? "Sundry Debtor" : "Sundry Creditor", 12, true],
-            [3, `Date of Generation : ${formatISTDate(report.generatedAt || new Date())}`, 10, false],
-            [4, period, 10, false]
-        ] as Array<[number, string, number, boolean]>) {
-            worksheet.mergeCells(rowNumber, 1, rowNumber, 7);
+        const companyDetails = report.companyDetails || {};
+        const writeCompanyLine = (rowNumber: number, value: unknown, font: Partial<ExcelJS.Font> = {}) => {
+            worksheet.mergeCells(rowNumber, 1, rowNumber, 6);
+            const cell = worksheet.getCell(rowNumber, 1);
+            cell.value = (value ?? null) as ExcelJS.CellValue;
+            cell.font = { name: "Arial", size: 10, color: { argb: "FF000000" }, ...font };
+            cell.alignment = { horizontal: "left", vertical: "top" };
+            worksheet.getRow(rowNumber).height = rowNumber === 1 ? 18 : 15;
+        };
+        writeCompanyLine(1, company, { bold: true, size: 12 });
+        writeCompanyLine(2, companyDetails.addressLines?.[0]);
+        writeCompanyLine(3, companyDetails.addressLines?.[1]);
+        writeCompanyLine(4, companyDetails.identifier);
+        writeCompanyLine(5, companyDetails.email);
+
+        for (const [rowNumber, value, bold, size] of [
+            [6, groupLabel, true, 13],
+            [7, "Group Summary", false, 10],
+            [8, period, false, 10]
+        ] as Array<[number, string, boolean, number]>) {
+            worksheet.mergeCells(rowNumber, 1, rowNumber, 6);
             const row = worksheet.getRow(rowNumber);
-            row.height = rowNumber <= 2 ? 22 : 18;
-            row.getCell(1).value = value;
-            row.getCell(1).font = { name: "Arial", size, bold, color: { argb: "FF000000" } };
-            row.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
-            if (rowNumber === 2) {
-                for (let column = 1; column <= 7; column++) row.getCell(column).fill = highlightYellow;
+            const cell = row.getCell(1);
+            cell.value = value;
+            cell.font = { name: "Arial", size, bold, color: { argb: "FF000000" } };
+            cell.alignment = { horizontal: "left", vertical: "top" };
+            row.height = rowNumber === 6 ? 18 : 15;
+            if (rowNumber === 6) {
+                for (let column = 1; column <= 6; column++) row.getCell(column).fill = highlightYellow;
             }
         }
 
-        const headers = [
-            report.type === "PAYABLE" ? "Vendor Code" : "Customer Code",
-            "Agency Name", "Branch", "GSTIN", "Outstanding Amount", "Balance Type", "Aging Days"
-        ];
-        const headerRow = worksheet.addRow(headers);
-        headerRow.height = 24;
-        headerRow.eachCell({ includeEmpty: true }, cell => {
-            cell.fill = highlightYellow;
-            cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF000000" } };
-            cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-            cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
-        });
+        worksheet.mergeCells("B9:F9");
+        worksheet.getCell("B9").value = groupLabel;
+        worksheet.getCell("B9").font = { name: "Arial", size: 9, bold: true, color: { argb: "FF000000" } };
+        worksheet.getCell("B9").alignment = { horizontal: "left", vertical: "top", indent: 3 };
+        worksheet.getRow(9).height = 15;
+        for (let column = 1; column <= 6; column++) worksheet.getRow(9).getCell(column).fill = highlightYellow;
 
-        let outstandingTotal = 0;
-        for (const agingRow of agingRows) {
-            outstandingTotal += Number(agingRow.outstandingAmount || 0);
-            const row = worksheet.addRow([
-                agingRow.partyCode,
-                agingRow.agencyName,
-                agingRow.branch,
-                agingRow.gstin || "",
-                Number(agingRow.outstandingAmount || 0),
-                agingRow.balanceType,
-                Number(agingRow.agingDays || 0)
-            ]);
-            row.height = 18;
-            row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
-                cell.font = { name: "Arial", size: 9, color: { argb: "FF000000" } };
-                cell.alignment = { horizontal: columnNumber === 2 || columnNumber === 3 ? "left" : "center", vertical: "middle" };
-                cell.border = { bottom: { style: "hair" } };
-                if (columnNumber === 5) {
-                    cell.numFmt = '#,##0.00;(#,##0.00);-';
-                    cell.alignment = { horizontal: "right", vertical: "middle" };
-                }
-                if (columnNumber === 7) cell.numFmt = "0";
-            });
+        worksheet.mergeCells("A10:A12");
+        worksheet.mergeCells("B10:F10");
+        worksheet.mergeCells("B11:B12");
+        worksheet.mergeCells("C11:D11");
+        worksheet.mergeCells("E11:E12");
+        worksheet.mergeCells("F11:F12");
+        worksheet.getCell("A10").value = "Particulars";
+        worksheet.getCell("B10").value = period;
+        worksheet.getCell("B11").value = "Opening Balance";
+        worksheet.getCell("C11").value = "Transactions";
+        worksheet.getCell("C12").value = "Debit";
+        worksheet.getCell("D12").value = "Credit";
+        worksheet.getCell("E11").value = "Closing Balance";
+        worksheet.getCell("F11").value = "Aging Days";
+        for (let rowNumber = 10; rowNumber <= 12; rowNumber++) {
+            const row = worksheet.getRow(rowNumber);
+            row.height = 15;
+            for (let column = 1; column <= 6; column++) {
+                const cell = row.getCell(column);
+                cell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF000000" } };
+                cell.alignment = { horizontal: column === 1 ? "left" : "center", vertical: "top" };
+                cell.fill = highlightYellow;
+                cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+            }
         }
 
-        const totalRow = worksheet.addRow(["", "Grand Total", "", "", Number(outstandingTotal.toFixed(2)), "", ""]);
-        totalRow.height = 20;
-        totalRow.eachCell({ includeEmpty: true }, cell => {
-            cell.fill = highlightYellow;
-            cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF000000" } };
-            cell.border = { top: { style: "thin" }, bottom: { style: "double" } };
-        });
-        totalRow.getCell(5).numFmt = '#,##0.00;(#,##0.00);-';
-        totalRow.getCell(5).alignment = { horizontal: "right", vertical: "middle" };
+        const writeValues = (values: Array<string | number | null | undefined>, bold = false) => {
+            const row = worksheet.addRow(values.map(value => value ?? null));
+            row.height = 15;
+            row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+                cell.font = { name: "Arial", size: 9, bold, color: { argb: "FF000000" } };
+                cell.alignment = { horizontal: columnNumber === 1 ? "left" : "right", vertical: "top", ...(columnNumber === 1 ? { indent: 3 } : {}) };
+                if (columnNumber > 1 && columnNumber < 6) cell.numFmt = '#,##0.00;#,##0.00;-';
+                if (columnNumber === 6) {
+                    cell.numFmt = "0";
+                    cell.alignment = { horizontal: "center", vertical: "top" };
+                }
+                if (bold) cell.border = { top: { style: "thin" }, bottom: { style: "thin" } };
+            });
+            return row;
+        };
 
-        worksheet.autoFilter = { from: "A5", to: `G${totalRow.number - 1}` };
-        worksheet.views = [{ state: "frozen", ySplit: 5 }];
-        worksheet.pageSetup.printTitlesRow = "5:5";
+        for (const row of report.rows || []) {
+            const agingKey = normalizeAgencyKey(row.account);
+            writeValues([
+                row.account,
+                row.openingBalance,
+                row.transactionDebit,
+                row.transactionCredit,
+                row.closingBalance,
+                agingByAgency.get(agingKey) ?? null
+            ]);
+        }
+        const totalRow = writeValues([
+            "Grand Total",
+            report.summary?.openingBalance,
+            report.summary?.transactionDebit,
+            report.summary?.transactionCredit,
+            report.summary?.closingBalance,
+            null
+        ], true);
+        totalRow.eachCell({ includeEmpty: true }, cell => { cell.fill = highlightYellow; });
+
+        worksheet.views = [{ state: "frozen", ySplit: 12 }];
+        worksheet.pageSetup.printTitlesRow = "10:12";
 
         res.status(200);
         res.setHeader(
