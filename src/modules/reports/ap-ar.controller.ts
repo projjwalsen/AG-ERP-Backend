@@ -24,9 +24,10 @@ export const getSrv1APARReport = async (
         );
 
         if (["DETAILS", "AGING", "TRUE"].includes(exportType)) {
+            const isDebtorReport = type === "PAYABLE";
             return ExcelService.exportSrv1APARGroupReport(res, {
-                filename: type === "PAYABLE" ? "Debtor" : "Credtor",
-                sheetName: type === "PAYABLE" ? "Sundry Debtor" : "Sundry Creditor",
+                filename: isDebtorReport ? "Debtor" : "Credtor",
+                sheetName: isDebtorReport ? "Sundry Debtor" : "Sundry Creditor",
                 report
             });
         }

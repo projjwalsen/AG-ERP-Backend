@@ -22,7 +22,8 @@ router.use(authMiddleware);
  *       summed outstanding amount and oldest overdue age in days.
  *
  *       Use `export=DETAILS`, `export=AGING`, or `export=TRUE` to download the
- *       party-level outstanding and aging report as an Excel workbook.
+ *       ledger summary in Tally layout, with an Aging Days column and the
+ *       existing yellow group and header styling.
  *     tags:
  *       - Reports
  *     security:
