@@ -1,0 +1,275 @@
+{
+  "sourceFile": "BSheet.xlsx",
+  "sheets": {
+    "Balance Sheet": {
+      "rowCount": 33,
+      "columnCount": 6,
+      "rows": [
+        [
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "CIN: U11100MH2011PTC224243",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "E-Mail : info@ashtvinayakapetrochem.com",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Balance Sheet",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "1-Apr-25 to 31-Mar-26",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra (from 1-Apr-25)",
+          null,
+          null,
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra (from 1-Apr-25)",
+          null
+        ],
+        [
+          "Liabilities",
+          "as at 31-Mar-26",
+          null,
+          "Assets",
+          "as at 31-Mar-26",
+          null
+        ],
+        [
+          "Capital Account",
+          null,
+          243318579.16,
+          "Fixed Assets",
+          null,
+          140761255.7
+        ],
+        [
+          "Reserves & Surplus",
+          190318579.16,
+          null,
+          "Air Conditioner",
+          773776.33,
+          null
+        ],
+        [
+          "Share Capital",
+          53000000,
+          null,
+          "Building",
+          35455053.94,
+          null
+        ],
+        [
+          "Loans (Liability)",
+          null,
+          568336138.78,
+          "Computer",
+          1497831.51,
+          null
+        ],
+        [
+          "Bank OD A/c & CC A/c",
+          316017958.99,
+          null,
+          "Electrical Equipments, Tools and Installation",
+          4116798.86,
+          null
+        ],
+        [
+          "Secured Loans",
+          43148525.34,
+          null,
+          "FURNITURE & FIXTURES",
+          3634172.36,
+          null
+        ],
+        [
+          "Unsecured Loans",
+          209169654.45,
+          null,
+          "Land",
+          15662916.12,
+          null
+        ],
+        [
+          "Current Liabilities",
+          null,
+          570773046.78,
+          "Office Assets",
+          759651.49,
+          null
+        ],
+        [
+          "Duties & Taxes",
+          5398544.1,
+          null,
+          "Plant & Machinery",
+          66792350.35,
+          null
+        ],
+        [
+          "Sundry Creditors",
+          280837320.62,
+          null,
+          "Vehicles",
+          12068704.74,
+          null
+        ],
+        [
+          "Advance From S. Debtors",
+          274056672.35,
+          null,
+          "Investments",
+          null,
+          3715468
+        ],
+        [
+          "Outstanding Exp",
+          4221857.71,
+          null,
+          "GOLD & ORNAMENTS",
+          3715468,
+          null
+        ],
+        [
+          "Provision for Expenses",
+          4918724,
+          null,
+          "Current Assets",
+          null,
+          1591332018.49
+        ],
+        [
+          "Deferred Tax Assets",
+          1339928,
+          null,
+          "Closing Stock",
+          821098392.44,
+          null
+        ],
+        [
+          "Branch / Divisions",
+          null,
+          12059264.25,
+          "Deposits (Asset)",
+          17731256.5,
+          null
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD-KARNATAKA",
+          27440680.25,
+          null,
+          "Loans & Advances (Asset)",
+          71141213.53,
+          null
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD-RAJASTHAN",
+          -14186988,
+          null,
+          "Sundry Debtors",
+          656813606.65,
+          null
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD - TAMILNADU",
+          7954827.72,
+          null,
+          "Cash-in-hand",
+          140163.15,
+          null
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD-TELANGANA",
+          -9149255.72,
+          null,
+          "Bank Accounts",
+          11138855.51,
+          null
+        ],
+        [
+          "Profit & Loss A/c",
+          null,
+          341321713.22,
+          "Income Tax Credit",
+          11710459.57,
+          null
+        ],
+        [
+          "Opening Balance",
+          -0.14,
+          null,
+          "Prepaid Exp",
+          1530081.41,
+          null
+        ],
+        [
+          "Current Period",
+          341321713.36,
+          null,
+          "TDS RECEIVABLE ON UNSECURED LOAN",
+          26714.73,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          "TDS RECEIVABLE FROM MYND SOLUTION PVT LTD",
+          1275,
+          null
+        ],
+        [
+          "Total",
+          null,
+          1735808742.19,
+          "Total",
+          null,
+          1735808742.19
+        ]
+      ]
+    }
+  }
+}

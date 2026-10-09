@@ -12,9 +12,10 @@ router.use(authMiddleware);
  *   get:
  *     summary: SRV1 Accounts Payable / Receivable Report
  *     description: |
- *       Returns the Tally Sundry Creditors or Sundry Debtors ledger summary.
- *       Select `PAYABLE` to read `APAR/crs31.03.2026.json` or
- *       `RECEIVABLE` to read `APAR/drs31.03.2026.json`.
+ *       Returns the SRV1 AP/AR ledger summary.
+ *       Select `PAYABLE` (AP) to read Sundry Debtors from
+ *       `APAR/drs31.03.2026.json`, or `RECEIVABLE` (AR) to read Sundry
+ *       Creditors from `APAR/crs31.03.2026.json`.
  *
  *       The response includes each ledger's opening balance, transaction debit
  *       and credit, closing balance, and Grand Total. It also includes
@@ -35,7 +36,7 @@ router.use(authMiddleware);
  *         schema:
  *           type: string
  *           enum: [PAYABLE, RECEIVABLE]
- *         description: PAYABLE uses Sundry Creditors; RECEIVABLE uses Sundry Debtors.
+ *         description: PAYABLE (AP) uses Sundry Debtors; RECEIVABLE (AR) uses Sundry Creditors.
  *       - in: query
  *         name: export
  *         required: false

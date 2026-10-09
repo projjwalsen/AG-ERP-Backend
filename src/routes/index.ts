@@ -15,6 +15,7 @@ import productLedgerRoute from "../modules/accounting/productLedger/productLedge
 import financialLedgerRoute from "../modules/accounting/ledger/ledger.routes";
 import reportingRoute from "../modules/reports/reporting.routes";
 import srv1TrialBalanceRoute from "../modules/reports/trial-balance.routes";
+import srv1FinancialStatementsRoute from "../modules/reports/financial-statements.routes";
 import srv1APARRoute from "../modules/reports/ap-ar.routes";
 import srv1GSTR1Route from "../modules/reports/gstr1.routes";
 import dashboardRoute from "../modules/dashboard/kpi.routes";
@@ -44,6 +45,7 @@ router.use("/product-ledger", productLedgerRoute);
 router.use("/ledgers", financialLedgerRoute);
 router.use("/reports", reportingRoute);
 router.use("/reports/srv1-trial-balance", srv1TrialBalanceRoute);
+router.use("/reports", srv1FinancialStatementsRoute);
 router.use("/reports/srv1-ap-ar", srv1APARRoute);
 router.use("/reports/srv1-gstr1", srv1GSTR1Route);
 router.use("/dashboard", dashboardRoute);
