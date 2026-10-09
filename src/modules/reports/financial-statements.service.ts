@@ -29,6 +29,36 @@ const text = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim()
 const rupee = String.fromCharCode(0x20b9);
 const amountFormat = `${rupee}#,##,##0.00;[Red](${rupee}#,##,##0.00);-`;
 
+const reorderProfitAndLossSectionsForExport = (rows: unknown[][]) => {
+    const sectionIndex = (name: string) => rows.findIndex(row =>
+        text(row[3]).toLocaleLowerCase() === name.toLocaleLowerCase()
+    );
+    const salesStart = sectionIndex("Sales Accounts");
+    const stockStart = sectionIndex("Closing Stock");
+    if (salesStart < 0 || stockStart <= salesStart) return;
+
+    const nextSection = (start: number) => {
+        for (let index = start + 1; index < rows.length; index++) {
+            if (text(rows[index][3]) && rows[index][5] != null) return index;
+        }
+        return rows.length;
+    };
+
+    const salesEnd = nextSection(salesStart);
+    const stockEnd = nextSection(stockStart);
+    if (salesEnd !== stockStart || stockEnd <= stockStart) return;
+
+    // Reorder only the right-hand account groups; the left-hand cost sections
+    // stay on their original rows and the response JSON remains unchanged.
+    const reorderedRightSide = [
+        ...rows.slice(stockStart, stockEnd).map(row => row.slice(3, 6)),
+        ...rows.slice(salesStart, salesEnd).map(row => row.slice(3, 6))
+    ];
+    reorderedRightSide.forEach((cells, offset) => {
+        rows[salesStart + offset].splice(3, 3, ...cells);
+    });
+};
+
 const statementReport = (
     source: SourceWorkbook,
     statementType: StatementKind,
@@ -80,7 +110,10 @@ export class Srv1FinancialStatementsService {
         workbook.subject = report.reportName;
         workbook.title = `${report.company} - ${report.reportName}`;
         const worksheet = workbook.addWorksheet(sheetName);
-        const rows = report.rows;
+        const rows = report.rows.map(row => [...row]);
+        if (report.statementType === "PROFIT_AND_LOSS") {
+            reorderProfitAndLossSectionsForExport(rows);
+        }
 
         worksheet.views = [{ state: "frozen", ySplit: 9 }];
         worksheet.pageSetup = {
@@ -157,14 +190,28 @@ export class Srv1FinancialStatementsService {
                 const total = /^total$/i.test(leftLabel) || /^total$/i.test(rightLabel);
                 const section = !total && Boolean(sourceRow[2] != null || sourceRow[5] != null);
                 if (section || total) {
-                    row.eachCell({ includeEmpty: true }, cell => {
-                        cell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF202A35" } };
-                        cell.fill = {
-                            type: "pattern", pattern: "solid",
-                            fgColor: { argb: total ? "FFFFE699" : "FFFFF5D6" }
-                        };
-                        cell.border = { top: { style: "thin", color: { argb: "FFD6C37A" } } };
-                    });
+                    const yellowHeaderOnly = report.statementType === "PROFIT_AND_LOSS" && section;
+                    if (yellowHeaderOnly) {
+                        const headerColumns = [
+                            ...(sourceRow[2] != null ? [1, 3] : []),
+                            ...(sourceRow[5] != null ? [4, 6] : [])
+                        ];
+                        for (const column of headerColumns) {
+                            const cell = row.getCell(column);
+                            cell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF202A35" } };
+                            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFE699" } };
+                            cell.border = { top: { style: "thin", color: { argb: "FFD6C37A" } } };
+                        }
+                    } else {
+                        row.eachCell({ includeEmpty: true }, cell => {
+                            cell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF202A35" } };
+                            cell.fill = {
+                                type: "pattern", pattern: "solid",
+                                fgColor: { argb: total ? "FFFFE699" : "FFFFF5D6" }
+                            };
+                            cell.border = { top: { style: "thin", color: { argb: "FFD6C37A" } } };
+                        });
+                    }
                 }
             }
         });
