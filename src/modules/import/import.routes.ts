@@ -9,12 +9,113 @@ import {
     reconcileTdsAssetsWorkbook,
     reconcileAgencyLedgerWorkbook,
     unlinkExtraAgencyLedgerVouchers,
+    importTrialBalanceLedgerVouchers,
+    reconcilePaymentVoucherRegister,
+    listPaymentVoucherSubgroupIssues,
     importInwardDebitCreditNoteWorkbook,
     importProductWorkbook,
     importWorkbook
 } from "./import.controller";
 
 const router = Router();
+
+/**
+ * @openapi
+ * /api/migration/import/trial-balance-ledger-vouchers:
+ *   post:
+ *     summary: Reconcile voucher rows for a trial balance ledger
+ *     description: Upload a Tally ledger statement for any Trial Balance ledger. The response includes the ledger category path and per-row exists, missing, or ambiguous status, plus extra system postings absent from the workbook. Voucher numbers already present elsewhere are reported as ambiguous with their existing ledger posting. accept=true creates only missing dated PAYMENT, RECEIPT, or JOURNAL vouchers. allowUnlink=true requires a matching ledger name in the workbook header and reassigns an extra posting only when the voucher is balanced, has exactly two ledger entries, and has a unique opposite counter-ledger; opening balances and source-linked sales, purchases, and notes are never unlinked through this endpoint. Unsafe extras are returned as needs_review. Run accept and allowUnlink in separate requests. The counter-ledger is inferred from Particulars for each row when available; offsetLedgerName overrides the inferred offset for all missing rows.
+ *     tags: [Import]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file, ledgerName]
+ *             properties:
+ *               file: { type: string, format: binary }
+ *               ledgerName: { type: string, example: "HDFC BANK 160603957 COMM. VEH. MH43CK6521" }
+ *               accept: { type: boolean, default: false }
+ *               allowUnlink: { type: boolean, default: false, description: Preview extras by default; true reassigns only safe extra postings to their unique counter-ledger. }
+ *               offsetLedgerName: { type: string, description: Optional override for the balancing ledger; inferred from workbook Particulars when available. }
+ *               branchId: { type: string }
+ *     responses:
+ *       200: { description: Preview or import result with per-voucher status. }
+ *       400: { description: Invalid workbook, ledger, or request. }
+ */
+router.post(
+    "/import/trial-balance-ledger-vouchers",
+    authMiddleware,
+    importExcel.single("file"),
+    importTrialBalanceLedgerVouchers
+);
+
+/**
+ * @openapi
+ * /api/migration/import/payment-vouchers/reconcile:
+ *   post:
+ *     summary: Reconcile a Payment Voucher register
+ *     description: Preview vouchers and subgroup paths from the uploaded Tally register. Set entry=true to create validated missing vouchers; existing subgroup mismatches are reported without being changed.
+ *     tags: [Import]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file: { type: string, format: binary }
+ *               branchId: { type: string }
+ *               entry: { type: boolean, default: false }
+ *               enable: { type: boolean, description: Alias for entry. }
+ *               stream: { type: boolean, default: true, description: Streams progress and per-voucher results; set false to use a single JSON response. }
+ *     responses:
+ *       200: { description: Per-voucher reconciliation results. }
+ *       400: { description: Invalid workbook, unbalanced voucher, or request. }
+ */
+router.post(
+    "/import/payment-vouchers/reconcile",
+    authMiddleware,
+    importExcel.single("file"),
+    reconcilePaymentVoucherRegister
+);
+
+/**
+ * @openapi
+ * /api/migration/import/payment-vouchers/subgroup-issues:
+ *   post:
+ *     summary: List existing Payment vouchers with subgroup issues
+ *     description: Upload the same Payment register used for reconciliation. Returns only mismatch rows; correctSubGroup rows are excluded. Optional comma-separated status filter accepts ledgerPathNotFound, postingMissing, ledgerPathAmbiguous, and wrongSubGroup. This endpoint is read-only.
+ *     tags: [Import]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required: [file]
+ *             properties:
+ *               file: { type: string, format: binary }
+ *               branchId: { type: string }
+ *               status: { type: string, description: Optional comma-separated mismatch statuses. Defaults to all four mismatch statuses. }
+ *     responses:
+ *       200: { description: Existing vouchers with subgroup reconciliation issues. }
+ *       400: { description: Invalid workbook or request. }
+ */
+router.post(
+    "/import/payment-vouchers/subgroup-issues",
+    authMiddleware,
+    importExcel.single("file"),
+    listPaymentVoucherSubgroupIssues
+);
 
 /**
  * @openapi

@@ -42,6 +42,269 @@ export interface ExportRequest<T> {
 
 export class ExcelService {
 
+    static async exportTrialBalanceSourceRows(
+        res: Response,
+        options: {
+            filename: string;
+            sheetName?: string;
+            report: any;
+        }
+    ) {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(options.sheetName || "Trial Balance");
+        const report = options.report;
+        const rows: any[] = report.rows || [];
+        const summary = report.summary || {};
+        const companyName = String(report.company || report.branch?.name || "");
+        const period = String(report.period?.label || "");
+        const branchTitle = String(report.branchHeading || `${companyName} (from ${period.split(/\s+to\s+/i)[0] || ""})`);
+
+        worksheet.pageSetup = {
+            orientation: "landscape",
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0,
+            paperSize: 9,
+            margins: { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 }
+        };
+        worksheet.getColumn(1).width = 52.1;
+        for (let column = 2; column <= 6; column++) worksheet.getColumn(column).width = 13.33;
+
+        const writeCompanyLine = (rowNumber: number, value: unknown, font: Partial<ExcelJS.Font> = {}) => {
+            worksheet.mergeCells(rowNumber, 1, rowNumber, 6);
+            const cell = worksheet.getCell(rowNumber, 1);
+            cell.value = value as ExcelJS.CellValue;
+            cell.font = { name: "Arial", size: 10, color: { argb: "FF000000" }, ...font };
+            cell.alignment = { horizontal: "left", vertical: "top" };
+            worksheet.getRow(rowNumber).height = rowNumber === 1 ? 18 : 15;
+        };
+
+        writeCompanyLine(1, companyName, { bold: true, size: 12 });
+        writeCompanyLine(2, report.companyDetails?.addressLines?.[0]);
+        writeCompanyLine(3, report.companyDetails?.addressLines?.[1]);
+        writeCompanyLine(4, report.companyDetails?.identifier);
+        writeCompanyLine(5, report.companyDetails?.email);
+
+        worksheet.mergeCells("A6:F6");
+        const titleCell = worksheet.getCell("A6");
+        titleCell.value = report.reportName || "Trial Balance";
+        titleCell.font = { name: "Arial", size: 13, bold: true, color: { argb: "FF000000" } };
+        titleCell.alignment = { horizontal: "left", vertical: "top" };
+        titleCell.border = { top: { style: "thin" } };
+        worksheet.getRow(6).height = 18;
+
+        worksheet.mergeCells("A7:F7");
+        worksheet.getCell("A7").value = period;
+        worksheet.getCell("A7").font = { name: "Arial", size: 10, color: { argb: "FF000000" } };
+        worksheet.getCell("A7").alignment = { horizontal: "left", vertical: "top" };
+        worksheet.getRow(7).height = 15;
+
+        worksheet.mergeCells("B8:F8");
+        worksheet.getCell("B8").value = branchTitle;
+        worksheet.getCell("B8").font = { name: "Arial", size: 9, bold: true, color: { argb: "FF000000" } };
+        worksheet.getCell("B8").alignment = { horizontal: "left", vertical: "top", indent: 3 };
+        worksheet.getCell("B8").border = { top: { style: "thin" } };
+        worksheet.getRow(8).height = 15;
+
+        worksheet.mergeCells("A9:A11");
+        worksheet.mergeCells("B9:F9");
+        worksheet.mergeCells("B10:C10");
+        worksheet.mergeCells("D10:E10");
+        worksheet.mergeCells("F10:F11");
+        worksheet.getCell("A9").value = "Particulars";
+        worksheet.getCell("B9").value = period;
+        worksheet.getCell("B10").value = "Opening Balance";
+        worksheet.getCell("D10").value = "Transactions";
+        worksheet.getCell("B11").value = "Debit";
+        worksheet.getCell("C11").value = "Credit";
+        worksheet.getCell("D11").value = "Debit";
+        worksheet.getCell("E11").value = "Credit";
+        worksheet.getCell("F10").value = "Closing Balance";
+        for (let rowNumber = 9; rowNumber <= 11; rowNumber++) {
+            const row = worksheet.getRow(rowNumber);
+            row.height = 15;
+            for (let column = 1; column <= 6; column++) {
+                const cell = row.getCell(column);
+                cell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF000000" } };
+                cell.alignment = { horizontal: column === 1 ? "left" : "center", vertical: "top" };
+                cell.border = {
+                    top: { style: "thin" }, left: { style: "thin" },
+                    bottom: { style: "thin" }, right: { style: "thin" }
+                };
+            }
+        }
+
+        for (const sourceRow of rows) {
+            const row = worksheet.addRow([
+                sourceRow.account ?? sourceRow.name ?? null,
+                sourceRow.openingDebit ?? 0,
+                sourceRow.openingCredit ?? 0,
+                sourceRow.transactionDebit ?? 0,
+                sourceRow.transactionCredit ?? 0,
+                sourceRow.closingBalanceType ? (sourceRow.closingBalanceType === "Cr" ? -sourceRow.closingBalance : sourceRow.closingBalance) : 0
+            ]);
+            row.height = 15;
+            const isGroup = sourceRow.rowType === "accountingHeader";
+            row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+                cell.font = {
+                    name: "Arial", size: 9,
+                    bold: isGroup,
+                    color: { argb: "FF000000" }
+                };
+                cell.alignment = {
+                    horizontal: columnNumber === 1 ? "left" : "right",
+                    vertical: "top",
+                    ...(columnNumber === 1
+                        ? { indent: 1 + Number(sourceRow.level || 0) * 3 }
+                        : {})
+                };
+                if (columnNumber > 1 && columnNumber < 6) cell.numFmt = '#,##0.00;#,##0.00;-';
+                if (columnNumber === 6) cell.numFmt = '#,##0.00" Dr";#,##0.00" Cr";-';
+                if (isGroup) {
+                    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
+                    cell.border = { top: { style: "thin" }, bottom: { style: "thin" } };
+                }
+            });
+        }
+
+        const totalRow = worksheet.addRow([
+            "Grand Total",
+            summary.totalOpeningDebit || 0,
+            summary.totalOpeningCredit || 0,
+            summary.totalPeriodDebit || 0,
+            summary.totalPeriodCredit || 0,
+            summary.closingBalanceType === "Cr" ? -Number(summary.closingBalance || 0) : Number(summary.closingBalance || 0)
+        ]);
+        totalRow.height = 17;
+        totalRow.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+            cell.font = { name: "Arial", size: 9, bold: true, color: { argb: "FF000000" } };
+            cell.alignment = { horizontal: columnNumber === 1 ? "left" : "right", vertical: "top" };
+            if (columnNumber > 1 && columnNumber < 6) cell.numFmt = '#,##0.00;#,##0.00;-';
+            if (columnNumber === 6) cell.numFmt = '#,##0.00" Dr";#,##0.00" Cr";-';
+            cell.border = { top: { style: "double" } };
+        });
+
+        worksheet.views = [{ state: "frozen", ySplit: 11 }];
+        worksheet.pageSetup.printTitlesRow = "9:11";
+
+        res.status(200);
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${options.filename}.xlsx"`
+        );
+
+        await workbook.xlsx.write(res as any);
+        res.end();
+    }
+
+    static async exportSrv1APARGroupReport(
+        res: Response,
+        options: { filename: string; sheetName?: string; report: any }
+    ) {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(options.sheetName || "Outstanding");
+        const report = options.report;
+        const company = String(report.company || "");
+        const period = String(report.period?.label || "");
+        const agingRows: any[] = report.agingRows || [];
+        const highlightYellow = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFC000" } };
+
+        worksheet.pageSetup = {
+            orientation: "portrait",
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 1,
+            paperSize: 9,
+            margins: { left: 0.25, right: 0.25, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 }
+        };
+        [15, 35, 35, 20, 19, 17, 15].forEach((width, index) => { worksheet.getColumn(index + 1).width = width; });
+
+        for (const [rowNumber, value, size, bold] of [
+            [1, "ASHTAVINAYAKA", 14, true],
+            [2, report.type === "PAYABLE" ? "Sundry Debtor" : "Sundry Creditor", 12, true],
+            [3, `Date of Generation : ${formatISTDate(report.generatedAt || new Date())}`, 10, false],
+            [4, period, 10, false]
+        ] as Array<[number, string, number, boolean]>) {
+            worksheet.mergeCells(rowNumber, 1, rowNumber, 7);
+            const row = worksheet.getRow(rowNumber);
+            row.height = rowNumber <= 2 ? 22 : 18;
+            row.getCell(1).value = value;
+            row.getCell(1).font = { name: "Arial", size, bold, color: { argb: "FF000000" } };
+            row.getCell(1).alignment = { horizontal: "left", vertical: "middle" };
+            if (rowNumber === 2) {
+                for (let column = 1; column <= 7; column++) row.getCell(column).fill = highlightYellow;
+            }
+        }
+
+        const headers = [
+            report.type === "PAYABLE" ? "Vendor Code" : "Customer Code",
+            "Agency Name", "Branch", "GSTIN", "Outstanding Amount", "Balance Type", "Aging Days"
+        ];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.height = 24;
+        headerRow.eachCell({ includeEmpty: true }, cell => {
+            cell.fill = highlightYellow;
+            cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF000000" } };
+            cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+            cell.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+        });
+
+        let outstandingTotal = 0;
+        for (const agingRow of agingRows) {
+            outstandingTotal += Number(agingRow.outstandingAmount || 0);
+            const row = worksheet.addRow([
+                agingRow.partyCode,
+                agingRow.agencyName,
+                agingRow.branch,
+                agingRow.gstin || "",
+                Number(agingRow.outstandingAmount || 0),
+                agingRow.balanceType,
+                Number(agingRow.agingDays || 0)
+            ]);
+            row.height = 18;
+            row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+                cell.font = { name: "Arial", size: 9, color: { argb: "FF000000" } };
+                cell.alignment = { horizontal: columnNumber === 2 || columnNumber === 3 ? "left" : "center", vertical: "middle" };
+                cell.border = { bottom: { style: "hair" } };
+                if (columnNumber === 5) {
+                    cell.numFmt = '#,##0.00;(#,##0.00);-';
+                    cell.alignment = { horizontal: "right", vertical: "middle" };
+                }
+                if (columnNumber === 7) cell.numFmt = "0";
+            });
+        }
+
+        const totalRow = worksheet.addRow(["", "Grand Total", "", "", Number(outstandingTotal.toFixed(2)), "", ""]);
+        totalRow.height = 20;
+        totalRow.eachCell({ includeEmpty: true }, cell => {
+            cell.fill = highlightYellow;
+            cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF000000" } };
+            cell.border = { top: { style: "thin" }, bottom: { style: "double" } };
+        });
+        totalRow.getCell(5).numFmt = '#,##0.00;(#,##0.00);-';
+        totalRow.getCell(5).alignment = { horizontal: "right", vertical: "middle" };
+
+        worksheet.autoFilter = { from: "A5", to: `G${totalRow.number - 1}` };
+        worksheet.views = [{ state: "frozen", ySplit: 5 }];
+        worksheet.pageSetup.printTitlesRow = "5:5";
+
+        res.status(200);
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${options.filename}.xlsx"`
+        );
+        await workbook.xlsx.write(res as any);
+        res.end();
+    }
+
     private static formatIndianAmount(
         amount: number
     ): string {

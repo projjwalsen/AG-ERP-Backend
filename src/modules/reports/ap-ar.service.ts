@@ -1,23 +1,55 @@
-import payableRows from "./APAR/AP.json";
-import receivableRows from "./APAR/AR.json";
+import sundryDebtorReport from "./APAR/drs31.03.2026.json";
+import sundryCreditorReport from "./APAR/crs31.03.2026.json";
+import payableBills from "./APAR/AP.json";
+import receivableBills from "./APAR/AR.json";
+import { prisma } from "../../config/db";
 
-type ReportType = "PAYABLE" | "RECEIVABLE";
-type SourceRow = Record<string, string | number | null | undefined>;
+export type ReportType = "PAYABLE" | "RECEIVABLE";
+export type APARSourceRow = Record<string, string | number | null | undefined>;
 
 const amount = (value: unknown) => {
-    const result = Number(value ?? 0);
-    return Number.isFinite(result) ? Number(result.toFixed(2)) : 0;
+    const parsed = Number(value ?? 0);
+    return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
 };
 
-const excelDate = (value: unknown): Date | null => {
-    const serial = Number(value);
-    if (!Number.isFinite(serial) || serial <= 0) return null;
-    return new Date(Date.UTC(1899, 11, 30) + Math.floor(serial) * 86400000);
+const nullableAmount = (value: unknown) => {
+    if (value == null || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : null;
+};
+
+const buildAgingRows = (sourceRows: APARSourceRow[], company: string, balanceType: string, gstinByAgency: Map<string, string>) => {
+    const grouped = new Map<string, { agencyName: string; outstandingAmount: number; agingDays: number; billCount: number }>();
+    for (const row of sourceRows.slice(9)) {
+        const agencyName = String(row["__EMPTY_1"] || "").replace(/[\r\n]+/g, " ").trim();
+        const outstandingAmount = nullableAmount(row["__EMPTY_2"]);
+        if (!agencyName || outstandingAmount === null) continue;
+
+        const key = agencyName.toLocaleUpperCase();
+        const current = grouped.get(key) || { agencyName, outstandingAmount: 0, agingDays: 0, billCount: 0 };
+        current.outstandingAmount = Number((current.outstandingAmount + outstandingAmount).toFixed(2));
+        current.agingDays = Math.max(current.agingDays, amount(row["__EMPTY_4"]));
+        current.billCount += 1;
+        grouped.set(key, current);
+    }
+
+    return [...grouped.values()]
+        .sort((a, b) => a.agencyName.localeCompare(b.agencyName, "en", { sensitivity: "base" }))
+        .map((row, index) => ({
+            partyCode: `V${String(index + 1).padStart(3, "0")}`,
+            agencyName: row.agencyName,
+            branch: company,
+            gstin: gstinByAgency.get(row.agencyName.toLocaleUpperCase()) || "",
+            outstandingAmount: row.outstandingAmount,
+            balanceType,
+            agingDays: row.agingDays,
+            billCount: row.billCount
+        }));
 };
 
 const parsePeriod = (value: string) => {
-    const parsePart = (part: string) => {
-        const match = (part || "").trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
+    const parseDate = (part: string) => {
+        const match = part.trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{2,4})$/);
         if (!match) return null;
         const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
             .indexOf(match[2].toUpperCase());
@@ -27,160 +59,93 @@ const parsePeriod = (value: string) => {
         return new Date(Date.UTC(year, month, Number(match[1])));
     };
     const [start, end] = value.split(/\s+to\s+/i);
-    return { startDate: parsePart(start), endDate: parsePart(end) };
-};
-
-const bucketFor = (days: number) => {
-    if (days <= 60) return "bucket_0_60_days" as const;
-    if (days <= 120) return "bucket_61_120_days" as const;
-    if (days <= 180) return "bucket_121_180_days" as const;
-    return "bucket_180_plus_days" as const;
+    return { startDate: start ? parseDate(start) : null, endDate: end ? parseDate(end) : null };
 };
 
 export class Srv1APARService {
-    static getSrv1APARReport(type: ReportType, includeExportData = false) {
-        const source = (type === "PAYABLE" ? payableRows : receivableRows) as SourceRow[];
-        const headerRow = source.find(row => Object.values(row).some(value => value === "Date")) || {};
-        const companyKey = Object.keys(headerRow).find(key => !key.startsWith("__EMPTY")) ||
-            Object.keys(source[0] || {}).find(key => !key.startsWith("__EMPTY")) || "Company";
-        const periodLabel = source
-            .flatMap(row => Object.values(row))
-            .find(value => typeof value === "string" && /^\d{1,2}-[A-Za-z]{3}-\d{2,4}\s+to\s+\d{1,2}-[A-Za-z]{3}-\d{2,4}$/.test(value.trim())) as string | undefined;
-        const period = parsePeriod(periodLabel || "");
-        const companyName = companyKey || "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra";
-        const footerTotal = [...source].reverse().find(row =>
-            !row["__EMPTY_1"] && Number.isFinite(Number(row["__EMPTY_2"])) && Number(row["__EMPTY_2"]) > 0
-        )?.["__EMPTY_2"];
-        const agencies = new Map<string, any>();
-        const exportData: any[] = [];
-        let parsedInvoiceCount = 0;
-        let pendingTotal = 0;
+    static async getSrv1APARReport(type: ReportType) {
+        const reportKey = type === "PAYABLE" ? "Sundry Creditors" : "Sundry Debtors";
+        const report = (type === "PAYABLE" ? sundryCreditorReport : sundryDebtorReport) as unknown as Record<string, APARSourceRow[]>;
+        const source = report[reportKey] || [];
+        const companyName = Object.keys(source[0] || {})[0] || "Company";
+        const reportTitle = String(source[4]?.[companyName] || (type === "PAYABLE" ? "Sundry Creditors" : "Sundry Debtors"));
+        const periodLabel = String(source[6]?.[companyName] || "");
+        const grandTotalIndex = source.findIndex(row => String(row[companyName] || "").trim().toUpperCase() === "GRAND TOTAL");
+        const grandTotalSource = grandTotalIndex >= 0 ? source[grandTotalIndex] : null;
+        const dataEnd = grandTotalIndex >= 0 ? grandTotalIndex : source.length;
+        const rows = source.slice(12, dataEnd).map(row => ({
+            account: String(row[companyName] || "").trim(),
+            openingBalance: nullableAmount(row["Unnamed: 1"]),
+            transactionDebit: nullableAmount(row["Unnamed: 2"]),
+            transactionCredit: nullableAmount(row["Unnamed: 3"]),
+            closingBalance: nullableAmount(row["Unnamed: 4"])
+        })).filter(row => row.account);
 
-        for (const raw of source) {
-            const billDate = excelDate(raw[companyKey]);
-            const billNo = String(raw.__EMPTY ?? "").trim();
-            const agencyName = String(raw.__EMPTY_1 ?? "").replace(/[\r\n]+/g, " ").trim();
-            const pendingAmount = amount(raw.__EMPTY_2);
-            if (!billDate || !billNo || !agencyName || pendingAmount <= 0) continue;
-
-            const dueDate = excelDate(raw.__EMPTY_3) || billDate;
-            const sourceAge = Number(String(raw.__EMPTY_4 ?? "").trim());
-            const agingDays = Number.isFinite(sourceAge) && sourceAge >= 0
-                ? sourceAge
-                : period.endDate
-                    ? Math.max(Math.floor((period.endDate.getTime() - dueDate.getTime()) / 86400000), 0)
-                    : 0;
-            const agingBucket = bucketFor(agingDays);
-            const agencyKey = agencyName.toLocaleLowerCase();
-            const agencyId = `srv1-agency:${agencyKey.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
-            let agency = agencies.get(agencyKey);
-            if (!agency) {
-                agency = {
-                    agencyId,
-                    agencyName,
-                    vendorCode: "",
-                    gstin: null,
-                    branchName: companyName,
-                    balanceType: type,
-                    createdAt: billDate,
-                    agingDays,
-                    totalOutstanding: 0,
-                    bucket_0_60_days: { amount: 0, invoices: [] as any[] },
-                    bucket_61_120_days: { amount: 0, invoices: [] as any[] },
-                    bucket_121_180_days: { amount: 0, invoices: [] as any[] },
-                    bucket_180_plus_days: { amount: 0, invoices: [] as any[] }
-                };
-                agencies.set(agencyKey, agency);
-            }
-
-            if (billDate < agency.createdAt) agency.createdAt = billDate;
-            agency.agingDays = Math.max(agency.agingDays, agingDays);
-            agency.totalOutstanding += pendingAmount;
-            agency[agingBucket].amount += pendingAmount;
-
-            agency[agingBucket].invoices.push({
-                invoiceId: `srv1-${type.toLowerCase()}-${parsedInvoiceCount + 1}`,
-                invoiceType: type === "PAYABLE" ? "PURCHASE" : "SALE",
-                invoiceNo: billNo,
-                invoiceDate: billDate,
-                invoiceAgeDays: agingDays,
-                grandTotal: pendingAmount,
-                originalGrandTotal: null,
-                allocatedAmount: null,
-                outstandingAmount: pendingAmount,
-                settlementStatus: "UNKNOWN_FROM_SOURCE"
-            });
-
-            exportData.push({
-                vendorCode: agencyId,
-                vendorName: agencyName,
-                billNo,
-                billDate,
-                dueDate,
-                billAmount: null,
-                gstAmount: null,
-                tds: null,
-                paidAmount: null,
-                balanceAmount: pendingAmount,
-                pendingAmount,
-                agingDays,
-                agingBucket,
-                branch: companyName,
-                remarks: "Tally pending amount; original invoice, GST, TDS, and paid totals are not included in the source JSON."
-            });
-            pendingTotal += pendingAmount;
-            parsedInvoiceCount += 1;
-        }
-
-        const rows = [...agencies.values()].sort((a, b) => a.agencyName.localeCompare(b.agencyName));
-        rows.forEach((row, index) => {
-            row.vendorCode = `V${String(index + 1).padStart(3, "0")}`;
-            row.balanceType = type;
-            row.totalOutstanding = Number(row.totalOutstanding.toFixed(2));
-            for (const bucket of [
-                row.bucket_0_60_days,
-                row.bucket_61_120_days,
-                row.bucket_121_180_days,
-                row.bucket_180_plus_days
-            ]) bucket.amount = Number(bucket.amount.toFixed(2));
-        });
-        const vendorCodeById = new Map<string, string>(
-            rows.map(row => [row.agencyId, row.vendorCode] as [string, string])
-        );
-        exportData.forEach(row => row.vendorCode = vendorCodeById.get(row.vendorCode) || row.vendorCode);
-
-        const bucketTotal = (key: string) => rows.reduce((sum, row) => sum + amount(row[key]?.amount), 0);
+        const transactionDebitFromRows = Number(rows.reduce((sum, row) => sum + amount(row.transactionDebit), 0).toFixed(2));
+        const transactionCreditFromRows = Number(rows.reduce((sum, row) => sum + amount(row.transactionCredit), 0).toFixed(2));
         const summary = {
-            totalAgencies: rows.length,
-            totalInvoices: parsedInvoiceCount,
-            totalOutstanding: Number(pendingTotal.toFixed(2)),
-            bucket_0_60_days: bucketTotal("bucket_0_60_days"),
-            bucket_61_120_days: bucketTotal("bucket_61_120_days"),
-            bucket_121_180_days: bucketTotal("bucket_121_180_days"),
-            bucket_180_plus_days: bucketTotal("bucket_180_plus_days")
+            totalLedgers: rows.length,
+            openingBalance: amount(grandTotalSource?.["Unnamed: 1"]),
+            transactionDebit: amount(grandTotalSource?.["Unnamed: 2"]),
+            transactionCredit: amount(grandTotalSource?.["Unnamed: 3"]),
+            closingBalance: amount(grandTotalSource?.["Unnamed: 4"])
         };
+        const agingSourceRows = (type === "PAYABLE" ? payableBills : receivableBills) as unknown as APARSourceRow[];
+        const agencies = await prisma.agency.findMany({
+            where: { isActive: true },
+            select: { name: true, gstin: true }
+        });
+        const gstinByAgency = new Map<string, string>();
+        for (const agency of agencies) {
+            if (!agency.gstin) continue;
+            gstinByAgency.set(
+                agency.name.replace(/[\r\n]+/g, " ").trim().toLocaleUpperCase(),
+                agency.gstin
+            );
+        }
+        const agingRows = buildAgingRows(agingSourceRows, companyName, type, gstinByAgency);
+        const agingOutstandingTotal = Number(agingRows.reduce((sum, row) => sum + row.outstandingAmount, 0).toFixed(2));
+        const period = parsePeriod(periodLabel);
 
         return {
             reportName: type === "PAYABLE"
-                ? "SRV1 Accounts Payable Aging Report"
-                : "SRV1 Accounts Receivable Aging Report",
+                ? "Accounts Payable - Sundry Creditors"
+                : "Accounts Receivable - Sundry Debtors",
             generatedAt: new Date(),
-            branchId: null,
-            agency: null,
-            agencyId: undefined,
+            type,
+            company: companyName,
+            companyDetails: {
+                addressLines: [source[0]?.[companyName], source[1]?.[companyName]],
+                identifier: source[2]?.[companyName],
+                email: source[3]?.[companyName]
+            },
+            group: reportTitle,
+            branchHeading: source[8]?.["Unnamed: 1"] || `${companyName} (from ${periodLabel.split(/\s+to\s+/i)[0] || ""})`,
             period: { ...period, label: periodLabel || null },
+            layout: {
+                columns: [
+                    { key: "account", label: "Particulars" },
+                    { key: "openingBalance", label: "Opening Balance" },
+                    { key: "transactionDebit", label: "Transaction Debit", section: "Transactions" },
+                    { key: "transactionCredit", label: "Transaction Credit", section: "Transactions" },
+                    { key: "closingBalance", label: "Closing Balance" }
+                ]
+            },
             summary,
             rows,
+            agingRows,
             diagnostics: {
-                source: type === "PAYABLE" ? "SRV1/APAR/AP.json" : "SRV1/APAR/AR.json",
-                sourceTitle: type === "PAYABLE" ? "Bills Payable" : "Bills Receivable",
-                sourcePendingTotal: footerTotal == null ? null : amount(footerTotal),
-                parsedPendingTotal: Number(pendingTotal.toFixed(2)),
-                totalDifference: footerTotal == null ? null : Number((amount(footerTotal) - pendingTotal).toFixed(2)),
-                sourceRowsParsed: parsedInvoiceCount,
-                invoiceTotalPaidGstAndTdsAvailable: false
-            },
-            exportData: includeExportData ? exportData : undefined
+                sourceLedgers: rows.length,
+                agingParties: agingRows.length,
+                pendingBillRows: agingRows.reduce((sum, row) => sum + row.billCount, 0),
+                agingOutstandingTotal,
+                grandTotalAvailable: grandTotalSource !== null,
+                transactionDebitRowsTotal: transactionDebitFromRows,
+                transactionCreditRowsTotal: transactionCreditFromRows,
+                transactionTotalsMatchSource: Math.abs(transactionDebitFromRows - summary.transactionDebit) < 0.01 &&
+                    Math.abs(transactionCreditFromRows - summary.transactionCredit) < 0.01,
+                invoiceAgingAvailable: true
+            }
         };
     }
 }

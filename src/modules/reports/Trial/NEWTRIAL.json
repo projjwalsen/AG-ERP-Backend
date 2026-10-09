@@ -1,0 +1,7718 @@
+{
+  "sourceFile": "trial bal 31.03.2026.xlsx",
+  "sheetCount": 1,
+  "sheets": {
+    "Trial Balance": {
+      "columns": 5,
+      "rows": [
+        [
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "CIN: U11100MH2011PTC224243",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "E-Mail : info@ashtvinayakapetrochem.com",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Trial Balance",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "1-Apr-25 to 31-Mar-26",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra (from 1-Apr-25)",
+          null,
+          null,
+          null
+        ],
+        [
+          "Particulars",
+          "1-Apr-25 to 31-Mar-26",
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "Opening",
+          "Transactions",
+          null,
+          "Closing"
+        ],
+        [
+          null,
+          "Balance",
+          "Debit",
+          "Credit",
+          "Balance"
+        ],
+        [
+          "Capital Account",
+          243318579.16,
+          null,
+          null,
+          243318579.16
+        ],
+        [
+          "Reserves & Surplus",
+          190318579.16,
+          null,
+          null,
+          190318579.16
+        ],
+        [
+          "RESERVES & SURPLUS",
+          161818579.16,
+          null,
+          null,
+          161818579.16
+        ],
+        [
+          "SECURITY PREMIUM",
+          28500000,
+          null,
+          null,
+          28500000
+        ],
+        [
+          "Share Capital",
+          53000000,
+          null,
+          null,
+          53000000
+        ],
+        [
+          "Mahima Menda Paid Up Capital",
+          26500000,
+          null,
+          null,
+          26500000
+        ],
+        [
+          "Sandeep Singh Paid Up Capital",
+          26500000,
+          null,
+          null,
+          26500000
+        ],
+        [
+          "Loans (Liability)",
+          553776525.55,
+          9637514071.3,
+          9652077580.53,
+          568340034.78
+        ],
+        [
+          "Bank OD A/c & CC A/c",
+          302852776.8,
+          8420134222.96,
+          8433299405.15,
+          316017958.99
+        ],
+        [
+          "BANK OF BARODA - 13780500000078",
+          null,
+          917634,
+          917634,
+          null
+        ],
+        [
+          "BANK OF MAHARASHTRA- C/C 60434886441",
+          302852776.8,
+          8419216588.96,
+          8432381771.15,
+          316017958.99
+        ],
+        [
+          "Secured Loans",
+          56703741.43,
+          125178606.21,
+          111623390.12,
+          43148525.34
+        ],
+        [
+          "BANK OF MAHARASHTRA GECL LOAN - 60435324219",
+          11041346,
+          7181585.64,
+          832897.64,
+          4692658
+        ],
+        [
+          "Bank of Maharashtra Term Loan 60435104974",
+          26710967.88,
+          9948632.2,
+          4329371.2,
+          21091706.88
+        ],
+        [
+          "HDFC BANK 160603957 COMM. VEH. MH43CK6521",
+          1450000,
+          425890,
+          null,
+          1024110
+        ],
+        [
+          "HDFC BANK AUTO LOAN-139545540 KIA SONET",
+          447824.87,
+          447824.87,
+          null,
+          null
+        ],
+        [
+          "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+          1877586.32,
+          571219.86,
+          null,
+          1306366.46
+        ],
+        [
+          "HDFC BANK AUTO LOAN-166649820 BMW",
+          null,
+          196509,
+          4790630,
+          4594121
+        ],
+        [
+          "HDFC BANK LTD (MAHINDRA THAR) 117909323",
+          302536.36,
+          302536.36,
+          null,
+          null
+        ],
+        [
+          "ICICI BANK CE LOAN- LQPVL00047732425-PAVER",
+          14805556,
+          4365993,
+          null,
+          10439563
+        ],
+        [
+          "YES BANK LTD ( MAHINDRA BOLERO) - ALN000100853150",
+          67924,
+          67924,
+          null,
+          null
+        ],
+        [
+          "YES BANK TERM LOAN 248LA42252890001",
+          null,
+          25205479.45,
+          25205479.45,
+          null
+        ],
+        [
+          "YES BANK TERM LOAN 248LA42252930001",
+          null,
+          25205479.45,
+          25205479.45,
+          null
+        ],
+        [
+          "YES BANK TERM LOAN 803LA42251680001",
+          null,
+          25642465.76,
+          25642465.76,
+          null
+        ],
+        [
+          "YES BANK TERM LOAN 803LA42251890001",
+          null,
+          25617066.62,
+          25617066.62,
+          null
+        ],
+        [
+          "Unsecured Loans",
+          194220007.32,
+          1092201242.13,
+          1107154785.26,
+          209173550.45
+        ],
+        [
+          "Loan From Directors",
+          23586838.62,
+          47196769,
+          45368000,
+          21758069.62
+        ],
+        [
+          "Mahima Menda - Loan From Director",
+          21297518,
+          20594862,
+          12568000,
+          13270656
+        ],
+        [
+          "Sandeep Singh - Loan From Director",
+          2289320.62,
+          26601907,
+          32800000,
+          8487413.62
+        ],
+        [
+          "Unsecured from Bank",
+          5669384.98,
+          84683848.18,
+          165798024.19,
+          86783560.99
+        ],
+        [
+          "AXIS BANK BPR032712902112",
+          null,
+          1641202,
+          7493685,
+          5852483
+        ],
+        [
+          "AXIS CORPORATE CARD 0344",
+          null,
+          11360935,
+          20164794.19,
+          8803859.19
+        ],
+        [
+          "HDFC CORPORATE CARD -9607",
+          null,
+          261006,
+          261006,
+          null
+        ],
+        [
+          "HDFC CORPORATE CARD - V2P 3288",
+          2024780.12,
+          35274831,
+          35376070.32,
+          2126019.44
+        ],
+        [
+          "HDFC CORPORATE CARD - V2P 3767",
+          3644604.86,
+          34269604.86,
+          30625000,
+          null
+        ],
+        [
+          "IDBI BANK LIMITED",
+          null,
+          1876269.32,
+          71877468.68,
+          70001199.36
+        ],
+        [
+          "Unsecured from Other than Bank",
+          101146121.22,
+          783156210.61,
+          782642009.23,
+          100631919.84
+        ],
+        [
+          "Art Infrastructure Pvt Ltd - Loan A/c",
+          39796150.43,
+          498852404,
+          499056253.57,
+          40000000
+        ],
+        [
+          "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+          1891761.06,
+          14386787,
+          14960233,
+          2465207.06
+        ],
+        [
+          "L&T Finance Holdings Limited. BL231224040100133",
+          3319450.73,
+          3371159.09,
+          55604.36,
+          3896
+        ],
+        [
+          "L &T FINANCE LIMITED BL250613256600976",
+          null,
+          1462899.52,
+          7573318,
+          6110418.48
+        ],
+        [
+          "MAS FINANCIAL SERVICES LTD -5391230",
+          3365154,
+          2190855,
+          39806,
+          1214105
+        ],
+        [
+          "SHREE GURU KRIPA ENTERPRISES (DR)",
+          null,
+          12500000,
+          12500000,
+          null
+        ],
+        [
+          "TATA CAPITAL LIMITED",
+          50497520,
+          248467590,
+          248456794.3,
+          50486724.3
+        ],
+        [
+          "UNITY SMALL FINANCE BANK LTD",
+          2276085,
+          1924516,
+          null,
+          351569
+        ],
+        [
+          "AXIS BANK LOAN - BPR064708241270",
+          1890297,
+          1890297,
+          null,
+          null
+        ],
+        [
+          "CLIX CAPITAL SERVICES PVT LTD",
+          243044,
+          243409,
+          365,
+          null
+        ],
+        [
+          "HDFC CORPORATE CARD -4385",
+          907646.4,
+          1072081,
+          164434.6,
+          null
+        ],
+        [
+          "ICICI Business Loan - UPMUM00046126149",
+          839598.6,
+          871877.8,
+          32279.2,
+          null
+        ],
+        [
+          "IVC LOGISTICS LIMITED",
+          null,
+          20000000,
+          20000000,
+          null
+        ],
+        [
+          "MAS FINANCIAL SERVICES LTD - VENDOR",
+          3862952,
+          3862952,
+          null,
+          null
+        ],
+        [
+          "MONEYWISE FINANCIAL SERICES PVT LTD - BL00711",
+          2999.5,
+          7499.5,
+          4500,
+          null
+        ],
+        [
+          "POONAWALA FINCORP LTD - BLU0027DSC000006124326",
+          1186722,
+          1194774,
+          8052,
+          null
+        ],
+        [
+          "SHRIRAM FINANCE LIMITED",
+          29884403,
+          91704572,
+          61820169,
+          null
+        ],
+        [
+          "VAISHNAVI ENTERPRISES",
+          null,
+          5000000,
+          5000000,
+          null
+        ],
+        [
+          "YES BANK TERM LOAN 803LA42250690001",
+          25000000,
+          25654280.81,
+          654280.81,
+          null
+        ],
+        [
+          "YES BANK TERM LOAN 803LA42250920001",
+          null,
+          25662671.23,
+          25662671.23,
+          null
+        ],
+        [
+          "Current Liabilities",
+          499121675.29,
+          8990065224.57,
+          9061714765.56,
+          570771216.28
+        ],
+        [
+          "Duties & Taxes",
+          6067194.5,
+          2122266719.77,
+          2121596238.87,
+          5396713.6
+        ],
+        [
+          "GST",
+          4530225.36,
+          2111208926.77,
+          2110589809.39,
+          3911107.98
+        ],
+        [
+          "CASH LEDGER",
+          301500,
+          279303,
+          583497,
+          2694
+        ],
+        [
+          "CGST CASH LEDGER_x000D_\n",
+          11295,
+          86999,
+          169731,
+          71437
+        ],
+        [
+          "IGST CASH LEDGER_x000D_\n",
+          265583,
+          67824,
+          244035,
+          89372
+        ],
+        [
+          "SGST CASH LEDGER_x000D_\n",
+          24622,
+          124480,
+          169731,
+          20629
+        ],
+        [
+          "GST BLOCKED",
+          null,
+          4338653,
+          4338653,
+          null
+        ],
+        [
+          "CGST-ITC BLOCKED",
+          null,
+          1252015,
+          1252015,
+          null
+        ],
+        [
+          "IGST-ITC BLOCKED",
+          null,
+          1834623,
+          1834623,
+          null
+        ],
+        [
+          "SGST-ITC BLOCKED",
+          null,
+          1252015,
+          1252015,
+          null
+        ],
+        [
+          "GST PAYABLE",
+          7179811,
+          410843963,
+          407392497,
+          3728345
+        ],
+        [
+          "CGST- PAYABLE/REFUNDABLE",
+          1578967,
+          97295440,
+          98874407,
+          null
+        ],
+        [
+          "IGST- PAYABLE/REFUNDABLE",
+          null,
+          205884641,
+          209612986,
+          3728345
+        ],
+        [
+          "SGST- PAYABLE/REFUNDABLE",
+          8758778,
+          107663882,
+          98905104,
+          null
+        ],
+        [
+          "INPUT GST",
+          2540640.64,
+          840842606.09,
+          843240815.38,
+          142431.35
+        ],
+        [
+          "CGST ITC Not Reflected in GSTR-2B",
+          85573.53,
+          486198.98,
+          544071.01,
+          27701.5
+        ],
+        [
+          "IGST ITC Not Reflected in GSTR-2B",
+          2369493.58,
+          1007276.77,
+          3289742,
+          87028.35
+        ],
+        [
+          "INPUT CGST 14%",
+          null,
+          48552.03,
+          48552.03,
+          null
+        ],
+        [
+          "INPUT CGST 2.5%",
+          null,
+          1648.13,
+          1648.13,
+          null
+        ],
+        [
+          "INPUT CGST 6%",
+          null,
+          261395,
+          261395,
+          null
+        ],
+        [
+          "INPUT CGST 9%",
+          null,
+          233241667.13,
+          233241667.13,
+          null
+        ],
+        [
+          "INPUT IGST 12%",
+          null,
+          431582.52,
+          431582.52,
+          null
+        ],
+        [
+          "INPUT IGST 18%",
+          null,
+          371277266.2,
+          371277266.2,
+          null
+        ],
+        [
+          "INPUT IGST 28%",
+          null,
+          47554.49,
+          47554.49,
+          null
+        ],
+        [
+          "INPUT IGST 5%",
+          null,
+          3.57,
+          3.57,
+          null
+        ],
+        [
+          "INPUT SGST 14%",
+          null,
+          48552.03,
+          48552.03,
+          null
+        ],
+        [
+          "INPUT SGST 2.5%",
+          null,
+          1648.13,
+          1648.13,
+          null
+        ],
+        [
+          "INPUT SGST 6%",
+          null,
+          261395,
+          261395,
+          null
+        ],
+        [
+          "INPUT SGST 9%",
+          null,
+          233241667.13,
+          233241667.13,
+          null
+        ],
+        [
+          "SGST ITC Not Reflected in GSTR-2B",
+          85573.53,
+          486198.98,
+          544071.01,
+          27701.5
+        ],
+        [
+          "OUTPUT GST",
+          null,
+          847080421.85,
+          847080421.85,
+          null
+        ],
+        [
+          "OUTPUT CGST 2.5%",
+          null,
+          750,
+          750,
+          null
+        ],
+        [
+          "OUTPUT CGST 9%",
+          null,
+          323067147.77,
+          323067147.77,
+          null
+        ],
+        [
+          "OUTPUT IGST 12%",
+          null,
+          754633.26,
+          754633.26,
+          null
+        ],
+        [
+          "OUTPUT IGST 18%",
+          null,
+          200189993.05,
+          200189993.05,
+          null
+        ],
+        [
+          "OUTPUT SGST 2.5%",
+          null,
+          750,
+          750,
+          null
+        ],
+        [
+          "OUTPUT SGST 9%",
+          null,
+          323067147.77,
+          323067147.77,
+          null
+        ],
+        [
+          "RCM",
+          192555,
+          7823979.83,
+          7953925.16,
+          322500.33
+        ],
+        [
+          "INPUT RCM CGST_x000D_\n",
+          null,
+          935439.54,
+          935439.54,
+          null
+        ],
+        [
+          "INPUT RCM IGST",
+          null,
+          2106082.46,
+          2106082.46,
+          null
+        ],
+        [
+          "INPUT RCM SGST_x000D_\n",
+          null,
+          935439.54,
+          935439.54,
+          null
+        ],
+        [
+          "OUTPUT RCM CGST_x000D_\n",
+          81594,
+          879996.22,
+          935440.22,
+          137038
+        ],
+        [
+          "OUTPUT RCM IGST",
+          29367,
+          2087025.85,
+          2106083.18,
+          48424.33
+        ],
+        [
+          "OUTPUT RCM SGST_x000D_\n",
+          81594,
+          879996.22,
+          935440.22,
+          137038
+        ],
+        [
+          "TCS",
+          197423,
+          219017,
+          37264,
+          15670
+        ],
+        [
+          "TCS ON SALE @0.1%_x000D_\n",
+          197423,
+          197423,
+          null,
+          null
+        ],
+        [
+          "TCS ON SALE OF SCRAP 1%",
+          null,
+          21594,
+          37264,
+          15670
+        ],
+        [
+          "TDS",
+          1281971.14,
+          10104458,
+          10234761.48,
+          1412274.62
+        ],
+        [
+          "TDS ON COMMISSION",
+          10000,
+          64393,
+          62393,
+          8000
+        ],
+        [
+          "TDS ON CONTRACT",
+          131743,
+          1289042,
+          1355616.78,
+          198317.78
+        ],
+        [
+          "TDS ON INTEREST ON UNSECURED LOAN",
+          70843.31,
+          1127789,
+          1123387.7,
+          66442.01
+        ],
+        [
+          "TDS ON LABOUR CHARGES",
+          544,
+          5890,
+          5346,
+          null
+        ],
+        [
+          "TDS ON PROFESSIONAL FEES_x000D_\n",
+          36602,
+          314999,
+          298252,
+          19855
+        ],
+        [
+          "TDS ON PURCHASE OF GOODS @0.10%",
+          896150.83,
+          4409558,
+          3986045,
+          472637.83
+        ],
+        [
+          "TDS ON RENT",
+          45983,
+          553792,
+          568790,
+          60981
+        ],
+        [
+          "TDS ON SALARY",
+          162896,
+          2332731,
+          2755876,
+          586041
+        ],
+        [
+          "TDS ON TECHNICAL FEES",
+          null,
+          1657,
+          1657,
+          null
+        ],
+        [
+          "UNCONSUMED CHALLAN_x000D_\n",
+          72791,
+          4607,
+          77398,
+          null
+        ],
+        [
+          "PROVIDENT FUND PAYABLE_x000D_\n",
+          46000,
+          585818,
+          585979,
+          46161
+        ],
+        [
+          "PTEC PAYABLE",
+          null,
+          5000,
+          5000,
+          null
+        ],
+        [
+          "PTRC PAYABLE_x000D_\n",
+          11575,
+          143500,
+          143425,
+          11500
+        ],
+        [
+          "Sundry Creditors",
+          332630278.48,
+          5486019254.2,
+          5434226296.34,
+          280837320.62
+        ],
+        [
+          "SUNDRY CREDITORS (OTHERS)",
+          8132112.66,
+          194597332.31,
+          217094304.41,
+          30629084.76
+        ],
+        [
+          "Aadi Cables & Electricals",
+          108239,
+          756925,
+          648686,
+          null
+        ],
+        [
+          "AADITYA BULK MOVERS",
+          4539,
+          23547,
+          83457,
+          64449
+        ],
+        [
+          "AADVIK ENTERPRISES",
+          50999,
+          null,
+          null,
+          50999
+        ],
+        [
+          "A B ENGINEERING",
+          null,
+          92040,
+          92040,
+          null
+        ],
+        [
+          "ACCUTRACE LABORATORY LLP",
+          null,
+          8468,
+          8468,
+          null
+        ],
+        [
+          "Adarsh Waste Management",
+          null,
+          22356,
+          22356,
+          null
+        ],
+        [
+          "ADDIS MARKETING",
+          null,
+          736550,
+          736550,
+          null
+        ],
+        [
+          "Aditi Transtrade- Transport",
+          1485079.73,
+          6588574,
+          16924262,
+          11820767.73
+        ],
+        [
+          "Aditya Enterprises",
+          null,
+          2650,
+          2650,
+          null
+        ],
+        [
+          "ADV. SANJAY M YEGURWAR",
+          null,
+          21000,
+          21000,
+          null
+        ],
+        [
+          "AGARWAL MAHESH K. & CO.",
+          null,
+          26963,
+          26963,
+          null
+        ],
+        [
+          "ALLTECH INDIA LIMITED",
+          null,
+          78572,
+          78572,
+          null
+        ],
+        [
+          "AMIT ENTERPRISES",
+          null,
+          457073,
+          468578,
+          11505
+        ],
+        [
+          "AMIT ROADLINES",
+          null,
+          86871,
+          86871,
+          null
+        ],
+        [
+          "ANKITA AGARWAL & ASSOCIATES",
+          null,
+          5900,
+          5900,
+          null
+        ],
+        [
+          "ANKIT - AKASH TRANSPORT",
+          null,
+          26279,
+          26279,
+          null
+        ],
+        [
+          "ANTARIKSH SOFTTECH PRIVATE LIMITED",
+          null,
+          33000,
+          33300,
+          300
+        ],
+        [
+          "AON FINTECH PVT LTD",
+          null,
+          17700,
+          17700,
+          null
+        ],
+        [
+          "APEX LOGISTICS SERVICES",
+          null,
+          null,
+          24255,
+          24255
+        ],
+        [
+          "APK PETROCHEM INDIA LLP - TRANSPORT",
+          null,
+          2111120,
+          2970159,
+          859039
+        ],
+        [
+          "Appa Electrical Hardware",
+          null,
+          34544,
+          36847.86,
+          2303.86
+        ],
+        [
+          "ARIELION TRANSLINE",
+          null,
+          3923964,
+          5250270,
+          1326306
+        ],
+        [
+          "ARIELION TRANSLOG",
+          null,
+          null,
+          297734,
+          297734
+        ],
+        [
+          "ARIHANT PACKAGING",
+          null,
+          175272,
+          175272,
+          null
+        ],
+        [
+          "ARKCA CORPORATE SOLUTIONS PVT LTD",
+          null,
+          9130,
+          9130,
+          null
+        ],
+        [
+          "ARPAN COOLING TOWERS",
+          null,
+          230100,
+          230100,
+          null
+        ],
+        [
+          "ASAD COOL SERVICES",
+          null,
+          10692,
+          10692,
+          null
+        ],
+        [
+          "ASHA ENTERPRISES",
+          null,
+          12508,
+          12508,
+          null
+        ],
+        [
+          "ASSOCIATES 56",
+          null,
+          115523,
+          115523,
+          null
+        ],
+        [
+          "ATLANTIC GLOBAL SHIPPING PVT LTD",
+          554008.01,
+          null,
+          554008.01,
+          null
+        ],
+        [
+          "ATLA SPEC LABS LLP",
+          null,
+          49880,
+          49880,
+          null
+        ],
+        [
+          "Automjet Automobiles Private Limited",
+          null,
+          192567,
+          190278.74,
+          2288.26
+        ],
+        [
+          "AUTOMOTIVE MANUFACTURERS PVTLTD",
+          null,
+          74009,
+          74009,
+          null
+        ],
+        [
+          "AVADH BULK CARRIER",
+          null,
+          null,
+          11880,
+          11880
+        ],
+        [
+          "AXIS BANK LIMITED",
+          null,
+          179227.2,
+          179227.2,
+          null
+        ],
+        [
+          "BAJAJ ALLIANZ GENERAL INSURANCE COMPANY LIMITED",
+          null,
+          221614,
+          221614,
+          null
+        ],
+        [
+          "Bakliwal & Co.",
+          null,
+          295000,
+          295000,
+          null
+        ],
+        [
+          "BANK OF MAHARASHTRA",
+          null,
+          3114788.82,
+          3114788.82,
+          null
+        ],
+        [
+          "BHARAT DEKHO",
+          25983,
+          911853,
+          1028509,
+          142639
+        ],
+        [
+          "BHARAT ENGINEERING INFRA CORPORATION",
+          null,
+          2029.6,
+          2029.6,
+          null
+        ],
+        [
+          "BHARTI AIRTEL LIMITED",
+          null,
+          14842.04,
+          14842.04,
+          null
+        ],
+        [
+          "BHAVESH ENGINEERINGS",
+          null,
+          2834520,
+          1940156,
+          894364
+        ],
+        [
+          "BHAVNA AUTOMOBILES PVT LTD",
+          null,
+          36530,
+          36530,
+          null
+        ],
+        [
+          "BHIMASEN.S.MAHARANA",
+          null,
+          33109,
+          33109,
+          null
+        ],
+        [
+          "B J SCIENTIFIC COMPANY",
+          28669,
+          60190,
+          43520,
+          11999
+        ],
+        [
+          "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+          null,
+          662927,
+          7322811.2,
+          6659884.2
+        ],
+        [
+          "BRIGHT LIGHT",
+          null,
+          621265,
+          621265,
+          null
+        ],
+        [
+          "BUREAU OF INDIAN STANDARDS",
+          null,
+          181720,
+          181720,
+          null
+        ],
+        [
+          "BYTI HOLIDAYS LLP",
+          null,
+          695556,
+          695207,
+          349
+        ],
+        [
+          "CA DINESH JAIN",
+          null,
+          273000,
+          306000,
+          33000
+        ],
+        [
+          "CA MEENAL THAKKAR AND ASSOCIATES",
+          null,
+          72000,
+          72000,
+          null
+        ],
+        [
+          "CELLULAR JOINT NX",
+          null,
+          146399,
+          241199,
+          94800
+        ],
+        [
+          "Central Depository Services (India) Limited",
+          null,
+          92850,
+          92850,
+          null
+        ],
+        [
+          "CENTRAL WAREHOUSING CORPORATION",
+          null,
+          92017,
+          92017,
+          null
+        ],
+        [
+          "CHEM PHARMA",
+          null,
+          3478582,
+          3478582,
+          null
+        ],
+        [
+          "CHITTRANJAN SHAH KAYLEGAL & ASSOCIATES LLP",
+          54000,
+          270000,
+          216000,
+          null
+        ],
+        [
+          "CHOLAMANDALAM MS GENERAL INSURANCE COMPANY LIMITED_MAH",
+          null,
+          29294,
+          29294,
+          null
+        ],
+        [
+          "CONSOLIDATED PRIVATE LIMITED",
+          null,
+          null,
+          147764,
+          147764
+        ],
+        [
+          "COOL CLIMATE",
+          null,
+          2360,
+          2360,
+          null
+        ],
+        [
+          "CREATIVE VALUERS AND ENGINEERS",
+          null,
+          35400,
+          35400,
+          null
+        ],
+        [
+          "Cubictree Technology Solutions Pvt Ltd.",
+          null,
+          5000,
+          5900,
+          900
+        ],
+        [
+          "DAS ASSOCIATES (ADVOCATES & LEGAL CONSULTANTS)",
+          null,
+          30000,
+          30000,
+          null
+        ],
+        [
+          "DASHMESH ROADLINES",
+          null,
+          304839,
+          304839,
+          null
+        ],
+        [
+          "DATTAPRASAD DHURI",
+          null,
+          3010000,
+          3010000,
+          null
+        ],
+        [
+          "DD-District Supply Officer, Raigad Alibag",
+          null,
+          5000,
+          5000,
+          null
+        ],
+        [
+          "DD FOR Pay And Accounts officer DPS",
+          null,
+          60000,
+          60000,
+          null
+        ],
+        [
+          "DD-PAY AND ACCOUNTS OFFICER PREFRE BARC TARAPUR",
+          null,
+          12600,
+          12600,
+          null
+        ],
+        [
+          "DEEPIKA MADANLAL OSWAL",
+          null,
+          12000,
+          12000,
+          null
+        ],
+        [
+          "DELTA VALUERS AND APPRAISERS LLP",
+          null,
+          null,
+          8850,
+          8850
+        ],
+        [
+          "DEV LOKA EDUCATIONAL TRUST",
+          null,
+          484184,
+          484184,
+          null
+        ],
+        [
+          "DHRUVI LOGISTICS",
+          null,
+          298822,
+          298822,
+          null
+        ],
+        [
+          "Divakar Pandey And Associates",
+          null,
+          31400,
+          31400,
+          null
+        ],
+        [
+          "DIVINE TRANSLINE",
+          null,
+          800549,
+          906786,
+          106237
+        ],
+        [
+          "DIVYA CHAND - Shiva Nand",
+          196000,
+          1568000,
+          1372000,
+          null
+        ],
+        [
+          "DREAMS COME TRUE TRAVEL AND TOURS",
+          null,
+          292108,
+          292108,
+          null
+        ],
+        [
+          "D S LOGISTICS",
+          null,
+          231819,
+          231819,
+          null
+        ],
+        [
+          "D V L LOGISTICS",
+          null,
+          87387,
+          87387,
+          null
+        ],
+        [
+          "Falguni Jain",
+          225000,
+          272250,
+          497250,
+          null
+        ],
+        [
+          "GANGA & BROTHERS DIESEL GARAGE",
+          null,
+          15661,
+          15661,
+          null
+        ],
+        [
+          "Gaurav Star Vision",
+          2860,
+          10220,
+          10360,
+          3000
+        ],
+        [
+          "Gayatri Roadlines Pvt Ltd",
+          null,
+          1354558,
+          1383426,
+          28868
+        ],
+        [
+          "GEETA TRANSLINES",
+          66467,
+          66467,
+          null,
+          null
+        ],
+        [
+          "GENERAL AUTO AGENCY",
+          null,
+          null,
+          11100,
+          11100
+        ],
+        [
+          "GEO-CHEM LABORATORIES PRIVATE LIMITED - GUJ",
+          null,
+          7308,
+          7308,
+          null
+        ],
+        [
+          "G K TRANSPORT",
+          150058,
+          366619,
+          287148,
+          70587
+        ],
+        [
+          "GLOBAL ENTERPRISE",
+          null,
+          121032,
+          121032,
+          null
+        ],
+        [
+          "GOLDAN TENKER TRANSPORT",
+          null,
+          482183,
+          482183,
+          null
+        ],
+        [
+          "GRT TRAVELS",
+          null,
+          56600,
+          56600,
+          null
+        ],
+        [
+          "GUARDIANS HUMAN RESOURCES (OPC) PVT LTD",
+          null,
+          123000,
+          123000,
+          null
+        ],
+        [
+          "GUPTA TYRE HOUSE",
+          null,
+          232200,
+          232200,
+          null
+        ],
+        [
+          "GURU RAJENDRA RICE MILL",
+          14520,
+          141950,
+          127430,
+          null
+        ],
+        [
+          "GURU RAJENDRA TRADERS",
+          5400,
+          null,
+          null,
+          5400
+        ],
+        [
+          "GURURAJ RUBBER ENTERPRISE",
+          null,
+          112100,
+          112100,
+          null
+        ],
+        [
+          "HARSHIT LOGISTICS",
+          2213749,
+          2213749,
+          null,
+          null
+        ],
+        [
+          "HITECH ELECTRIC",
+          null,
+          13413,
+          13413,
+          null
+        ],
+        [
+          "HOME CARE ENTERPRISES",
+          null,
+          8000,
+          8000,
+          null
+        ],
+        [
+          "HRS TRANSPORT",
+          null,
+          600000,
+          472535,
+          127465
+        ],
+        [
+          "ICICI LOMBARD GENERAL INSURANCE CO. LTD",
+          null,
+          116703.56,
+          116703.56,
+          null
+        ],
+        [
+          "ICICI LOMBARD GENERAL INSURANCE COMPANY LIMITED – DELHI",
+          null,
+          885,
+          885,
+          null
+        ],
+        [
+          "ICICI LOMBARD GENERAL INSURANCE COMPANY LIMITED – GJ",
+          null,
+          59732,
+          59732,
+          null
+        ],
+        [
+          "IKYA INC",
+          null,
+          61950,
+          61950,
+          null
+        ],
+        [
+          "Incomlend Pte Ltd",
+          null,
+          44615,
+          44615,
+          null
+        ],
+        [
+          "INDRAJEET KUMAR PRAJAPATI",
+          null,
+          30000,
+          30000,
+          null
+        ],
+        [
+          "INTIME TOURS",
+          null,
+          12000,
+          12000,
+          null
+        ],
+        [
+          "IWORLD",
+          null,
+          null,
+          148000,
+          148000
+        ],
+        [
+          "JAI AMBE TRANSLINE PRIVATE LIMITED",
+          null,
+          262818,
+          262818,
+          null
+        ],
+        [
+          "Jai Ambe Transport",
+          127709,
+          1765796,
+          2344042,
+          705955
+        ],
+        [
+          "JAI AUTO PARTS",
+          null,
+          17330,
+          17330,
+          null
+        ],
+        [
+          "Jayprakash Ramashankar Singh",
+          null,
+          49851,
+          49851,
+          null
+        ],
+        [
+          "JMD CLEARING & FORWARDING INDIA PVT LTD",
+          null,
+          4226783,
+          4226783,
+          null
+        ],
+        [
+          "KAMAL MOTORS",
+          25316,
+          6552,
+          31868,
+          null
+        ],
+        [
+          "KAMAL TRADING CO.",
+          null,
+          null,
+          24704,
+          24704
+        ],
+        [
+          "KHAPRE PRAMILA HARISHCHANDRA",
+          null,
+          4950,
+          4950,
+          null
+        ],
+        [
+          "KHOPADE TRADERS",
+          8193,
+          88994,
+          95373,
+          14572
+        ],
+        [
+          "KIRAN MARUTI JADHAV",
+          null,
+          19500,
+          19500,
+          null
+        ],
+        [
+          "K K TRADERS",
+          null,
+          13074,
+          13074,
+          null
+        ],
+        [
+          "K. K. TRANSPORT",
+          null,
+          130284,
+          149688,
+          19404
+        ],
+        [
+          "KOHINOOR TELEVIDEO PVT LTD",
+          null,
+          null,
+          45200,
+          45200
+        ],
+        [
+          "KONE ELEVATOR INDIA PRIVATE LIMITED",
+          55195.94,
+          55195.94,
+          null,
+          null
+        ],
+        [
+          "KRISHNA KETHAVATH",
+          null,
+          56801,
+          56801,
+          null
+        ],
+        [
+          "K SOLUTIONS",
+          null,
+          63666,
+          63666,
+          null
+        ],
+        [
+          "LEGAL ENTITY IDENTIFIER INDIA LIMITED",
+          null,
+          14868,
+          14868,
+          null
+        ],
+        [
+          "LEGEND LOGISTICS ( INDIA ) PRIVATE LIMITED",
+          null,
+          220980,
+          220980,
+          null
+        ],
+        [
+          "LEGEND LOGISTICS (INDIA) PRIVATE LIMITED (GUJ)",
+          null,
+          3148530,
+          3148530,
+          null
+        ],
+        [
+          "LG ELECTRONICS INDIA PRIVATE LIMITED",
+          null,
+          6018,
+          6018,
+          null
+        ],
+        [
+          "LOTUS ENTERPRISES",
+          14666,
+          81161,
+          112387,
+          45892
+        ],
+        [
+          "LOVELY ROADLINES",
+          null,
+          367815,
+          367815,
+          null
+        ],
+        [
+          "LUCKY STATIONERS",
+          53100,
+          53100,
+          null,
+          null
+        ],
+        [
+          "LUSH DEVLOPERS PRIVATE LIMITED",
+          null,
+          21000,
+          21000,
+          null
+        ],
+        [
+          "MADHAV LOGISTICS",
+          null,
+          92565,
+          92565,
+          null
+        ],
+        [
+          "MADHAV LOGISTICS TR",
+          null,
+          92565,
+          92565,
+          null
+        ],
+        [
+          "MAHAKAAL ROADLINES",
+          null,
+          19800,
+          19800,
+          null
+        ],
+        [
+          "MAHARASHTRA ENGINEERS & TECHNOCIATE",
+          null,
+          8100,
+          8100,
+          null
+        ],
+        [
+          "Mahashakti Steel",
+          null,
+          null,
+          86360,
+          86360
+        ],
+        [
+          "MAHINDRA PRATAP SINGH ( INCENTIVE )",
+          null,
+          150000,
+          150000,
+          null
+        ],
+        [
+          "MANGALAM PLYWOOD",
+          273906,
+          2206471,
+          1932565,
+          null
+        ],
+        [
+          "MANGLAM SYSTEMS",
+          null,
+          208277.5,
+          208277.5,
+          null
+        ],
+        [
+          "MARS PRODUCTS AND SERVICES",
+          null,
+          271400,
+          271400,
+          null
+        ],
+        [
+          "MEENAKSHI ROADLINES - TRANSPORT",
+          null,
+          873480,
+          1108481,
+          235001
+        ],
+        [
+          "M E SHIPPING SERVICES",
+          null,
+          48870,
+          48870,
+          null
+        ],
+        [
+          "MIRA INFORM PVT LTD",
+          2360,
+          6254,
+          3894,
+          null
+        ],
+        [
+          "MLL EXPRESS SERVICES PRIVATE LIMITED",
+          null,
+          2160,
+          2160,
+          null
+        ],
+        [
+          "MOHIT TRANSPORT",
+          17500,
+          null,
+          null,
+          17500
+        ],
+        [
+          "MONARCH SKYLINE LTD",
+          null,
+          27000,
+          27000,
+          null
+        ],
+        [
+          "MR BALAJI DHANAJI",
+          null,
+          14719.6,
+          14719.6,
+          null
+        ],
+        [
+          "M.S. BULK CARRIERS",
+          223953,
+          2049368.62,
+          1825415.62,
+          null
+        ],
+        [
+          "MSC MEDITERRANEAN SHIPPING CO. S.A.AGENT MSC AGENCY (INDIA)",
+          null,
+          247363.81,
+          247363.81,
+          null
+        ],
+        [
+          "M/s GIT TECHNOLOGIES PRIVATE LIMITED",
+          null,
+          97768,
+          97768,
+          null
+        ],
+        [
+          "M/S  MEHNDIRATTA BATTERY HOUSE",
+          null,
+          9000,
+          9000,
+          null
+        ],
+        [
+          "MUFG INTIME INDIA PRIVATE LIMITED",
+          null,
+          4425,
+          4425,
+          null
+        ],
+        [
+          "MUKESH H. SHAH & CO.",
+          null,
+          54000,
+          54000,
+          null
+        ],
+        [
+          "MUMBAI WASTE MANAGEMENT LTD_x000D_\n",
+          26419,
+          26419,
+          null,
+          null
+        ],
+        [
+          "MUNDHRA CONTAINER FREIGHT STATION PVT LTD.",
+          null,
+          null,
+          41272,
+          41272
+        ],
+        [
+          "NANDEE FINETRONICS LLP",
+          null,
+          850000,
+          850000,
+          null
+        ],
+        [
+          "NARAYAN LOGISTICS",
+          null,
+          7249819,
+          7947701,
+          697882
+        ],
+        [
+          "NARSIMHA POTLA",
+          null,
+          95710,
+          95710,
+          null
+        ],
+        [
+          "NATIONAL CARRYING CORPORATION",
+          null,
+          460350,
+          460350,
+          null
+        ],
+        [
+          "NATIONAL COLOR CHEM CORP",
+          null,
+          297934,
+          297934,
+          null
+        ],
+        [
+          "National Securities Depository Limited",
+          null,
+          99562.5,
+          99562.5,
+          null
+        ],
+        [
+          "NAVDURGA ROADLINES",
+          null,
+          235780,
+          235780,
+          null
+        ],
+        [
+          "NAVI MUMBAI MERCHANT'S GYMKHANA",
+          null,
+          2310,
+          2310,
+          null
+        ],
+        [
+          "NAVIO SHIPPING PRIVATE LIMITED",
+          null,
+          324771,
+          324771,
+          null
+        ],
+        [
+          "NAVKAR ENTERPRISES",
+          null,
+          33394,
+          33394,
+          null
+        ],
+        [
+          "NAVNIT MOTORS PVT LTD",
+          null,
+          5559047.07,
+          5559047.07,
+          null
+        ],
+        [
+          "NEW INTERMEDIARY ( BANK OF BARODA )",
+          null,
+          2717634,
+          1817634,
+          900000
+        ],
+        [
+          "NEW STAR AUTO ELECTRICIAN WORKS",
+          null,
+          22000,
+          22000,
+          null
+        ],
+        [
+          "NIPA COMMERCIAL CORPORATION",
+          null,
+          88946,
+          88946,
+          null
+        ],
+        [
+          "NIRAJ SHARMA",
+          null,
+          85312,
+          85312,
+          null
+        ],
+        [
+          "NITIN S SHARMA & ASSOCIATES",
+          null,
+          12500,
+          12500,
+          null
+        ],
+        [
+          "OPEN FINANCIAL TECHNOLOGIES PRIVATE LIMITED",
+          null,
+          300,
+          471.2,
+          171.2
+        ],
+        [
+          "PAPALAL UTTAM PAWAR",
+          null,
+          6500000,
+          6500000,
+          null
+        ],
+        [
+          "PARSHWA TRADERS",
+          null,
+          2313,
+          2313,
+          null
+        ],
+        [
+          "PAWAN ROADLINES",
+          50480,
+          953107,
+          1213815,
+          311188
+        ],
+        [
+          "PAWAN TRANSPORT SERVICE",
+          null,
+          1426405,
+          1755924,
+          329519
+        ],
+        [
+          "P G YEVALEKAR",
+          null,
+          2000000,
+          2000000,
+          null
+        ],
+        [
+          "POOJA ELECTRIC HARDWARE STORE",
+          null,
+          280902,
+          302133,
+          21231
+        ],
+        [
+          "POOJA TYRES",
+          null,
+          77580,
+          77580,
+          null
+        ],
+        [
+          "POWER2SME PRIVATE LIMITED",
+          null,
+          1735000,
+          1735000,
+          null
+        ],
+        [
+          "PRAMAN AUTO CARE",
+          null,
+          14750,
+          14750,
+          null
+        ],
+        [
+          "PRAMILA VERMA & CO",
+          22740,
+          22740,
+          null,
+          null
+        ],
+        [
+          "PRAVIN RAMDAS PATHADE HUF",
+          null,
+          5412,
+          5412,
+          null
+        ],
+        [
+          "PREET HOLIDAYS RESORT",
+          null,
+          30000,
+          35000,
+          5000
+        ],
+        [
+          "PREETI CHHABRA",
+          null,
+          500000,
+          500000,
+          null
+        ],
+        [
+          "PRINCE TYRES",
+          null,
+          1400,
+          1400,
+          null
+        ],
+        [
+          "PRIYA BULK CARRIER",
+          null,
+          72789,
+          72789,
+          null
+        ],
+        [
+          "P R Pathade & Co (Practicing Company Secretary)",
+          null,
+          91217,
+          101717,
+          10500
+        ],
+        [
+          "PUMPXPERTZ",
+          null,
+          141600,
+          141600,
+          null
+        ],
+        [
+          "RADHE KRISHNA ROADLINES",
+          null,
+          342862,
+          342862,
+          null
+        ],
+        [
+          "RAGHURAM AUTO PARTS",
+          null,
+          13364,
+          13364,
+          null
+        ],
+        [
+          "RAHI AUTOMOBILES",
+          null,
+          9160,
+          9160,
+          null
+        ],
+        [
+          "RAHUL GULABCHAND SHAH",
+          null,
+          35040,
+          35040,
+          null
+        ],
+        [
+          "Rahul Satish Agarwal",
+          null,
+          50000,
+          50000,
+          null
+        ],
+        [
+          "RAJ AUTOLINK",
+          null,
+          6405,
+          13966,
+          7561
+        ],
+        [
+          "RAJENDRA SCALE REPAIRING WORKS & MAINTENACE UNIT – NEW",
+          null,
+          28384,
+          28384,
+          null
+        ],
+        [
+          "RAJESH DUBEY",
+          53100,
+          53100,
+          null,
+          null
+        ],
+        [
+          "RAJESH SHITOLE",
+          6093,
+          208000,
+          202599,
+          692
+        ],
+        [
+          "RAJESH TRIPATHI",
+          141462,
+          null,
+          null,
+          141462
+        ],
+        [
+          "RAKESH ELECTRICALS",
+          null,
+          null,
+          384,
+          384
+        ],
+        [
+          "RAMESH B. LOKHANDE CHAIR CENTER",
+          null,
+          17000,
+          17000,
+          null
+        ],
+        [
+          "RECEIVABLES EXCHANGE OF INDIA LIMITED",
+          null,
+          1180,
+          1180,
+          null
+        ],
+        [
+          "REX FUELS MANAGEMENT PRIVATE LIMITED",
+          null,
+          16200,
+          16200,
+          null
+        ],
+        [
+          "RISTAR LOGISTICS PRIVATE LIMITED",
+          null,
+          693680,
+          693680,
+          null
+        ],
+        [
+          "R.K.ENTERPRISES(Internet Khopoli)",
+          5000,
+          55000,
+          65000,
+          15000
+        ],
+        [
+          "RMA LEGAL",
+          null,
+          300000,
+          300000,
+          null
+        ],
+        [
+          "ROCKWAY WEIGHBRIDGE TECHNOLOGIES",
+          null,
+          16485,
+          46540,
+          30055
+        ],
+        [
+          "ROTARY CLUB OF MULUND HILL VIEW",
+          null,
+          11000,
+          11000,
+          null
+        ],
+        [
+          "ROYAL AUTO GLASS",
+          null,
+          9802,
+          9802,
+          null
+        ],
+        [
+          "ROYAL SUNDARAM GENERAL INSURANCE CO. LIMITED",
+          null,
+          28683.44,
+          28683.44,
+          null
+        ],
+        [
+          "R P INSULATION",
+          null,
+          7995,
+          7995,
+          null
+        ],
+        [
+          "R R LOGISTICS",
+          null,
+          100730,
+          185856,
+          85126
+        ],
+        [
+          "R.S. CARRIER",
+          553639,
+          983636,
+          429997,
+          null
+        ],
+        [
+          "RSP COMPUTER CONSUMABLES",
+          9261,
+          36376,
+          47094,
+          19979
+        ],
+        [
+          "RUMA ENGINEERING WORKS",
+          93830,
+          null,
+          null,
+          93830
+        ],
+        [
+          "SAILCO METAL AND TUBES INDUSTRIES",
+          null,
+          207028,
+          207028,
+          null
+        ],
+        [
+          "Sameer Enterprises",
+          6490,
+          20414,
+          13924,
+          null
+        ],
+        [
+          "SAM SEALS INDIA",
+          null,
+          13924,
+          13924,
+          null
+        ],
+        [
+          "SANGEETA KARKERA",
+          null,
+          15000,
+          15000,
+          null
+        ],
+        [
+          "SANJAY ROADLINES",
+          null,
+          264152,
+          1780336,
+          1516184
+        ],
+        [
+          "S A ROALINES",
+          null,
+          null,
+          24255,
+          24255
+        ],
+        [
+          "SARVAYA TRADEX LLP",
+          452400,
+          4075583,
+          3623183,
+          null
+        ],
+        [
+          "SARV KALYANKARI TRUST",
+          null,
+          150000,
+          150000,
+          null
+        ],
+        [
+          "SATYA BIZCON INDIA PRIVATE LIMITED",
+          null,
+          3801480,
+          3924212.04,
+          122732.04
+        ],
+        [
+          "SAYLA ROADLINES",
+          null,
+          30000,
+          null,
+          30000
+        ],
+        [
+          "SCIMITAR SHIPPING (INDIA) PRIVATE LIMITED",
+          null,
+          166460,
+          166460,
+          null
+        ],
+        [
+          "SEERWEB ERP SOLUTIONS PVT LTD",
+          null,
+          40320,
+          40320,
+          null
+        ],
+        [
+          "SEVEN TRANSWAY",
+          null,
+          null,
+          332460,
+          332460
+        ],
+        [
+          "SHAIKH YOUSUF GAFAUR",
+          null,
+          22000,
+          22000,
+          null
+        ],
+        [
+          "SHAKTI ENTERPRISE",
+          null,
+          106813,
+          106813,
+          null
+        ],
+        [
+          "SHAL SEA SHIPPING LLC (GUJ)",
+          null,
+          554205,
+          554205,
+          null
+        ],
+        [
+          "SHEET AIRCON",
+          null,
+          115000,
+          115000,
+          null
+        ],
+        [
+          "SHIVAAY AUTOTRADE PRIVATE LIMITED",
+          null,
+          15756,
+          15756,
+          null
+        ],
+        [
+          "SHIVAM ENTERPRISES",
+          null,
+          500000,
+          500000,
+          null
+        ],
+        [
+          "SHIVAM SEATRANS PVT LTD",
+          978,
+          39029839,
+          39030817,
+          null
+        ],
+        [
+          "SHIVAM STEEL",
+          null,
+          5042424,
+          5042424,
+          null
+        ],
+        [
+          "SHIVANAND CHAND",
+          null,
+          1566000,
+          1566000,
+          null
+        ],
+        [
+          "SHIV CARRIER SERVICE",
+          null,
+          1842965,
+          1942364,
+          99399
+        ],
+        [
+          "SHIV ROADWAYS",
+          null,
+          135655,
+          135655,
+          null
+        ],
+        [
+          "SHIVSHANKAR PRASAD ( INCENTIVE)",
+          null,
+          154221,
+          154221,
+          null
+        ],
+        [
+          "SHIV TRANSLINES",
+          null,
+          564622,
+          564622,
+          null
+        ],
+        [
+          "SHREE BHAGWATI HANDLING",
+          null,
+          625112,
+          625112,
+          null
+        ],
+        [
+          "SHREE KUBER ROADLINES",
+          111054,
+          3689612,
+          3578558,
+          null
+        ],
+        [
+          "Shree Rewinders & Electricals",
+          5771,
+          5771,
+          null,
+          null
+        ],
+        [
+          "SHREE SHIV SAI BULK CARRIER",
+          null,
+          407581,
+          407581,
+          null
+        ],
+        [
+          "SHREE VYAGHRESHWAR NAVTARUN MITRA MANDAL",
+          null,
+          5000,
+          5000,
+          null
+        ],
+        [
+          "SHRI HIRAJI TRANSPORT CO",
+          null,
+          761956,
+          761956,
+          null
+        ],
+        [
+          "SHRI VAIBHAVI LOGISTICS",
+          null,
+          271300,
+          271300,
+          null
+        ],
+        [
+          "Shubh M L Shah & Sons Steel Pvt Ltd",
+          null,
+          487875,
+          548983,
+          61108
+        ],
+        [
+          "SHYAMLAL YADAV",
+          null,
+          7000,
+          7000,
+          null
+        ],
+        [
+          "SIDDHIVINAYAK CCTV SERVICES",
+          null,
+          25800,
+          29335,
+          3535
+        ],
+        [
+          "SITARAM TRANSPORT CO.",
+          137640,
+          137640,
+          null,
+          null
+        ],
+        [
+          "SIXER TAILOR",
+          null,
+          25020,
+          25020,
+          null
+        ],
+        [
+          "S K ENTERPRISES",
+          null,
+          21180,
+          21180,
+          null
+        ],
+        [
+          "SKG TRANSPORT SERVICES",
+          119158,
+          2577941,
+          3457372,
+          998589
+        ],
+        [
+          "S K ROADLINES",
+          15158,
+          15158,
+          null,
+          null
+        ],
+        [
+          "S LINE LOGISTICS",
+          12474,
+          207787,
+          220261,
+          null
+        ],
+        [
+          "S R FREIGHT CARRIER",
+          51678,
+          23859,
+          null,
+          27819
+        ],
+        [
+          "SRI BALAJI LUBRICANTS AND SPARES",
+          null,
+          12740,
+          12740,
+          null
+        ],
+        [
+          "SRI RAVRAY LOGISTICS",
+          256219,
+          11613554,
+          12349012,
+          991677
+        ],
+        [
+          "SUNRISE COMPUTERS",
+          null,
+          5500,
+          5500,
+          null
+        ],
+        [
+          "SUPER COMPUTER SYSTEMS",
+          16928,
+          355864,
+          369259,
+          30323
+        ],
+        [
+          "SUPREME CARRIERS",
+          96928,
+          96928,
+          null,
+          null
+        ],
+        [
+          "SUSHANT ENTERPRISES",
+          null,
+          3300,
+          3300,
+          null
+        ],
+        [
+          "SUSHANT MAGGU",
+          null,
+          93798,
+          93798,
+          null
+        ],
+        [
+          "SWARNAPRABHA JEWELLERS PVT LTD",
+          null,
+          2841100,
+          2841100,
+          null
+        ],
+        [
+          "TATA AIG GENERAL INSURANCE CO. LTD.",
+          null,
+          22227,
+          22227,
+          null
+        ],
+        [
+          "TBS BULK CARRIERS",
+          116767,
+          3980477,
+          5790521,
+          1926811
+        ],
+        [
+          "TCI EXPRESS LIMITED",
+          null,
+          2516.21,
+          2516.21,
+          null
+        ],
+        [
+          "TEJPAL MOTORS PVT LTD (NEW MG GLOSTER)",
+          null,
+          356709.4,
+          357548.39,
+          838.99
+        ],
+        [
+          "THE NEW INDIA ASSURANCE CO LIMITED",
+          null,
+          2073769,
+          2073769,
+          null
+        ],
+        [
+          "THE NEW LIGHT ELECTRICAL ENTERPRISES 27",
+          null,
+          32298,
+          32298,
+          null
+        ],
+        [
+          "THERESA TRANSPORT",
+          169142,
+          null,
+          765501,
+          934643
+        ],
+        [
+          "TIRANGA ROADLINES",
+          null,
+          223453,
+          223453,
+          null
+        ],
+        [
+          "TOP TEN ELECTRONIC SHOPPE NX",
+          null,
+          485500,
+          485500,
+          null
+        ],
+        [
+          "Top Ten Electronics Shoppee",
+          null,
+          49350,
+          49350,
+          null
+        ],
+        [
+          "TRANSUNION CIBIL LIMITED",
+          null,
+          12000,
+          12000,
+          null
+        ],
+        [
+          "TRAVEL WORLD HOLIDAYS",
+          null,
+          246400,
+          246400,
+          null
+        ],
+        [
+          "TURBHE HYDRAULICS",
+          null,
+          66670,
+          66670,
+          null
+        ],
+        [
+          "UMESH SHAMRAO FUNDE",
+          null,
+          45000,
+          45000,
+          null
+        ],
+        [
+          "UNIVERSAL SOMPO GENERAL INSURANCE COMPANY LIMITED",
+          null,
+          18419,
+          18419,
+          null
+        ],
+        [
+          "USHA ASHVIN THAKKER",
+          288000,
+          396000,
+          114750,
+          6750
+        ],
+        [
+          "VALASE ROADLINES",
+          null,
+          null,
+          113901,
+          113901
+        ],
+        [
+          "VERTAXIS FUTURETECH PVT LTD",
+          61360,
+          60960,
+          122320,
+          null
+        ],
+        [
+          "VIJAY SALES",
+          317548,
+          274000,
+          10000,
+          53548
+        ],
+        [
+          "Vikas Hardware Trading Co. Pvt. Ltd.",
+          34203,
+          512734,
+          634610,
+          156079
+        ],
+        [
+          "VIKASH LOGISTICS SERVICE",
+          null,
+          3960704,
+          3960704,
+          null
+        ],
+        [
+          "VIKRANT TRANSPORT SERVICES",
+          null,
+          197177,
+          197177,
+          null
+        ],
+        [
+          "VINAYAK BULK CARRIER",
+          null,
+          1209989,
+          1209989,
+          null
+        ],
+        [
+          "VISHVARAJ ROADLINES",
+          670995,
+          458075,
+          null,
+          212920
+        ],
+        [
+          "VISVA TYRES AND CAR CARE",
+          null,
+          87200,
+          87200,
+          null
+        ],
+        [
+          "VR 9 PEST CONTROL",
+          null,
+          18720,
+          18720,
+          null
+        ],
+        [
+          "VRL LOGISTICS LIMITED",
+          null,
+          1450,
+          1450,
+          null
+        ],
+        [
+          "WASAN BROTHERS PRIVATE LIMITED",
+          null,
+          61372,
+          61372,
+          null
+        ],
+        [
+          "WEFAST INDIA PRIVATE LIMITED",
+          null,
+          71,
+          71,
+          null
+        ],
+        [
+          "WINASIA MARITIME PRIVATE LIMITED (MAH)",
+          null,
+          675526,
+          675526,
+          null
+        ],
+        [
+          "YASHODHA MOTORS PVT LTD",
+          null,
+          78834,
+          78834,
+          null
+        ],
+        [
+          "ZURICH KOTAK GENERAL INSURANCE COMPANY (INDIA) LIMITED",
+          null,
+          null,
+          21972,
+          21972
+        ],
+        [
+          "AARATI PAINT INDUSTRIES CRS",
+          null,
+          29644845,
+          29644845,
+          null
+        ],
+        [
+          "AARHAM CHEMICALS",
+          null,
+          2786700,
+          2787750,
+          1050
+        ],
+        [
+          "ADVIK ENTERPRISE - CR",
+          4977226.11,
+          4977226.11,
+          null,
+          null
+        ],
+        [
+          "A G ART PETROCHEM LLP - CR",
+          1569418,
+          157155193,
+          155585775,
+          null
+        ],
+        [
+          "AGARWAL INDUSTRIAL CORPORATION LIMITED-CR",
+          44677026,
+          44714920,
+          37894,
+          null
+        ],
+        [
+          "AGM PETROCHEM CRS",
+          null,
+          40099694,
+          40210438.89,
+          110744.89
+        ],
+        [
+          "A J IMPEX",
+          null,
+          3923307,
+          3923582,
+          275
+        ],
+        [
+          "AMAFHH OIL CORPORATION CRS",
+          null,
+          5263143,
+          5263143,
+          null
+        ],
+        [
+          "AMISHI INDUSTRIES INDIA PVT LTD (CR)",
+          28165141,
+          254141808,
+          252273524.4,
+          26296857.4
+        ],
+        [
+          "ANGEL TRADING FZE",
+          16748362.8,
+          68099262.54,
+          null,
+          84847625.34
+        ],
+        [
+          "ANT 3i Technologies",
+          null,
+          null,
+          234820,
+          234820
+        ],
+        [
+          "APEX PETROCHEM INDUSTRIES - CRS",
+          null,
+          128794498,
+          128794498,
+          null
+        ],
+        [
+          "ARIHANT AGRO DISTILLATION AND LIQUID TERMINALS LIMITED",
+          null,
+          1482189,
+          1482189,
+          null
+        ],
+        [
+          "ARKA PETROCHEM FZC",
+          52980798.23,
+          30720052.16,
+          61409325.98,
+          22291524.41
+        ],
+        [
+          "ARS PETRO CHEMICAL CRS",
+          null,
+          31867839,
+          31867839,
+          null
+        ],
+        [
+          "ART INFRASTRUCTURE PRIVATE LIMITED CR MP",
+          null,
+          1111809.69,
+          1111809.69,
+          null
+        ],
+        [
+          "Art Infrastructure Pvt Ltd- CR",
+          79535912.64,
+          233165003.22,
+          198311735.87,
+          44682645.29
+        ],
+        [
+          "ASIAN TRADING COMPANY CRS",
+          null,
+          8372543.68,
+          8372543.68,
+          null
+        ],
+        [
+          "AUTOSTAR LUBRICANTS AND GREASE PRIVATE LIMITED",
+          null,
+          12375700,
+          12375700,
+          null
+        ],
+        [
+          "AVALANCHE REFINERIES PVT LTD",
+          null,
+          109460203,
+          109460262,
+          59
+        ],
+        [
+          "AZUS ASPHALTS INDIA PRIVATE LIMITED - CR",
+          null,
+          5006643,
+          8559710.46,
+          3553067.46
+        ],
+        [
+          "AZUS ASPHALTS INDIA PVT. LTD",
+          null,
+          13245757,
+          19793804,
+          6548047
+        ],
+        [
+          "BHUVI PETROLEUM PRIVATE LIMITED",
+          null,
+          159352707,
+          159352707,
+          null
+        ],
+        [
+          "BLUE SAPPHIRE GLOBAL TRADING LLP",
+          null,
+          8907406,
+          8907406,
+          null
+        ],
+        [
+          "BON BON INTERNATIONAL",
+          null,
+          19201079,
+          19201079,
+          null
+        ],
+        [
+          "BRIGHT PETROCHEM INDIA LLP",
+          6719100,
+          null,
+          null,
+          6719100
+        ],
+        [
+          "CATALYST ASPHALT PVT LTD-CR",
+          23108675,
+          34755369,
+          11646694,
+          null
+        ],
+        [
+          "CATALYST PETROCHEM LLP",
+          null,
+          50751084,
+          50751084,
+          null
+        ],
+        [
+          "CHAMUNDA PETROCHEMICALS PVT LTD",
+          null,
+          1572291,
+          1572291,
+          null
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - CHANDIGARH",
+          null,
+          5686,
+          6709102,
+          6703416
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - PB CR",
+          null,
+          13103,
+          15462163,
+          15449060
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - RAJASTHAN CR",
+          null,
+          50334456,
+          50334456,
+          null
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - UP CRS",
+          null,
+          68902048,
+          68902048,
+          null
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED_HARYANA CRS",
+          null,
+          17626267,
+          17626267,
+          null
+        ],
+        [
+          "DARSHAN CHEM",
+          23600,
+          23600,
+          null,
+          null
+        ],
+        [
+          "DARSHIL PETROCHEM CRS",
+          2330639,
+          112684051,
+          116390634,
+          6037222
+        ],
+        [
+          "DARSH PETROCHEM PVT LTD-CR",
+          12733,
+          15038914,
+          15026181,
+          null
+        ],
+        [
+          "DIPAXI CHEMICAL",
+          null,
+          1008174,
+          1008174,
+          null
+        ],
+        [
+          "DIVYA PETROCHEM - CR",
+          null,
+          2327026,
+          2327026,
+          null
+        ],
+        [
+          "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+          null,
+          41545009,
+          41545009,
+          null
+        ],
+        [
+          "DUBEY PETROLEUM CHEMICALS PRIVATE LIMITED - CR",
+          null,
+          2888363,
+          48043163.5,
+          45154800.5
+        ],
+        [
+          "FORTUNE ENTERPRISE",
+          758799,
+          5599323,
+          4840524,
+          null
+        ],
+        [
+          "Future Universal Petrochem Pvt Ltd.",
+          null,
+          49528918,
+          49528918,
+          null
+        ],
+        [
+          "GAJANAND ENTERPRISE",
+          null,
+          20765946,
+          21088454,
+          322508
+        ],
+        [
+          "GASTRADE INTERNATIONAL",
+          3655,
+          28751199,
+          28751199.2,
+          3655.2
+        ],
+        [
+          "GAURAV CHEMICALS - CR",
+          2059430,
+          129867265,
+          259870747,
+          132062912
+        ],
+        [
+          "G L KHANNA AND SONS",
+          null,
+          3894400,
+          3894400,
+          null
+        ],
+        [
+          "G L KHANNA & SONS GUJ - CR",
+          null,
+          52722456,
+          52722456,
+          null
+        ],
+        [
+          "GLOBAL IMPEX - CR",
+          null,
+          32658624,
+          32658624,
+          null
+        ],
+        [
+          "GOEL PETRO ENERGY LIMITED CRS",
+          31345,
+          4519240,
+          4487895,
+          null
+        ],
+        [
+          "Goverdhan Energy And Petrochemicals Pvt Ltd",
+          null,
+          34082471,
+          34082471,
+          null
+        ],
+        [
+          "Goverdhan Energy And Petrochemicals Pvt Ltd - MH CR",
+          null,
+          33427015,
+          47819750,
+          14392735
+        ],
+        [
+          "H H COMPANIES CRS",
+          null,
+          1664638,
+          1664638,
+          null
+        ],
+        [
+          "INDOREX CHEMICALS",
+          null,
+          51543,
+          51543,
+          null
+        ],
+        [
+          "INTERASIA ENTERPRISES",
+          null,
+          3059977,
+          3059977,
+          null
+        ],
+        [
+          "JAIN SONS INDIA CRS",
+          1902416.92,
+          1903532.92,
+          7217383.09,
+          7216267.09
+        ],
+        [
+          "JALAL AHMED MANIYAAR",
+          null,
+          43857,
+          43857,
+          null
+        ],
+        [
+          "JAYPEE PETRO PRODUCTS CRS",
+          null,
+          2873642,
+          2873642,
+          null
+        ],
+        [
+          "J.M. PETROCHEMICALS PRIVATE LIMITED CRS",
+          null,
+          2955900,
+          2955900,
+          null
+        ],
+        [
+          "JOY INTERNATIONAL",
+          null,
+          2760920,
+          2760920,
+          null
+        ],
+        [
+          "JUPITER ENTERPRISES - CR",
+          null,
+          25470536,
+          25470536,
+          null
+        ],
+        [
+          "K A DAS LOGISTICS",
+          null,
+          11352662.4,
+          11352662.4,
+          null
+        ],
+        [
+          "KANAK BITUMEN PVT LTD",
+          null,
+          3271094,
+          3271094,
+          null
+        ],
+        [
+          "KOTA OIL CORPORATION CRS",
+          null,
+          46070885,
+          46070885,
+          null
+        ],
+        [
+          "KRISHNA ENTERPRISES - CR",
+          null,
+          8407571,
+          8407854,
+          283
+        ],
+        [
+          "K. T. LATHIWALA",
+          null,
+          11738640,
+          11738640,
+          null
+        ],
+        [
+          "KVG BUILDERS PRIVATE LIMITED",
+          null,
+          39640264,
+          39640264,
+          null
+        ],
+        [
+          "LUBRICON INDIA - CR",
+          null,
+          224364695.4,
+          224364695.4,
+          null
+        ],
+        [
+          "LUBXTAR INDUSTRIES PVT LTD",
+          null,
+          17253535.2,
+          17253535.2,
+          null
+        ],
+        [
+          "MADHUSUDAN ORGANICS PRIVATE LIMITED",
+          null,
+          29537528,
+          29537528,
+          null
+        ],
+        [
+          "MAHADEV OIL INDUSTRIES CR",
+          null,
+          35777785,
+          35777785,
+          null
+        ],
+        [
+          "MALASHIAN LUBE PRIVATE LIMITED",
+          null,
+          6659869,
+          6659869,
+          null
+        ],
+        [
+          "MARUTI BITUMEN PRIVATE LIMITED-Cr",
+          2969759,
+          2969759,
+          null,
+          null
+        ],
+        [
+          "MAZAGON DOCK",
+          null,
+          23000,
+          23000,
+          null
+        ],
+        [
+          "MIDAS TECHNOLOGIES",
+          2871785,
+          6401705,
+          3529920,
+          null
+        ],
+        [
+          "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR",
+          null,
+          257569463.96,
+          257892061.96,
+          322598
+        ],
+        [
+          "M/S GALAXY IMPORT & EXPORT",
+          null,
+          1664980,
+          1865580,
+          200600
+        ],
+        [
+          "MURJI RAVJI AND COMPANY",
+          9623,
+          83464636,
+          83455013,
+          null
+        ],
+        [
+          "NAKODA OIL AND GAS PRIVATE LIMITED CRS",
+          null,
+          1867232,
+          1867232,
+          null
+        ],
+        [
+          "NANOTECH INDUSTRIES-CR",
+          2022874,
+          4606292,
+          2583418,
+          null
+        ],
+        [
+          "NEPTUNE PETROCHEMICALS LIMITED",
+          25103753,
+          259933172,
+          234829419,
+          null
+        ],
+        [
+          "N K ENTERPRISE",
+          null,
+          6680812,
+          6680812,
+          null
+        ],
+        [
+          "NMV ENERGY PRIVATE LIMITED",
+          null,
+          1554629,
+          1554629,
+          null
+        ],
+        [
+          "NXGEN ENFUEL SERVICES LLP CRS",
+          59691874,
+          87016352,
+          27546864,
+          222386
+        ],
+        [
+          "OPEK SOAP INDUSTRIES",
+          90524.88,
+          null,
+          null,
+          90524.88
+        ],
+        [
+          "PACIFIC INTERNATIONAL",
+          1504,
+          29380735,
+          29379231,
+          null
+        ],
+        [
+          "Petroline India Pvt Ltd",
+          null,
+          1758290,
+          1758290,
+          null
+        ],
+        [
+          "PETROMAX ENERGY",
+          null,
+          3011799,
+          19823767,
+          16811968
+        ],
+        [
+          "PINNACLE COMMODITIES",
+          null,
+          3749450,
+          3749450,
+          null
+        ],
+        [
+          "PLATINUM PETROCHEM",
+          null,
+          121740934,
+          121740934,
+          null
+        ],
+        [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+          17376219,
+          155452780,
+          160338911.4,
+          22262350.4
+        ],
+        [
+          "Premium Petro And Infra Projects Private Limited",
+          null,
+          75328494.8,
+          75328494.8,
+          null
+        ],
+        [
+          "P S ENTERPRISES - CR",
+          null,
+          49641961,
+          49641961,
+          null
+        ],
+        [
+          "P S ENTERPRISES (UP) - CR",
+          null,
+          22829368,
+          22829368,
+          null
+        ],
+        [
+          "RAAJ INDUSTRIAL LUBRICANTS LIMITED",
+          null,
+          1421163,
+          1421163,
+          null
+        ],
+        [
+          "RAJEEV TRADING COMPANY PVT LTD",
+          null,
+          44325669,
+          44325669,
+          null
+        ],
+        [
+          "RAMDEV ENTERPRISES",
+          null,
+          15559451,
+          15559451,
+          null
+        ],
+        [
+          "RAREX GLOBAL LLP-CR",
+          3583046,
+          3583046,
+          null,
+          null
+        ],
+        [
+          "RB CORPORATION",
+          null,
+          3765040,
+          3765040,
+          null
+        ],
+        [
+          "REFERRAL CHEMICALS",
+          null,
+          2132166,
+          2132166,
+          null
+        ],
+        [
+          "REGAL OIL DISTRIBUTORS AND MANUFACTURERS",
+          null,
+          3409080,
+          3409080,
+          null
+        ],
+        [
+          "ROHAN ENTERPRISES - CR",
+          null,
+          6573782,
+          6575990,
+          2208
+        ],
+        [
+          "ROOPKAMAL ENTERPRISES",
+          null,
+          22340291,
+          22340291,
+          null
+        ],
+        [
+          "SACHIN CHEMICALS",
+          null,
+          2000000,
+          2000000,
+          null
+        ],
+        [
+          "SANJIVANI PETROCHEM PRIVATE LIMITED - CR",
+          null,
+          34800610,
+          34776240,
+          24370
+        ],
+        [
+          "SBI FACTORS LTD",
+          null,
+          41300,
+          41300,
+          null
+        ],
+        [
+          "SELVAM INDUSTRIES",
+          null,
+          74653132,
+          74653132,
+          null
+        ],
+        [
+          "SHIVA ASPHALTIC PRODUCTS PRIVATE LIMITED-CR",
+          28095.3,
+          28095.3,
+          null,
+          null
+        ],
+        [
+          "SHOBHA EXIM PRIVATE LIMITED - CR",
+          null,
+          34305289.7,
+          34713496.2,
+          408206.5
+        ],
+        [
+          "SHREE GURU KRIPA ENTERPRISES (CR)",
+          4883434,
+          43005298,
+          38121864,
+          null
+        ],
+        [
+          "Shri Achyuta Services - CR",
+          null,
+          null,
+          3306950,
+          3306950
+        ],
+        [
+          "SHRI GANESH TRADING CO- CR",
+          2070555,
+          186605499,
+          185213383,
+          678439
+        ],
+        [
+          "SIDDHIVINAYAK CONSTRUCTION (CR)",
+          null,
+          1576331,
+          1576331,
+          null
+        ],
+        [
+          "SKYLINE GLOBAL TRADERS CRS",
+          4836988,
+          15732174.6,
+          20569162.6,
+          null
+        ],
+        [
+          "Sulaki Chemicals Pvt Ltd-CR",
+          82486152,
+          887877349.12,
+          805391197.12,
+          null
+        ],
+        [
+          "SWARNA OIL SERVICES - CR",
+          null,
+          11621448,
+          11621448,
+          null
+        ],
+        [
+          "SWEVEN IMPEX",
+          null,
+          16962345,
+          16962345,
+          null
+        ],
+        [
+          "TEJAS SOLUTIONS",
+          null,
+          3211933,
+          3211933,
+          null
+        ],
+        [
+          "TIRTH ENTERPRISES",
+          null,
+          1901201.25,
+          1901201.25,
+          null
+        ],
+        [
+          "UNIPROC ENERGIES  PRIVATE LIMITED",
+          null,
+          28321257.64,
+          28321257.64,
+          null
+        ],
+        [
+          "VARDHMAN OVERSEAS (INDIA)",
+          null,
+          2144060,
+          2144060,
+          null
+        ],
+        [
+          "VEER TRADE LINK CRS",
+          null,
+          1445748,
+          1445748,
+          null
+        ],
+        [
+          "VIDYAA PETROLEUM INDIA PRIVATE LIMITED - CR",
+          null,
+          2424000,
+          null,
+          2424000
+        ],
+        [
+          "VINAYAK CHEMICALS & MINERALS - CRS",
+          null,
+          7826811,
+          7826811,
+          null
+        ],
+        [
+          "VISHWA KHANIJ INDUSTRIES PRIVATE LIMITED",
+          null,
+          8406485.2,
+          8406485.2,
+          null
+        ],
+        [
+          "VIYAA INDUSTRIES CR",
+          null,
+          623040,
+          623040,
+          null
+        ],
+        [
+          "Worldwide Consol Terminal Private Limited",
+          null,
+          2132080,
+          2132080,
+          null
+        ],
+        [
+          "Advance From S. Debtors",
+          119225002.2,
+          1303583400.2,
+          1458415070.35,
+          274056672.35
+        ],
+        [
+          "AL ABAAN INTERNATIONAL DRS",
+          null,
+          1689377,
+          1695550,
+          6173
+        ],
+        [
+          "ANUP OMPRAKASH AGRAWAL / J C ENTERPRISES",
+          7511754,
+          2535000,
+          10250000,
+          203246
+        ],
+        [
+          "APEX INDUSTRIES DR",
+          12409032.8,
+          183933915.2,
+          196342948,
+          null
+        ],
+        [
+          "AZUS ASPHALTS INDIA PVT. LTD-Mumbai (Dr)",
+          null,
+          6400000,
+          6400000,
+          null
+        ],
+        [
+          "BHARAT ENERGREEN PRIVATE LIMITED",
+          null,
+          3210459,
+          5119649,
+          1909190
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED",
+          133424956,
+          632295852,
+          526626947.75,
+          27756051.75
+        ],
+        [
+          "DATTAGURU FULE SERVICES",
+          null,
+          2594997,
+          2605508,
+          10511
+        ],
+        [
+          "DHIRAJ PETROCHEMICAL AND GAS PRIVATE LIMITED",
+          null,
+          null,
+          401000,
+          401000
+        ],
+        [
+          "DK TRADING CORPORATION",
+          2655122,
+          null,
+          null,
+          2655122
+        ],
+        [
+          "GANESH CHEMICALS",
+          null,
+          16319985,
+          16443972,
+          123987
+        ],
+        [
+          "Gauri Impex -Cr",
+          null,
+          317740371,
+          533738216,
+          215997845
+        ],
+        [
+          "GLOBAL PLASTO CHEM - DR",
+          null,
+          null,
+          12500000,
+          12500000
+        ],
+        [
+          "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+          null,
+          13256911,
+          16798276,
+          3541365
+        ],
+        [
+          "JAI HANUMAN TRADING",
+          null,
+          null,
+          2714,
+          2714
+        ],
+        [
+          "KVR ENTERPRISES",
+          1056,
+          null,
+          null,
+          1056
+        ],
+        [
+          "LAKSHMI DURGAA TRADING COMPANY",
+          null,
+          2877957,
+          4903867,
+          2025910
+        ],
+        [
+          "MAHABHAGWANI DEVI ENTE",
+          null,
+          null,
+          628144,
+          628144
+        ],
+        [
+          "MAHADEV OIL INDUSTRIES",
+          null,
+          null,
+          100,
+          100
+        ],
+        [
+          "NEW BHARAT ENTERPRISES Maharashtra",
+          1396000,
+          null,
+          450000,
+          1846000
+        ],
+        [
+          "PETROMAX ENERGY - DR",
+          null,
+          27500000,
+          27500000,
+          null
+        ],
+        [
+          "RAMKIN BIOFUELS LLP",
+          19605,
+          5023449,
+          5300000,
+          256946
+        ],
+        [
+          "RAMKIN BIOFUELS LLP- (AP)",
+          null,
+          1152305,
+          1300000,
+          147695
+        ],
+        [
+          "R D R LOGISTIC",
+          null,
+          1000000,
+          1000000,
+          null
+        ],
+        [
+          "RIDDHI SIDDHI ENTERPRISES(Andheri)",
+          null,
+          null,
+          200000,
+          200000
+        ],
+        [
+          "SHALVI ENTERPRISES",
+          null,
+          48816909,
+          48817091,
+          182
+        ],
+        [
+          "SHIVANI MINI FORGE",
+          null,
+          2793497,
+          2805267,
+          11770
+        ],
+        [
+          "SHIVSAMARTH LOGISTICS",
+          null,
+          null,
+          1400000,
+          1400000
+        ],
+        [
+          "SNA PETROCHEM PRIVATE LIMITED_x000D_",
+          734012,
+          null,
+          null,
+          734012
+        ],
+        [
+          "SRI BALAJI ENTERPRISES - DR",
+          481771,
+          10492989,
+          11099905.6,
+          125145.6
+        ],
+        [
+          "SRI SUPRAJA INFRACON",
+          null,
+          3126899,
+          3141129,
+          14230
+        ],
+        [
+          "VENKETESHWARA ROADLINES - DR",
+          50000,
+          20822528,
+          20944786,
+          172258
+        ],
+        [
+          "WEBSQUE TECHNOLOGIES PVT LTD",
+          1000000,
+          null,
+          null,
+          1000000
+        ],
+        [
+          "YOVIN OIL ENTERPRISES",
+          386019,
+          null,
+          null,
+          386019
+        ],
+        [
+          "Outstanding Exp",
+          2653479.71,
+          42088168,
+          43656546,
+          4221857.71
+        ],
+        [
+          "Mahima Menda - Office Rent Payable",
+          138973,
+          2571400,
+          2631400,
+          198973
+        ],
+        [
+          "MAHIMA MENDA REMUNERATION PAYABLE",
+          163107,
+          2499926,
+          2500100,
+          163281
+        ],
+        [
+          "Salary Payable",
+          1868169,
+          28774238,
+          30144651,
+          3238582
+        ],
+        [
+          "SANDEEP SINGH REMUNERATION PAYABLE",
+          232646.71,
+          4342322,
+          4422920,
+          313244.71
+        ],
+        [
+          "URMILA GIRIJASHANKAR SINGH- Factory Rent",
+          107811,
+          1313532,
+          1326075,
+          120354
+        ],
+        [
+          "URMILA GIRIJASHANKAR SINGH - Office Rent",
+          142773,
+          2586750,
+          2631400,
+          187423
+        ],
+        [
+          "Provision for Expenses",
+          37205792.4,
+          36107682.4,
+          3820614,
+          4918724
+        ],
+        [
+          "Audit Fees Payable",
+          30000,
+          null,
+          null,
+          30000
+        ],
+        [
+          "Bunglow Mahanagar Gas Payable",
+          null,
+          18488,
+          18488,
+          null
+        ],
+        [
+          "Electricity Payable",
+          6930,
+          2391980,
+          2385050,
+          null
+        ],
+        [
+          "Provision for CSR Expenses",
+          427748,
+          484184,
+          1411169,
+          1354733
+        ],
+        [
+          "Provision for Gratuity",
+          3474972,
+          null,
+          null,
+          3474972
+        ],
+        [
+          "Provision for Income Tax A.Y. 25-26",
+          33261137,
+          33202118,
+          null,
+          59019
+        ],
+        [
+          "WATER BILL PAYABLE",
+          5005.4,
+          10912.4,
+          5907,
+          null
+        ],
+        [
+          "Deferred Tax Assets",
+          1339928,
+          null,
+          null,
+          1339928
+        ],
+        [
+          "Fixed Assets",
+          107639683.28,
+          33360363.12,
+          238790.7,
+          140761255.7
+        ],
+        [
+          "Air Conditioner",
+          429725.55,
+          414363.28,
+          70312.5,
+          773776.33
+        ],
+        [
+          "Airconditioner",
+          267725.71,
+          233881.28,
+          null,
+          501606.99
+        ],
+        [
+          "Air Conditioner - Office",
+          161999.84,
+          180482,
+          70312.5,
+          272169.34
+        ],
+        [
+          "Building",
+          35382380.03,
+          72673.91,
+          null,
+          35455053.94
+        ],
+        [
+          "Factory Building",
+          5113961.03,
+          72673.91,
+          null,
+          5186634.94
+        ],
+        [
+          "CEMENT",
+          721225.3,
+          null,
+          null,
+          721225.3
+        ],
+        [
+          "Factory Assets",
+          261063.02,
+          null,
+          null,
+          261063.02
+        ],
+        [
+          "Factory Construction",
+          1565609.53,
+          null,
+          null,
+          1565609.53
+        ],
+        [
+          "Factory Shed",
+          2566063.18,
+          72673.91,
+          null,
+          2638737.09
+        ],
+        [
+          "Bunglow",
+          30268419,
+          null,
+          null,
+          30268419
+        ],
+        [
+          "Computer",
+          413185.75,
+          1084645.76,
+          null,
+          1497831.51
+        ],
+        [
+          "Computer",
+          89260.15,
+          27450,
+          null,
+          116710.15
+        ],
+        [
+          "Computer Software",
+          6826.8,
+          null,
+          null,
+          6826.8
+        ],
+        [
+          "Epbax Systesm",
+          1325,
+          null,
+          null,
+          1325
+        ],
+        [
+          "LAPTOP",
+          37393.23,
+          261372.88,
+          null,
+          298766.11
+        ],
+        [
+          "Printer",
+          5129.59,
+          18533.9,
+          null,
+          23663.49
+        ],
+        [
+          "Printer EPSON LQ 310",
+          1474.6,
+          null,
+          null,
+          1474.6
+        ],
+        [
+          "Television & DTH",
+          256137.38,
+          720338.98,
+          null,
+          976476.36
+        ],
+        [
+          "UPS",
+          15639,
+          56950,
+          null,
+          72589
+        ],
+        [
+          "Electrical Equipments, Tools and Installation",
+          2874357.86,
+          1275807.2,
+          33366.2,
+          4116798.86
+        ],
+        [
+          "Lab Equipments",
+          1394134.95,
+          33444,
+          null,
+          1427578.95
+        ],
+        [
+          "Lab Equipments",
+          1376412.7,
+          33444,
+          null,
+          1409856.7
+        ],
+        [
+          "Lab Instruments",
+          17722.25,
+          null,
+          null,
+          17722.25
+        ],
+        [
+          "ATS PANAEL OR GENERATOR & MSEB POWER",
+          365184,
+          null,
+          null,
+          365184
+        ],
+        [
+          "Binding Wire & Hindalco Coil",
+          5969,
+          null,
+          null,
+          5969
+        ],
+        [
+          "Electrical Equipments",
+          797172.89,
+          1070142.86,
+          32566.2,
+          1834749.55
+        ],
+        [
+          "Electrical Work",
+          233713.6,
+          null,
+          null,
+          233713.6
+        ],
+        [
+          "HT Line -Electric Pole",
+          25197,
+          null,
+          null,
+          25197
+        ],
+        [
+          "POLLUTION PARAMETER DISPLAY BOARD",
+          null,
+          104000,
+          null,
+          104000
+        ],
+        [
+          "Reactor Control Panal Board",
+          28455,
+          null,
+          null,
+          28455
+        ],
+        [
+          "Transformer 100KVA",
+          10000,
+          null,
+          null,
+          10000
+        ],
+        [
+          "Washing Machine",
+          4664.01,
+          68220.34,
+          800,
+          72084.35
+        ],
+        [
+          "WATER HEATER",
+          9867.41,
+          null,
+          null,
+          9867.41
+        ],
+        [
+          "FURNITURE & FIXTURES",
+          2007645.65,
+          1626526.71,
+          null,
+          3634172.36
+        ],
+        [
+          "Office Furniture",
+          1979141.65,
+          1626526.71,
+          null,
+          3605668.36
+        ],
+        [
+          "CHAIR",
+          70209.81,
+          null,
+          null,
+          70209.81
+        ],
+        [
+          "Furniture & Fixtures",
+          1908931.84,
+          1626526.71,
+          null,
+          3535458.55
+        ],
+        [
+          "Fire Extinguisher 9KG",
+          28504,
+          null,
+          null,
+          28504
+        ],
+        [
+          "Land",
+          null,
+          15662916.12,
+          null,
+          15662916.12
+        ],
+        [
+          "Land at Dhule",
+          null,
+          5162916.12,
+          null,
+          5162916.12
+        ],
+        [
+          "Land at Khopoli",
+          null,
+          10000000,
+          null,
+          10000000
+        ],
+        [
+          "Land at Kolkata",
+          null,
+          500000,
+          null,
+          500000
+        ],
+        [
+          "Office Assets",
+          312733.68,
+          446917.81,
+          null,
+          759651.49
+        ],
+        [
+          "BIO METRIC MACHINE",
+          2256,
+          13500,
+          null,
+          15756
+        ],
+        [
+          "CAMERA",
+          51984,
+          null,
+          null,
+          51984
+        ],
+        [
+          "CCTV",
+          null,
+          13000,
+          null,
+          13000
+        ],
+        [
+          "DISHWASHER",
+          null,
+          49218.75,
+          null,
+          49218.75
+        ],
+        [
+          "GARMENT IRON STEAMER",
+          null,
+          4068,
+          null,
+          4068
+        ],
+        [
+          "MICROWAVE",
+          14695.49,
+          null,
+          null,
+          14695.49
+        ],
+        [
+          "MIXER GRINDER",
+          null,
+          4407,
+          null,
+          4407
+        ],
+        [
+          "Mobile /Telephone",
+          184812.12,
+          324291.85,
+          null,
+          509103.97
+        ],
+        [
+          "REFRIGERATOR",
+          41467.07,
+          12584.75,
+          null,
+          54051.82
+        ],
+        [
+          "Security System",
+          3452,
+          null,
+          null,
+          3452
+        ],
+        [
+          "VACCUM CLEANER",
+          null,
+          7627.12,
+          null,
+          7627.12
+        ],
+        [
+          "WATER PURIFIER",
+          14067,
+          18220.34,
+          null,
+          32287.34
+        ],
+        [
+          "Plant & Machinery",
+          58529533.6,
+          8391376.75,
+          128560,
+          66792350.35
+        ],
+        [
+          "Distillation Unit",
+          29287608.36,
+          null,
+          null,
+          29287608.36
+        ],
+        [
+          "DISTILLATION PLANT",
+          29287608.36,
+          null,
+          null,
+          29287608.36
+        ],
+        [
+          "Factory Assets",
+          1515196.57,
+          799470,
+          null,
+          2314666.57
+        ],
+        [
+          "Centrifugal Pump",
+          47265.57,
+          null,
+          null,
+          47265.57
+        ],
+        [
+          "Cooling Tower",
+          530358,
+          195000,
+          null,
+          725358
+        ],
+        [
+          "Decanting Machine",
+          217766,
+          175470,
+          null,
+          393236
+        ],
+        [
+          "Diesel Genereating Set",
+          68289,
+          null,
+          null,
+          68289
+        ],
+        [
+          "FLOW METER",
+          null,
+          429000,
+          null,
+          429000
+        ],
+        [
+          "FORKLIFT",
+          359822,
+          null,
+          null,
+          359822
+        ],
+        [
+          "Pump Kpd 50/16A",
+          201634,
+          null,
+          null,
+          201634
+        ],
+        [
+          "Viscosity Water Bath",
+          38762,
+          null,
+          null,
+          38762
+        ],
+        [
+          "WATER TANK",
+          5248,
+          null,
+          null,
+          5248
+        ],
+        [
+          "Weighbridge",
+          46052,
+          null,
+          null,
+          46052
+        ],
+        [
+          "Storage Equipments",
+          5026210.97,
+          6589196.5,
+          114000,
+          11501407.47
+        ],
+        [
+          "MS STORAGE TANK 65 KL",
+          62356,
+          null,
+          null,
+          62356
+        ],
+        [
+          "MS STORAGE TANK 76 KL",
+          149655,
+          null,
+          null,
+          149655
+        ],
+        [
+          "MS TANK",
+          577406,
+          null,
+          null,
+          577406
+        ],
+        [
+          "New Tank",
+          2902149.97,
+          null,
+          null,
+          2902149.97
+        ],
+        [
+          "OLD & USED MS STORAGE TANK 25 KL",
+          268942.5,
+          null,
+          null,
+          268942.5
+        ],
+        [
+          "OLD USED MS STORAGE TANK 30 KL",
+          282049,
+          null,
+          null,
+          282049
+        ],
+        [
+          "OLD & USED M S TANK",
+          82397,
+          null,
+          null,
+          82397
+        ],
+        [
+          "STORAGE MS TANK",
+          null,
+          4273240,
+          null,
+          4273240
+        ],
+        [
+          "TANK",
+          701255.5,
+          2315956.5,
+          114000,
+          2903212
+        ],
+        [
+          "12 KL MS REACTOR WITH GEAR",
+          99770,
+          null,
+          null,
+          99770
+        ],
+        [
+          "ALLTECH MAKE MICROSURFACING PAVER MACHINE",
+          13858925,
+          263789.79,
+          null,
+          14122714.79
+        ],
+        [
+          "Boiler",
+          259048.35,
+          null,
+          null,
+          259048.35
+        ],
+        [
+          "CONCRETE MIXER MACHINE",
+          133740,
+          null,
+          null,
+          133740
+        ],
+        [
+          "D G GENERATOR",
+          340846,
+          null,
+          null,
+          340846
+        ],
+        [
+          "Drum Decanting System with Pannel Type Heat Exchang",
+          624468.36,
+          null,
+          null,
+          624468.36
+        ],
+        [
+          "Emulsion Machinery",
+          3480860,
+          543542.5,
+          14560,
+          4009842.5
+        ],
+        [
+          "PIS-600 IMPULSE WITH HAND SEALING MACHINE",
+          38528,
+          null,
+          null,
+          38528
+        ],
+        [
+          "Plant & Machinery",
+          1550858.56,
+          59700,
+          null,
+          1610558.56
+        ],
+        [
+          "Plant & Machinery@9%",
+          1818135.53,
+          null,
+          null,
+          1818135.53
+        ],
+        [
+          "Pump",
+          368160.9,
+          135677.96,
+          null,
+          503838.86
+        ],
+        [
+          "VALVES",
+          124031,
+          null,
+          null,
+          124031
+        ],
+        [
+          "Weighing Machine",
+          3146,
+          null,
+          null,
+          3146
+        ],
+        [
+          "Vehicles",
+          7690121.16,
+          4385135.58,
+          6552,
+          12068704.74
+        ],
+        [
+          "Bikes",
+          24891.89,
+          170299,
+          null,
+          195190.89
+        ],
+        [
+          "ATHER 450X (BIKE)",
+          null,
+          170299,
+          null,
+          170299
+        ],
+        [
+          "HERO DELUXE BIKE",
+          2577.56,
+          null,
+          null,
+          2577.56
+        ],
+        [
+          "HERO HF BIKE",
+          2582.89,
+          null,
+          null,
+          2582.89
+        ],
+        [
+          "SPLENDOR",
+          3027.44,
+          null,
+          null,
+          3027.44
+        ],
+        [
+          "TVS JUPITER - BSVI WALNUT BROWN",
+          16704,
+          null,
+          null,
+          16704
+        ],
+        [
+          "Commercial Vehicles",
+          1716075.63,
+          300360.81,
+          6552,
+          2009884.44
+        ],
+        [
+          "MH 46 AF 3360",
+          85775,
+          null,
+          null,
+          85775
+        ],
+        [
+          "MH 46 AF 6572 D-Max Flatdeck- ISUZU",
+          28992,
+          null,
+          null,
+          28992
+        ],
+        [
+          "MH 46 AR 6640",
+          101413,
+          null,
+          null,
+          101413
+        ],
+        [
+          "MH 46 AR 6642",
+          101412,
+          null,
+          null,
+          101412
+        ],
+        [
+          "MH 46 AR 6643",
+          101414,
+          146214.51,
+          null,
+          247628.51
+        ],
+        [
+          "MH 46 AR 6775",
+          101414,
+          148593.76,
+          null,
+          250007.76
+        ],
+        [
+          "MH 46 AR 6943",
+          101414,
+          null,
+          null,
+          101414
+        ],
+        [
+          "TATA 610 SFC MH43CK6521",
+          1087030.14,
+          5552.54,
+          6552,
+          1086030.68
+        ],
+        [
+          "TRACKER PURCHASE",
+          7211.49,
+          null,
+          null,
+          7211.49
+        ],
+        [
+          "MOTOR CAR",
+          5949153.64,
+          3914475.77,
+          null,
+          9863629.41
+        ],
+        [
+          "BMW NEW 3 SERIE",
+          null,
+          3894007.02,
+          null,
+          3894007.02
+        ],
+        [
+          "FORD ENDEAVOUR - MH 46 AV 7072",
+          193515,
+          null,
+          null,
+          193515
+        ],
+        [
+          "INNOVA HYCROSS HYBRID VX 75 INNHE",
+          1625726.1,
+          null,
+          null,
+          1625726.1
+        ],
+        [
+          "KIA SONET G1 0T 7DCT GTX  PLUS",
+          798242.17,
+          null,
+          null,
+          798242.17
+        ],
+        [
+          "MAHINDRA BOLERO B6 MH46BZ1066",
+          285701,
+          20468.75,
+          null,
+          306169.75
+        ],
+        [
+          "MAHINDRA THAR LX D - MH46CB7072",
+          382626.99,
+          null,
+          null,
+          382626.99
+        ],
+        [
+          "MG GLOSTER MH43BZ9909",
+          1271450.99,
+          null,
+          null,
+          1271450.99
+        ],
+        [
+          "MG GLOSTER MH46BZ7072",
+          1185627.39,
+          null,
+          null,
+          1185627.39
+        ],
+        [
+          "TOYOTA Innova Crysta - MH 06 BM 5589",
+          131267,
+          null,
+          null,
+          131267
+        ],
+        [
+          "XUV 500",
+          74997,
+          null,
+          null,
+          74997
+        ],
+        [
+          "Investments",
+          957141,
+          2758327,
+          null,
+          3715468
+        ],
+        [
+          "GOLD & ORNAMENTS",
+          957141,
+          2758327,
+          null,
+          3715468
+        ],
+        [
+          "Current Assets",
+          1208847326.42,
+          6817192642.84,
+          6887075574.62,
+          1138964394.64
+        ],
+        [
+          "Opening Stock",
+          368726872.59,
+          null,
+          null,
+          368726872.59
+        ],
+        [
+          "Deposits (Asset)",
+          18148981.33,
+          3033868.17,
+          3451593,
+          17731256.5
+        ],
+        [
+          "Additional Collector Raigad Alibag",
+          31000,
+          null,
+          null,
+          31000
+        ],
+        [
+          "Auction Deposit- Sameer",
+          116399,
+          null,
+          null,
+          116399
+        ],
+        [
+          "Deposit for Imports",
+          150000,
+          null,
+          null,
+          150000
+        ],
+        [
+          "DEPOSIT FOR OFFICE UNIT NO.2401-2403 WITH MAHIMA MENDA",
+          null,
+          220000,
+          null,
+          220000
+        ],
+        [
+          "DEPOSIT FOR OFFICE UNIT NO.2401-2403 WITH URMILA SINGH",
+          null,
+          220000,
+          null,
+          220000
+        ],
+        [
+          "DEPOSIT - POWER2SME PVT LTD",
+          null,
+          1735000,
+          null,
+          1735000
+        ],
+        [
+          "DEPOSIT WITH ICICI BANK FOR TATA CAPITAL LTD - FD",
+          7522964,
+          463549,
+          null,
+          7986513
+        ],
+        [
+          "DEPOSIT WITH MJUNCTION SERVICES LIMITED",
+          118099.5,
+          null,
+          null,
+          118099.5
+        ],
+        [
+          "Deposit with MPCB",
+          45000,
+          null,
+          null,
+          45000
+        ],
+        [
+          "DEPOSIT WITH MSEDCL",
+          214067,
+          212460,
+          100990,
+          325537
+        ],
+        [
+          "DEPOSIT WITH MSTC",
+          25000,
+          null,
+          null,
+          25000
+        ],
+        [
+          "Deposit with Mumbai Waste Management",
+          100000,
+          null,
+          null,
+          100000
+        ],
+        [
+          "GECM DEPOSIT",
+          5000,
+          null,
+          null,
+          5000
+        ],
+        [
+          "SECURITY DEPOSIT FOR ELECTRICITY",
+          147500,
+          23350,
+          170850,
+          null
+        ],
+        [
+          "Security Deposit With Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+          6600000,
+          null,
+          null,
+          6600000
+        ],
+        [
+          "SECURITY DEPOSIT WITH CDSL",
+          null,
+          45000,
+          null,
+          45000
+        ],
+        [
+          "SECURITY DEPOSIT WITH NSDL",
+          8708,
+          null,
+          null,
+          8708
+        ],
+        [
+          "SECURITY DEPOSIT WITH SHRIRAM FINANCE",
+          3065243.83,
+          114509.17,
+          3179753,
+          null
+        ],
+        [
+          "Loans & Advances (Asset)",
+          2316180.25,
+          480988478.12,
+          412163444.84,
+          71141213.53
+        ],
+        [
+          "Advance Salary",
+          659700,
+          2384100,
+          1662433,
+          1381367
+        ],
+        [
+          "Advance Salary",
+          659700,
+          2384100,
+          1662433,
+          1381367
+        ],
+        [
+          "Advance to S. Creditors",
+          1656480.25,
+          478604378.12,
+          410501011.84,
+          69759846.53
+        ],
+        [
+          "ACCELERATOR GENERAL TRADING LLC",
+          21011561.77,
+          null,
+          null,
+          21011561.77
+        ],
+        [
+          "AINUMPUDI SURESH VARMA",
+          null,
+          50000,
+          null,
+          50000
+        ],
+        [
+          "ALOIS BUILDERS AND INF",
+          null,
+          1000000,
+          null,
+          1000000
+        ],
+        [
+          "AML MOTORS PVT LTD",
+          null,
+          29344,
+          null,
+          29344
+        ],
+        [
+          "Anjali Electricals",
+          44110,
+          null,
+          null,
+          44110
+        ],
+        [
+          "ASPHALTERA PRIVATE LIMITED",
+          3800000,
+          null,
+          3562100,
+          237900
+        ],
+        [
+          "AVNTIKA ENTERPRISE CRS",
+          null,
+          71356233,
+          65026975,
+          6329258
+        ],
+        [
+          "CLASSIC PETRO & ENERGY PRIVATE LIMITED CRS",
+          null,
+          20185364,
+          20185364,
+          null
+        ],
+        [
+          "Darsh Enterprises (CR)",
+          null,
+          17615114,
+          17615114,
+          null
+        ],
+        [
+          "DREAMZZ MAKERS EVENTS AN",
+          null,
+          100000,
+          null,
+          100000
+        ],
+        [
+          "EKVIRA TRANSPORT AND LOGISTICS",
+          316155,
+          674139,
+          121026,
+          236958
+        ],
+        [
+          "EMIT INTERNATIONAL FZ LLC",
+          32691837.61,
+          55773864.44,
+          74949873.12,
+          13515828.93
+        ],
+        [
+          "GLOBAL PLASTO CHEM",
+          null,
+          11087050,
+          11085851,
+          1199
+        ],
+        [
+          "HINDUSTAN PETROLEUM CORPORATION LIMITED",
+          1487825.21,
+          15,
+          1442016.16,
+          45824.05
+        ],
+        [
+          "INDIAIDEAS.COM",
+          null,
+          44709.23,
+          38230.87,
+          6478.36
+        ],
+        [
+          "Indian Oil Corporation Limited-GJ",
+          91016,
+          1982980,
+          1982683,
+          91313
+        ],
+        [
+          "INDIAN OIL CORPORATION LIMITED - MH",
+          null,
+          10038339,
+          10031675,
+          6664
+        ],
+        [
+          "JALDEV SHIPPING AGENCY",
+          null,
+          87886,
+          null,
+          87886
+        ],
+        [
+          "KHANDOBA BIOREFINERIES PRIVATE LIMITED",
+          9836656,
+          null,
+          9836656,
+          null
+        ],
+        [
+          "K M ENTERPRISE",
+          null,
+          6545321,
+          6545321,
+          null
+        ],
+        [
+          "KS Oil Corporation - CR",
+          null,
+          13019384,
+          13015304,
+          4080
+        ],
+        [
+          "M1 EXCHANGE",
+          null,
+          17900,
+          17900,
+          null
+        ],
+        [
+          "MAYRA PETROLEUM FZCO",
+          11475470.6,
+          null,
+          null,
+          11475470.6
+        ],
+        [
+          "MSTC LTD",
+          275208,
+          null,
+          1180,
+          274028
+        ],
+        [
+          "Mynd Solutions Pvt. Ltd.",
+          null,
+          531537.28,
+          529381.28,
+          2156
+        ],
+        [
+          "NAYARA ENERGY LIMITED",
+          2028,
+          578200,
+          576172,
+          null
+        ],
+        [
+          "NAZPAL OIL ENERGY L.L.C",
+          5850826.45,
+          null,
+          null,
+          5850826.45
+        ],
+        [
+          "NEPTUNE PETROCHEMICALS LIMITED - UP CRS",
+          null,
+          4284419,
+          4284419,
+          null
+        ],
+        [
+          "RAAJ UNOCAL LUBRICANTS LTD",
+          86650707.39,
+          195903844.21,
+          102181293.45,
+          7071843.37
+        ],
+        [
+          "ROYAL AUTOCRYSTAL SERVICES PRIVATE LIMITED",
+          null,
+          30215,
+          26621,
+          3594
+        ],
+        [
+          "ROYAL ENTERPRISES",
+          null,
+          200000,
+          199584,
+          416
+        ],
+        [
+          "SANDEEPDADA THAKUR FOUNDATION",
+          null,
+          100000,
+          null,
+          100000
+        ],
+        [
+          "SHANTI HEAVY DUTY EARTH MOVERS",
+          null,
+          584100,
+          534600,
+          49500
+        ],
+        [
+          "SHREE HARI ENTERPRISES",
+          39141,
+          1025000,
+          959525,
+          26334
+        ],
+        [
+          "SIDDHARTH TRADERS",
+          2100000,
+          null,
+          null,
+          2100000
+        ],
+        [
+          "SIGMA PETROCHEM",
+          null,
+          19533793,
+          19532303,
+          1490
+        ],
+        [
+          "SILVERBACK INFRA PRIVATE LIMITED",
+          null,
+          32161576.96,
+          32161576.96,
+          null
+        ],
+        [
+          "STAR MOTORS",
+          null,
+          34393,
+          34393,
+          null
+        ],
+        [
+          "SUKHMANI OIL AND LUBE CRS",
+          null,
+          14029657,
+          14023874,
+          5783
+        ],
+        [
+          "Sundry Debtors",
+          810264688.8,
+          5606970974.01,
+          5760422056.16,
+          656813606.65
+        ],
+        [
+          "AAR ECO EXIM (OPC) PRIVATE LIMITED",
+          2204004,
+          2013198,
+          2904004,
+          1313198
+        ],
+        [
+          "ACCELERATOR GENERAL TRADING LLC-DR",
+          31274322.18,
+          1235847.82,
+          12792617.97,
+          19717552.03
+        ],
+        [
+          "A G ART PETROCHEM LLP",
+          53514885,
+          68191188,
+          121706073,
+          null
+        ],
+        [
+          "AGM ENERGY DRS",
+          null,
+          12187414,
+          null,
+          12187414
+        ],
+        [
+          "AJANTHA LUMBER INC",
+          null,
+          3295582,
+          3183654,
+          111928
+        ],
+        [
+          "AJAY KUMAR BARIK",
+          null,
+          1899905.6,
+          1899905.6,
+          null
+        ],
+        [
+          "AMARNATH BABA SAESAHANA ENTERPRISES",
+          null,
+          1132800,
+          1132800,
+          null
+        ],
+        [
+          "AMISHI INDUSTRIES INDIA PVT LTD- Dr",
+          7675726.44,
+          294188274,
+          279110525.44,
+          22753475
+        ],
+        [
+          "APEX PETROCHEM INDUSTRIES",
+          31960568,
+          79741213,
+          111701781,
+          null
+        ],
+        [
+          "ARSH CORPORATION - DR",
+          null,
+          27909666,
+          22174365,
+          5735301
+        ],
+        [
+          "ART INFRASTRUCTURE PRIVATE LIMITED DRS - MP",
+          null,
+          6787733,
+          6787733,
+          null
+        ],
+        [
+          "ART INFRASTRUCTURE PRIVATE LIMITED DRS – BIHAR",
+          null,
+          2904357,
+          2906819,
+          2462
+        ],
+        [
+          "ART INFRASTRUCTURE PRIVATE LIMITED - PB",
+          null,
+          46297512,
+          46297512,
+          null
+        ],
+        [
+          "Art Infrastructure Pvt Ltd",
+          3233918.96,
+          993911721,
+          904656458.04,
+          86021344
+        ],
+        [
+          "ASHTAVINAYAK PETROCHEM - DR",
+          null,
+          1048102,
+          1048102,
+          null
+        ],
+        [
+          "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR",
+          null,
+          22656000,
+          22656000,
+          null
+        ],
+        [
+          "AVTAR INDUSTRIES DR",
+          null,
+          7703153,
+          7703153,
+          null
+        ],
+        [
+          "BINDU INTERNATIONAL CO",
+          null,
+          12641621,
+          6185050,
+          6456571
+        ],
+        [
+          "BISMILLAH OILS",
+          null,
+          1177830,
+          1177830,
+          null
+        ],
+        [
+          "BITCHEM HIGHWAYS PRIVATE LIMITED-DR",
+          2902,
+          1971992,
+          1986653,
+          11759
+        ],
+        [
+          "BLACKTOP INFRASTRUCTURE PRIVATE LIMITED(Karnataka)",
+          3262502,
+          1689032,
+          null,
+          4951534
+        ],
+        [
+          "BLACKTOP INFRASTRUCTURE PRIVATE LIMITED(Telangana)",
+          1409978,
+          null,
+          null,
+          1409978
+        ],
+        [
+          "BLACKTOP INFRASTRUCTURE PVT LTD (Gujarat)",
+          6760797,
+          2054068,
+          5501012,
+          3313853
+        ],
+        [
+          "Blacktop Infrastructure Pvt Ltd (Maharashtra)",
+          18251805,
+          3351605,
+          20389041,
+          1214369
+        ],
+        [
+          "BLACKTOP INFRASTRUCTURE PVT LTD – MH HIRING CHARGES",
+          3953734,
+          11328000,
+          8192000,
+          7089734
+        ],
+        [
+          "BOLISETTY SRINIVAS",
+          null,
+          2436000,
+          2436000,
+          null
+        ],
+        [
+          "BON BON INTERNATIONAL-Dr",
+          null,
+          6164166,
+          6164166,
+          null
+        ],
+        [
+          "BRBL INDIA (OPC) PRIVATE LIMITED- DR",
+          97028901.3,
+          61573881,
+          135900749.3,
+          22702033
+        ],
+        [
+          "BRIJ CHEMICALS DRS",
+          null,
+          101422967,
+          61442601,
+          39980366
+        ],
+        [
+          "CATALYST ASPHALT PVT LTD",
+          2468439,
+          26876532,
+          29344971,
+          null
+        ],
+        [
+          "C B BIKKAD ENGINEERS AND CONTRACTORS",
+          37843,
+          31500,
+          31500,
+          37843
+        ],
+        [
+          "CHINTAMANI ENTERPRISES DRS",
+          null,
+          8778084,
+          7362821,
+          1415263
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - CHANDIGARH DRS",
+          null,
+          121156947,
+          121156947,
+          null
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - RAJASTHAN",
+          66,
+          67577264,
+          67577198,
+          null
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED - UP",
+          null,
+          59829936,
+          59829936,
+          null
+        ],
+        [
+          "CLASSIC BITUMEN PRIVATE LIMITED – HARYANA",
+          null,
+          52804092,
+          52804092,
+          null
+        ],
+        [
+          "CLASSIC PETRO & ENERGY PRIVATE LIMITED",
+          49228860,
+          136789563,
+          186018423,
+          null
+        ],
+        [
+          "CONSUMER TOUCH",
+          null,
+          492237,
+          null,
+          492237
+        ],
+        [
+          "DARSH PETROCHEM PVT LTD",
+          349502,
+          null,
+          349502,
+          null
+        ],
+        [
+          "DATTA KRUPA ENTERPRISES DRS",
+          null,
+          3873450,
+          3873450,
+          null
+        ],
+        [
+          "DATTA SAI ENTERPRISES",
+          null,
+          27804861,
+          28371500,
+          566639
+        ],
+        [
+          "D.K. Impex - Dr",
+          null,
+          2084812,
+          2084812,
+          null
+        ],
+        [
+          "DMD INFRATECH PRIVATE LIMITED",
+          null,
+          1320037,
+          637259,
+          682778
+        ],
+        [
+          "DRAVYAM INDUSTRIES PRIVATE LIMITED",
+          10944013,
+          250564586,
+          257862744,
+          3645855
+        ],
+        [
+          "DUBEY PETROLEUM CHEMICALS PRIVATE LIMITED",
+          null,
+          123568012,
+          104244021,
+          19323991
+        ],
+        [
+          "DVITI PETROCHEM PRIVATE LIMITED",
+          8647841.27,
+          1060484,
+          650000,
+          9058325.27
+        ],
+        [
+          "EMIT INT TRADING REFINED OIL PRODUCTS CO. L.L.C-DR",
+          2494240,
+          null,
+          null,
+          2494240
+        ],
+        [
+          "FORTUNE ENTERPRISE - DR",
+          3863837,
+          2373665,
+          5736025,
+          501477
+        ],
+        [
+          "FORTUNE ENTERPRISES_NEW DRS",
+          null,
+          4000318,
+          4000000,
+          318
+        ],
+        [
+          "FUELOMATIC ENERGY",
+          null,
+          4849499,
+          4849499,
+          null
+        ],
+        [
+          "GALAXY PETROLEUM  - DR",
+          11934625,
+          8608643,
+          14468805,
+          6074463
+        ],
+        [
+          "GASOLIX PETRO INDUSTRIES PRIVATE LIMITED",
+          null,
+          18897927,
+          17507552,
+          1390375
+        ],
+        [
+          "GAURAV CHEMICALS (Dr.)",
+          7784385,
+          96294882,
+          88451097,
+          59400
+        ],
+        [
+          "Govt. Of Maharashtra",
+          null,
+          8689230,
+          8689230,
+          null
+        ],
+        [
+          "Grasim Industries Limited DR",
+          null,
+          233387614,
+          233385011.05,
+          2602.95
+        ],
+        [
+          "GULF FIRST PETRO PRODUCTS INDIA (P) LTD DRS",
+          null,
+          4807089,
+          4807089,
+          null
+        ],
+        [
+          "GURUKRUPA INFRASTRUCTURE DRS",
+          186875,
+          null,
+          null,
+          186875
+        ],
+        [
+          "HARE KRISHNA TRADERS",
+          null,
+          1959858,
+          1959858,
+          null
+        ],
+        [
+          "HORIZON VENTURES DRS",
+          1090122,
+          1507201,
+          2597323,
+          null
+        ],
+        [
+          "I-9 FREEWAYS PRIVATE LIMITED",
+          2363540,
+          7474568,
+          9826350,
+          11758
+        ],
+        [
+          "IMMANUEL & CO",
+          null,
+          3143803,
+          3143803,
+          null
+        ],
+        [
+          "INFINIUM INDUSTRIES PRIVATE LIMITED Dr.",
+          null,
+          23725879,
+          23725879,
+          null
+        ],
+        [
+          "INNOVATIVE ROADZTECH PRIVATE LIMITED - DR",
+          724119,
+          null,
+          724119,
+          null
+        ],
+        [
+          "JAITHRA EXIM",
+          1053544,
+          1591938,
+          2126804,
+          518678
+        ],
+        [
+          "JAYPEE PETRO PRODUCTS",
+          null,
+          9120214,
+          7984700,
+          1135514
+        ],
+        [
+          "KALYAN TOLL INFRASTRUCTURE LIMITED",
+          110485.6,
+          null,
+          null,
+          110485.6
+        ],
+        [
+          "KANISHKA ENTERPRISES",
+          null,
+          8005440,
+          8005440,
+          null
+        ],
+        [
+          "KRISH IMPEX",
+          null,
+          30512257,
+          19315159,
+          11197098
+        ],
+        [
+          "KRISHNA LUBRICANTS",
+          1264690,
+          null,
+          null,
+          1264690
+        ],
+        [
+          "KS Oil Corporation",
+          null,
+          2648052,
+          2648052,
+          null
+        ],
+        [
+          "LAKSHMI DURGA FILLING",
+          null,
+          2000000,
+          2000000,
+          null
+        ],
+        [
+          "LAKSHMI DYE CHEM",
+          null,
+          1813660,
+          1813660,
+          null
+        ],
+        [
+          "LUBRICON INDIA",
+          26780558,
+          335538352,
+          362318910,
+          null
+        ],
+        [
+          "MAHARASHTRA VIKRIKAR",
+          null,
+          4279770,
+          4279770,
+          null
+        ],
+        [
+          "MANAN ENTERPRISE",
+          10169823,
+          86863850,
+          77883498,
+          19150175
+        ],
+        [
+          "MANAN IMPEX",
+          null,
+          59761412,
+          59761412,
+          null
+        ],
+        [
+          "MAYUR STONE SUPPLIERS",
+          null,
+          3484134,
+          3167363,
+          316771
+        ],
+        [
+          "MIDAS TECHNOLOGIES-DR",
+          255433,
+          25809432,
+          22151399,
+          3913466
+        ],
+        [
+          "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR",
+          12424474.83,
+          383841078,
+          293606494.36,
+          102659058.47
+        ],
+        [
+          "M.N.Traders",
+          null,
+          3763704,
+          3733240,
+          30464
+        ],
+        [
+          "MORYA ENTERPRISES",
+          16080568,
+          219480,
+          16243830,
+          56218
+        ],
+        [
+          "MR SUPPLIERS DRS",
+          null,
+          1819675,
+          1819675,
+          null
+        ],
+        [
+          "M/S K H THAKUR",
+          null,
+          14388984,
+          13936838,
+          452146
+        ],
+        [
+          "M/S RABINDRA PADHY DRS",
+          null,
+          45688434,
+          45688434,
+          null
+        ],
+        [
+          "M/S SAI SHARAN PETROLE",
+          null,
+          1677358,
+          1663800,
+          13558
+        ],
+        [
+          "M/S YASH TRADING COMPANY",
+          null,
+          991623,
+          991623,
+          null
+        ],
+        [
+          "NANOTECH INDUSTRIES DR",
+          486219,
+          null,
+          486219,
+          null
+        ],
+        [
+          "NEPTUNE PETROCHEMICALS LIMITED - Dr",
+          null,
+          36200221,
+          52521735,
+          16321514
+        ],
+        [
+          "NXGEN ENFUEL SERVICES LLP",
+          41166268.13,
+          null,
+          41166268.13,
+          null
+        ],
+        [
+          "OSNAR CHEMICAL PRIVATE LIMITED",
+          null,
+          516000,
+          516000,
+          null
+        ],
+        [
+          "PALAK OIL TRADERS",
+          null,
+          3478759,
+          3478759,
+          null
+        ],
+        [
+          "POWER2SME PRIVATE LIMITED - DR",
+          null,
+          9152833,
+          9150376,
+          2457
+        ],
+        [
+          "REGAL OIL DISTRIBUTORS AND MANUFACTURERS DRS",
+          null,
+          13261607,
+          13261607,
+          null
+        ],
+        [
+          "RN FUELS INDIA PRIVATE LIMITED",
+          75800247,
+          null,
+          75800247,
+          null
+        ],
+        [
+          "SABARI ENGINEERING CO",
+          null,
+          210000,
+          210000,
+          null
+        ],
+        [
+          "SAI SUDHA TRADERS",
+          2535976,
+          null,
+          224694,
+          2311282
+        ],
+        [
+          "SAK Industries",
+          104741797,
+          47326565,
+          128631184,
+          23437178
+        ],
+        [
+          "SANJIVANI INDUSTRIES -Dr(Mumbai)",
+          null,
+          1478530,
+          1478530,
+          null
+        ],
+        [
+          "SAPTASHRUNGI PETRO CHEM",
+          null,
+          481236,
+          481236,
+          null
+        ],
+        [
+          "SE BIOFUELS PRIVATE LIMITED",
+          null,
+          27934848,
+          27909038,
+          25810
+        ],
+        [
+          "SHARV PETROBIT PRIVATE LIMITED",
+          null,
+          7000100,
+          7000100,
+          null
+        ],
+        [
+          "SHIV NS GLOBAL PRIVATE LIMITED DRS",
+          null,
+          1648860,
+          null,
+          1648860
+        ],
+        [
+          "SHREE DHANRAJ ENTERPRISES",
+          368160,
+          null,
+          null,
+          368160
+        ],
+        [
+          "SHREE NAVDURGA AGRO INDUSTRIES (Goa)",
+          null,
+          4351287,
+          4337000,
+          14287
+        ],
+        [
+          "Shri Ganesh Trading- Dr",
+          6935,
+          55069655,
+          50006485,
+          5070105
+        ],
+        [
+          "SIDDHIVINAYAK BUILDPRO PRIVATE LIMITED",
+          null,
+          16638643,
+          16638733,
+          90
+        ],
+        [
+          "SIDDHIVINAYAK CONSTRUCTION (DR)",
+          40213352.6,
+          198849718,
+          156267428.27,
+          82795642.33
+        ],
+        [
+          "SIDDHIVINAYAK PETROCHEMICALS",
+          null,
+          2859898,
+          2855842,
+          4056
+        ],
+        [
+          "S M THOMAIYAR AND SON",
+          null,
+          651360,
+          651360,
+          null
+        ],
+        [
+          "SOMNATH DEOKISAN BOOB",
+          null,
+          1762163,
+          1757280,
+          4883
+        ],
+        [
+          "SRINIVASA LUBES AND PETROLEUMS",
+          80246,
+          9964221,
+          10041975,
+          2492
+        ],
+        [
+          "SRI VAISHNAVI ENTERPRISES",
+          3169282,
+          83761087,
+          86930369,
+          null
+        ],
+        [
+          "SUC INFRAPROJECTS PRIVATE LIMITED - DR",
+          null,
+          4273035,
+          4273035,
+          null
+        ],
+        [
+          "SUHAS TRADERS",
+          null,
+          1124127,
+          1027800,
+          96327
+        ],
+        [
+          "Sulaki Chemicals Pvt. Ltd. (Drs)",
+          48566294.41,
+          808435079.59,
+          808895390,
+          48105984
+        ],
+        [
+          "SUNRISE ENTERPRISES - DR",
+          60058005,
+          null,
+          60058005,
+          null
+        ],
+        [
+          "SURAJDEEP INFRA PRIVATE LIMITED",
+          15684776,
+          493678,
+          3212718,
+          12965736
+        ],
+        [
+          "SWARA ENTERPRISES DRS",
+          null,
+          14166761,
+          12537653,
+          1629108
+        ],
+        [
+          "SWARAJYA INFRAPROJECT PRIVATE LIMITED DRS",
+          null,
+          7733855,
+          5559237,
+          2174618
+        ],
+        [
+          "SYNERGY WORLD",
+          7233367,
+          33802383,
+          41035750,
+          null
+        ],
+        [
+          "TOP NOTCH INDUSTRIES LLP DRS",
+          null,
+          6044935,
+          6043890,
+          1045
+        ],
+        [
+          "TRIMAX ROCKS LLP",
+          null,
+          2275926,
+          1320037,
+          955889
+        ],
+        [
+          "UNIPROC ENERGIES PRIVATE LIMITED-DR",
+          null,
+          1641467,
+          1641467,
+          null
+        ],
+        [
+          "UNIVERSAL TRADING CORPORATION",
+          2932140,
+          200000,
+          3132140,
+          null
+        ],
+        [
+          "VAIBHAVDESHMUKH INFRAPROJECTS PRIVATE LIMITED",
+          null,
+          4995176,
+          null,
+          4995176
+        ],
+        [
+          "VAISHNAVI PETRO ENERGY",
+          null,
+          3977718,
+          671211,
+          3306507
+        ],
+        [
+          "VIDYAA PETROLEUM INDIA PRIVATE LIMITED - DR",
+          1533564,
+          60996124,
+          5310000,
+          54152560
+        ],
+        [
+          "VIRESHWAR INDUSTRIES - DR",
+          null,
+          12769170,
+          12769170,
+          null
+        ],
+        [
+          "VITTHOBA MAULI INFRAPROJECT PRIVATE LIMITED - DR",
+          null,
+          14377700,
+          5884565,
+          8493135
+        ],
+        [
+          "Cash-in-hand",
+          141935,
+          612500,
+          614271.85,
+          140163.15
+        ],
+        [
+          "Cash",
+          141935,
+          612500,
+          614271.85,
+          140163.15
+        ],
+        [
+          "Bank Accounts",
+          8008123.53,
+          712315798.56,
+          709185066.58,
+          11138855.51
+        ],
+        [
+          "Deposits with Bank",
+          8206132,
+          569838,
+          685040,
+          8090930
+        ],
+        [
+          "FD WITH BOM 60481155324",
+          106755,
+          734,
+          734,
+          106755
+        ],
+        [
+          "FD WITH BOM 60522865556",
+          6796231,
+          513714,
+          50249,
+          7259696
+        ],
+        [
+          "FD WITH YES BANK 024840600029570",
+          534380,
+          29724,
+          39104,
+          525000
+        ],
+        [
+          "KARNATAKA BANK FD AC NO - 5201500202002401",
+          575282,
+          19671,
+          594953,
+          null
+        ],
+        [
+          "KARNATAKA BANK FD AC NO - 5201500202009301",
+          58786,
+          2061,
+          null,
+          60847
+        ],
+        [
+          "KARNATAKA BANK FD AC NO - 5201500202084001",
+          134698,
+          3934,
+          null,
+          138632
+        ],
+        [
+          "BOM CA 60435349267",
+          10666.95,
+          27275914.13,
+          27277591.07,
+          8990.01
+        ],
+        [
+          "Central Bank - 3224976293",
+          51715.17,
+          0.11,
+          51715.28,
+          null
+        ],
+        [
+          "KARNATAKA CA 5207000300027101",
+          3630,
+          null,
+          null,
+          3630
+        ],
+        [
+          "YES BANK CA - 024863700003291",
+          264020.59,
+          684470046.32,
+          681170720.23,
+          3035305.5
+        ],
+        [
+          "Income Tax Credit",
+          null,
+          11710467.57,
+          8,
+          11710459.57
+        ],
+        [
+          "ADVANCE TAX PAID",
+          null,
+          7500000,
+          null,
+          7500000
+        ],
+        [
+          "TCS ASSETS F.Y 2025-26",
+          null,
+          63836.94,
+          null,
+          63836.94
+        ],
+        [
+          "TDS ASSETS F.Y 2025-26",
+          null,
+          4146630.63,
+          8,
+          4146622.63
+        ],
+        [
+          "Prepaid Exp",
+          1160080.02,
+          1415281.41,
+          1045280.02,
+          1530081.41
+        ],
+        [
+          "CPCB EXPENSES",
+          null,
+          3500,
+          null,
+          3500
+        ],
+        [
+          "Prepaid Expenses",
+          168618.57,
+          157731.29,
+          168618.57,
+          157731.29
+        ],
+        [
+          "Prepaid Insurance",
+          790379.2,
+          1159741.62,
+          790379.2,
+          1159741.62
+        ],
+        [
+          "Prepaid Licence",
+          57582.25,
+          94308.5,
+          57582.25,
+          94308.5
+        ],
+        [
+          "Prepaid License Fees Upto 31.12.30",
+          143500,
+          null,
+          28700,
+          114800
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN",
+          80464.9,
+          144000,
+          193854.17,
+          30610.73
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN-AMBIT FINVEST",
+          1917,
+          null,
+          1917,
+          null
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN- CLIX CAPITAL",
+          30987.4,
+          365,
+          31352.4,
+          null
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN-L & T FINANCE",
+          14302,
+          95776,
+          85987.67,
+          24090.33
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN-MAS FINANCIAL",
+          15029.4,
+          39806,
+          48315,
+          6520.4
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN-MAS VENDOR",
+          11429,
+          1,
+          11430,
+          null
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN-MONEYWISE",
+          1074.1,
+          null,
+          1074.1,
+          null
+        ],
+        [
+          "TDS RECEIVABLE ON UNSECURED LOAN-POONAWALA",
+          5726,
+          8052,
+          13778,
+          null
+        ],
+        [
+          "TDS RECEIVABLE FROM MYND SOLUTION PVT LTD",
+          null,
+          1275,
+          null,
+          1275
+        ],
+        [
+          "Branch / Divisions",
+          21227370.84,
+          412727182.59,
+          403559076,
+          12059264.25
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD-KARNATAKA",
+          13272543.12,
+          389390938.87,
+          403559076,
+          27440680.25
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD-RAJASTHAN",
+          null,
+          14186988,
+          null,
+          14186988
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD - TAMILNADU",
+          7954827.72,
+          null,
+          null,
+          7954827.72
+        ],
+        [
+          "A G ASHTAVINAYAKA PETROCHEM PVT LTD-TELANGANA",
+          null,
+          9149255.72,
+          null,
+          9149255.72
+        ],
+        [
+          "Sales Accounts",
+          null,
+          24235415.67,
+          4698389785.28,
+          4674154369.61
+        ],
+        [
+          "GST SALES",
+          null,
+          24200301.65,
+          3579648968.41,
+          3555448666.76
+        ],
+        [
+          "GST SALES @5%",
+          null,
+          null,
+          30000,
+          30000
+        ],
+        [
+          "IGST SALES",
+          null,
+          35114.02,
+          1108878206.37,
+          1108843092.35
+        ],
+        [
+          "IGST SALES @ 12%",
+          null,
+          null,
+          6288610.5,
+          6288610.5
+        ],
+        [
+          "SCRAP DRUMS (INTERSTATE SALES)",
+          null,
+          null,
+          3158000,
+          3158000
+        ],
+        [
+          "Storage & Warehouse Rent",
+          null,
+          null,
+          386000,
+          386000
+        ],
+        [
+          "Purchase Accounts",
+          null,
+          4592216592.32,
+          29729584.1,
+          4562487008.22
+        ],
+        [
+          "CST PURCHASE",
+          null,
+          1982683,
+          null,
+          1982683
+        ],
+        [
+          "DISCOUNT",
+          null,
+          null,
+          342167,
+          342167
+        ],
+        [
+          "GST PURCHASE",
+          null,
+          2561249262.72,
+          13583109,
+          2547666153.72
+        ],
+        [
+          "HIGH SEAS PURCHASE",
+          null,
+          107701003.73,
+          null,
+          107701003.73
+        ],
+        [
+          "IGST PURCHASE",
+          null,
+          1774357797.77,
+          15399758.1,
+          1758958039.67
+        ],
+        [
+          "IMPORT PURCHASE",
+          null,
+          136359199.1,
+          null,
+          136359199.1
+        ],
+        [
+          "Incentives Received",
+          null,
+          404550,
+          404550,
+          null
+        ],
+        [
+          "INTEREST PAID TO S.CREDITORS",
+          null,
+          130421,
+          null,
+          130421
+        ],
+        [
+          "VAT PURCHASE",
+          null,
+          10031675,
+          null,
+          10031675
+        ],
+        [
+          "Direct Expenses",
+          null,
+          75298175.67,
+          415673,
+          74882502.67
+        ],
+        [
+          "Consumable Product",
+          null,
+          272646,
+          null,
+          272646
+        ],
+        [
+          "CHEMICAL PURCHASE",
+          null,
+          252486,
+          null,
+          252486
+        ],
+        [
+          "Drum",
+          null,
+          20160,
+          null,
+          20160
+        ],
+        [
+          "Import Clearing Expenses",
+          null,
+          27822150.53,
+          15000,
+          27807150.53
+        ],
+        [
+          "Custom Duty",
+          null,
+          13182215,
+          15000,
+          13167215
+        ],
+        [
+          "Import Clearing & Forwarding Expenses",
+          null,
+          14639935.53,
+          null,
+          14639935.53
+        ],
+        [
+          "Cargo Insurance",
+          null,
+          609534.64,
+          null,
+          609534.64
+        ],
+        [
+          "Carriage Inwards RD",
+          null,
+          23728996,
+          273849,
+          23455147
+        ],
+        [
+          "Carriage Inward URD",
+          null,
+          22228865.5,
+          121824,
+          22107041.5
+        ],
+        [
+          "Other Clearing Charges",
+          null,
+          239750,
+          null,
+          239750
+        ],
+        [
+          "STAMP DUTY",
+          null,
+          339633,
+          5000,
+          334633
+        ],
+        [
+          "Testing Charges",
+          null,
+          56600,
+          null,
+          56600
+        ],
+        [
+          "Indirect Incomes",
+          null,
+          null,
+          35530521.2,
+          35530521.2
+        ],
+        [
+          "DISCOUNT ON EXPENSES",
+          null,
+          null,
+          21186.72,
+          21186.72
+        ],
+        [
+          "Foreign Exchange Rate Diff.",
+          null,
+          null,
+          11649293.48,
+          11649293.48
+        ],
+        [
+          "HIRING CHARGES FOR MICRO SURFACING PAVER",
+          null,
+          null,
+          9600000,
+          9600000
+        ],
+        [
+          "INTEREST ON DEPOSIT SHRIRAM FINANCE",
+          null,
+          null,
+          127233,
+          127233
+        ],
+        [
+          "Interest on Tata Capital FD",
+          null,
+          null,
+          463549,
+          463549
+        ],
+        [
+          "INTEREST RECD ON FD BANK OF MAHARASHTRA",
+          null,
+          null,
+          514448,
+          514448
+        ],
+        [
+          "INTEREST RECD ON FD KARNATAKA BANK",
+          null,
+          null,
+          25666,
+          25666
+        ],
+        [
+          "INTEREST RECD ON FD YESBANK",
+          null,
+          null,
+          29724,
+          29724
+        ],
+        [
+          "INTEREST RECEIVABLE FROM S.DEBTORS",
+          null,
+          null,
+          130421,
+          130421
+        ],
+        [
+          "SUBSIDY RECEIVED",
+          null,
+          null,
+          12969000,
+          12969000
+        ],
+        [
+          "Indirect Expenses",
+          null,
+          189032335.83,
+          5668979.92,
+          183363355.91
+        ],
+        [
+          "Disallowance",
+          null,
+          5609088.52,
+          null,
+          5609088.52
+        ],
+        [
+          "CGST LATE FEE",
+          null,
+          50,
+          null,
+          50
+        ],
+        [
+          "Donation",
+          null,
+          166000,
+          null,
+          166000
+        ],
+        [
+          "GST Voluntary Payment",
+          null,
+          270962,
+          null,
+          270962
+        ],
+        [
+          "INTEREST ON PTRC",
+          null,
+          30,
+          null,
+          30
+        ],
+        [
+          "Interest on TCS",
+          null,
+          202,
+          null,
+          202
+        ],
+        [
+          "INTEREST ON TDS",
+          null,
+          5065521.52,
+          null,
+          5065521.52
+        ],
+        [
+          "PENALTY PAID",
+          null,
+          106273,
+          null,
+          106273
+        ],
+        [
+          "SGST LATE FEE",
+          null,
+          50,
+          null,
+          50
+        ],
+        [
+          "Electricity Expenses",
+          null,
+          2361700,
+          null,
+          2361700
+        ],
+        [
+          "Electricity Charges (Bunglow)",
+          null,
+          526580,
+          null,
+          526580
+        ],
+        [
+          "Electricity Charges (DHULE)",
+          null,
+          14600,
+          null,
+          14600
+        ],
+        [
+          "Electricity Charges Factory",
+          null,
+          1154740,
+          null,
+          1154740
+        ],
+        [
+          "Electricity Charges (Mahima Menda)",
+          null,
+          120070,
+          null,
+          120070
+        ],
+        [
+          "Electricity Office 24th Floor",
+          null,
+          545710,
+          null,
+          545710
+        ],
+        [
+          "Employee Benefit Expenses",
+          null,
+          45423962.38,
+          4200000,
+          41223962.38
+        ],
+        [
+          "Salary Paid to Related Person",
+          null,
+          4200000,
+          null,
+          4200000
+        ],
+        [
+          "Anil Menda Salary",
+          null,
+          1800000,
+          null,
+          1800000
+        ],
+        [
+          "Prarthana Anil Menda Salary",
+          null,
+          1200000,
+          null,
+          1200000
+        ],
+        [
+          "Vanishka Anil Menda Salary",
+          null,
+          1200000,
+          null,
+          1200000
+        ],
+        [
+          "Admin Charges",
+          null,
+          48822,
+          null,
+          48822
+        ],
+        [
+          "DIRECTORS REMUNERATION-MAHIMA MENDA",
+          null,
+          3000000,
+          null,
+          3000000
+        ],
+        [
+          "DIRECTORS REMUNERATION-SANDEEP SINGH",
+          null,
+          6000000,
+          null,
+          6000000
+        ],
+        [
+          "Employer Contribution to PF",
+          null,
+          585816,
+          null,
+          585816
+        ],
+        [
+          "INCENTIVES",
+          null,
+          354072,
+          null,
+          354072
+        ],
+        [
+          "Salary & Wages",
+          null,
+          29539744,
+          4200000,
+          25339744
+        ],
+        [
+          "Staff Welfare",
+          null,
+          1695508.38,
+          null,
+          1695508.38
+        ],
+        [
+          "Financial Expenses",
+          null,
+          59727026.54,
+          240497.88,
+          59486528.66
+        ],
+        [
+          "Interest on Letter Credit (LC)",
+          null,
+          900164.77,
+          null,
+          900164.77
+        ],
+        [
+          "Interest on Letter Credit (LC)",
+          null,
+          900164.77,
+          null,
+          900164.77
+        ],
+        [
+          "Interest on Loans",
+          null,
+          53614116.53,
+          52037.22,
+          53562079.31
+        ],
+        [
+          "Interest on Corporate Card",
+          null,
+          684529.91,
+          null,
+          684529.91
+        ],
+        [
+          "INTEREST ON FD/OD",
+          null,
+          14875,
+          null,
+          14875
+        ],
+        [
+          "INTEREST ON GECL",
+          null,
+          723743.22,
+          46883.22,
+          676860
+        ],
+        [
+          "Interest on Term Loan 60435104974",
+          null,
+          2273164,
+          null,
+          2273164
+        ],
+        [
+          "Interest on Term Loan Yes Bank",
+          null,
+          2986815.06,
+          null,
+          2986815.06
+        ],
+        [
+          "Interest on Unsecured Loan",
+          null,
+          13025869.43,
+          5154,
+          13020715.43
+        ],
+        [
+          "Interest on Vehicle Loan",
+          null,
+          1559879.91,
+          null,
+          1559879.91
+        ],
+        [
+          "O/D INTEREST",
+          null,
+          32345240,
+          null,
+          32345240
+        ],
+        [
+          "Bank Charges",
+          null,
+          1532191.45,
+          153969.16,
+          1378222.29
+        ],
+        [
+          "LC CHARGES",
+          null,
+          2758492.72,
+          null,
+          2758492.72
+        ],
+        [
+          "Processing Charges",
+          null,
+          922061.07,
+          34491.5,
+          887569.57
+        ],
+        [
+          "Insurance",
+          null,
+          1441565.38,
+          null,
+          1441565.38
+        ],
+        [
+          "FACTORY INSURANCE",
+          null,
+          702508.03,
+          null,
+          702508.03
+        ],
+        [
+          "FIRE INSURANCE",
+          null,
+          39090.29,
+          null,
+          39090.29
+        ],
+        [
+          "INSURANCE",
+          null,
+          27444.07,
+          null,
+          27444.07
+        ],
+        [
+          "INSURANCE ON LOAN",
+          null,
+          10649,
+          null,
+          10649
+        ],
+        [
+          "Insurance - Vehicles",
+          null,
+          620797.16,
+          null,
+          620797.16
+        ],
+        [
+          "Property Insurance",
+          null,
+          41076.83,
+          null,
+          41076.83
+        ],
+        [
+          "Rates and Taxes",
+          null,
+          1836949.8,
+          2932,
+          1834017.8
+        ],
+        [
+          "Ineligible ITC 17(5) -CGST",
+          null,
+          191809.46,
+          216,
+          191593.46
+        ],
+        [
+          "Ineligible ITC 17(5) -IGST",
+          null,
+          1450830.88,
+          null,
+          1450830.88
+        ],
+        [
+          "Ineligible ITC 17(5) -SGST",
+          null,
+          191809.46,
+          216,
+          191593.46
+        ],
+        [
+          "PTEC Company",
+          null,
+          2500,
+          2500,
+          null
+        ],
+        [
+          "Repairs and maintenance",
+          null,
+          1846071.17,
+          16980,
+          1829091.17
+        ],
+        [
+          "REPAIR & MAINTENANCE OF VEHICLES",
+          null,
+          407826.13,
+          null,
+          407826.13
+        ],
+        [
+          "Repairs Maintenance Building",
+          null,
+          325152.24,
+          null,
+          325152.24
+        ],
+        [
+          "REPAIRS & MAINTENANCE OF COMPUTER@9%",
+          null,
+          76698.31,
+          null,
+          76698.31
+        ],
+        [
+          "Repairs & Maintenance to Others",
+          null,
+          560393.65,
+          null,
+          560393.65
+        ],
+        [
+          "Repairs & Maintenance to Vehicle 18%",
+          null,
+          10793,
+          null,
+          10793
+        ],
+        [
+          "Repairs & Maintence of P & M",
+          null,
+          465207.84,
+          16980,
+          448227.84
+        ],
+        [
+          "Accommodation Exp",
+          null,
+          198854.26,
+          null,
+          198854.26
+        ],
+        [
+          "ADVOCATE FEE-URD",
+          null,
+          687500,
+          null,
+          687500
+        ],
+        [
+          "AMC CHARGES",
+          null,
+          259055.43,
+          null,
+          259055.43
+        ],
+        [
+          "ANNUAL CUSTODY  FEES",
+          null,
+          48750,
+          null,
+          48750
+        ],
+        [
+          "Bunglow Mahanagar Gas Charges",
+          null,
+          18488,
+          null,
+          18488
+        ],
+        [
+          "BUSINESS PROMOTION",
+          null,
+          15000,
+          null,
+          15000
+        ],
+        [
+          "Carriage Outwards RD",
+          null,
+          17345003,
+          625599,
+          16719404
+        ],
+        [
+          "Carriage Outward-URD",
+          null,
+          35776296,
+          518129,
+          35258167
+        ],
+        [
+          "Commission Paid",
+          null,
+          3119650.89,
+          null,
+          3119650.89
+        ],
+        [
+          "Conveyance",
+          null,
+          94787,
+          null,
+          94787
+        ],
+        [
+          "Courier Charges",
+          null,
+          25661.04,
+          null,
+          25661.04
+        ],
+        [
+          "CSR Expenses",
+          null,
+          1411169,
+          null,
+          1411169
+        ],
+        [
+          "Diesel & Petrol Expenses",
+          null,
+          40726,
+          null,
+          40726
+        ],
+        [
+          "Factory Rent",
+          null,
+          1227847.5,
+          null,
+          1227847.5
+        ],
+        [
+          "Interest on GST",
+          null,
+          181263,
+          null,
+          181263
+        ],
+        [
+          "Internet Charges",
+          null,
+          97687.19,
+          null,
+          97687.19
+        ],
+        [
+          "JOINING FEES OF CDSL",
+          null,
+          15000,
+          null,
+          15000
+        ],
+        [
+          "Labour Charges",
+          null,
+          337415.7,
+          null,
+          337415.7
+        ],
+        [
+          "LATE FEES",
+          null,
+          15000,
+          null,
+          15000
+        ],
+        [
+          "Licence Fees",
+          null,
+          157220.27,
+          null,
+          157220.27
+        ],
+        [
+          "MOBILE & TELEPHONE EXPENSES",
+          null,
+          40696.59,
+          2091.79,
+          38604.8
+        ],
+        [
+          "Office Expenses",
+          null,
+          268759.78,
+          9075,
+          259684.78
+        ],
+        [
+          "OFFICE RENT 2401,2402,2403",
+          null,
+          4460000,
+          null,
+          4460000
+        ],
+        [
+          "Printing & Stationery",
+          null,
+          178609.91,
+          null,
+          178609.91
+        ],
+        [
+          "PROFESSIONAL FEES",
+          null,
+          2168349.23,
+          null,
+          2168349.23
+        ],
+        [
+          "PTEC PAID",
+          null,
+          2500,
+          null,
+          2500
+        ],
+        [
+          "ROC Charges",
+          null,
+          12750,
+          null,
+          12750
+        ],
+        [
+          "ROC CHARGES_URD",
+          null,
+          34005,
+          null,
+          34005
+        ],
+        [
+          "R/OFF",
+          null,
+          1388.11,
+          754.25,
+          633.86
+        ],
+        [
+          "Service Charges",
+          null,
+          28550,
+          1600,
+          26950
+        ],
+        [
+          "SOFTWARES",
+          null,
+          10399.25,
+          null,
+          10399.25
+        ],
+        [
+          "Travelling Expenses-Domestic",
+          null,
+          911373,
+          41697,
+          869676
+        ],
+        [
+          "Travelling Expenses- International",
+          null,
+          1343300.06,
+          null,
+          1343300.06
+        ],
+        [
+          "Visa Expencess",
+          null,
+          30400,
+          null,
+          30400
+        ],
+        [
+          "Water Expenses (Bunglow)",
+          null,
+          5907,
+          null,
+          5907
+        ],
+        [
+          "Written Off",
+          null,
+          216609.83,
+          9624,
+          206985.83
+        ],
+        [
+          "Profit & Loss A/c",
+          0.14,
+          null,
+          null,
+          0.14
+        ],
+        [
+          "Grand Total",
+          null,
+          30774400330.91,
+          30774400330.91,
+          null
+        ]
+      ]
+    }
+  }
+}

@@ -12,15 +12,13 @@ router.use(authMiddleware);
  *   get:
  *     summary: SRV1 Trial Balance Report
  *     description: |
- *       Returns a Tally-style Trial Balance built from the SRV1 JSON
- *       fixture at `Trial/TALLYTRIALBAL.json`. The report includes the opening and closing
- *       balances, flat ledger rows, and an expandable account hierarchy.
+ *       Returns the Trial Balance from `Trial/NEWTRIAL.json`, with opening
+ *       debit/credit sides and the account hierarchy supplemented from
+ *       `Trial/TALLYTRIALBAL.json`.
  *
- *       The JSON source has no transaction movement totals. Transaction
- *       debit and credit values are therefore zero/blank in the report and
- *       the diagnostics indicate that movements are unavailable.
- *
- *       Set `export=true` to download the same report as an Excel workbook.
+ *       Rows include opening debit/credit, transaction debit/credit, and the
+ *       calculated closing balance. Set `export=true` to download the report
+ *       with the same figures and Tally-style formatting.
  *     tags:
  *       - Reports
  *     security:

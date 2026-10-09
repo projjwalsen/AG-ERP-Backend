@@ -1,0 +1,9 @@
+import { prisma } from "../config/db";
+async function main(){
+ const target=await prisma.ledger.findMany({where:{name:{equals:"IVC LOGISTICS LIMITED",mode:"insensitive"},isActive:true},include:{group:true,entries:{take:8,orderBy:{createdAt:"asc"},include:{voucher:{select:{voucherNo:true,voucherType:true,voucherDate:true}},ledger:{select:{id:true,name:true}}}}}});
+ const vouchers=await prisma.voucher.findMany({where:{voucherNo:"12255",voucherType:"RECEIPT"},include:{entries:{include:{ledger:{select:{id:true,name:true,branchId:true}}}}}});
+ const allNumbers=await prisma.voucher.findMany({where:{voucherNo:"12255"},select:{id:true,voucherNo:true,voucherType:true,branchId:true,voucherDate:true,totalDebit:true,totalCredit:true,narration:true}});
+ const banks=await prisma.ledger.findMany({where:{name:{equals:"BANK OF MAHARASHTRA- C/C 60434886441",mode:"insensitive"},isActive:true,branchId:"47fdc8aa-83ba-46f9-93ec-4517e0eb13bb"},select:{id:true,name:true,group:{select:{name:true}},journalHeads:{select:{id:true,headType:true}}}});
+ console.log(JSON.stringify({target:target.map(l=>({id:l.id,name:l.name,branchId:l.branchId,group:l.group.name,nature:l.nature,openingBalance:l.openingBalance,openingDebit:l.openingDebit,openingCredit:l.openingCredit,currentBalance:l.currentBalance,entries:l.entries.map(e=>({voucherNo:e.voucher.voucherNo,voucherType:e.voucher.voucherType,date:e.voucher.voucherDate,side:e.entryType,amount:e.amount}))})),vouchers:vouchers.map(v=>({id:v.id,date:v.voucherDate,branchId:v.branchId,totalDebit:v.totalDebit,totalCredit:v.totalCredit,narration:v.narration,entries:v.entries.map(e=>({ledgerId:e.ledgerId,ledgerName:e.ledger.name,entryType:e.entryType,amount:e.amount,narration:e.narration}))})),allVoucherNumbers:allNumbers,banks},null,2));
+}
+main().finally(()=>prisma.$disconnect());
