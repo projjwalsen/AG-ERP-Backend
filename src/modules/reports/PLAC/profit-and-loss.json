@@ -1,0 +1,1131 @@
+{
+  "sourceFile": "PandL.xlsx",
+  "sheets": {
+    "Sheet1": {
+      "rowCount": 140,
+      "columnCount": 6,
+      "rows": [
+        [
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "CIN: U11100MH2011PTC224243",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "E-Mail : info@ashtvinayakapetrochem.com",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Profit & Loss A/c",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "1-Apr-25 to 31-Mar-26",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra (from 1-Apr-25)",
+          null,
+          null,
+          "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra (from 1-Apr-25)",
+          null
+        ],
+        [
+          "Particulars",
+          "1-Apr-25 to 31-Mar-26",
+          null,
+          "Particulars",
+          "1-Apr-25 to 31-Mar-26",
+          null
+        ],
+        [
+          "Opening Stock",
+          null,
+          368726872.59,
+          "Sales Accounts",
+          null,
+          4674154369.61
+        ],
+        [
+          "2-ETHYL HEXANOL",
+          26600,
+          null,
+          "GST SALES",
+          3555448666.76,
+          null
+        ],
+        [
+          "ADDITIVE",
+          28318.4,
+          null,
+          "GST SALES @5%",
+          30000,
+          null
+        ],
+        [
+          "AGGREGATE",
+          52767.86,
+          null,
+          "IGST SALES",
+          1108843092.35,
+          null
+        ],
+        [
+          "AGGREGATE COLD MIX",
+          20067.9,
+          null,
+          "IGST SALES @ 12%",
+          6288610.5,
+          null
+        ],
+        [
+          "ANIONIC EMULSION MS- KG",
+          6949.75,
+          null,
+          "SCRAP DRUMS (INTERSTATE SALES)",
+          3158000,
+          null
+        ],
+        [
+          "BASE OIL 27101971",
+          6121247.29,
+          null,
+          "Storage & Warehouse Rent",
+          386000,
+          null
+        ],
+        [
+          "BASE OIL 2CST",
+          6300450,
+          null,
+          "Closing Stock",
+          null,
+          821098392.44
+        ],
+        [
+          "BASE OIL GRADE 2",
+          3846915.9,
+          null,
+          "AGGREGATE",
+          52767.86,
+          null
+        ],
+        [
+          "BASE OIL-KG",
+          31049161.21,
+          null,
+          "AGGREGATE COLD MIX",
+          19144.33,
+          null
+        ],
+        [
+          "BASE OIL N 600",
+          62805591.6,
+          null,
+          "BASE OIL 12",
+          29058245,
+          null
+        ],
+        [
+          "BASE OIL SN 85",
+          17174300,
+          null,
+          "BASE OIL GRADE 2",
+          36577750,
+          null
+        ],
+        [
+          "BASE OIL SN 85 KGS",
+          42071.63,
+          null,
+          "BASE OIL N 600",
+          71298886,
+          null
+        ],
+        [
+          "BITUMEN",
+          32513755.51,
+          null,
+          "BITUMEN",
+          18616129,
+          null
+        ],
+        [
+          "Bitumen Emul-Rs1",
+          177197.2,
+          null,
+          "BITUMEN 27132000 - MT",
+          942211.6,
+          null
+        ],
+        [
+          "Bitumen Emulsion (RS-1)",
+          1702296.71,
+          null,
+          "Bitumen Emulsion (RS-1)",
+          1177873.36,
+          null
+        ],
+        [
+          "Bitumen- Kgs",
+          18017067,
+          null,
+          "Bitumen Emulsion (RS-2)",
+          26235.86,
+          null
+        ],
+        [
+          "BITUMEN MT (27132000)",
+          191.16,
+          null,
+          "BITUMEN EMULSION SS-1 OIL BASE",
+          593124,
+          null
+        ],
+        [
+          "BUTANOL NX 4190",
+          1079730.31,
+          null,
+          "BITUMEN- KG (27132000)",
+          58672,
+          null
+        ],
+        [
+          "CALCIUM CLORIDE",
+          17658,
+          null,
+          "BITUMEN MT (27132000)",
+          2832668,
+          null
+        ],
+        [
+          "Cold Mix (PME)",
+          31779.44,
+          null,
+          "BITUMEN - MTS",
+          10747974.81,
+          null
+        ],
+        [
+          "DISTILLATE OIL 27101990",
+          837450,
+          null,
+          "BS 200",
+          63210000,
+          null
+        ],
+        [
+          "DISTILLED BIO DIESEL B100",
+          7140000,
+          null,
+          "BUTANOL NX 4190",
+          1079730.31,
+          null
+        ],
+        [
+          "DMSO",
+          2574000,
+          null,
+          "EMPTY WOVEN BAG",
+          225000,
+          null
+        ],
+        [
+          "EMPTY WOVEN BAG",
+          235000,
+          null,
+          "FUEL OIL (KGS) 27101990",
+          3712363.64,
+          null
+        ],
+        [
+          "FUEL OIL - (HSN-27101951)",
+          2014000,
+          null,
+          "FUEL OIL  - LITER - (27101990)",
+          167806042.16,
+          null
+        ],
+        [
+          "FUEL OIL KGS 27101951",
+          3295466.35,
+          null,
+          "FUEL OIL - LTR",
+          1917990.2,
+          null
+        ],
+        [
+          "FUEL OIL LV GRADE",
+          2477640,
+          null,
+          "HSD-BS VI",
+          12014358,
+          null
+        ],
+        [
+          "GP THINNNER - LTR",
+          1687607.74,
+          null,
+          "Hydrochloric Acid",
+          11760.17,
+          null
+        ],
+        [
+          "HYDROCLORIC ACID",
+          95681.41,
+          null,
+          "HYDROCLORIC ACID",
+          17401.28,
+          null
+        ],
+        [
+          "INDORCOTE RS THX.",
+          893645.71,
+          null,
+          "INDUSTRIAL FUEL OIL",
+          21041323.9,
+          null
+        ],
+        [
+          "Industrial Oil -KG",
+          13635486,
+          null,
+          "INDUSTRIAL HYDROCARBON OIL - KG",
+          183822666.06,
+          null
+        ],
+        [
+          "Industrial Oil -KGS",
+          38756187.6,
+          null,
+          "INDUSTRIAL HYDROCARBON OIL - KGS",
+          22963475.16,
+          null
+        ],
+        [
+          "INDUSTRIAL OIL - MTS",
+          2589762.6,
+          null,
+          "Industrial Oil -KGS",
+          6383565,
+          null
+        ],
+        [
+          "JP-70 LTR",
+          673049.25,
+          null,
+          "Industrial Oil -LITER",
+          21220208.06,
+          null
+        ],
+        [
+          "LUBRICATING BOTTOM OIL",
+          1594812,
+          null,
+          "Industrial Oil (Ltr)",
+          84007144.83,
+          null
+        ],
+        [
+          "MAK WHITE LIGHT 27101990",
+          753830,
+          null,
+          "ISO PROPYL ALCOHOL",
+          2002400,
+          null
+        ],
+        [
+          "MAK WHITE OIL",
+          1883360,
+          null,
+          "LUBRICATING BOTTOM OIL - LTR",
+          1049980,
+          null
+        ],
+        [
+          "METHYL ETHYL KETONE",
+          18000,
+          null,
+          "METHYL TERTIARY BUTYL ETHER",
+          1886400,
+          null
+        ],
+        [
+          "Micromix Additive",
+          51255,
+          null,
+          "Micromix Additive",
+          51255,
+          null
+        ],
+        [
+          "MIXED HYDROCARBON OIL - MT",
+          2300640,
+          null,
+          "MIXED HYDRO CARBON OIL-KGS(27101990)",
+          25459.6,
+          null
+        ],
+        [
+          "MIX SOLVENT",
+          6217922.93,
+          null,
+          "MIXED HYDROCARBON OIL - Liter (27101990)",
+          55027.25,
+          null
+        ],
+        [
+          "MTO",
+          1700850,
+          null,
+          "MIX SOLVENT",
+          1176160.65,
+          null
+        ],
+        [
+          "OIL 27101960 KGS",
+          1812942,
+          null,
+          "MONO ETHYLENE GLYCOL",
+          221940,
+          null
+        ],
+        [
+          "Oil (Kg)",
+          2427305.05,
+          null,
+          "Polymer Modified Bitumen Emulsion-KG",
+          906554,
+          null
+        ],
+        [
+          "OIL -KGS (27101960)",
+          1527680,
+          null,
+          "Prasurf P 500",
+          1153620,
+          null
+        ],
+        [
+          "Polymer Modified Bitumen Emulsion-KG",
+          680032.79,
+          null,
+          "PRASURF P 575",
+          144460,
+          null
+        ],
+        [
+          "Prasurf P 500",
+          30000,
+          null,
+          "Prasurf  P 620",
+          2085545,
+          null
+        ],
+        [
+          "PRASURF P 550",
+          499960,
+          null,
+          "PRASURF P-710",
+          173440,
+          null
+        ],
+        [
+          "PRASURF P 601",
+          118800,
+          null,
+          "PRASURF PV 192",
+          226800,
+          null
+        ],
+        [
+          "Prasurf  P 620",
+          2414280,
+          null,
+          "PR Solutions",
+          417361.38,
+          null
+        ],
+        [
+          "PRASURF PV 192",
+          96300,
+          null,
+          "Redicote C 500-1 400 LB",
+          315089.47,
+          null
+        ],
+        [
+          "PR Solutions",
+          266852.38,
+          null,
+          "RE REFINED LUB OIL 27101971",
+          16180500,
+          null
+        ],
+        [
+          "PYROLYSIS OIL (FUEL OIL) KGS",
+          7063680,
+          null,
+          "U P 1159",
+          63564.5,
+          null
+        ],
+        [
+          "Redicote C 500-1 400 LB",
+          315089.47,
+          null,
+          "ZIPNOL LA",
+          31528125,
+          null
+        ],
+        [
+          "RE REFINED LUB OIL",
+          6205160,
+          null,
+          null,
+          5495252762.05,
+          null
+        ],
+        [
+          "RE REFINED LUB OIL 27101971",
+          68731986.8,
+          null,
+          "Gross Profit b/f",
+          null,
+          489156378.57
+        ],
+        [
+          "SCRAP USED PARAFFIN OIL",
+          337626.62,
+          null,
+          "Indirect Incomes",
+          null,
+          35530521.2
+        ],
+        [
+          "SHEVROL N 70",
+          1747740,
+          null,
+          "DISCOUNT ON EXPENSES",
+          21186.72,
+          null
+        ],
+        [
+          "TOLUENE",
+          11200,
+          null,
+          "Foreign Exchange Rate Diff.",
+          11649293.48,
+          null
+        ],
+        [
+          "U P 1159",
+          72426.86,
+          null,
+          "HIRING CHARGES FOR MICRO SURFACING PAVER",
+          9600000,
+          null
+        ],
+        [
+          "USED LUBE OIL",
+          68400,
+          null,
+          "INTEREST ON DEPOSIT SHRIRAM FINANCE",
+          127233,
+          null
+        ],
+        [
+          "WASTE OIL (KGS)",
+          11760,
+          null,
+          "Interest on Tata Capital FD",
+          463549,
+          null
+        ],
+        [
+          "WASTE USED OIL",
+          13000,
+          null,
+          "INTEREST RECD ON FD BANK OF MAHARASHTRA",
+          514448,
+          null
+        ],
+        [
+          "WITEOL 15",
+          1834887.16,
+          null,
+          "INTEREST RECD ON FD KARNATAKA BANK",
+          25666,
+          null
+        ],
+        [
+          "Purchase Accounts",
+          null,
+          4562487008.22,
+          "INTEREST RECD ON FD YESBANK",
+          29724,
+          null
+        ],
+        [
+          "CST PURCHASE",
+          1982683,
+          null,
+          "INTEREST RECEIVABLE FROM S.DEBTORS",
+          130421,
+          null
+        ],
+        [
+          "DISCOUNT",
+          -342167,
+          null,
+          "SUBSIDY RECEIVED",
+          12969000,
+          null
+        ],
+        [
+          "GST PURCHASE",
+          2547666153.72,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "HIGH SEAS PURCHASE",
+          107701003.73,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "IGST PURCHASE",
+          1758958039.67,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "IMPORT PURCHASE",
+          136359199.1,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "INTEREST PAID TO S.CREDITORS",
+          130421,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "VAT PURCHASE",
+          10031675,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Direct Expenses",
+          null,
+          74882502.67,
+          null,
+          null,
+          null
+        ],
+        [
+          "Consumable Product",
+          272646,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Import Clearing Expenses",
+          27807150.53,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Cargo Insurance",
+          609534.64,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Carriage Inwards RD",
+          23455147,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Carriage Inward URD",
+          22107041.5,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Other Clearing Charges",
+          239750,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "STAMP DUTY",
+          334633,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Testing Charges",
+          56600,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Gross Profit c/o",
+          null,
+          489156378.57,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          5495252762.05,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Indirect Expenses",
+          null,
+          183365186.41,
+          null,
+          null,
+          null
+        ],
+        [
+          "Disallowance",
+          5609088.52,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Electricity Expenses",
+          2361700,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Employee Benefit Expenses",
+          41223962.38,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Financial Expenses",
+          59486528.66,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Insurance",
+          1441565.38,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Rates and Taxes",
+          1835848.3,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Repairs and maintenance",
+          1829091.17,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Accommodation Exp",
+          198854.26,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "ADVOCATE FEE-URD",
+          687500,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "AMC CHARGES",
+          259055.43,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "ANNUAL CUSTODY  FEES",
+          48750,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Bunglow Mahanagar Gas Charges",
+          18488,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "BUSINESS PROMOTION",
+          15000,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Carriage Outwards RD",
+          16719404,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Carriage Outward-URD",
+          35258167,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Commission Paid",
+          3119650.89,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Conveyance",
+          94787,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Courier Charges",
+          25661.04,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "CSR Expenses",
+          1411169,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Diesel & Petrol Expenses",
+          40726,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Factory Rent",
+          1227847.5,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Interest on GST",
+          181263,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Internet Charges",
+          97687.19,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "JOINING FEES OF CDSL",
+          15000,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Labour Charges",
+          337415.7,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "LATE FEES",
+          15000,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Licence Fees",
+          157220.27,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "MOBILE & TELEPHONE EXPENSES",
+          38604.8,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Office Expenses",
+          259684.78,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "OFFICE RENT 2401,2402,2403",
+          4460000,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Printing & Stationery",
+          178609.91,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "PROFESSIONAL FEES",
+          2168349.23,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "PTEC PAID",
+          2500,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "ROC Charges",
+          12750,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "ROC CHARGES_URD",
+          34005,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "R/OFF",
+          633.86,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Service Charges",
+          26950,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "SOFTWARES",
+          10399.25,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Travelling Expenses-Domestic",
+          869676,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Travelling Expenses- International",
+          1343300.06,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Visa Expencess",
+          30400,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Water Expenses (Bunglow)",
+          5907,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Written Off",
+          206985.83,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "Nett Profit",
+          null,
+          341321713.36,
+          null,
+          null,
+          null
+        ],
+        [
+          "Total",
+          null,
+          524686899.77,
+          "Total",
+          null,
+          524686899.77
+        ]
+      ]
+    }
+  }
+}

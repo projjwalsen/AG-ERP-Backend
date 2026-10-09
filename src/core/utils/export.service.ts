@@ -223,6 +223,10 @@ export class ExcelService {
         }
         const highlightYellow = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFFC000" } };
         const groupLabel = report.type === "PAYABLE" ? "Sundry Debtor" : "Sundry Creditor";
+        const rupee = "\u20B9";
+        const balanceFormat = report.type === "PAYABLE"
+            ? `${rupee}#,##,##0.00" Dr";${rupee}#,##,##0.00" Cr";${rupee}0.00" Dr"`
+            : `${rupee}#,##,##0.00" Cr";${rupee}#,##,##0.00" Dr";${rupee}0.00" Cr"`;
 
         worksheet.pageSetup = {
             orientation: "landscape",
@@ -306,7 +310,14 @@ export class ExcelService {
             row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
                 cell.font = { name: "Arial", size: 9, bold, color: { argb: "FF000000" } };
                 cell.alignment = { horizontal: columnNumber === 1 ? "left" : "right", vertical: "top", ...(columnNumber === 1 ? { indent: 3 } : {}) };
-                if (columnNumber > 1 && columnNumber < 6) cell.numFmt = '#,##0.00;#,##0.00;-';
+                if (columnNumber === 2 || columnNumber === 5) {
+                    // Debtor balances are Dr when positive; creditor balances
+                    // are Cr when positive. Negative values display the
+                    // opposite side while keeping the amount absolute.
+                    cell.numFmt = balanceFormat;
+                } else if (columnNumber === 3 || columnNumber === 4) {
+                    cell.numFmt = '#,##0.00;#,##0.00;-';
+                }
                 if (columnNumber === 6) {
                     cell.numFmt = "0";
                     cell.alignment = { horizontal: "center", vertical: "top" };

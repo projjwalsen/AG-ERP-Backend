@@ -64,11 +64,15 @@ const parsePeriod = (value: string) => {
 
 export class Srv1APARService {
     static async getSrv1APARReport(type: ReportType) {
-        const reportKey = type === "PAYABLE" ? "Sundry Creditors" : "Sundry Debtors";
-        const report = (type === "PAYABLE" ? sundryCreditorReport : sundryDebtorReport) as unknown as Record<string, APARSourceRow[]>;
+        // The SRV1 AP/AR screens use AP for Sundry Debtors and AR for
+        // Sundry Creditors. Keep the report rows and bill-aging source paired
+        // with those labels throughout the response and Excel export.
+        const isAPReport = type === "PAYABLE";
+        const reportKey = isAPReport ? "Sundry Debtors" : "Sundry Creditors";
+        const report = (isAPReport ? sundryDebtorReport : sundryCreditorReport) as unknown as Record<string, APARSourceRow[]>;
         const source = report[reportKey] || [];
         const companyName = Object.keys(source[0] || {})[0] || "Company";
-        const reportTitle = String(source[4]?.[companyName] || (type === "PAYABLE" ? "Sundry Creditors" : "Sundry Debtors"));
+        const reportTitle = String(source[4]?.[companyName] || reportKey);
         const periodLabel = String(source[6]?.[companyName] || "");
         const grandTotalIndex = source.findIndex(row => String(row[companyName] || "").trim().toUpperCase() === "GRAND TOTAL");
         const grandTotalSource = grandTotalIndex >= 0 ? source[grandTotalIndex] : null;
@@ -90,7 +94,7 @@ export class Srv1APARService {
             transactionCredit: amount(grandTotalSource?.["Unnamed: 3"]),
             closingBalance: amount(grandTotalSource?.["Unnamed: 4"])
         };
-        const agingSourceRows = (type === "PAYABLE" ? payableBills : receivableBills) as unknown as APARSourceRow[];
+        const agingSourceRows = (isAPReport ? receivableBills : payableBills) as unknown as APARSourceRow[];
         const agencies = await prisma.agency.findMany({
             where: { isActive: true },
             select: { name: true, gstin: true }
@@ -109,8 +113,8 @@ export class Srv1APARService {
 
         return {
             reportName: type === "PAYABLE"
-                ? "Accounts Payable - Sundry Creditors"
-                : "Accounts Receivable - Sundry Debtors",
+                ? "Accounts Payable - Sundry Debtors"
+                : "Accounts Receivable - Sundry Creditors",
             generatedAt: new Date(),
             type,
             company: companyName,
