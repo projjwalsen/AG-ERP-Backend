@@ -1,15 +1,25 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
-import profitAndLossSource from "./PLAC/profit-and-loss.json";
-import balanceSheetSource from "./BLSHEET/balance-sheet.json";
+import profitAndLossSource from "./PLAC/PandL-pure.json";
+import balanceSheetSource from "./BLSHEET/BSheet-pure.json";
 
 type StatementKind = "PROFIT_AND_LOSS" | "BALANCE_SHEET";
-type SourceWorkbook = {
-    sheets: Record<string, {
-        rows: unknown[][];
-        rowCount?: number;
-        columnCount?: number;
-    }>;
+type PureStatementItem = { name: string; amount: number; children?: PureStatementItem[]; items?: PureStatementItem[] };
+type PureBalanceSheet = {
+    report: string;
+    company: string;
+    period: { from: string; to: string };
+    liabilities: PureStatementItem[];
+    assets: PureStatementItem[];
+    totals: { liabilities: number; assets: number };
+};
+type PureProfitAndLoss = {
+    report: string;
+    company: string;
+    period: { from: string; to: string };
+    debit: Record<string, PureStatementItem>;
+    credit: Record<string, PureStatementItem>;
+    totals: { debit: number; credit: number };
 };
 
 export type FinancialStatementReport = {
@@ -28,6 +38,96 @@ export type FinancialStatementReport = {
 const text = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
 const rupee = String.fromCharCode(0x20b9);
 const amountFormat = `${rupee}#,##,##0.00;[Red](${rupee}#,##,##0.00);-`;
+
+const companyAddress = [
+    "SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD",
+    "KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD"
+];
+const companyIdentifier = "CIN: U11100MH2011PTC224243";
+const companyEmail = "E-Mail : info@ashtvinayakapetrochem.com";
+
+const displayDate = (isoDate: string) => {
+    const date = new Date(`${isoDate}T00:00:00`);
+    return `${date.getDate()}-${date.toLocaleString("en", { month: "short" })}-${String(date.getFullYear()).slice(-2)}`;
+};
+
+const periodLabel = (period: { from: string; to: string }) =>
+    `${displayDate(period.from)} to ${displayDate(period.to)}`;
+
+const reportHeaderRows = (company: string, reportName: string, period: string) => [
+    [company, null, null, null, null, null],
+    [companyAddress[0], null, null, null, null, null],
+    [companyAddress[1], null, null, null, null, null],
+    [companyIdentifier, null, null, null, null, null],
+    [companyEmail, null, null, null, null, null],
+    [reportName, null, null, null, null, null],
+    [period, null, null, null, null, null]
+];
+
+const flattenSections = (sections: PureStatementItem[]) => sections.flatMap(section => {
+    const rows: unknown[][] = [[section.name, null, section.amount]];
+    const children = section.children ?? section.items ?? [];
+    const appendChildren = (items: PureStatementItem[]) => {
+        for (const child of items) {
+            const descendants = child.children ?? child.items ?? [];
+            if (descendants.length) {
+                rows.push([child.name, null, child.amount]);
+                appendChildren(descendants);
+            } else {
+                rows.push([child.name, child.amount, null]);
+            }
+        }
+    };
+    appendChildren(children);
+    return rows;
+});
+
+const pairStatementSides = (leftRows: unknown[][], rightRows: unknown[][]) => {
+    const count = Math.max(leftRows.length, rightRows.length);
+    return Array.from({ length: count }, (_, index) => {
+        const left = leftRows[index] ?? [];
+        const right = rightRows[index] ?? [];
+        return [left[0] ?? null, left[1] ?? null, left[2] ?? null, right[0] ?? null, right[1] ?? null, right[2] ?? null];
+    });
+};
+
+const balanceSheetRows = (source: PureBalanceSheet) => {
+    const liabilities = flattenSections(source.liabilities);
+    const assets = flattenSections(source.assets);
+    const rows = reportHeaderRows(source.company, source.report, periodLabel(source.period));
+    rows.push(["", "", null, "", "", null]);
+    rows.push(["Liabilities", `as at ${displayDate(source.period.to)}`, null, "Assets", `as at ${displayDate(source.period.to)}`, null]);
+    rows.push(...pairStatementSides(liabilities, assets));
+    rows.push(["Total", null, source.totals.liabilities, "Total", null, source.totals.assets]);
+    return rows;
+};
+
+const profitAndLossRows = (source: PureProfitAndLoss) => {
+    const debit = source.debit;
+    const credit = source.credit;
+    const leftSections = [debit.openingStock, debit.purchaseAccounts, debit.directExpenses, debit.indirectExpenses]
+        .filter((section): section is PureStatementItem => Boolean(section));
+    const rightSections: PureStatementItem[] = [];
+
+    if (credit.salesAccounts) {
+        rightSections.push({ ...credit.salesAccounts, children: credit.salesLedgers?.items ?? [] });
+    }
+    for (const key of ["closingStock", "grossProfitBf", "indirectIncomes"] as const) {
+        const section = credit[key];
+        if (section) rightSections.push(section);
+    }
+
+    // Profit is the balancing debit in the final Profit & Loss account.
+    const netProfit = credit.netProfit;
+    if (netProfit) leftSections.push({ ...netProfit, name: netProfit.name || "Nett Profit" });
+
+    const rows = reportHeaderRows(source.company, source.report, periodLabel(source.period));
+    rows.push(["", "", null, "", "", null]);
+    rows.push(["Particulars", periodLabel(source.period), null, "Particulars", periodLabel(source.period), null]);
+    rows.push(...pairStatementSides(flattenSections(leftSections), flattenSections(rightSections)));
+    rows.push(["Total", null, source.totals.debit, "Total", null, source.totals.credit]);
+    return rows;
+};
 
 const reorderProfitAndLossSectionsForExport = (rows: unknown[][]) => {
     const sectionIndex = (name: string) => rows.findIndex(row =>
@@ -59,44 +159,29 @@ const reorderProfitAndLossSectionsForExport = (rows: unknown[][]) => {
     });
 };
 
-const statementReport = (
-    source: SourceWorkbook,
-    statementType: StatementKind,
-    defaultName: string
-): FinancialStatementReport => {
-    const sheet = Object.values(source.sheets)[0];
-    const rows = sheet?.rows ?? [];
-    return {
-        statementType,
-        reportName: text(rows[5]?.[0]) || defaultName,
-        company: text(rows[0]?.[0]),
-        period: text(rows[6]?.[0]),
-        companyDetails: {
-            address: [text(rows[1]?.[0]), text(rows[2]?.[0])].filter(Boolean),
-            identifier: text(rows[3]?.[0]),
-            email: text(rows[4]?.[0])
-        },
-        // Return the workbook's source matrix without changing its row order,
-        // values, or debit/credit side placement.
-        rows: rows.map(row => [...row])
-    };
-};
-
 export class Srv1FinancialStatementsService {
     static getProfitAndLossReport() {
-        return statementReport(
-            profitAndLossSource as SourceWorkbook,
-            "PROFIT_AND_LOSS",
-            "Profit & Loss A/c"
-        );
+        const source = profitAndLossSource as PureProfitAndLoss;
+        return {
+            statementType: "PROFIT_AND_LOSS" as const,
+            reportName: source.report,
+            company: source.company,
+            period: periodLabel(source.period),
+            companyDetails: { address: companyAddress, identifier: companyIdentifier, email: companyEmail },
+            rows: profitAndLossRows(source)
+        };
     }
 
     static getBalanceSheetReport() {
-        return statementReport(
-            balanceSheetSource as SourceWorkbook,
-            "BALANCE_SHEET",
-            "Balance Sheet"
-        );
+        const source = balanceSheetSource as PureBalanceSheet;
+        return {
+            statementType: "BALANCE_SHEET" as const,
+            reportName: source.report,
+            company: source.company,
+            period: periodLabel(source.period),
+            companyDetails: { address: companyAddress, identifier: companyIdentifier, email: companyEmail },
+            rows: balanceSheetRows(source)
+        };
     }
 
     static async exportExcel(
