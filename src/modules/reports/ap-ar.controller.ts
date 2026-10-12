@@ -24,12 +24,12 @@ export const getSrv1APARReport = async (
         );
 
         if (["DETAILS", "AGING", "TRUE"].includes(exportType)) {
-            // In the SRV1 report convention, AP is Sundry Debtors and AR is
-            // Sundry Creditors. Keep filenames and worksheet headings aligned.
+            // Keep the exported filename and worksheet heading aligned with
+            // the source report selected by the service.
             const isDebtorReport = type === "PAYABLE";
             return ExcelService.exportSrv1APARGroupReport(res, {
-                filename: isDebtorReport ? "Debtor" : "Credtor",
-                sheetName: isDebtorReport ? "Sundry Debtor" : "Sundry Creditor",
+                filename: isDebtorReport ? "sundry-debtors" : "sundry-creditors",
+                sheetName: isDebtorReport ? "Sundry Debtors" : "Sundry Creditors",
                 report
             });
         }
