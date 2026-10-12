@@ -24,6 +24,8 @@ export const getSrv1APARReport = async (
         );
 
         if (["DETAILS", "AGING", "TRUE"].includes(exportType)) {
+            // In the SRV1 report convention, AP is Sundry Debtors and AR is
+            // Sundry Creditors. Keep filenames and worksheet headings aligned.
             const isDebtorReport = type === "PAYABLE";
             return ExcelService.exportSrv1APARGroupReport(res, {
                 filename: isDebtorReport ? "Debtor" : "Credtor",
