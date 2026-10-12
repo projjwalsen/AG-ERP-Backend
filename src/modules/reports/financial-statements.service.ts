@@ -196,6 +196,11 @@ export class Srv1FinancialStatementsService {
         workbook.title = `${report.company} - ${report.reportName}`;
         const worksheet = workbook.addWorksheet(sheetName);
         const rows = report.rows.map(row => [...row]);
+        const periodStart = report.period.split(" to ")[0];
+        const companyPeriod = `${report.company} (from ${periodStart})`;
+        rows[7] = rows[7] ?? [];
+        rows[7][1] = companyPeriod;
+        rows[7][4] = companyPeriod;
         if (report.statementType === "PROFIT_AND_LOSS") {
             reorderProfitAndLossSectionsForExport(rows);
         }
@@ -275,7 +280,7 @@ export class Srv1FinancialStatementsService {
                 const total = /^total$/i.test(leftLabel) || /^total$/i.test(rightLabel);
                 const section = !total && Boolean(sourceRow[2] != null || sourceRow[5] != null);
                 if (section || total) {
-                    const yellowHeaderOnly = report.statementType === "PROFIT_AND_LOSS" && section;
+                    const yellowHeaderOnly = section;
                     if (yellowHeaderOnly) {
                         const headerColumns = [
                             ...(sourceRow[2] != null ? [1, 3] : []),
