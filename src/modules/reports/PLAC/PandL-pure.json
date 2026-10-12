@@ -1,0 +1,415 @@
+{
+  "report": "Profit & Loss A/c",
+  "company": "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
+  "period": {
+    "from": "2025-04-01",
+    "to": "2026-03-31"
+  },
+  "debit": {
+    "openingStock": {
+      "name": "Opening Stock",
+      "amount": 368726872.59,
+      "items": []
+    },
+    "purchaseAccounts": {
+      "name": "Purchase Accounts",
+      "amount": 4562487008.22,
+      "items": [
+        {
+          "name": "CST PURCHASE",
+          "amount": 1982683.0
+        },
+        {
+          "name": "DISCOUNT",
+          "amount": -342167.0
+        },
+        {
+          "name": "GST PURCHASE",
+          "amount": 2547666153.72
+        },
+        {
+          "name": "HIGH SEAS PURCHASE",
+          "amount": 107701003.73
+        },
+        {
+          "name": "IGST PURCHASE",
+          "amount": 1758958039.67
+        },
+        {
+          "name": "IMPORT PURCHASE",
+          "amount": 136359199.1
+        },
+        {
+          "name": "Incentives Received",
+          "amount": 0.0
+        },
+        {
+          "name": "INTEREST PAID TO S.CREDITORS",
+          "amount": 130421.0
+        },
+        {
+          "name": "VAT PURCHASE",
+          "amount": 10031675.0
+        }
+      ]
+    },
+    "directExpenses": {
+      "name": "Direct Expenses",
+      "amount": 74882502.67,
+      "items": [
+        {
+          "name": "Consumable Product",
+          "amount": 272646.0
+        },
+        {
+          "name": "Import Clearing Expenses",
+          "amount": 27807150.53
+        },
+        {
+          "name": "Cargo Insurance",
+          "amount": 609534.64
+        },
+        {
+          "name": "Carriage Inwards RD",
+          "amount": 23455147.0
+        },
+        {
+          "name": "Carriage Inward URD",
+          "amount": 22107041.5
+        },
+        {
+          "name": "Other Clearing Charges",
+          "amount": 239750.0
+        },
+        {
+          "name": "STAMP DUTY",
+          "amount": 334633.0
+        },
+        {
+          "name": "Testing Charges",
+          "amount": 56600.0
+        }
+      ]
+    },
+    "indirectExpenses": {
+      "name": "Indirect Expenses",
+      "amount": 183363355.91,
+      "items": [
+        {
+          "name": "Disallowance",
+          "amount": 5609088.52
+        },
+        {
+          "name": "Electricity Expenses",
+          "amount": 2361700.0
+        },
+        {
+          "name": "Employee Benefit Expenses",
+          "amount": 41223962.38
+        },
+        {
+          "name": "Financial Expenses",
+          "amount": 59486528.66
+        },
+        {
+          "name": "Insurance",
+          "amount": 1441565.38
+        },
+        {
+          "name": "Rates and Taxes",
+          "amount": 1834017.8
+        },
+        {
+          "name": "Repairs and maintenance",
+          "amount": 1829091.17
+        },
+        {
+          "name": "Accommodation Exp",
+          "amount": 198854.26
+        },
+        {
+          "name": "ADVOCATE FEE-URD",
+          "amount": 687500.0
+        },
+        {
+          "name": "AMC CHARGES",
+          "amount": 259055.43
+        },
+        {
+          "name": "ANNUAL CUSTODY  FEES",
+          "amount": 48750.0
+        },
+        {
+          "name": "Bunglow Mahanagar Gas Charges",
+          "amount": 18488.0
+        },
+        {
+          "name": "Bunker Registration Fees - PAO DG Shipping, Mumbai",
+          "amount": 0.0
+        },
+        {
+          "name": "BUSINESS PROMOTION",
+          "amount": 15000.0
+        },
+        {
+          "name": "Carriage Outwards RD",
+          "amount": 16719404.0
+        },
+        {
+          "name": "Carriage Outward-URD",
+          "amount": 35258167.0
+        },
+        {
+          "name": "Commission Paid",
+          "amount": 3119650.89
+        },
+        {
+          "name": "Conveyance",
+          "amount": 94787.0
+        },
+        {
+          "name": "Courier Charges",
+          "amount": 25661.04
+        },
+        {
+          "name": "CPCB EXP - URD",
+          "amount": 0.0
+        },
+        {
+          "name": "CSR Expenses",
+          "amount": 1411169.0
+        },
+        {
+          "name": "Diesel & Petrol Expenses",
+          "amount": 40726.0
+        },
+        {
+          "name": "Factory Rent",
+          "amount": 1227847.5
+        },
+        {
+          "name": "Hiring Charges",
+          "amount": 0.0
+        },
+        {
+          "name": "INSTALLATION CHARGES",
+          "amount": 0.0
+        },
+        {
+          "name": "Interest on GST",
+          "amount": 181263.0
+        },
+        {
+          "name": "Internet Charges",
+          "amount": 97687.19
+        },
+        {
+          "name": "ISSUER FEES",
+          "amount": 0.0
+        },
+        {
+          "name": "JOINING FEES OF CDSL",
+          "amount": 15000.0
+        },
+        {
+          "name": "Labour Charges",
+          "amount": 337415.7
+        },
+        {
+          "name": "LABOUR CHARGES URD",
+          "amount": 0.0
+        },
+        {
+          "name": "LATE FEES",
+          "amount": 15000.0
+        },
+        {
+          "name": "Licence Fees",
+          "amount": 157220.27
+        },
+        {
+          "name": "MOBILE & TELEPHONE EXPENSES",
+          "amount": 38604.8
+        },
+        {
+          "name": "MPCB EXP - URD",
+          "amount": 0.0
+        },
+        {
+          "name": "Office Expenses",
+          "amount": 259684.78
+        },
+        {
+          "name": "OFFICE RENT 2401,2402,2403",
+          "amount": 4460000.0
+        },
+        {
+          "name": "Printing & Stationery",
+          "amount": 178609.91
+        },
+        {
+          "name": "PROFESSIONAL FEES",
+          "amount": 2168349.23
+        },
+        {
+          "name": "PTEC PAID",
+          "amount": 2500.0
+        },
+        {
+          "name": "Recruitment Expenses",
+          "amount": 0.0
+        },
+        {
+          "name": "ROC Charges",
+          "amount": 12750.0
+        },
+        {
+          "name": "ROC CHARGES_URD",
+          "amount": 34005.0
+        },
+        {
+          "name": "R/OFF",
+          "amount": 633.86
+        },
+        {
+          "name": "Service Charges",
+          "amount": 26950.0
+        },
+        {
+          "name": "SOFTWARES",
+          "amount": 10399.25
+        },
+        {
+          "name": "Transportation Charges",
+          "amount": 0.0
+        },
+        {
+          "name": "Travelling Expenses-Domestic",
+          "amount": 869676.0
+        },
+        {
+          "name": "Travelling Expenses- International",
+          "amount": 1343300.06
+        },
+        {
+          "name": "Visa Expencess",
+          "amount": 30400.0
+        },
+        {
+          "name": "Water Expenses (Bunglow)",
+          "amount": 5907.0
+        },
+        {
+          "name": "Written Off",
+          "amount": 206985.83
+        }
+      ]
+    }
+  },
+  "credit": {
+    "salesAccounts": {
+      "name": "Sales Accounts",
+      "amount": 4674154369.61,
+      "items": []
+    },
+    "salesLedgers": {
+      "items": [
+        {
+          "name": "GST SALES",
+          "amount": 3555448666.76
+        },
+        {
+          "name": "GST SALES @5%",
+          "amount": 30000.0
+        },
+        {
+          "name": "IGST SALES",
+          "amount": 1108843092.35
+        },
+        {
+          "name": "IGST SALES @ 12%",
+          "amount": 6288610.5
+        },
+        {
+          "name": "JOB WORK CHARGES",
+          "amount": 0.0
+        },
+        {
+          "name": "SCRAP DRUMS (INTERSTATE SALES)",
+          "amount": 3158000.0
+        },
+        {
+          "name": "Storage & Warehouse Rent",
+          "amount": 386000.0
+        }
+      ]
+    },
+    "closingStock": {
+      "name": "Closing Stock",
+      "amount": 821098392.44,
+      "items": []
+    },
+    "grossProfitBf": {
+      "name": "Gross Profit b/f",
+      "amount": 489156378.57
+    },
+    "indirectIncomes": {
+      "name": "Indirect Incomes",
+      "amount": 35530521.2,
+      "items": [
+        {
+          "name": "DISCOUNT ON EXPENSES",
+          "amount": 21186.72
+        },
+        {
+          "name": "Foreign Exchange Rate Diff.",
+          "amount": 11649293.48
+        },
+        {
+          "name": "HIRING CHARGES FOR MICRO SURFACING PAVER",
+          "amount": 9600000.0
+        },
+        {
+          "name": "INTEREST ON DEPOSIT SHRIRAM FINANCE",
+          "amount": 127233.0
+        },
+        {
+          "name": "Interest on Tata Capital FD",
+          "amount": 463549.0
+        },
+        {
+          "name": "INTEREST RECD ON FD BANK OF MAHARASHTRA",
+          "amount": 514448.0
+        },
+        {
+          "name": "INTEREST RECD ON FD KARNATAKA BANK",
+          "amount": 25666.0
+        },
+        {
+          "name": "INTEREST RECD ON FD YESBANK",
+          "amount": 29724.0
+        },
+        {
+          "name": "INTEREST RECEIVABLE FROM S.DEBTORS",
+          "amount": 130421.0
+        },
+        {
+          "name": "INTEREST RECEIVED FROM SBI FACTORS",
+          "amount": 0.0
+        },
+        {
+          "name": "SUBSIDY RECEIVED",
+          "amount": 12969000.0
+        }
+      ]
+    },
+    "netProfit": {
+      "name": "Nett Profit",
+      "amount": 341323543.86
+    }
+  },
+  "totals": {
+    "debit": 524686899.77,
+    "credit": 524686899.77
+  }
+}
