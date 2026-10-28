@@ -1,0 +1,250 @@
+{
+  "report": "Balance Sheet",
+  "company": "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra",
+  "period": {
+    "from": "2025-04-01",
+    "to": "2026-03-31"
+  },
+  "liabilities": [
+    {
+      "name": "Capital Account",
+      "amount": 243318579.16,
+      "children": [
+        {
+          "name": "Reserves & Surplus",
+          "amount": 190318579.16
+        },
+        {
+          "name": "Share Capital",
+          "amount": 53000000
+        },
+        {
+          "name": "Mahima Menda Capital A/c",
+          "amount": 0
+        },
+        {
+          "name": "Sandeep Singh Capital A/c",
+          "amount": 0
+        }
+      ]
+    },
+    {
+      "name": "Loans (Liability)",
+      "amount": 568340034.78,
+      "children": [
+        {
+          "name": "Bank OD A/c & CC A/c",
+          "amount": 316017958.99
+        },
+        {
+          "name": "Secured Loans",
+          "amount": 43148525.34
+        },
+        {
+          "name": "Unsecured Loans",
+          "amount": 209173550.45
+        }
+      ]
+    },
+    {
+      "name": "Current Liabilities",
+      "amount": 570771216.28,
+      "children": [
+        {
+          "name": "Duties & Taxes",
+          "amount": 5396713.6
+        },
+        {
+          "name": "Sundry Creditors",
+          "amount": 280837320.62
+        },
+        {
+          "name": "Advance From S. Debtors",
+          "amount": 274056672.35
+        },
+        {
+          "name": "Outstanding Exp",
+          "amount": 4221857.71
+        },
+        {
+          "name": "Provision for Expenses",
+          "amount": 4918724
+        }
+      ]
+    },
+    {
+      "name": "Deferred Tax Assets",
+      "amount": 1339928
+    },
+    {
+      "name": "Branch / Divisions",
+      "amount": 12059264.25,
+      "children": [
+        {
+          "name": "A G ASHTAVINAYAKA PETROCHEM PVT LTD-ANDHRA PRADESH",
+          "amount": 0
+        },
+        {
+          "name": "A G ASHTAVINAYAKA PETROCHEM PVT LTD-KARNATAKA",
+          "amount": 27440680.25
+        },
+        {
+          "name": "A G ASHTAVINAYAKA PETROCHEM PVT LTD-RAJASTHAN",
+          "amount": -14186988
+        },
+        {
+          "name": "A G ASHTAVINAYAKA PETROCHEM PVT LTD - TAMILNADU",
+          "amount": 7954827.72
+        },
+        {
+          "name": "A G ASHTAVINAYAKA PETROCHEM PVT LTD-TELANGANA",
+          "amount": -9149255.72
+        }
+      ]
+    },
+    {
+      "name": "Suspense A/c",
+      "amount": 0,
+      "children": [
+        {
+          "name": "SUSPENSE",
+          "amount": 0
+        }
+      ]
+    },
+    {
+      "name": "Profit & Loss A/c",
+      "amount": 341323543.72,
+      "children": [
+        {
+          "name": "Opening Balance",
+          "amount": -0.14
+        },
+        {
+          "name": "Current Period",
+          "amount": 341323543.86
+        }
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "name": "Fixed Assets",
+      "amount": 140761255.7,
+      "children": [
+        {
+          "name": "Air Conditioner",
+          "amount": 773776.33
+        },
+        {
+          "name": "Building",
+          "amount": 35455053.94
+        },
+        {
+          "name": "Computer",
+          "amount": 1497831.51
+        },
+        {
+          "name": "Electrical Equipments, Tools and Installation",
+          "amount": 4116798.86
+        },
+        {
+          "name": "FURNITURE & FIXTURES",
+          "amount": 3634172.36
+        },
+        {
+          "name": "Land",
+          "amount": 15662916.12
+        },
+        {
+          "name": "Land & Building",
+          "amount": 0
+        },
+        {
+          "name": "Office Assets",
+          "amount": 759651.49
+        },
+        {
+          "name": "Plant & Machinery",
+          "amount": 66792350.35
+        },
+        {
+          "name": "Vehicles",
+          "amount": 12068704.74
+        },
+        {
+          "name": "GENERATOR SET",
+          "amount": 0
+        }
+      ]
+    },
+    {
+      "name": "Investments",
+      "amount": 3715468,
+      "children": [
+        {
+          "name": "GOLD & ORNAMENTS",
+          "amount": 3715468
+        }
+      ]
+    },
+    {
+      "name": "Current Assets",
+      "amount": 1591335914.49,
+      "children": [
+        {
+          "name": "Closing Stock",
+          "amount": 821098392.44
+        },
+        {
+          "name": "Deposits (Asset)",
+          "amount": 17731256.5
+        },
+        {
+          "name": "Loans & Advances (Asset)",
+          "amount": 71141213.53
+        },
+        {
+          "name": "Sundry Debtors",
+          "amount": 656813606.65
+        },
+        {
+          "name": "Cash-in-hand",
+          "amount": 140163.15
+        },
+        {
+          "name": "Bank Accounts",
+          "amount": 11138855.51
+        },
+        {
+          "name": "GST CREDIT",
+          "amount": 0
+        },
+        {
+          "name": "Income Tax Credit",
+          "amount": 11710459.57
+        },
+        {
+          "name": "Prepaid Exp",
+          "amount": 1530081.41
+        },
+        {
+          "name": "TDS RECEIVABLE ON UNSECURED LOAN",
+          "amount": 30610.73
+        },
+        {
+          "name": "TDS RECEIVABLE FROM MYND SOLUTION PVT LTD",
+          "amount": 1275
+        },
+        {
+          "name": "TDS RECEIVABLE FROM SBI FACTORS LTD",
+          "amount": 0
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "liabilities": 1735812638.19,
+    "assets": 1735812638.19
+  }
+}
