@@ -1,0 +1,1060 @@
+[
+  {
+    "head": "Sundry Creditors",
+    "name": "VIKRANT TRANSPORT SERVICES",
+    "canonicalId": "53fcf26e-1f69-4c43-a0de-4b495ff34043",
+    "losers": [
+      {
+        "id": "b0fec9ae-109b-4e77-9809-0067235f9f55",
+        "entries": 2,
+        "openings": 0,
+        "close": 5242
+      }
+    ],
+    "before": [
+      {
+        "id": "53fcf26e-1f69-4c43-a0de-4b495ff34043",
+        "entries": 6,
+        "openings": 0,
+        "close": -5242
+      },
+      {
+        "id": "b0fec9ae-109b-4e77-9809-0067235f9f55",
+        "entries": 2,
+        "openings": 0,
+        "close": 5242
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "8f851d05-f122-4b30-9768-8fddfca7fee1",
+        "ledgerId": "b0fec9ae-109b-4e77-9809-0067235f9f55",
+        "voucherId": "4a8d61f0-ccd6-4cdc-8c86-cc0e486ffca4",
+        "amount": "2569",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "a43524ec-03b2-4e8e-b65f-2ea5c53feaa1",
+        "ledgerId": "b0fec9ae-109b-4e77-9809-0067235f9f55",
+        "voucherId": "8e8413f1-c028-4089-ba92-c645294b763e",
+        "amount": "2673",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "066a477b-989c-44bc-bd52-538666545872",
+        "ledgerId": "b0fec9ae-109b-4e77-9809-0067235f9f55"
+      },
+      {
+        "id": "8eb6d733-1840-4a04-b56c-4ae26e22735f",
+        "ledgerId": "b0fec9ae-109b-4e77-9809-0067235f9f55"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "M.S. BULK CARRIERS",
+    "canonicalId": "1aab3fb6-cbba-45d2-afcb-20ebb04867f0",
+    "losers": [
+      {
+        "id": "8f3b6563-641c-4787-8984-cba7ca04b90f",
+        "entries": 2,
+        "openings": 0,
+        "close": 17770
+      },
+      {
+        "id": "8b7e5616-0624-49fb-a599-a063baa21b31",
+        "entries": 1,
+        "openings": 0,
+        "close": 0.62
+      }
+    ],
+    "before": [
+      {
+        "id": "1aab3fb6-cbba-45d2-afcb-20ebb04867f0",
+        "entries": 16,
+        "openings": 1,
+        "close": -17770.62
+      },
+      {
+        "id": "8f3b6563-641c-4787-8984-cba7ca04b90f",
+        "entries": 2,
+        "openings": 0,
+        "close": 17770
+      },
+      {
+        "id": "8b7e5616-0624-49fb-a599-a063baa21b31",
+        "entries": 1,
+        "openings": 0,
+        "close": 0.62
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "b8ae0e40-b5fe-43f6-bdd1-43fec30f566d",
+        "ledgerId": "8b7e5616-0624-49fb-a599-a063baa21b31",
+        "voucherId": "3b2b38a7-bd19-4795-9437-42256353163a",
+        "amount": "0.62",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "633a7f45-a008-472c-ae2c-a0776efb159e",
+        "ledgerId": "8f3b6563-641c-4787-8984-cba7ca04b90f",
+        "voucherId": "154a528e-32e8-4991-a4cc-ce5b80cb39b2",
+        "amount": "8514",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "f1a8b088-6d8d-4a5b-b0b7-fd6ab5bc3601",
+        "ledgerId": "8f3b6563-641c-4787-8984-cba7ca04b90f",
+        "voucherId": "d1063cf7-1f44-4035-b814-9aee52a64519",
+        "amount": "9256",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "512a8e46-caa5-4b68-bec1-54f0cbfbc944",
+        "ledgerId": "8b7e5616-0624-49fb-a599-a063baa21b31"
+      },
+      {
+        "id": "0c8378bd-21ec-4b71-a6dc-d8593582860d",
+        "ledgerId": "8b7e5616-0624-49fb-a599-a063baa21b31"
+      },
+      {
+        "id": "cf428650-fdce-43cf-85e9-ad7adee825f0",
+        "ledgerId": "8f3b6563-641c-4787-8984-cba7ca04b90f"
+      },
+      {
+        "id": "c69fffb4-7011-44fe-9638-09a16182f39c",
+        "ledgerId": "8f3b6563-641c-4787-8984-cba7ca04b90f"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "P R Pathade & Co (Practicing Company Secretary)",
+    "canonicalId": "b57208fe-0b34-4725-abc1-f1787d3d1ce0",
+    "losers": [
+      {
+        "id": "ac316536-cab3-4cab-ada6-7ba235913dc7",
+        "entries": 1,
+        "openings": 0,
+        "close": -28500
+      }
+    ],
+    "before": [
+      {
+        "id": "b57208fe-0b34-4725-abc1-f1787d3d1ce0",
+        "entries": 12,
+        "openings": 0,
+        "close": 18000
+      },
+      {
+        "id": "ac316536-cab3-4cab-ada6-7ba235913dc7",
+        "entries": 1,
+        "openings": 0,
+        "close": -28500
+      }
+    ],
+    "afterClose": -10500,
+    "entryRows": [
+      {
+        "id": "564d27ca-7054-4672-8036-e98b03b9ef7c",
+        "ledgerId": "ac316536-cab3-4cab-ada6-7ba235913dc7",
+        "voucherId": "d11699e9-1d19-48bd-8ba4-6c2687cf9284",
+        "amount": "28500",
+        "entryType": "CREDIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "72b5598a-e234-4c84-958c-5f4233d18c05",
+        "ledgerId": "ac316536-cab3-4cab-ada6-7ba235913dc7"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "SRI RAVRAY LOGISTICS",
+    "canonicalId": "228cb31e-af46-40ce-9d10-75e5112654a5",
+    "losers": [
+      {
+        "id": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "entries": 4,
+        "openings": 0,
+        "close": 66064
+      }
+    ],
+    "before": [
+      {
+        "id": "228cb31e-af46-40ce-9d10-75e5112654a5",
+        "entries": 102,
+        "openings": 1,
+        "close": -1057741
+      },
+      {
+        "id": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "entries": 4,
+        "openings": 0,
+        "close": 66064
+      }
+    ],
+    "afterClose": -991677,
+    "entryRows": [
+      {
+        "id": "49b3ccc5-885d-422f-8f08-a6112a0a47f1",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "voucherId": "5f623e47-9750-4936-9f56-f803255132e6",
+        "amount": "14305",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "ce58bfd5-2291-44fc-9268-fa7f6e8d9a31",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "voucherId": "50ecfd7d-bc5d-4012-b4f3-5d7dc905e1c2",
+        "amount": "12177",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "9739e9b1-afb6-440e-ba3f-4ee190e5081f",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "voucherId": "b5bae672-f730-45d3-937b-3943d118b72b",
+        "amount": "9742",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "e6b56039-c483-4147-870e-4808829b6db6",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "voucherId": "991ebd04-735e-408d-83c8-31ffa74390d8",
+        "amount": "29840",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "959e0262-cef4-42d3-8793-7a812f796991",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c"
+      },
+      {
+        "id": "38cb7481-ad52-485c-9374-4df562d1702d",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c"
+      },
+      {
+        "id": "0f874084-5f73-4a01-890f-f97b86b865bc",
+        "ledgerId": "5be30bea-4e77-4f4c-b458-ba0a870c807c"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "Falguni Jain",
+    "canonicalId": "ef866409-3129-49ce-8b9a-075119afa7de",
+    "losers": [
+      {
+        "id": "03748770-aebd-447f-9071-55c4c694c1ab",
+        "entries": 1,
+        "openings": 0,
+        "close": -4500
+      }
+    ],
+    "before": [
+      {
+        "id": "ef866409-3129-49ce-8b9a-075119afa7de",
+        "entries": 25,
+        "openings": 1,
+        "close": 4500
+      },
+      {
+        "id": "03748770-aebd-447f-9071-55c4c694c1ab",
+        "entries": 1,
+        "openings": 0,
+        "close": -4500
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "2ebe8da0-d525-4c52-85c6-6a00d66369cf",
+        "ledgerId": "03748770-aebd-447f-9071-55c4c694c1ab",
+        "voucherId": "73d2d191-bf92-403e-b816-f0c630afc5f3",
+        "amount": "4500",
+        "entryType": "CREDIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "d592857a-5382-4f65-8b1c-99761da0c9c8",
+        "ledgerId": "03748770-aebd-447f-9071-55c4c694c1ab"
+      },
+      {
+        "id": "e73dd3f7-163c-49f5-8053-fa207d48a47f",
+        "ledgerId": "03748770-aebd-447f-9071-55c4c694c1ab"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "NARAYAN LOGISTICS",
+    "canonicalId": "32cea3cb-f569-4e8e-96c6-f95b8987cc08",
+    "losers": [
+      {
+        "id": "f60dc1a9-0574-4b30-ba91-f681964500b1",
+        "entries": 1,
+        "openings": 0,
+        "close": 32680
+      }
+    ],
+    "before": [
+      {
+        "id": "32cea3cb-f569-4e8e-96c6-f95b8987cc08",
+        "entries": 63,
+        "openings": 0,
+        "close": -730562
+      },
+      {
+        "id": "f60dc1a9-0574-4b30-ba91-f681964500b1",
+        "entries": 1,
+        "openings": 0,
+        "close": 32680
+      }
+    ],
+    "afterClose": -697882,
+    "entryRows": [
+      {
+        "id": "bde74014-61e6-42ad-89d5-1d8daba6c821",
+        "ledgerId": "f60dc1a9-0574-4b30-ba91-f681964500b1",
+        "voucherId": "cecc3193-8d77-4cb5-ac71-5bb00badabd3",
+        "amount": "32680",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "0423fe71-12e1-4344-8200-349b603b4f04",
+        "ledgerId": "f60dc1a9-0574-4b30-ba91-f681964500b1"
+      },
+      {
+        "id": "aadc4b5a-5ec7-48ec-a738-c6ca84b18b64",
+        "ledgerId": "f60dc1a9-0574-4b30-ba91-f681964500b1"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "SHREE KUBER ROADLINES",
+    "canonicalId": "95403b87-4e6c-4d07-8b88-4a8797584b86",
+    "losers": [
+      {
+        "id": "f98fc565-3d44-40c4-9493-f90c1a35b18e",
+        "entries": 1,
+        "openings": 0,
+        "close": 2584
+      }
+    ],
+    "before": [
+      {
+        "id": "95403b87-4e6c-4d07-8b88-4a8797584b86",
+        "entries": 30,
+        "openings": 1,
+        "close": -2584
+      },
+      {
+        "id": "f98fc565-3d44-40c4-9493-f90c1a35b18e",
+        "entries": 1,
+        "openings": 0,
+        "close": 2584
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "50c6ec05-c3c9-4bb8-a89b-3f6bce635c4c",
+        "ledgerId": "f98fc565-3d44-40c4-9493-f90c1a35b18e",
+        "voucherId": "9ae44cb0-6407-46a5-8749-e5fc756b9dc4",
+        "amount": "2584",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "69cc949d-4fc5-48dd-a6fe-226833e1cafa",
+        "ledgerId": "f98fc565-3d44-40c4-9493-f90c1a35b18e"
+      },
+      {
+        "id": "f15280c9-de2a-43c5-b832-83bec3bb3ed0",
+        "ledgerId": "f98fc565-3d44-40c4-9493-f90c1a35b18e"
+      },
+      {
+        "id": "8f8d3d80-1802-425f-ac28-9363cd2a2391",
+        "ledgerId": "f98fc565-3d44-40c4-9493-f90c1a35b18e"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "UNIPROC ENERGIES PRIVATE LIMITED",
+    "canonicalId": "836e7260-67b0-444e-9895-91d0e9fe3103",
+    "losers": [
+      {
+        "id": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "entries": 4,
+        "openings": 0,
+        "close": 5590
+      }
+    ],
+    "before": [
+      {
+        "id": "836e7260-67b0-444e-9895-91d0e9fe3103",
+        "entries": 39,
+        "openings": 0,
+        "close": -5590
+      },
+      {
+        "id": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "entries": 4,
+        "openings": 0,
+        "close": 5590
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "394b4a5a-19bf-4fb4-8a87-3296128e9dd4",
+        "ledgerId": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "voucherId": "854e37bd-5b73-4f0d-a97e-2cb1e4f3c4e9",
+        "amount": "1619",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "7cc09141-612e-4b3a-9e9d-186040f83752",
+        "ledgerId": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "voucherId": "37604a42-1ba2-430e-ae66-3994c294302e",
+        "amount": "1282",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "3e5e7829-3b4a-4f97-830b-50ecba2c769b",
+        "ledgerId": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "voucherId": "ba65b064-9c2d-427d-ad06-47776bab6cbb",
+        "amount": "1108",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "a33c8736-8d0d-472e-b2e5-51547cb6aa1c",
+        "ledgerId": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "voucherId": "eb9bbd4b-11fb-46d8-b4ae-8c77203c36fe",
+        "amount": "1581",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "cfa4e0c0-1600-4e1f-8311-d52a313e1670",
+        "ledgerId": "35eb173b-d505-4647-b173-c1b758f7b72a"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "A G ART PETROCHEM LLP - CR",
+    "canonicalId": "3954a8c5-c67a-4e3e-b996-8ece190c5608",
+    "losers": [
+      {
+        "id": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "entries": 41,
+        "openings": 0,
+        "close": -18779641
+      }
+    ],
+    "before": [
+      {
+        "id": "3954a8c5-c67a-4e3e-b996-8ece190c5608",
+        "entries": 191,
+        "openings": 1,
+        "close": 18779641
+      },
+      {
+        "id": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "entries": 41,
+        "openings": 0,
+        "close": -18779641
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "9f7ba705-4128-41a3-9c66-3b50341b60c4",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "ea42ed76-716d-4b65-ae8f-454f0edb67a9",
+        "amount": "1382",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "23c6f367-176e-43d8-8237-00d9ad4bd355",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "85a2ef60-9f11-4205-b486-8c7cace60620",
+        "amount": "1438",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "48b80d0c-cfdd-4fab-bb8f-404bed97bb7e",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "6af02ab6-811b-433a-ad4b-44cf9a7bd12f",
+        "amount": "1447",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "1602c950-6a20-4798-8651-994132a20700",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "462bafaa-5057-4409-a7d4-92004744d5f2",
+        "amount": "1451",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "a3ffe9ac-ff49-4c07-abe2-af427edff2df",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "99858ec3-6c31-4a21-81b0-ef851d696772",
+        "amount": "1434",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "22068e99-1cd4-4b15-8618-ef1028d865e4",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "ce3d1d87-7f18-4f97-a5e8-f26784d1f366",
+        "amount": "1377",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "52e83924-1590-4503-a079-09f826789893",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "2008d172-b683-44b5-98a9-4eab800a038f",
+        "amount": "1377",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "bdbc1468-783a-4755-a03e-69ccd9a9340d",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "86c4a9ee-65fb-4948-a5e8-e45e1b286972",
+        "amount": "1440",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "a01ec587-7935-4866-a506-a763cca50ccf",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "2557fbf7-e574-4bc8-9d63-85c46c17494a",
+        "amount": "1041",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "491c799e-d7f0-4528-8c05-6c36c0c557c1",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "3014e4a5-bcdc-49df-bb13-ae63d61ab7c0",
+        "amount": "1054",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "434a9a90-c26c-4690-a199-e007d214853a",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "1c9b79f4-8128-47c3-aef6-572dc920b0c5",
+        "amount": "1046",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "9b2545c0-99e8-4eb1-b458-12c04d07c768",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "3d30f005-4767-4f4d-9fb6-1dfc9125d4fb",
+        "amount": "1039",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "68b6b892-2ca7-4569-8c04-ef91db0fc5f1",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "931fa1d6-25e4-4a15-a2f0-deeb4ff83175",
+        "amount": "1454",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "91177f80-7e4d-4ef1-a124-3bac39bcf9dd",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "de306698-5f17-4a75-a93b-7c5b89ad11ee",
+        "amount": "1066",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "fb0ae11f-f2ae-419a-9625-aa9800b1759a",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "b3bdec61-5820-4a88-acc6-c71bc92ea6cb",
+        "amount": "1487",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "f1ccf421-440c-45e4-842f-c67a6a372a00",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "cd823534-7c68-41bf-a80b-d4004e0db2c6",
+        "amount": "1463",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "0fbb435e-4ef1-4fd3-96b0-304a5f850c05",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "b4efc39d-aa89-43d9-becb-2531ca2390ec",
+        "amount": "1420",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "818ef162-594e-4007-a4c6-a110d6f7d63a",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "5368a3f8-cb4e-49ca-b6c1-9e6aafe6e8be",
+        "amount": "1195",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "285f8d30-083e-4287-9efd-f806939e445e",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "42e0c0bc-220a-4af0-a1ac-822700e13471",
+        "amount": "1460",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "1ceb41b7-b286-41ea-b4dc-59b3f205124e",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "7c145125-b1a1-4e00-b34d-d3395a711a7a",
+        "amount": "1441",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "213a5b23-93dd-42cf-b38f-70eae0b017eb",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "22559fa4-26b1-42f8-8242-2014bc620d94",
+        "amount": "1388",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "0e27d35d-8bc1-4629-9641-ab9a1d0c30f4",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "ca18d727-ec25-4ec3-9fbc-43f025b683e6",
+        "amount": "1467",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "6b4163d4-a512-475b-acd7-d74f81a21391",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "3507dee1-c695-4e23-a3bc-52b683211f6f",
+        "amount": "1483",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "056c956f-38a6-4dc1-86a2-9182bef17c86",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "da539246-3960-4173-85e7-6aef178ab158",
+        "amount": "1451",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "2043b90f-a78e-4510-93eb-275781c74f9f",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "794bc6c9-7b5b-4f4c-b4f2-4421056a5246",
+        "amount": "1475",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "4e66e3eb-7622-45e8-b659-fba5b293c7aa",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "7a107587-818b-472a-a68c-0ad84a0b8f0a",
+        "amount": "1445",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "6cc98389-bd2f-4b3a-aa0d-0b1e58967dce",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "ddb94565-f2f5-487a-9208-d6b388dbc0a6",
+        "amount": "973",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "b2dba69c-3c3b-4067-a8a3-c0b99b26f083",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "4f34b469-611c-4858-9ed1-26a5ace5bfa5",
+        "amount": "1305",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "823fe8de-a537-4201-8949-383260232f8a",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "eaed2a8d-52c3-45d8-b242-3a5800946798",
+        "amount": "1303",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "685cbb56-dbd8-4779-af69-321235878b06",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "24ae919b-87a7-4c00-834c-d8599d383198",
+        "amount": "1309",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "75993e09-b44d-4d54-b5af-5a282865dd8a",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "25406193-5f62-4a50-b5f1-89d27536a03a",
+        "amount": "1337",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "1e0a164b-867a-4914-a7b1-c86bc7eb81a1",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "a489ba2f-bd40-4c70-b220-df62a3642bd1",
+        "amount": "1339",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "d01b73a4-f74e-4274-b9db-48b7dd3ecbcb",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "06c6c57c-c257-43ec-822b-2ee5b7fd5731",
+        "amount": "817",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "29d0700c-cf5c-421d-a9ca-cd3b65b54f27",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "055ff1ef-cac3-435f-a4fa-8b26bf934c4c",
+        "amount": "870",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "12e24379-48b3-42cf-9696-d15c4bf2d3db",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "a1449d71-f682-412d-b9d8-b9ff4c008187",
+        "amount": "909",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "12e11fe7-22c6-479d-8ccc-3e552494e919",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "b389590c-1938-46e2-931a-79b927caae9d",
+        "amount": "455024",
+        "entryType": "CREDIT"
+      },
+      {
+        "id": "496a3aec-7081-4ded-bf8f-7991e22d8c83",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "d9ffdad6-e6dc-4620-a032-753bcaca44c4",
+        "amount": "6540468",
+        "entryType": "CREDIT"
+      },
+      {
+        "id": "d42479ec-6b40-4278-8acf-e47ef12e09df",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "f17e8cc6-e760-4246-8b02-259bf59f148d",
+        "amount": "4418519",
+        "entryType": "CREDIT"
+      },
+      {
+        "id": "8c67ee66-3401-4eca-9e89-2e8e5799f02b",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "acaee47d-51f3-44f2-8beb-ec5daf6a59fb",
+        "amount": "5104103",
+        "entryType": "CREDIT"
+      },
+      {
+        "id": "dacbb1bc-0166-408f-af7c-465067dea1db",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "9c5b77ad-59ea-4617-a776-bc2defbc41de",
+        "amount": "2236910",
+        "entryType": "CREDIT"
+      },
+      {
+        "id": "e3ad0518-35c5-479e-a24f-750084f2e204",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "voucherId": "b1c8fc0f-f89f-4a52-91c9-a80c67b33ed6",
+        "amount": "70000",
+        "entryType": "CREDIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "6e632cdb-6210-4f2b-9c7a-e8144d87b3c5",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290"
+      },
+      {
+        "id": "1b1875ab-b36d-454d-9ca6-24190d4bcd68",
+        "ledgerId": "bd7d2fbc-9925-4b4d-81cd-0330effbf290"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "NIRAJ SHARMA",
+    "canonicalId": "c1d94100-0331-4519-84b1-8894252bee2b",
+    "losers": [
+      {
+        "id": "cd19b181-c498-4f2d-b4d9-6cc080a5a8cf",
+        "entries": 1,
+        "openings": 0,
+        "close": -14114
+      }
+    ],
+    "before": [
+      {
+        "id": "c1d94100-0331-4519-84b1-8894252bee2b",
+        "entries": 5,
+        "openings": 0,
+        "close": 14114
+      },
+      {
+        "id": "cd19b181-c498-4f2d-b4d9-6cc080a5a8cf",
+        "entries": 1,
+        "openings": 0,
+        "close": -14114
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "60c7a07c-6245-4cf5-b9e4-099d1e2be7c2",
+        "ledgerId": "cd19b181-c498-4f2d-b4d9-6cc080a5a8cf",
+        "voucherId": "e0ce13d4-66e6-4c26-a5b3-9fe22a9ec4d1",
+        "amount": "14114",
+        "entryType": "CREDIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "6008766d-1afa-4cbd-8e7c-6e089962e281",
+        "ledgerId": "cd19b181-c498-4f2d-b4d9-6cc080a5a8cf"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "PLATINUM PETROCHEM",
+    "canonicalId": "4478202f-ef6e-4ba0-8ead-24baab454495",
+    "losers": [
+      {
+        "id": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "entries": 16,
+        "openings": 0,
+        "close": 33580
+      }
+    ],
+    "before": [
+      {
+        "id": "4478202f-ef6e-4ba0-8ead-24baab454495",
+        "entries": 121,
+        "openings": 0,
+        "close": -33580
+      },
+      {
+        "id": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "entries": 16,
+        "openings": 0,
+        "close": 33580
+      }
+    ],
+    "afterClose": 0,
+    "entryRows": [
+      {
+        "id": "f3521eec-d5dd-4929-8560-dd2cc72f0b56",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "63ed4198-8299-49b1-8186-9e3d49b6dfe3",
+        "amount": "1612",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "4879d6ed-542a-4a86-8314-a64b0bef5ddc",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "e66c4678-4676-4b0d-83c0-94bd13c5d2d7",
+        "amount": "1732",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "87445585-bb13-4dae-823f-6bdeaf2bb801",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "468a74b8-3354-46a2-8121-b0ed7233eec3",
+        "amount": "1696",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "c2c0d8df-f78b-4e7a-bfba-f57f9151527d",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "639bdc44-58dc-4cb6-adaa-d85f8602966a",
+        "amount": "1696",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "292ab0b0-e38b-46e0-98e0-681901e7c321",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "7711ee36-d375-4302-99e1-75b9eed0c667",
+        "amount": "2042",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "7ba4a0d3-954c-40f5-b5ac-47e5f4ad9f29",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "cc12be4a-e355-4682-8e2c-8c494a934d98",
+        "amount": "2630",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "fa0e3a9f-12f6-4a55-a139-8eccbb1cc95c",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "918fdd7d-ccad-4375-a9ad-6aa76d197c68",
+        "amount": "2291",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "7c4b1f9a-6fb5-4fef-a847-6ccec9f5a5cc",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "8afe30eb-a5a1-429b-b098-bfac9a6b5bf1",
+        "amount": "2715",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "98a40f0d-1eb0-4d2c-8fee-a482d1af36a7",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "7c75bace-487f-4f77-9e01-12582222c3e1",
+        "amount": "1848",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "4e0e9a65-a674-4da9-a077-03c02d8e4bc3",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "dbde7bff-788a-42d4-9d3b-c10961faf11b",
+        "amount": "2731",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "62b088b4-30ea-4458-9b96-f5e77b86dfdc",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "aa4a1220-cd99-4c49-8619-2f1ceff7aaa0",
+        "amount": "1759",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "e1e44621-e66c-463c-b605-1d815bfafafd",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "ca281ff2-92ee-4808-9117-d4cbbb3ce336",
+        "amount": "1669",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "67fc29c0-e31e-4852-ac2b-495c0420d814",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "638fd533-6244-4f06-a2ae-9adaa64a7cf1",
+        "amount": "2425",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "b50f7edc-36a1-4521-ad4c-74fb7cf02821",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "889c276f-e7df-4026-b2f0-0467442cdcad",
+        "amount": "2430",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "4b2843f9-5496-4433-bf3f-c740dad39f9e",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "74fb7d07-9eb9-4eb9-a6fa-8d127f06ac30",
+        "amount": "2105",
+        "entryType": "DEBIT"
+      },
+      {
+        "id": "1963cf0e-d150-42dd-b308-f20037f01363",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "voucherId": "20e02c56-167f-4ea6-a02a-1c3d412bff4a",
+        "amount": "2199",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "7dc37123-366d-4a98-be7b-a2b315f8f8e2",
+        "ledgerId": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3"
+      }
+    ]
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "SHOBHA EXIM PRIVATE LIMITED - CR",
+    "canonicalId": "62e7d5ec-47e1-4b97-8ddd-c9c7ca31b5d8",
+    "losers": [
+      {
+        "id": "856b27d8-1f2d-4279-9c5d-6f2eb3a09aa7",
+        "entries": 1,
+        "openings": 0,
+        "close": 24415
+      }
+    ],
+    "before": [
+      {
+        "id": "62e7d5ec-47e1-4b97-8ddd-c9c7ca31b5d8",
+        "entries": 16,
+        "openings": 0,
+        "close": -432621.5
+      },
+      {
+        "id": "856b27d8-1f2d-4279-9c5d-6f2eb3a09aa7",
+        "entries": 1,
+        "openings": 0,
+        "close": 24415
+      }
+    ],
+    "afterClose": -408206.5,
+    "entryRows": [
+      {
+        "id": "19489c00-244d-497c-a1e1-df807ac77914",
+        "ledgerId": "856b27d8-1f2d-4279-9c5d-6f2eb3a09aa7",
+        "voucherId": "566c9aca-bdc4-47d7-9099-212b13e0c156",
+        "amount": "24415",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": [
+      {
+        "id": "4f3f9ffa-16ae-4f0a-8f74-b85127122122",
+        "ledgerId": "856b27d8-1f2d-4279-9c5d-6f2eb3a09aa7"
+      }
+    ]
+  },
+  {
+    "head": "Advance From S. Debtors",
+    "name": "VENKETESHWARA ROADLINES - DR",
+    "canonicalId": "128c49f2-d03e-4ced-bddb-953cbd6e873a",
+    "losers": [
+      {
+        "id": "dc206494-7b13-4278-8591-8bcffd46c4ba",
+        "entries": 1,
+        "openings": 0,
+        "close": 140000
+      }
+    ],
+    "before": [
+      {
+        "id": "128c49f2-d03e-4ced-bddb-953cbd6e873a",
+        "entries": 45,
+        "openings": 1,
+        "close": -312258
+      },
+      {
+        "id": "dc206494-7b13-4278-8591-8bcffd46c4ba",
+        "entries": 1,
+        "openings": 0,
+        "close": 140000
+      }
+    ],
+    "afterClose": -172258,
+    "entryRows": [
+      {
+        "id": "73f582cb-7b65-49a7-9168-8cb21c584733",
+        "ledgerId": "dc206494-7b13-4278-8591-8bcffd46c4ba",
+        "voucherId": "ad4082a1-0157-45e3-bd9a-f77f8ddab76c",
+        "amount": "140000",
+        "entryType": "DEBIT"
+      }
+    ],
+    "journalHeads": []
+  }
+]

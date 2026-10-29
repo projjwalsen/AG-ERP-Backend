@@ -68,6 +68,7 @@ type CreateVoucherPayload = {
     branchId?: string;
     narration?: string;
     voucherDate?: Date;
+    allowVoucherNoReuseOnDifferentDate?: boolean;
     entries: VoucherEntryPayload[];
 };
 
@@ -3452,11 +3453,20 @@ export class LedgerService {
             }
 
             const voucherNo = payload.voucherNo || this.generateVoucherNo(payload.voucherType, sourceId);
+            const duplicateCheckDate = payload.voucherDate || new Date();
+            const duplicateCheckStart = new Date(Date.UTC(
+                duplicateCheckDate.getUTCFullYear(), duplicateCheckDate.getUTCMonth(), duplicateCheckDate.getUTCDate()
+            ));
+            const duplicateCheckEnd = new Date(duplicateCheckStart.getTime() + 24 * 60 * 60 * 1000 - 1);
             const existingVoucherNo = await tx.voucher.findFirst({
-                where: {
-                    voucherNo,
-                    voucherType: payload.voucherType
-                }
+                where: payload.allowVoucherNoReuseOnDifferentDate
+                    ? {
+                        voucherNo,
+                        voucherType: payload.voucherType,
+                        branchId: payload.branchId || null,
+                        voucherDate: { gte: duplicateCheckStart, lte: duplicateCheckEnd }
+                    }
+                    : { voucherNo, voucherType: payload.voucherType }
             });
 
             if (existingVoucherNo) {

@@ -1,10 +1,13 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
-import profitAndLossSource from "./PLAC/PandL-pure.json";
+import profitAndLossWorkbook from "./PLAC/PandL_full.json";
 import balanceSheetSource from "./BLSHEET/BSheet-pure.json";
 
 type StatementKind = "PROFIT_AND_LOSS" | "BALANCE_SHEET";
-type PureStatementItem = { name: string; amount: number; children?: PureStatementItem[]; items?: PureStatementItem[] };
+type PureStatementItem = { name: string; amount: number; isDetail?: boolean; children?: PureStatementItem[]; items?: PureStatementItem[] };
+type FullStatementCell = { column: string; value: unknown };
+type FullStatementRow = { rowNumber: number; cells: FullStatementCell[] };
+type FullStatementWorkbook = { sheets: Array<{ rows: FullStatementRow[] }> };
 type PureBalanceSheet = {
     report: string;
     company: string;
@@ -13,15 +16,6 @@ type PureBalanceSheet = {
     assets: PureStatementItem[];
     totals: { liabilities: number; assets: number };
 };
-type PureProfitAndLoss = {
-    report: string;
-    company: string;
-    period: { from: string; to: string };
-    debit: Record<string, PureStatementItem>;
-    credit: Record<string, PureStatementItem>;
-    totals: { debit: number; credit: number };
-};
-
 export type FinancialStatementReport = {
     statementType: StatementKind;
     reportName: string;
@@ -65,7 +59,9 @@ const reportHeaderRows = (company: string, reportName: string, period: string) =
 ];
 
 const flattenSections = (sections: PureStatementItem[]) => sections.flatMap(section => {
-    const rows: unknown[][] = [[section.name, null, section.amount]];
+    const rows: unknown[][] = [section.isDetail
+        ? [section.name, section.amount, null]
+        : [section.name, null, section.amount]];
     const children = section.children ?? section.items ?? [];
     const appendChildren = (items: PureStatementItem[]) => {
         for (const child of items) {
@@ -102,30 +98,24 @@ const balanceSheetRows = (source: PureBalanceSheet) => {
     return rows;
 };
 
-const profitAndLossRows = (source: PureProfitAndLoss) => {
-    const debit = source.debit;
-    const credit = source.credit;
-    const leftSections = [debit.openingStock, debit.purchaseAccounts, debit.directExpenses, debit.indirectExpenses]
-        .filter((section): section is PureStatementItem => Boolean(section));
-    const rightSections: PureStatementItem[] = [];
+const fullStatementRows = (source: FullStatementWorkbook) => {
+    const worksheet = source.sheets?.[0];
+    if (!worksheet?.rows?.length) throw new Error("The full P&L workbook JSON does not contain worksheet rows");
 
-    if (credit.salesAccounts) {
-        rightSections.push({ ...credit.salesAccounts, children: credit.salesLedgers?.items ?? [] });
+    const columnIndexes: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5 };
+    const rows: unknown[][] = Array.from(
+        { length: Math.max(...worksheet.rows.map(row => row.rowNumber)) },
+        () => Array(6).fill(null)
+    );
+
+    for (const sourceRow of worksheet.rows) {
+        const row = rows[sourceRow.rowNumber - 1];
+        for (const cell of sourceRow.cells) {
+            const columnIndex = columnIndexes[cell.column];
+            if (columnIndex !== undefined) row[columnIndex] = cell.value === "" ? null : cell.value ?? null;
+        }
     }
-    for (const key of ["closingStock", "grossProfitBf", "indirectIncomes"] as const) {
-        const section = credit[key];
-        if (section) rightSections.push(section);
-    }
 
-    // Profit is the balancing debit in the final Profit & Loss account.
-    const netProfit = credit.netProfit;
-    if (netProfit) leftSections.push({ ...netProfit, name: netProfit.name || "Nett Profit" });
-
-    const rows = reportHeaderRows(source.company, source.report, periodLabel(source.period));
-    rows.push(["", "", null, "", "", null]);
-    rows.push(["Particulars", periodLabel(source.period), null, "Particulars", periodLabel(source.period), null]);
-    rows.push(...pairStatementSides(flattenSections(leftSections), flattenSections(rightSections)));
-    rows.push(["Total", null, source.totals.debit, "Total", null, source.totals.credit]);
     return rows;
 };
 
@@ -161,14 +151,21 @@ const reorderProfitAndLossSectionsForExport = (rows: unknown[][]) => {
 
 export class Srv1FinancialStatementsService {
     static getProfitAndLossReport() {
-        const source = profitAndLossSource as PureProfitAndLoss;
+        const rows = fullStatementRows(profitAndLossWorkbook as FullStatementWorkbook);
+        const company = text(rows[0]?.[0]);
+        const reportName = text(rows[5]?.[0]);
+        const period = text(rows[6]?.[0]);
         return {
             statementType: "PROFIT_AND_LOSS" as const,
-            reportName: source.report,
-            company: source.company,
-            period: periodLabel(source.period),
-            companyDetails: { address: companyAddress, identifier: companyIdentifier, email: companyEmail },
-            rows: profitAndLossRows(source)
+            reportName,
+            company,
+            period,
+            companyDetails: {
+                address: [text(rows[1]?.[0]), text(rows[2]?.[0])].filter(Boolean),
+                identifier: text(rows[3]?.[0]),
+                email: text(rows[4]?.[0])
+            },
+            rows
         };
     }
 

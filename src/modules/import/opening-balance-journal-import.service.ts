@@ -365,9 +365,28 @@ export class OpeningBalanceJournalImportService {
                     },
                     include: { voucher: true, journalHead: true }
                 });
+                const allHeads = await tx.journalHead.findMany({
+                    select: { id: true, name: true, parentId: true }
+                });
+                const headsById = new Map(allHeads.map((head: any) => [head.id, head]));
+                const journalHeadPath = (headId: string) => {
+                    const path: string[] = [];
+                    const visited = new Set<string>();
+                    let head: any = headsById.get(headId);
+                    while (head && !visited.has(head.id)) {
+                        visited.add(head.id);
+                        path.unshift(head.name);
+                        head = head.parentId ? headsById.get(head.parentId) : undefined;
+                    }
+                    return path.join(" > ");
+                };
                 for (const journal of stale) {
                     const importedPath = String(journal.remarks || "").replace(/^Opening balance import:\s*/i, "");
-                    if (!staleParentPaths.has(importedPath)) continue;
+                    // Older imports sometimes stored the leaf's path in remarks
+                    // while posting the amount to its parent JournalHead. Check
+                    // the actual head hierarchy as well as the import metadata.
+                    const postedHeadPath = journalHeadPath(journal.journalHeadId);
+                    if (!staleParentPaths.has(importedPath) && !staleParentPaths.has(postedHeadPath)) continue;
                     const ledgerId = journal.journalHead.ledgerId;
                     if (journal.voucherId) {
                         await tx.ledgerEntry.deleteMany({ where: { voucherId: journal.voucherId } });

@@ -1,0 +1,31 @@
+{
+  "tallyCount": 423,
+  "dbCount": 423,
+  "matchCount": 423,
+  "mismatchCount": 0,
+  "missingInDb": [],
+  "extraInDb": [],
+  "totals": {
+    "tally": {
+      "openColSum": 483520848.56,
+      "debit": 5486019254.2,
+      "credit": 5434226296.34,
+      "closeColSum": 503921292.64
+    },
+    "db": {
+      "netOpenCr": 332630278.48,
+      "debit": 5486019254.2,
+      "credit": 5434226296.34,
+      "netCloseCr": 280837320.62
+    },
+    "pdfGrand": {
+      "open": 332630278.48,
+      "debit": 5486019254.2,
+      "credit": 5434226296.34,
+      "close": 280837320.62
+    }
+  },
+  "mismatches": [],
+  "missingSample": [],
+  "extraSample": []
+}

@@ -1,0 +1,944 @@
+                            A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+                                 SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD
+
+                                   KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD
+
+                                           CIN: U11100MH2011PTC224243
+
+                                         E-Mail : info@ashtvinayakapetrochem.com
+
+                                           BOM CA 60435349267                            Book
+
+                                                                  1-Apr-25 to 31-Mar-26
+
+                                                                                                                      Page 1
+
+Date           Particulars                                        Vch Type                     Vch No.  Debit         Credit
+
+1-Apr-25   To  Opening Balance                                                                          10,666.95
+
+4-Apr-25   To  BANK OF MAHARASHTRA- C/C 60434886441               Contra                       2        3,45,000.00
+
+5-Apr-25   By  ICICI Business Loan - UPMUM00046126149             Payment                      10737                  1,74,376.00
+
+7-Apr-25   By  (as per details)                                   Payment                      10742                  28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323            26,559.39    Dr
+
+               Interest on Vehicle Loan                           2,105.61     Dr
+
+           By  (as per details)                                   Payment                      10753                  59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS       45,689.65    Dr
+
+               Interest on Vehicle Loan                           13,935.35    Dr
+
+           By  (as per details)                                   Payment                      10765                  42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET            39,141.40    Dr
+
+               Interest on Vehicle Loan                           3,508.60     Dr
+
+8-Apr-25   By  Bank Charges                                       Payment                      10861                  200.00
+
+           By  Bank Charges                                       Payment                      10862                  36.00
+
+14-Apr-25  To  BANK OF MAHARASHTRA- C/C 60434886441               Contra                       4        4,90,000.00
+
+15-Apr-25  By  (as per details)                                   Payment                      10776                  22,946.00
+
+               YES BANK LTD ( MAHINDRA BOLERO) - ALN000100853150  22,490.00    Dr
+
+               Interest on Vehicle Loan                           456.00       Dr
+
+           By  (as per details)                                   Payment                      10645                  45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521          34,009.00    Dr
+
+               Interest on Vehicle Loan                           11,192.00    Dr
+
+           By  (as per details)                                   Payment                      10797                  4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER         3,49,229.00  Dr
+
+               Interest on Vehicle Loan                           1,09,808.00  Dr
+
+           By  Bank Charges                                       Payment                      10988                  5.00
+
+           By  Bank Charges                                       Payment                      10989                  0.90
+
+19-Apr-25  To  BANK OF MAHARASHTRA- C/C 60434886441               Contra                       6        2,53,000.00
+
+20-Apr-25  By  (as per details)                                   Payment                      10646                  2,52,705.00
+
+               AXIS BANK LOAN - BPR064708241270                   2,32,227.00  Dr
+
+               Interest on Unsecured Loan                         20,478.00    Dr
+
+22-Apr-25  To  Processing Charges                                 Receipt                      11106    1,493.00
+
+29-Apr-25  By  Bank Charges                                       Payment                      11227                  3.60
+
+           By  Bank Charges                                       Payment                      11228                  0.64
+
+4-May-25   To  BANK OF MAHARASHTRA- C/C 60434886441               Contra                       10       1,75,000.00
+
+5-May-25   By  ICICI Business Loan - UPMUM00046126149             Payment                      10738                  1,74,376.00
+
+6-May-25   To  BANK OF MAHARASHTRA- C/C 60434886441               Contra                       11       1,30,000.00
+
+7-May-25   By  (as per details)                                   Payment                      10743                  28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323            26,744.24    Dr
+
+               Interest on Vehicle Loan                           1,920.76     Dr
+
+           By  (as per details)                                   Payment                      10754                  59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS       46,028.75    Dr
+
+               Interest on Vehicle Loan                           13,596.25    Dr
+
+               Carried Over                                                                             14,05,159.95  13,48,117.14
+
+                                                                                                                      continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                                 Page 2
+
+Date           Particulars                                        Vch Type         Vch No.  Debit         Credit
+
+               Brought Forward                                                              14,05,159.95  13,48,117.14
+
+7-May-25   By  (as per details)                                   Payment          10766                  42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET            39,448.07    Dr
+
+               Interest on Vehicle Loan                           3,201.93     Dr
+
+14-May-25  To  BANK OF MAHARASHTRA- C/C 60434886441               Contra           12       5,30,000.00
+
+15-May-25  By  (as per details)                                   Payment          10777                  22,946.00
+
+               YES BANK LTD ( MAHINDRA BOLERO) - ALN000100853150  22,641.00    Dr
+
+               Interest on Vehicle Loan                           305.00       Dr
+
+           By  (as per details)                                   Payment          10779                  45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521          34,272.00    Dr
+
+               Interest on Vehicle Loan                           10,929.00    Dr
+
+           By  (as per details)                                   Payment          10798                  4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER         3,51,819.00  Dr
+
+               Interest on Vehicle Loan                           1,07,218.00  Dr
+
+19-May-25  To  BANK OF MAHARASHTRA- C/C 60434886441               Contra           13       2,50,000.00
+
+20-May-25  By  (as per details)                                   Payment          10790                  2,52,705.00
+
+               AXIS BANK LOAN - BPR064708241270                   2,34,743.00  Dr
+
+               Interest on Unsecured Loan                         17,962.00    Dr
+
+30-May-25  By  Bank Charges                                       Payment          11830                  3.60
+
+           By  Bank Charges                                       Payment          11831                  0.64
+
+4-Jun-25   To  BANK OF MAHARASHTRA- C/C 60434886441               Contra           17       1,70,000.00
+
+5-Jun-25   By  ICICI Business Loan - UPMUM00046126149             Payment          10739                  1,74,376.00
+
+6-Jun-25   To  BANK OF MAHARASHTRA- C/C 60434886441               Contra           21       1,31,000.00
+
+7-Jun-25   By  (as per details)                                   Payment          10744                  28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323            26,930.38    Dr
+
+               Interest on Vehicle Loan                           1,734.62     Dr
+
+           By  (as per details)                                   Payment          10755                  59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS       46,370.38    Dr
+
+               Interest on Vehicle Loan                           13,254.62    Dr
+
+           By  (as per details)                                   Payment          10767                  42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET            39,757.13    Dr
+
+               Interest on Vehicle Loan                           2,892.87     Dr
+
+14-Jun-25  To  BANK OF MAHARASHTRA- C/C 60434886441               Contra           23       5,28,000.00
+
+15-Jun-25  By  (as per details)                                   Payment          10778                  22,946.00
+
+               YES BANK LTD ( MAHINDRA BOLERO) - ALN000100853150  22,793.00    Dr
+
+               Interest on Vehicle Loan                           153.00       Dr
+
+           By  (as per details)                                   Payment          10780                  45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521          34,536.00    Dr
+
+               Interest on Vehicle Loan                           10,665.00    Dr
+
+           By  (as per details)                                   Payment          10799                  4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER         3,54,428.00  Dr
+
+               Interest on Vehicle Loan                           1,04,609.00  Dr
+
+19-Jun-25  To  BANK OF MAHARASHTRA- C/C 60434886441               Contra           27       2,53,000.00
+
+20-Jun-25  By  (as per details)                                   Payment          10791                  2,52,705.00
+
+               AXIS BANK LOAN - BPR064708241270                   2,37,286.00  Dr
+
+               Interest on Unsecured Loan                         15,419.00    Dr
+
+21-Jun-25  To  MONEYWISE FINANCIAL SERICES PVT LTD - BL00711      Receipt          11737    4,500.00
+
+           By  Bank Charges                                       Payment          12074                  177.00
+
+           By  Bank Charges                                       Payment          12075                  177.00
+
+               Carried Over                                                                 32,71,659.95  32,56,219.38
+
+                                                                                                          continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267    Book       :  1-Apr-25 to 31-Mar-26                                              Page 3
+
+Date           Particulars                                   Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                         32,71,659.95    32,56,219.38
+
+23-Jun-25  To  TDS RECEIVABLE ON UNSECURED LOAN-MONEYWISE    Receipt          11756    1,074.00
+
+29-Jun-25  By  Bank Charges                                  Payment          12269                    4.80
+
+           By  Bank Charges                                  Payment          12270                    0.86
+
+30-Jun-25  To  R/OFF                                         Receipt          11820    1.00
+
+           To  AXIS BANK BPR032712902112                     Receipt          11821    62,40,501.00
+
+           To  L &T FINANCE LIMITED BL250613256600976        Receipt          11822    44,15,182.46
+
+1-Jul-25   By  BANK OF MAHARASHTRA- C/C 60434886441          Contra           33                       1,06,55,683.00
+
+4-Jul-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           35       1,75,000.00
+
+5-Jul-25   By  ICICI Business Loan - UPMUM00046126149        Payment          10740                    1,74,376.00
+
+6-Jul-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           36       1,30,000.00
+
+7-Jul-25   By  (as per details)                              Payment          10745                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       27,117.81    Dr
+
+               Interest on Vehicle Loan                      1,547.19     Dr
+
+           By  (as per details)                              Payment          10756                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  46,714.54    Dr
+
+               Interest on Vehicle Loan                      12,910.46    Dr
+
+           By  (as per details)                              Payment          10768                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET       40,068.62    Dr
+
+               Interest on Vehicle Loan                      2,581.38     Dr
+
+8-Jul-25   By  Bank Charges                                  Payment          12909                    150.00
+
+           By  Bank Charges                                  Payment          12910                    27.00
+
+14-Jul-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           42       5,00,000.00
+
+15-Jul-25  By  (as per details)                              Payment          10781                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     34,803.00    Dr
+
+               Interest on Vehicle Loan                      10,398.00    Dr
+
+           By  (as per details)                              Payment          10800                    4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER    3,57,057.00  Dr
+
+               Interest on Vehicle Loan                      1,01,980.00  Dr
+
+           By  Bank Charges                                  Payment          12911                    5.00
+
+           By  Bank Charges                                  Payment          12912                    0.90
+
+19-Jul-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           45       2,53,000.00
+
+20-Jul-25  By  (as per details)                              Payment          12644                    2,52,705.00
+
+               AXIS BANK BPR032712902112                     1,98,538.00  Dr
+
+               Interest on Unsecured Loan                    54,167.00    Dr
+
+30-Jul-25  By  Bank Charges                                  Payment          12907                    4.50
+
+           By  Bank Charges                                  Payment          12908                    0.81
+
+3-Aug-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           48       2,50,000.00
+
+           By  BANK OF MAHARASHTRA- C/C 60434886441          Contra           49                       2,50,000.00
+
+           By  Bank Charges                                  Payment          13480                    500.00
+
+           By  Bank Charges                                  Payment          13481                    90.00
+
+4-Aug-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           50       1,80,000.00
+
+5-Aug-25   By  ICICI Business Loan - UPMUM00046126149        Payment          10741                    1,59,436.10
+
+6-Aug-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           51       1,15,000.00
+
+7-Aug-25   By  (as per details)                              Payment          10746                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       27,306.54    Dr
+
+               Interest on Vehicle Loan                      1,358.46     Dr
+
+           By  (as per details)                              Payment          10757                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  47,061.25    Dr
+
+               Interest on Vehicle Loan                      12,563.75    Dr
+
+               Carried Over                                                            1,55,31,418.41  1,54,72,671.35
+
+                                                                                                       continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                                Page 4
+
+Date           Particulars                                     Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                           1,55,31,418.41  1,54,72,671.35
+
+7-Aug-25   By  (as per details)                                Payment          10769                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET         40,382.55    Dr
+
+               Interest on Vehicle Loan                        2,267.45     Dr
+
+14-Aug-25  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           52       5,00,000.00
+
+15-Aug-25  By  (as per details)                                Payment          10782                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521       35,072.00    Dr
+
+               Interest on Vehicle Loan                        10,129.00    Dr
+
+           By  (as per details)                                Payment          10801                    4,60,537.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER      3,59,705.00  Dr
+
+               Interest on Vehicle Loan                        99,332.00    Dr
+
+               Processing Charges                              1,500.00     Dr
+
+19-Aug-25  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           53       2,50,000.00
+
+20-Aug-25  By  (as per details)                                Payment          12645                    2,52,705.00
+
+               AXIS BANK BPR032712902112                       1,73,606.00  Dr
+
+               Interest on Unsecured Loan                      79,099.00    Dr
+
+30-Aug-25  By  Bank Charges                                    Payment          13478                    3.90
+
+           By  Bank Charges                                    Payment          13479                    0.70
+
+3-Sep-25   By  Bank Charges                                    Payment          13930                    500.00
+
+           By  Bank Charges                                    Payment          13931                    90.00
+
+6-Sep-25   To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           55       1,35,000.00
+
+7-Sep-25   By  (as per details)                                Payment          10747                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323         27,496.59    Dr
+
+               Interest on Vehicle Loan                        1,168.41     Dr
+
+           By  (as per details)                                Payment          10758                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS    47,410.54    Dr
+
+               Interest on Vehicle Loan                        12,214.46    Dr
+
+           By  (as per details)                                Payment          10770                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET         40,698.93    Dr
+
+               Interest on Vehicle Loan                        1,951.07     Dr
+
+10-Sep-25  To  TDS RECEIVABLE ON UNSECURED LOAN-L & T FINANCE  Receipt          13658    173.67
+
+13-Sep-25  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           57       5,05,000.00
+
+15-Sep-25  By  (as per details)                                Payment          10783                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521       35,342.00    Dr
+
+               Interest on Vehicle Loan                        9,859.00     Dr
+
+           By  (as per details)                                Payment          10802                    4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER      3,62,373.00  Dr
+
+               Interest on Vehicle Loan                        96,664.00    Dr
+
+19-Sep-25  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           59       2,50,000.00
+
+20-Sep-25  By  (as per details)                                Payment          12646                    2,52,705.00
+
+               AXIS BANK BPR032712902112                       1,75,487.00  Dr
+
+               Interest on Unsecured Loan                      77,218.00    Dr
+
+26-Sep-25  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           61       5,00,000.00
+
+           By  BANK OF MAHARASHTRA- C/C 60434886441            Contra           63                       5,00,000.00
+
+           By  Bank Charges                                    Payment          13927                    177.00
+
+           By  Bank Charges                                    Payment          13928                    177.00
+
+           By  Bank Charges                                    Payment          13929                    177.00
+
+29-Sep-25  By  Bank Charges                                    Payment          14031                    4.50
+
+           By  Bank Charges                                    Payment          14032                    0.81
+
+2-Oct-25   To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           65       2,60,000.00
+
+               Carried Over                                                              1,79,31,592.08  1,76,62,778.26
+
+                                                                                                         continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                              Page 5
+
+Date           Particulars                                   Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                         1,79,31,592.08  1,76,62,778.26
+
+3-Oct-25   By  (as per details)                              Payment          12443                    2,59,990.00
+
+               L &T FINANCE LIMITED BL250613256600976        1,70,421.97  Dr
+
+               Interest on Unsecured Loan                    89,568.03    Dr
+
+6-Oct-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           66       1,30,000.00
+
+7-Oct-25   By  (as per details)                              Payment          10748                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       27,687.97    Dr
+
+               Interest on Vehicle Loan                      977.03       Dr
+
+           By  (as per details)                              Payment          10759                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  47,762.41    Dr
+
+               Interest on Vehicle Loan                      11,862.59    Dr
+
+           By  (as per details)                              Payment          10771                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET       41,017.80    Dr
+
+               Interest on Vehicle Loan                      1,632.20     Dr
+
+8-Oct-25   By  Bank Charges                                  Payment          14875                    200.00
+
+           By  Bank Charges                                  Payment          14876                    36.00
+
+14-Oct-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           68       5,10,000.00
+
+15-Oct-25  By  (as per details)                              Payment          10784                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     35,615.00    Dr
+
+               Interest on Vehicle Loan                      9,586.00     Dr
+
+           By  (as per details)                              Payment          10803                    4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER    3,65,061.00  Dr
+
+               Interest on Vehicle Loan                      93,976.00    Dr
+
+19-Oct-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8833     2,50,000.00
+
+20-Oct-25  By  (as per details)                              Payment          12647                    2,52,705.00
+
+               AXIS BANK BPR032712902112                     1,77,388.00  Dr
+
+               Interest on Unsecured Loan                    75,317.00    Dr
+
+30-Oct-25  By  Bank Charges                                  Payment          14873                    3.30
+
+           By  Bank Charges                                  Payment          14874                    0.59
+
+2-Nov-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8851     2,60,000.00
+
+3-Nov-25   By  (as per details)                              Payment          12444                    2,59,990.00
+
+               L &T FINANCE LIMITED BL250613256600976        1,72,552.24  Dr
+
+               Interest on Unsecured Loan                    87,437.76    Dr
+
+6-Nov-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8856     1,30,000.00
+
+7-Nov-25   By  (as per details)                              Payment          10749                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       27,880.67    Dr
+
+               Interest on Vehicle Loan                      784.33       Dr
+
+           By  (as per details)                              Payment          10760                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  48,116.90    Dr
+
+               Interest on Vehicle Loan                      11,508.10    Dr
+
+           By  (as per details)                              Payment          10772                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET       41,339.17    Dr
+
+               Interest on Vehicle Loan                      1,310.83     Dr
+
+13-Nov-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8857     5,00,000.00
+
+15-Nov-25  By  (as per details)                              Payment          10785                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     35,890.00    Dr
+
+               Interest on Vehicle Loan                      9,311.00     Dr
+
+           By  (as per details)                              Payment          10804                    4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER    3,67,768.00  Dr
+
+               Interest on Vehicle Loan                      91,269.00    Dr
+
+               Carried Over                                                            1,97,11,592.08  1,97,06,059.15
+
+                                                                                                       continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                              Page 6
+
+Date           Particulars                                   Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                         1,97,11,592.08  1,97,06,059.15
+
+18-Nov-25  To  Bank Charges                                  Receipt          15338    1.00
+
+19-Nov-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8863     2,55,000.00
+
+20-Nov-25  By  (as per details)                              Payment          12648                    2,52,705.00
+
+               AXIS BANK BPR032712902112                     1,79,309.00  Dr
+
+               Interest on Unsecured Loan                    73,396.00    Dr
+
+29-Nov-25  By  Bank Charges                                  Payment          15513                    3.60
+
+           By  Bank Charges                                  Payment          15514                    0.64
+
+2-Dec-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8864     2,60,000.00
+
+3-Dec-25   By  (as per details)                              Payment          12445                    2,59,990.00
+
+               L &T FINANCE LIMITED BL250613256600976        1,74,709.15  Dr
+
+               Interest on Unsecured Loan                    85,280.85    Dr
+
+6-Dec-25   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8865     1,35,000.00
+
+7-Dec-25   By  (as per details)                              Payment          10750                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       28,074.72    Dr
+
+               Interest on Vehicle Loan                      590.28       Dr
+
+           By  (as per details)                              Payment          10761                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  48,474.03    Dr
+
+               Interest on Vehicle Loan                      11,150.97    Dr
+
+           By  (as per details)                              Payment          10773                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET       41,663.05    Dr
+
+               Interest on Vehicle Loan                      986.95       Dr
+
+13-Dec-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8866     5,00,000.00
+
+14-Dec-25  By  (as per details)                              Payment          10805                    4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER    3,70,496.00  Dr
+
+               Interest on Vehicle Loan                      88,541.00    Dr
+
+15-Dec-25  By  (as per details)                              Payment          10786                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     36,167.00    Dr
+
+               Interest on Vehicle Loan                      9,034.00     Dr
+
+19-Dec-25  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8876     2,55,000.00
+
+20-Dec-25  By  (as per details)                              Payment          12649                    2,52,705.00
+
+               AXIS BANK BPR032712902112                     1,81,252.00  Dr
+
+               Interest on Unsecured Loan                    71,453.00    Dr
+
+24-Dec-25  To  UNIVERSAL TRADING CORPORATION                 Receipt          15502    5,00,000.00
+
+           By  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8877                     5,00,000.00
+
+30-Dec-25  By  Bank Charges                                  Payment          16067                    3.90
+
+           By  Bank Charges                                  Payment          16068                    0.70
+
+2-Jan-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8880     2,60,000.00
+
+3-Jan-26   By  (as per details)                              Payment          12446                    2,59,990.00
+
+               L &T FINANCE LIMITED BL250613256600976        1,76,893.01  Dr
+
+               Interest on Unsecured Loan                    83,096.99    Dr
+
+4-Jan-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8881     1,10,000.00
+
+5-Jan-26   By  (as per details)                              Payment          15752                    1,08,840.00
+
+               HDFC BANK AUTO LOAN-166649820 BMW             65,019.00    Dr
+
+               Interest on Vehicle Loan                      43,821.00    Dr
+
+6-Jan-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8883     1,30,000.00
+
+7-Jan-26   By  (as per details)                              Payment          10751                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       28,270.11    Dr
+
+               Interest on Vehicle Loan                      394.89       Dr
+
+               Carried Over                                                            2,21,16,593.08  2,20,04,140.99
+
+                                                                                                       continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                              Page 7
+
+Date           Particulars                                   Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                         2,21,16,593.08  2,20,04,140.99
+
+7-Jan-26   By  (as per details)                              Payment          10762                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  48,833.80    Dr
+
+               Interest on Vehicle Loan                      10,791.20    Dr
+
+           By  (as per details)                              Payment          10774                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET       41,989.47    Dr
+
+               Interest on Vehicle Loan                      660.53       Dr
+
+8-Jan-26   By  Bank Charges                                  Payment          16278                    200.00
+
+           By  Bank Charges                                  Payment          16279                    36.00
+
+9-Jan-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8885     10,000.00
+
+           By  Interest on Vehicle Loan                      Payment          16280                    8,178.00
+
+14-Jan-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8886     5,00,000.00
+
+15-Jan-26  By  (as per details)                              Payment          10787                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     36,446.00    Dr
+
+               Interest on Vehicle Loan                      8,755.00     Dr
+
+           By  (as per details)                              Payment          10806                    4,60,537.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER    3,73,244.00  Dr
+
+               Interest on Vehicle Loan                      85,793.00    Dr
+
+               Processing Charges                            1,500.00     Dr
+
+           By  Bank Charges                                  Payment          16281                    5.00
+
+           By  Bank Charges                                  Payment          16282                    0.90
+
+19-Jan-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8887     2,55,000.00
+
+20-Jan-26  By  (as per details)                              Payment          12650                    2,52,705.00
+
+               AXIS BANK BPR032712902112                     1,83,215.00  Dr
+
+               Interest on Unsecured Loan                    69,490.00    Dr
+
+30-Jan-26  By  Bank Charges                                  Payment          16555                    4.50
+
+           By  Bank Charges                                  Payment          16556                    0.81
+
+2-Feb-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8888     2,60,000.00
+
+3-Feb-26   By  (as per details)                              Payment          12447                    2,59,990.00
+
+               L &T FINANCE LIMITED BL250613256600976        1,79,104.17  Dr
+
+               Interest on Unsecured Loan                    80,885.83    Dr
+
+6-Feb-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8889     1,31,000.00
+
+7-Feb-26   By  (as per details)                              Payment          10752                    28,665.00
+
+               HDFC BANK LTD (MAHINDRA THAR) 117909323       28,467.94    Dr
+
+               Interest on Vehicle Loan                      197.06       Dr
+
+           By  (as per details)                              Payment          10763                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  49,196.24    Dr
+
+               Interest on Vehicle Loan                      10,428.76    Dr
+
+           By  (as per details)                              Payment          10775                    42,650.00
+
+               HDFC BANK AUTO LOAN-139545540 KIA SONET       42,318.68    Dr
+
+               Interest on Vehicle Loan                      331.32       Dr
+
+11-Feb-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8890     1,09,000.00
+
+12-Feb-26  By  (as per details)                              Payment          15753                    1,00,550.00
+
+               HDFC BANK AUTO LOAN-166649820 BMW             65,502.00    Dr
+
+               Interest on Vehicle Loan                      35,048.00    Dr
+
+14-Feb-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8891     5,00,000.00
+
+15-Feb-26  By  (as per details)                              Payment          10788                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     36,727.00    Dr
+
+               Interest on Vehicle Loan                      8,474.00     Dr
+
+               Carried Over                                                            2,38,81,593.08  2,34,09,965.20
+
+                                                                                                       continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                                Page 8
+
+Date           Particulars                                     Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                           2,38,81,593.08  2,34,09,965.20
+
+15-Feb-26  By  (as per details)                                Payment          10807                    4,60,537.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER      3,76,012.00  Dr
+
+               Interest on Vehicle Loan                        83,025.00    Dr
+
+               Processing Charges                              1,500.00     Dr
+
+18-Feb-26  To  TDS RECEIVABLE ON UNSECURED LOAN-L & T FINANCE  Receipt          16775    45,283.00
+
+19-Feb-26  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8898     2,02,705.00
+
+20-Feb-26  By  (as per details)                                Payment          12651                    2,52,705.00
+
+               AXIS BANK BPR032712902112                       1,85,200.00  Dr
+
+               Interest on Unsecured Loan                      67,505.00    Dr
+
+           To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8899     8,50,000.00
+
+           To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8900     10,000.00
+
+21-Feb-26  By  (as per details)                                Payment          17034                    58,952.75
+
+               IDBI BANK LIMITED                               55,951.70    Dr
+
+               Mynd Solutions Pvt. Ltd.                        3,001.05     Dr
+
+           By  (as per details)                                Payment          17035                    2,23,119.88
+
+               IDBI BANK LIMITED                               2,11,761.75  Dr
+
+               Mynd Solutions Pvt. Ltd.                        11,358.13    Dr
+
+           By  (as per details)                                Payment          17036                    2,46,729.58
+
+               IDBI BANK LIMITED                               2,34,169.58  Dr
+
+               Mynd Solutions Pvt. Ltd.                        12,560.00    Dr
+
+           By  (as per details)                                Payment          17037                    2,38,221.51
+
+               IDBI BANK LIMITED                               2,26,094.61  Dr
+
+               Mynd Solutions Pvt. Ltd.                        12,126.90    Dr
+
+           By  (as per details)                                Payment          17038                    80,132.30
+
+               IDBI BANK LIMITED                               76,053.09    Dr
+
+               Mynd Solutions Pvt. Ltd.                        4,079.21     Dr
+
+24-Feb-26  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8901     58,000.00
+
+           By  (as per details)                                Payment          17108                    57,975.39
+
+               IDBI BANK LIMITED                               55,024.09    Dr
+
+               Mynd Solutions Pvt. Ltd.                        2,951.30     Dr
+
+25-Feb-26  To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8902     2,55,000.00
+
+26-Feb-26  By  (as per details)                                Payment          17115                    1,43,341.82
+
+               IDBI BANK LIMITED                               1,36,044.87  Dr
+
+               Mynd Solutions Pvt. Ltd.                        7,296.95     Dr
+
+           By  (as per details)                                Payment          17116                    1,10,732.97
+
+               IDBI BANK LIMITED                               1,05,096.00  Dr
+
+               Mynd Solutions Pvt. Ltd.                        5,636.97     Dr
+
+           To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8903     3,19,000.00
+
+27-Feb-26  By  (as per details)                                Payment          17136                    2,37,321.15
+
+               IDBI BANK LIMITED                               2,25,240.09  Dr
+
+               Mynd Solutions Pvt. Ltd.                        12,081.06    Dr
+
+           By  (as per details)                                Payment          17137                    80,777.63
+
+               IDBI BANK LIMITED                               76,665.57    Dr
+
+               Mynd Solutions Pvt. Ltd.                        4,112.06     Dr
+
+           By  Bank Charges                                    Payment          17216                    8.70
+
+           By  Bank Charges                                    Payment          17217                    1.56
+
+2-Mar-26   To  BANK OF MAHARASHTRA- C/C 60434886441            Contra           8904     2,60,000.00
+
+               Carried Over                                                              2,58,81,581.08  2,56,00,522.44
+
+                                                                                                         continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+BOM CA 60435349267  Book         :  1-Apr-25 to 31-Mar-26                                              Page 9
+
+Date           Particulars                                   Vch Type         Vch No.  Debit           Credit
+
+               Brought Forward                                                         2,58,81,581.08  2,56,00,522.44
+
+3-Mar-26   By  (as per details)                              Payment          12448                    2,59,990.00
+
+               L &T FINANCE LIMITED BL250613256600976        1,81,342.98  Dr
+
+               Interest on Unsecured Loan                    78,647.02    Dr
+
+5-Mar-26   To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8905     5,00,000.00
+
+6-Mar-26   By  (as per details)                              Payment          17254                    1,30,514.90
+
+               IDBI BANK LIMITED                             1,23,870.91  Dr
+
+               Mynd Solutions Pvt. Ltd.                      6,643.99     Dr
+
+           By  (as per details)                              Payment          17255                    2,20,146.81
+
+               IDBI BANK LIMITED                             2,08,940.03  Dr
+
+               Mynd Solutions Pvt. Ltd.                      11,206.78    Dr
+
+           By  (as per details)                              Payment          17256                    1,48,938.91
+
+               IDBI BANK LIMITED                             1,41,357.03  Dr
+
+               Mynd Solutions Pvt. Ltd.                      7,581.88     Dr
+
+           To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8906     60,000.00
+
+7-Mar-26   By  (as per details)                              Payment          10764                    59,625.00
+
+               HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS  49,561.37    Dr
+
+               Interest on Vehicle Loan                      10,063.63    Dr
+
+11-Mar-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8907     1,10,000.00
+
+12-Mar-26  By  (as per details)                              Payment          15754                    1,00,550.00
+
+               HDFC BANK AUTO LOAN-166649820 BMW             65,988.00    Dr
+
+               Interest on Vehicle Loan                      34,562.00    Dr
+
+           By  Bank Charges                                  Payment          17503                    177.00
+
+           By  Bank Charges                                  Payment          17504                    177.00
+
+14-Mar-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8909     5,00,000.00
+
+15-Mar-26  By  (as per details)                              Payment          10789                    45,201.00
+
+               HDFC BANK 160603957 COMM. VEH. MH43CK6521     37,011.00    Dr
+
+               Interest on Vehicle Loan                      8,190.00     Dr
+
+           By  (as per details)                              Payment          10808                    4,59,037.00
+
+               ICICI BANK CE LOAN- LQPVL00047732425-PAVER    3,78,801.00  Dr
+
+               Interest on Vehicle Loan                      80,236.00    Dr
+
+18-Mar-26  To  BANK OF MAHARASHTRA- C/C 60434886441          Contra           8910     2,35,000.00
+
+20-Mar-26  By  (as per details)                              Payment          12652                    2,52,705.00
+
+               AXIS BANK BPR032712902112                     1,87,207.00  Dr
+
+               Interest on Unsecured Loan                    65,498.00    Dr
+
+30-Mar-26  By  Bank Charges                                  Payment          18107                    5.10
+
+           By  Bank Charges                                  Payment          18108                    0.91
+
+                                                                                       2,72,86,581.08  2,72,77,591.07
+
+           By  Closing Balance                                                                         8,990.01
+
+                                                                                       2,72,86,581.08  2,72,86,581.08
+

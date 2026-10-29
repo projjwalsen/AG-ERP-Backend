@@ -22,6 +22,7 @@ import {
     TALLY_BANK_ACCOUNT_BRANCH_ID,
     TALLY_BANK_ACCOUNT_NAMES
 } from "./tally-bank-accounts.allowlist";
+import { buildDuplicateLedgerGroupDisplayMap } from "../accounting/ledger/ledger-group-display";
 
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
@@ -31,7 +32,9 @@ const BANK_VOUCHER_TYPES = [
     // Imported Receipt/Payment vouchers can use the plain voucher type
     // while still posting to a BANK ledger.
     VoucherType.RECEIPT,
-    VoucherType.PAYMENT
+    VoucherType.PAYMENT,
+    // Tally bank books record transfers between cash/bank ledgers as Contra.
+    VoucherType.CONTRA
 ] as VoucherType[];
 // Trial Balance cash-in-hand is intentionally limited to the Journal
 // voucher whose subhead is Cash under the Cash in Hand journal head.
@@ -424,6 +427,60 @@ export class ReportingService {
             Prisma.LedgerEntryWhereInput | undefined =
             buildTrialBalanceBranchFilter(branchId);
 
+        // Imported purchase vouchers can post the supplier's credit directly
+        // to a JOURNAL-category ledger. Those vouchers have no linked Journal
+        // row, so the journal-only filter below was dropping the supplier
+        // credit while keeping the paired payment/debit entries. Include a
+        // purchase voucher only when its source Purchase is approved; this
+        // preserves the approval boundary for operational purchases.
+        const approvedPurchaseIds = (await prisma.purchase.findMany({
+            where: {
+                status: PurchaseStatus.APPROVED,
+                ...(branchId ? { branchId } : {})
+            },
+            select: { id: true }
+        })).map(purchase => purchase.id);
+
+        const approvedSaleIds = (await prisma.sale.findMany({
+            where: {
+                status: SalesStatus.APPROVED,
+                ...(branchId ? { branchId } : {})
+            },
+            select: { id: true }
+        })).map(sale => sale.id);
+
+        const groupRows = await prisma.ledgerGroup.findMany({
+            select: { id: true, name: true, parentId: true }
+        });
+        const currentLiabilitiesGroup = groupRows.find(group =>
+            group.name.trim().toLocaleLowerCase() === "current liabilities" &&
+            !group.parentId
+        );
+        const advanceFromSDebtorsRoot = currentLiabilitiesGroup
+            ? groupRows.find(group =>
+                group.parentId === currentLiabilitiesGroup.id &&
+                group.name.trim().toLocaleLowerCase() === "advance from s. debtors"
+            )
+            : undefined;
+        const advanceFromSDebtorsGroupIds = new Set<string>();
+        if (advanceFromSDebtorsRoot) {
+            advanceFromSDebtorsGroupIds.add(advanceFromSDebtorsRoot.id);
+            let hasNewGroup = true;
+            while (hasNewGroup) {
+                hasNewGroup = false;
+                for (const group of groupRows) {
+                    if (
+                        group.parentId &&
+                        advanceFromSDebtorsGroupIds.has(group.parentId) &&
+                        !advanceFromSDebtorsGroupIds.has(group.id)
+                    ) {
+                        advanceFromSDebtorsGroupIds.add(group.id);
+                        hasNewGroup = true;
+                    }
+                }
+            }
+        }
+
         // Approved journals are the normal source. The narrow exceptions
         // below admit Path-classified Purchase entries, legacy inward-note
         // ledger entries without a saved Path, and Sales ledger entries
@@ -448,11 +505,38 @@ export class ReportingService {
                                 VoucherType.CASH_RECEIPT,
                                 VoucherType.CASH_PAYMENT,
                                 VoucherType.BANK_RECEIPT,
-                                VoucherType.BANK_PAYMENT
+                                VoucherType.BANK_PAYMENT,
+                                VoucherType.CONTRA
                             ]
                         }
                     }
                 },
+                ...(approvedPurchaseIds.length > 0
+                    ? [{
+                        voucher: {
+                            voucherType: VoucherType.PURCHASE,
+                            sourceId: { in: approvedPurchaseIds }
+                        }
+                    }]
+                    : []),
+                ...(approvedSaleIds.length > 0 && advanceFromSDebtorsGroupIds.size > 0
+                    ? [{
+                        AND: [
+                            {
+                                ledger: {
+                                    category: LedgerType.JOURNAL,
+                                    groupId: { in: [...advanceFromSDebtorsGroupIds] }
+                                }
+                            },
+                            {
+                                voucher: {
+                                    voucherType: VoucherType.SALE,
+                                    sourceId: { in: approvedSaleIds }
+                                }
+                            }
+                        ]
+                    }]
+                    : []),
                 {
                     voucher: {
                         journals: {
@@ -853,8 +937,8 @@ export class ReportingService {
                                             ledger: { category: LedgerType.CASH },
                                             voucher: CASH_IN_HAND_JOURNAL_VOUCHER_FILTER
                                         },
-                                        // Bank accounts are driven only by
-                                        // explicit bank receipts/payments.
+                                        // Bank accounts are driven by bank
+                                        // receipts/payments and Contra transfers.
                                         {
                                             ledger: { category: LedgerType.BANK },
                                             voucher: { voucherType: { in: BANK_VOUCHER_TYPES } }
@@ -2064,20 +2148,14 @@ export class ReportingService {
         // Keep cash ledgers separate. Netting multiple cash balances before
         // splitting Dr/Cr understates both sides and also detaches the
         // synthetic row from the LedgerGroup hierarchy.
-        const consolidatedRows = rawRows;
+        let consolidatedRows = rawRows;
 
         const groupById = new Map(ledgerGroups.map(group => [group.id, group]));
         const groupByCode = new Map(ledgerGroups.map(group => [group.code, group]));
-        const duplicateDisplayGroupById = new Map<string, string>();
-        for (const group of ledgerGroups) {
-            const parent = group.parentId ? groupById.get(group.parentId) : undefined;
-            const sameCurrentAssetsName =
-                String(group.name).trim().replace(/\s+/g, " ").toLowerCase() === "current assets" &&
-                String(parent?.name || "").trim().replace(/\s+/g, " ").toLowerCase() === "current assets";
-            if (sameCurrentAssetsName && parent) {
-                duplicateDisplayGroupById.set(group.id, parent.id);
-            }
-        }
+        const duplicateDisplayGroupById = buildDuplicateLedgerGroupDisplayMap(
+            ledgerGroups,
+            ledgers.map(ledger => ({ groupId: ledger.groupId, name: ledger.name }))
+        );
 
         const displayGroupId = (id: string) => {
             let current = id;
@@ -2088,6 +2166,85 @@ export class ReportingService {
             }
             return current;
         };
+
+        const normalizeTrialBalanceName = (value: unknown) =>
+            String(value || "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+
+        // When duplicate groups have different contents, keep the group
+        // containing real child accounts as the displayed heading. This
+        // prevents an opening-only same-name ledger from becoming the
+        // canonical group and hiding the populated creditor hierarchy.
+        const duplicateSiblingGroups = new Map<string, LedgerGroupReportRow[]>();
+        for (const group of ledgerGroups) {
+            const parentId = group.parentId ? displayGroupId(group.parentId) : "ROOT";
+            const key = `${parentId}|${normalizeTrialBalanceName(group.name)}`;
+            const siblings = duplicateSiblingGroups.get(key) || [];
+            siblings.push(group);
+            duplicateSiblingGroups.set(key, siblings);
+        }
+        for (const siblings of duplicateSiblingGroups.values()) {
+            if (siblings.length < 2) continue;
+            const distinctLedgerCount = (group: LedgerGroupReportRow) => ledgers.filter(ledger =>
+                ledger.groupId === group.id &&
+                normalizeTrialBalanceName(ledger.name) !== normalizeTrialBalanceName(group.name)
+            ).length;
+            const populated = [...siblings].sort((a, b) => {
+                return distinctLedgerCount(b) - distinctLedgerCount(a) || a.id.localeCompare(b.id);
+            });
+            if (distinctLedgerCount(populated[0]) === 0) continue;
+            const winner = populated[0];
+            for (const group of siblings) {
+                if (group.id === winner.id) duplicateDisplayGroupById.delete(group.id);
+                else duplicateDisplayGroupById.set(group.id, winner.id);
+            }
+        }
+
+        // The Advance Salary ledger is the posting account from the source
+        // ledger register. Give it a visible head in the Trial Balance even
+        // when an import placed the ledger directly under Loans & Advances.
+        // Its child rows remain the ledger's actual voucher-derived balances.
+        const loansAndAdvancesGroup = ledgerGroups.find(group =>
+            normalizeTrialBalanceName(group.name) === "loans & advances (asset)"
+        );
+        const advanceSalaryLedgerIds = new Set(
+            ledgers
+                .filter(ledger => normalizeTrialBalanceName(ledger.name) === "advance salary")
+                .map(ledger => ledger.id)
+        );
+        let advanceSalaryGroup = loansAndAdvancesGroup
+            ? ledgerGroups.find(group =>
+                normalizeTrialBalanceName(group.name) === "advance salary" &&
+                displayGroupId(group.parentId || "") === displayGroupId(loansAndAdvancesGroup.id)
+            )
+            : undefined;
+
+        if (loansAndAdvancesGroup && advanceSalaryLedgerIds.size > 0 && !advanceSalaryGroup) {
+            advanceSalaryGroup = {
+                id: "REPORT_ADVANCE_SALARY",
+                code: "REPORT_ADVANCE_SALARY",
+                name: "Advance Salary",
+                parentId: displayGroupId(loansAndAdvancesGroup.id)
+            };
+            ledgerGroups.push(advanceSalaryGroup);
+            groupById.set(advanceSalaryGroup.id, advanceSalaryGroup);
+        }
+
+        if (advanceSalaryGroup) {
+            // The repeated ledger name is expected here: Advance Salary is
+            // the head and the ledger register is its only voucher-bearing
+            // child. Keep this group from the generic redundant-name flatten.
+            duplicateDisplayGroupById.delete(advanceSalaryGroup.id);
+            consolidatedRows = consolidatedRows.map(row =>
+                advanceSalaryLedgerIds.has(row.ledgerId)
+                    ? {
+                        ...row,
+                        groupId: advanceSalaryGroup!.id,
+                        groupCode: advanceSalaryGroup!.code,
+                        parentGroup: advanceSalaryGroup!.name
+                    }
+                    : row
+            );
+        }
 
         // Imported Tally loan groups can contain a second copy of the same
         // group (for example Loans (Liability) > Secured Loans > Secured
@@ -2161,6 +2318,11 @@ export class ReportingService {
         const canonicalBankAccountsGroup = bankAccountsRootGroups.find(group => group.code === "BANK_ACCOUNTS") ||
             bankAccountsRootGroups[0];
         if (canonicalBankAccountsGroup) {
+            // Earlier duplicate resolution may have chosen the imported
+            // heading because it contains more direct ledgers. Break that
+            // alias first so the following assignments cannot create a
+            // two-node cycle between the imported and canonical headings.
+            duplicateDisplayGroupById.delete(canonicalBankAccountsGroup.id);
             const rootIds = new Set(bankAccountsRootGroups.map(group => group.id));
             for (const group of bankAccountsRootGroups) {
                 if (group.id !== canonicalBankAccountsGroup.id) {

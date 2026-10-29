@@ -1,0 +1,1 @@
+import 'dotenv/config';import {prisma} from './src/config/db';(async()=>{const p=await prisma.purchase.findFirst({where:{branchId:'47fdc8aa-83ba-46f9-93ec-4517e0eb13bb',invoiceNo:'S/002/25-26'},include:{agency:true}});console.log(p&&{agency:p.agency.name,grand:p.grandTotal,invoice:p.invoiceNo,status:p.status});await prisma.$disconnect()})()

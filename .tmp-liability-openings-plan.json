@@ -1,0 +1,22 @@
+{
+  "stats": {
+    "apply": false,
+    "sourceRows": 100,
+    "matched": 100,
+    "relink": 0,
+    "update": 0,
+    "create": 0,
+    "extras": 0,
+    "missingLedger": 0,
+    "missingLedgerNames": [],
+    "extraAmount": 0,
+    "createSample": [],
+    "relinkSample": [],
+    "extraLedgers": []
+  },
+  "create": [],
+  "update": [],
+  "relink": [],
+  "extras": [],
+  "missingLedger": []
+}
