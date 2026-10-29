@@ -74,7 +74,8 @@
     },
     {
       "name": "Deferred Tax Assets",
-      "amount": 1339928
+      "amount": 1339928,
+      "isDetail": true
     },
     {
       "name": "Branch / Divisions",

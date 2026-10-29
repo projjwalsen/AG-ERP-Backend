@@ -13,7 +13,13 @@ import {
     getGSTLedger,
     classifyPurchaseVouchers,
     restorePurchaseVoucherClassifications,
-    previewPurchaseVoucherClassification
+    previewPurchaseVoucherClassification,
+    getLedgerMappingTree,
+    createLedgerMappingGroup,
+    updateLedgerMappingGroup,
+    deleteLedgerMappingGroup,
+    moveLedgerMapping,
+    createMappedLedger
 } from "./ledger.controller";
 import { authMiddleware, checkPermission } from "../../../core/middleware/auth";
 
@@ -49,6 +55,144 @@ router.use(authMiddleware);
  *         description: Unauthorized
  */
 router.get("/groups",checkPermission("LEDGER:VIEW") ,getLedgerGroups);
+
+/**
+ * @openapi
+ * /api/ledgers/mappings:
+ *   get:
+ *     summary: Read the full ledger mapping tree
+ *     description: Returns parent groups, nested subgroups, leaf ledgers, full paths, categories, and distinct voucher counts.
+ *     tags: [Ledgers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         schema: { type: string }
+ *         description: Count vouchers for this branch and include its branch ledgers plus global ledgers.
+ *       - in: query
+ *         name: includeInactive
+ *         schema: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Ledger mapping tree
+ */
+router.get("/mappings", checkPermission("LEDGER:VIEW"), getLedgerMappingTree);
+
+/** @openapi
+ * /api/ledgers/mappings/groups:
+ *   post:
+ *     summary: Create a parent, subgroup, or category node
+ *     tags: [Ledgers]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, nature]
+ *             properties:
+ *               name: { type: string, example: Bank OD A/c & CC A/c }
+ *               parentId: { type: string, nullable: true }
+ *               nature: { type: string, enum: [DEBIT, CREDIT] }
+ *     responses:
+ *       201: { description: Group created }
+ */
+router.post("/mappings/groups", checkPermission("LEDGER:WRITE"), createLedgerMappingGroup);
+/** @openapi
+ * /api/ledgers/mappings/groups/{groupId}:
+ *   patch:
+ *     summary: Rename or move a hierarchy group
+ *     tags: [Ledgers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               parentId: { type: string, nullable: true }
+ *               nature: { type: string, enum: [DEBIT, CREDIT] }
+ *     responses:
+ *       200: { description: Group mapping updated }
+ */
+router.patch("/mappings/groups/:groupId", checkPermission("LEDGER:WRITE"), updateLedgerMappingGroup);
+/** @openapi
+ * /api/ledgers/mappings/groups/{groupId}:
+ *   delete:
+ *     summary: Delete an empty hierarchy group
+ *     description: Groups with child groups or ledgers must first have those mappings moved.
+ *     tags: [Ledgers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: groupId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Empty group deleted }
+ *       409: { description: Group still has linked groups or ledgers }
+ */
+router.delete("/mappings/groups/:groupId", checkPermission("LEDGER:WRITE"), deleteLedgerMappingGroup);
+/** @openapi
+ * /api/ledgers/mappings/ledgers:
+ *   post:
+ *     summary: Create a leaf ledger under a selected hierarchy group
+ *     tags: [Ledgers]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, category, groupId]
+ *             properties:
+ *               name: { type: string }
+ *               code: { type: string }
+ *               category: { type: string, enum: [CUSTOMER, VENDOR, BANK, CASH, GST, SALES, PURCHASE, PRODUCT, SUSPENSE, ROUND_OFF, JOURNAL] }
+ *               groupId: { type: string }
+ *               branchId: { type: string }
+ *               agencyId: { type: string }
+ *               openingBalance: { type: number }
+ *     responses:
+ *       201: { description: Ledger created under the selected group }
+ */
+router.post("/mappings/ledgers", checkPermission("LEDGER:WRITE"), createMappedLedger);
+/** @openapi
+ * /api/ledgers/mappings/ledgers/{ledgerId}:
+ *   patch:
+ *     summary: Link or move a leaf ledger to another hierarchy group
+ *     description: The target group must have the same debit or credit nature. A ledger cannot be left without a group.
+ *     tags: [Ledgers]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: ledgerId
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [groupId]
+ *             properties:
+ *               groupId: { type: string }
+ *     responses:
+ *       200: { description: Ledger moved; its vouchers and postings are preserved }
+ *       409: { description: Duplicate ledger exists under the target group }
+ */
+router.patch("/mappings/ledgers/:ledgerId", checkPermission("LEDGER:WRITE"), moveLedgerMapping);
 
 
 /**
