@@ -22,7 +22,91 @@ import {
     normalizeImportedTransactionType
 } from "./transaction-import.utils";
 
+export type JournalImportCache = {
+    groups: Map<string, Promise<any>>;
+    ledgers: Map<string, Promise<any>>;
+    heads: Map<string, Promise<any>>;
+    categories: Map<string, Promise<any>>;
+};
+
 export class ImportResolver {
+
+    static createJournalImportCache(): JournalImportCache {
+        return {
+            groups: new Map(),
+            ledgers: new Map(),
+            heads: new Map(),
+            categories: new Map()
+        };
+    }
+
+    private static async cachedImportLookup<T>(
+        cache: Map<string, Promise<T>> | undefined,
+        key: string,
+        load: () => Promise<T>
+    ) {
+        if (!cache) return load();
+        const existing = cache.get(key);
+        if (existing) return existing;
+        const pending = load();
+        cache.set(key, pending);
+        try {
+            return await pending;
+        } catch (error) {
+            cache.delete(key);
+            throw error;
+        }
+    }
+
+    private static journalRegisterImportKey(
+        branchId: string,
+        dto: JournalImportDTO,
+        amount: number,
+        direction: JournalDirection
+    ) {
+        const part = (value: unknown) => encodeURIComponent(String(value || "").trim());
+        return [
+            "JOURNAL_REGISTER",
+            branchId,
+            part(dto.voucherNo),
+            part(dto.sourceSheet),
+            String(dto.sourceRow ?? ""),
+            part(dto.accountName || dto.particulars),
+            amount.toFixed(2),
+            direction
+        ].join(":");
+    }
+
+    private static async uniqueJournalSerialNo(
+        client: any,
+        branchId: string,
+        dto: JournalImportDTO
+    ) {
+        const base = String(dto.sourceSerialNo || "").trim();
+        const existing = await client.journal.findFirst({
+            where: { branchId, serialNo: base },
+            select: { id: true }
+        });
+        if (!existing) return base;
+
+        const suffix = [
+            dto.voucherNo,
+            dto.sourceSheet,
+            dto.sourceRow
+        ]
+            .map(value => String(value ?? "").trim())
+            .filter(Boolean)
+            .join("|");
+        let candidate = `${base}|${suffix}`;
+        let counter = 2;
+        while (await client.journal.findFirst({
+            where: { branchId, serialNo: candidate },
+            select: { id: true }
+        })) {
+            candidate = `${base}|${suffix}|${counter++}`;
+        }
+        return candidate;
+    }
 
     private static importedRemarks(dto: JournalImportDTO) {
         const values = [
@@ -41,7 +125,11 @@ export class ImportResolver {
         const type = String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
         const isRcmNoteRegister = ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(type);
         return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup) &&
-            !["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "OPENING BALANCE"].includes(type) &&
+            // Register exports contain ledger-side CASH/BANK/PAYMENT/RECEIPT
+            // rows. They must use the same direct-ledger path as journal
+            // rows; the party settlement importer is only for a dedicated
+            // receipt/payment register with an agency counterparty.
+            type !== "OPENING BALANCE" &&
             (isRcmNoteRegister || !this.isDebitCreditNoteImportRow(dto)) &&
             !["PURCHASE", "TAX INVOICE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type);
     }
@@ -49,7 +137,7 @@ export class ImportResolver {
     static async importJournalRegisterRow(
         actor: any,
         dto: JournalImportDTO,
-        options?: { skipBalanceSync?: boolean }
+        options?: { skipBalanceSync?: boolean; cache?: JournalImportCache }
     ) {
         if (!dto.sourceSerialNo) throw new ApiError("Journal Register Sr No is required", 400);
         const debit = Number(dto.debitAmount || 0);
@@ -61,14 +149,6 @@ export class ImportResolver {
             .trim()
             .toUpperCase();
 
-        if (normalizedVoucherType === "RECEIPT" || normalizedVoucherType === "PAYMENT") {
-            return this.importReceiptPaymentRegisterRow(
-                actor,
-                dto,
-                normalizedVoucherType === "RECEIPT"
-            );
-        }
-
         const branch = await prisma.branch.findFirst({
             where: actor?.branchId ? { id: actor.branchId, isActive: true } : { isActive: true },
             orderBy: { createdAt: "asc" }
@@ -76,110 +156,155 @@ export class ImportResolver {
         if (!branch) throw new ApiError("No active branch found", 400);
 
         return prisma.$transaction(async tx => {
-            const existing = await tx.journal.findFirst({ where: { branchId: branch.id, serialNo: dto.sourceSerialNo } });
-            if (existing) {
-                const direction = debit > 0
+            const direction = debit > 0
                     ? JournalDirection.OUTWARD
                     : JournalDirection.INWARD;
-                if (existing.direction !== direction) {
-                    return tx.journal.update({
-                        where: { id: existing.id },
-                        data: { direction }
-                    });
-                }
-                return existing;
+            const amount = debit > 0 ? debit : credit;
+            const importKey = this.journalRegisterImportKey(branch.id, dto, amount, direction);
+            const existingByImportKey = await tx.journal.findUnique({ where: { importKey } });
+            if (existingByImportKey) {
+                return { ...existingByImportKey, __importStatus: "skipped" as const };
             }
+
+            // Legacy imports used only Sr.No. Keep those imports idempotent
+            // when the complete source row matches, but never let a reused
+            // Sr.No suppress a different voucher.
+            const legacyExisting = await tx.journal.findFirst({
+                where: { branchId: branch.id, serialNo: dto.sourceSerialNo }
+            });
+            if (
+                legacyExisting &&
+                String(legacyExisting.voucherNo || "") === String(dto.voucherNo || "") &&
+                String(legacyExisting.sourceSheet || "") === String(dto.sourceSheet || "") &&
+                Number(legacyExisting.sourceRow || 0) === Number(dto.sourceRow || 0)
+            ) {
+                return { ...legacyExisting, __importStatus: "skipped" as const };
+            }
+
+            const serialNo = await this.uniqueJournalSerialNo(tx, branch.id, dto);
 
             const hierarchy = [dto.journalGroup, dto.subGroup, dto.subGroup2, dto.subGroup3].map(x => String(x || "").trim()).filter(Boolean);
             let parentId: string | null = null;
             let parentHeadId: string | null = null;
             const nature = /LIABIL|CREDIT|INCOME|CAPITAL|DUTI|TAX|CREDITOR/i.test(hierarchy[0] || "") ? LedgerNature.CREDIT : LedgerNature.DEBIT;
             for (const name of hierarchy) {
-                const group = await LedgerService.getOrCreateImportedJournalGroup(tx, name, parentId, nature);
+                const groupKey = `${parentId || "ROOT"}|${name.toUpperCase()}|${nature}`;
+                const group = await this.cachedImportLookup(
+                    options?.cache?.groups,
+                    groupKey,
+                    () => LedgerService.getOrCreateImportedJournalGroup(tx, name, parentId, nature)
+                );
                 parentId = group.id;
 
                 // Mirror the manual JournalHead tree.  Every imported
                 // hierarchy level owns a ledger-backed head and points to
                 // its immediate parent; imported heads remain directionless.
-                const nodeLedger = await LedgerService.getOrCreateImportedJournalLedger(
-                    tx,
-                    branch.id,
-                    name,
-                    group.id,
-                    nature
+                const nodeLedgerKey = `${branch.id}|${group.id}|${name.toUpperCase()}`;
+                const nodeLedger = await this.cachedImportLookup(
+                    options?.cache?.ledgers,
+                    nodeLedgerKey,
+                    () => LedgerService.getOrCreateImportedJournalLedger(
+                        tx,
+                        branch.id,
+                        name,
+                        group.id,
+                        nature
+                    )
                 );
-                let nodeHead = await tx.journalHead.findFirst({
-                    where: {
-                        ledgerId: nodeLedger.id,
-                        name: { equals: name, mode: "insensitive" },
-                        parentId: parentHeadId,
-                        headType: parentHeadId ? "SUBHEAD" : "PARENT"
-                    }
-                });
-                if (!nodeHead) {
-                    nodeHead = await tx.journalHead.create({
-                        data: {
-                            name,
-                            headType: parentHeadId ? "SUBHEAD" : "PARENT",
-                            parentId: parentHeadId,
-                            type: null,
-                            ledgerId: nodeLedger.id
+                const nodeHeadKey = `${nodeLedger.id}|${parentHeadId || "ROOT"}|${name.toUpperCase()}`;
+                const nodeHead = await this.cachedImportLookup(
+                    options?.cache?.heads,
+                    nodeHeadKey,
+                    async () => {
+                        let head = await tx.journalHead.findFirst({
+                            where: {
+                                ledgerId: nodeLedger.id,
+                                name: { equals: name, mode: "insensitive" },
+                                parentId: parentHeadId,
+                                headType: parentHeadId ? "SUBHEAD" : "PARENT"
+                            }
+                        });
+                        if (!head) {
+                            head = await tx.journalHead.create({
+                                data: {
+                                    name,
+                                    headType: parentHeadId ? "SUBHEAD" : "PARENT",
+                                    parentId: parentHeadId,
+                                    type: null,
+                                    ledgerId: nodeLedger.id
+                                }
+                            });
+                        } else if (head.type !== null) {
+                            head = await tx.journalHead.update({
+                                where: { id: head.id },
+                                data: { type: null }
+                            });
                         }
-                    });
-                } else if (nodeHead.type !== null) {
-                    nodeHead = await tx.journalHead.update({
-                        where: { id: nodeHead.id },
-                        data: { type: null }
-                    });
-                }
+                        return head;
+                    }
+                );
                 parentHeadId = nodeHead.id;
             }
             if (!parentId) throw new ApiError("Journal Register hierarchy is empty", 400);
-            const ledger = await LedgerService.getOrCreateImportedJournalLedger(tx, branch.id, dto.accountName!, parentId, nature);
-            let head = await tx.journalHead.findFirst({
-                where: {
-                    ledgerId: ledger.id,
-                    name: { equals: dto.accountName!, mode: "insensitive" },
-                    parentId: parentHeadId,
-                    headType: "SUBHEAD"
-                }
-            });
-            if (!head) {
-                head = await tx.journalHead.create({
-                    data: {
-                        name: dto.accountName!,
-                        headType: "SUBHEAD",
-                        parentId: parentHeadId,
-                        type: null,
-                        ledgerId: ledger.id
+            const accountName = dto.accountName!;
+            const ledgerKey = `${branch.id}|${parentId}|${accountName.toUpperCase()}`;
+            const ledger = await this.cachedImportLookup(
+                options?.cache?.ledgers,
+                ledgerKey,
+                () => LedgerService.getOrCreateImportedJournalLedger(tx, branch.id, accountName, parentId!, nature)
+            );
+            const headKey = `${ledger.id}|${parentHeadId || "ROOT"}|${accountName.toUpperCase()}`;
+            const head = await this.cachedImportLookup(
+                options?.cache?.heads,
+                headKey,
+                async () => {
+                    let value = await tx.journalHead.findFirst({
+                        where: {
+                            ledgerId: ledger.id,
+                            name: { equals: accountName, mode: "insensitive" },
+                            parentId: parentHeadId,
+                            headType: "SUBHEAD"
+                        }
+                    });
+                    if (!value) {
+                        value = await tx.journalHead.create({
+                            data: {
+                                name: accountName,
+                                headType: "SUBHEAD",
+                                parentId: parentHeadId,
+                                type: null,
+                                ledgerId: ledger.id
+                            }
+                        });
+                    } else if (value.type !== null) {
+                        value = await tx.journalHead.update({ where: { id: value.id }, data: { type: null } });
                     }
-                });
-            } else if (head.type !== null) {
-                // Imported JournalHeads do not carry an INWARD/OUTWARD
-                // classification; the row-side is held by LedgerEntry.
-                head = await tx.journalHead.update({ where: { id: head.id }, data: { type: null } });
-            }
-            let category = await tx.journalCategory.findFirst({
-                where: {
-                    name: { equals: dto.accountName!, mode: "insensitive" },
-                    journalHeadId: head.id
+                    return value;
                 }
-            });
-            if (!category) {
-                category = await tx.journalCategory.create({
+            );
+            const categoryKey = `${head.id}|${accountName.toUpperCase()}`;
+            const category = await this.cachedImportLookup(
+                options?.cache?.categories,
+                categoryKey,
+                async () => await tx.journalCategory.findFirst({
+                    where: {
+                        name: { equals: accountName, mode: "insensitive" },
+                        journalHeadId: head.id
+                    }
+                }) || await tx.journalCategory.create({
                     data: {
-                        name: dto.accountName!,
+                        name: accountName,
                         journalHeadId: head.id,
                         isActive: true
                     }
-                });
-            }
+                })
+            );
             const journal = await tx.journal.create({
                 data: {
                     branchId: branch.id,
                     journalHeadId: head.id,
                     categoryId: category.id,
-                    serialNo: dto.sourceSerialNo,
+                    serialNo,
                     voucherNo: dto.voucherNo || null,
                     sourceSheet: dto.sourceSheet,
                     sourceRow: dto.sourceRow,
@@ -191,7 +316,7 @@ export class ImportResolver {
                     categoryPath: dto.path
                         ? normalizeImportedTransactionPath(dto.path)
                         : null,
-                    importKey: `JOURNAL_REGISTER:${branch.id}:${dto.sourceSerialNo}`,
+                    importKey,
                     amount: debit > 0 ? debit : credit,
                     // Preserve the Excel side on the Journal as well as on
                     // the voucher LedgerEntry. This is the same convention
@@ -239,7 +364,7 @@ export class ImportResolver {
             if (!options?.skipBalanceSync) {
                 await LedgerService.syncCachedBalance(tx, ledger.id);
             }
-            return result;
+            return { ...result, ledgerId: ledger.id };
         });
     }
 
@@ -316,15 +441,10 @@ export class ImportResolver {
                 );
             }
 
-            const existing = await tx.journal.findFirst({
+            const legacyExisting = await tx.journal.findFirst({
                 where: { branchId: branch.id, serialNo: dto.sourceSerialNo },
                 include: { voucher: true }
             });
-            // A previous import could have created a generic Journal with
-            // this serial number before Receipt/Payment voucher support was
-            // added. Return only when the requested voucher already exists;
-            // otherwise repair/reuse the existing Journal below.
-            if (existing?.voucher?.voucherType === voucherType) return existing;
 
             const partyLedger = isReceipt
                 ? await LedgerService.getOrCreateCustomerLedger(tx, branch.id, agency.id)
@@ -332,6 +452,31 @@ export class ImportResolver {
             const journalDirection = isReceipt
                 ? JournalDirection.INWARD
                 : JournalDirection.OUTWARD;
+            const importKey = this.journalRegisterImportKey(
+                branch.id,
+                dto,
+                amount,
+                journalDirection
+            );
+            const existingByImportKey = await tx.journal.findUnique({
+                where: { importKey },
+                include: { voucher: true }
+            });
+            if (existingByImportKey?.voucher?.voucherType === voucherType) {
+                return { ...existingByImportKey, __importStatus: "skipped" as const };
+            }
+
+            // Do not reuse a legacy row merely because its Sr.No matches.
+            // Sr.No values are reused between exported registers.
+            const existing = legacyExisting &&
+                String(legacyExisting.voucherNo || "") === String(dto.voucherNo || "") &&
+                String(legacyExisting.sourceSheet || "") === String(dto.sourceSheet || "") &&
+                Number(legacyExisting.sourceRow || 0) === Number(dto.sourceRow || 0)
+                ? legacyExisting
+                : null;
+            const serialNo = existing
+                ? existing.serialNo
+                : await this.uniqueJournalSerialNo(tx, branch.id, dto);
             const partyHeadType = isReceipt ? "INWARD" : "OUTWARD";
 
             let partyHead = await tx.journalHead.findFirst({
@@ -370,11 +515,11 @@ export class ImportResolver {
                     agencyId: agency.id,
                     journalHeadId: partyHead.id,
                     categoryId: category.id,
-                    serialNo: dto.sourceSerialNo,
+                    serialNo,
                     voucherNo: dto.voucherNo || null,
                     sourceSheet: dto.sourceSheet,
                     sourceRow: dto.sourceRow,
-                    importKey: `JOURNAL_REGISTER:${branch.id}:${dto.sourceSerialNo}`,
+                    importKey,
                     amount,
                     direction: journalDirection,
                     paymentMode: paymentThrough === PaymentType.CASH

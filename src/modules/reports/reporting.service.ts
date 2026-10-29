@@ -55,6 +55,17 @@ const CASH_IN_HAND_JOURNAL_VOUCHER_FILTER: Prisma.VoucherWhereInput = {
 const CUSTOM_TRIAL_BALANCE_GROUP_CODES = new Set([
     "CONSUMABLE_PRODUCT"
 ]);
+const PURCHASE_TRIAL_BALANCE_HEADS = new Set([
+    "CST PURCHASE",
+    "DISCOUNT",
+    "GST PURCHASE",
+    "HIGH SEAS PURCHASE",
+    "IGST PURCHASE",
+    "IMPORT PURCHASE",
+    "INCENTIVES RECEIVED",
+    "INTEREST PAID TO S.CREDITORS",
+    "VAT PURCHASE"
+]);
 // Keep party ledgers visible in the Trial Balance tree. Collapsing these
 // control groups into a synthetic summary row hid the individual debtor /
 // creditor movements and caused the group name to appear twice in exports.
@@ -1166,13 +1177,46 @@ export class ReportingService {
                 ]
             },
             select: {
+                id: true,
                 ledgerId: true,
                 voucherId: true,
                 entryType: true,
                 amount: true,
+                narration: true,
+                ledger: { select: { name: true, branchId: true } },
                 voucher: { select: { voucherDate: true } }
             }
         });
+
+        // Some legacy imports posted an opening voucher to the wrong ledger
+        // while keeping the intended ledger name in the narration, for
+        // example: MICROWAVE <- "Opening balance: WATER PURIFIER". If the
+        // narrated target ledger exists in the same branch, the posting is
+        // already represented by that target ledger and must not be counted
+        // on the incorrectly attached ledger as well.
+        const normalizeOpeningName = (value: unknown) => String(value || "")
+            .replace(/^opening\s+balance\s*:\s*/i, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLocaleUpperCase();
+        const ledgerNameKeys = new Set(
+            ledgers.map(ledger =>
+                `${ledger.branchId || ""}|${normalizeOpeningName(ledger.name)}`
+            )
+        );
+        const misassignedOpeningEntryIds = new Set<string>();
+        for (const entry of openingEntries) {
+            const narratedTarget = normalizeOpeningName(entry.narration);
+            const currentLedger = normalizeOpeningName(entry.ledger.name);
+            if (
+                narratedTarget &&
+                narratedTarget !== "OPENING BALANCE" &&
+                narratedTarget !== currentLedger &&
+                ledgerNameKeys.has(`${entry.ledger.branchId || ""}|${narratedTarget}`)
+            ) {
+                misassignedOpeningEntryIds.add(entry.id);
+            }
+        }
 
         // Some imports create two opening vouchers for the same ledger with
         // the same date, direction, and amount. Treat those identical postings
@@ -1185,6 +1229,7 @@ export class ReportingService {
             voucherDate: Date;
         }>();
         for (const entry of openingEntries) {
+            if (misassignedOpeningEntryIds.has(entry.id)) continue;
             const key = `${entry.voucherId}|${entry.ledgerId}|${entry.entryType}`;
             const current = openingByVoucher.get(key);
             openingByVoucher.set(key, {
@@ -1472,6 +1517,51 @@ export class ReportingService {
             const existing = mergedJournalRows.get(key);
             if (!existing) {
                 mergedJournalRows.set(key, { ...row });
+                continue;
+            }
+
+            // Duplicate imported ledgers can have the same account name but
+            // different groups. Keep the group path from the row that
+            // actually carries the balance instead of retaining an empty
+            // duplicate's group path.
+            const rowHasActivity = [
+                row.periodDebit,
+                row.periodCredit,
+                row.openingDebit,
+                row.openingCredit,
+                row.debit,
+                row.credit,
+                row.closingDebit,
+                row.closingCredit
+            ].some(value => Number(value || 0) !== 0);
+            const existingHasActivity = [
+                existing.periodDebit,
+                existing.periodCredit,
+                existing.openingDebit,
+                existing.openingCredit,
+                existing.debit,
+                existing.credit,
+                existing.closingDebit,
+                existing.closingCredit
+            ].some(value => Number(value || 0) !== 0);
+            if (rowHasActivity && !existingHasActivity) {
+                const totals = { ...row };
+                for (const field of [
+                    "periodDebit",
+                    "periodCredit",
+                    "openingDebit",
+                    "openingCredit",
+                    "debit",
+                    "credit",
+                    "closingDebit",
+                    "closingCredit",
+                    "closingSigned"
+                ]) {
+                    totals[field] = Math.round(
+                        (Number(existing[field] || 0) + Number(row[field] || 0)) * 100
+                    ) / 100;
+                }
+                mergedJournalRows.set(key, totals);
                 continue;
             }
 
@@ -2039,10 +2129,20 @@ export class ReportingService {
                 const openingSigned = Number((sum("openingDebit") - sum("openingCredit")).toFixed(2));
                 const closingSigned = sum("closingSigned");
                 const first = rowsForCategory[0];
+                const realLedgerIds = [...new Set(
+                    rowsForCategory
+                        .map(row => String(row.ledgerId || ""))
+                        .filter(id => id && !id.startsWith("aggregate:") && !id.startsWith("purchase-sub-group:"))
+                )];
 
                 return {
                     ...first,
-                    ledgerId: `aggregate:purchase-account:${key}:${branchId || "all"}`,
+                    // Keep the real ledger id when the category maps to one
+                    // ledger. This makes Purchase Accounts subheads clickable
+                    // and lets the voucher drawer load their entries.
+                    ledgerId: realLedgerIds.length === 1
+                        ? realLedgerIds[0]
+                        : `aggregate:purchase-account:${key}:${branchId || "all"}`,
                     ledgerCode: `PURCHASE_ACCOUNT_${key}`
                         .replace(/[^A-Z0-9_]+/gi, "_")
                         .toUpperCase(),
@@ -2060,10 +2160,25 @@ export class ReportingService {
             });
         };
 
+        // DISCOUNT is stored as a JOURNAL ledger in some imports while the
+        // remaining purchase heads use PURCHASE ledgers. Feed that journal
+        // ledger into the same category merge so only one DISCOUNT row is
+        // rendered.
+        const purchaseJournalRows = normalizedLedgerRows.filter(row =>
+            String(row.groupCode || "").toUpperCase() === "PURCHASE_ACCOUNTS" &&
+            row.ledgerCategory === LedgerType.JOURNAL &&
+            PURCHASE_TRIAL_BALANCE_HEADS.has(
+                String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
+            )
+        );
+
         const purchaseAccountRows = mergePurchaseAccountRows([
             ...aggregateAccountRows(LedgerType.PURCHASE),
+            ...purchaseJournalRows,
             ...purchaseSubGroupRows
-        ]);
+        ]).filter(row => PURCHASE_TRIAL_BALANCE_HEADS.has(
+            String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
+        ));
 
         const mergeSalesAccountRows = (sourceRows: any[]) => {
             const salesRoot = ledgerGroups.find(group => group.code === "SALES_ACCOUNTS") ||
@@ -2115,7 +2230,13 @@ export class ReportingService {
                 CUSTOM_TRIAL_BALANCE_GROUP_CODES.has(
                     String(row.groupCode || "").toUpperCase()
                 )
-            ),
+            ).filter(row => !(
+                String(row.groupCode || "").toUpperCase() === "PURCHASE_ACCOUNTS" &&
+                row.ledgerCategory === LedgerType.JOURNAL &&
+                PURCHASE_TRIAL_BALANCE_HEADS.has(
+                    String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
+                )
+            )),
             ...purchaseAccountRows,
             ...salesAccountRows
         ];
@@ -2156,6 +2277,32 @@ export class ReportingService {
             ledgerGroups,
             ledgers.map(ledger => ({ groupId: ledger.groupId, name: ledger.name }))
         );
+
+        // Treat the legacy singular branch as the same report head as the
+        // canonical Tally-style "Indirect Expenses" branch.
+        const indirectExpensesGroup = ledgerGroups.find(group =>
+            String(group.name).trim().replace(/\s+/g, " ").toLowerCase() === "indirect expenses" &&
+            !group.parentId
+        );
+        const indirectExpenseGroup = ledgerGroups.find(group =>
+            String(group.name).trim().replace(/\s+/g, " ").toLowerCase() === "indirect expense"
+        );
+        if (indirectExpensesGroup && indirectExpenseGroup) {
+            duplicateDisplayGroupById.set(indirectExpenseGroup.id, indirectExpensesGroup.id);
+        }
+
+        // Merge the singular system group with the imported Tally group so
+        // "Indirect Income" and "Indirect Incomes" are rendered as one head.
+        const indirectIncomesGroup = ledgerGroups.find(group =>
+            String(group.name).trim().replace(/\s+/g, " ").toLowerCase() === "indirect incomes" &&
+            !group.parentId
+        );
+        const indirectIncomeGroup = ledgerGroups.find(group =>
+            String(group.name).trim().replace(/\s+/g, " ").toLowerCase() === "indirect income"
+        );
+        if (indirectIncomesGroup && indirectIncomeGroup) {
+            duplicateDisplayGroupById.set(indirectIncomeGroup.id, indirectIncomesGroup.id);
+        }
 
         const displayGroupId = (id: string) => {
             let current = id;
@@ -2454,7 +2601,20 @@ export class ReportingService {
                 ? groupById.get(row.groupId)
                 : groupByCode.get(String(row.groupCode || ""));
             const displayId = sourceGroup ? displayGroupId(sourceGroup.id) : undefined;
-            const group = displayId ? groupById.get(displayId) : sourceGroup;
+            let group = displayId ? groupById.get(displayId) : sourceGroup;
+
+            // If an account has a matching child group, show its balance in
+            // that child group. This handles imported structures such as
+            // Factory Building -> Factory Assets where the ledger was
+            // attached to the parent group instead of the named child.
+            if (group && row.ledgerCategory === LedgerType.JOURNAL) {
+                const normalizedAccount = normalizedName(row.account);
+                const matchingChild = ledgerGroups.find(candidate =>
+                    candidate.parentId === group!.id &&
+                    normalizedName(candidate.name) === normalizedAccount
+                );
+                if (matchingChild) group = matchingChild;
+            }
             const parentGroup = group?.parentId
                 ? groupById.get(group.parentId)
                 : undefined;
@@ -2557,6 +2717,8 @@ export class ReportingService {
                 level: 0,
                 periodDebit: 0,
                 periodCredit: 0,
+                openingDebit: 0,
+                openingCredit: 0,
                 closingDebit: 0,
                 closingCredit: 0,
                 closingSigned: 0,
@@ -2590,6 +2752,13 @@ export class ReportingService {
             groupNode.children.push({
                 ...row,
                 id: `ledger:${row.ledgerId || row.ledgerCode}`,
+                // Tree consumers use `name`/`code`; the flat report row uses
+                // `account`/`ledgerCode`. Keep both shapes populated so the
+                // UI never falls back to displaying a ledger UUID.
+                name: row.account,
+                account: row.account,
+                code: row.ledgerCode,
+                ledgerId: row.ledgerId,
                 parentId: groupNode.id,
                 level: 0,
                 hasChildren: false,
@@ -2604,6 +2773,34 @@ export class ReportingService {
             else rootNodes.push(node);
         }
 
+        // Tally presents Direct Expenses and Indirect Expenses as the two
+        // expense heads. The generic Expenses container is only an internal
+        // parent group and must not be rendered as a third trial-balance head.
+        const expenseContainerIndex = rootNodes.findIndex(
+            node => String(node.name || "").trim().toLowerCase() === "expenses"
+        );
+        if (expenseContainerIndex >= 0) {
+            const [expenseContainer] = rootNodes.splice(expenseContainerIndex, 1);
+            for (const child of expenseContainer.children || []) {
+                child.parentId = null;
+                rootNodes.push(child);
+            }
+        }
+
+        // Tally presents Indirect Income as the report head.  Income is only
+        // the generic internal parent for that branch and must not be shown
+        // as a separate trial-balance head.
+        const incomeContainerIndex = rootNodes.findIndex(
+            node => String(node.name || "").trim().toLowerCase() === "income"
+        );
+        if (incomeContainerIndex >= 0) {
+            const [incomeContainer] = rootNodes.splice(incomeContainerIndex, 1);
+            for (const child of incomeContainer.children || []) {
+                child.parentId = null;
+                rootNodes.push(child);
+            }
+        }
+
         const finalizeNode = (node: any, level: number) => {
             node.level = level;
             node.children.sort((a: any, b: any) => {
@@ -2615,6 +2812,8 @@ export class ReportingService {
                 if (child.rowType === "accountingHeader") finalizeNode(child, level + 1);
                 node.periodDebit += Number(child.periodDebit || 0);
                 node.periodCredit += Number(child.periodCredit || 0);
+                node.openingDebit += Number(child.openingDebit || 0);
+                node.openingCredit += Number(child.openingCredit || 0);
                 node.closingDebit += Number(child.closingDebit || 0);
                 node.closingCredit += Number(child.closingCredit || 0);
                 node.closingSigned += Number(child.closingSigned || 0);

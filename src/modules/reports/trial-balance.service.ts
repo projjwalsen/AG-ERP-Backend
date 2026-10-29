@@ -60,6 +60,8 @@ export class Srv1TrialBalanceService {
                 openingDebit, openingCredit, transactionDebit, transactionCredit,
                 periodDebit: transactionDebit, periodCredit: transactionCredit,
                 closingBalance: Math.abs(closingSigned), closingBalanceSigned: closingSigned,
+                closingDebit: closingSigned > 0 ? closingSigned : 0,
+                closingCredit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
                 closingBalanceType: closingSigned > 0 ? "Dr" : closingSigned < 0 ? "Cr" : null,
                 sourceClosingBalance: amount(sourceRow?.[4]),
                 children: []

@@ -1918,6 +1918,11 @@ export class ExcelImportService {
         return rows
 
             .map((row, index) => {
+                const normalizeJournalText = (value: unknown) =>
+                    String(value ?? "")
+                        .replace(/[\r\n]+/g, " ")
+                        .replace(/\s+/g, " ")
+                        .trim();
 
                 const voucherType =
                     String(
@@ -1948,7 +1953,8 @@ export class ExcelImportService {
                             "Voucher No",
                             "Voucher Number"
                         ) || ""
-                    ).trim();
+                    );
+                const normalizedVoucherNo = normalizeJournalText(voucherNo);
 
                 const isBankVoucher = ["BANK RECEIPT", "BANK PAYMENT"].includes(voucherType);
 
@@ -1957,7 +1963,7 @@ export class ExcelImportService {
                 // silently dropping them.
                 const isSalesInvoice = voucherType === "TAX INVOICE";
 
-                if (!voucherNo && voucherType !== "OPENING BALANCE" && !isBankVoucher && !isSalesInvoice)
+                if (!normalizedVoucherNo && voucherType !== "OPENING BALANCE" && !isBankVoucher && !isSalesInvoice)
                     return null;
 
                 const invoiceNo =
@@ -1984,20 +1990,20 @@ export class ExcelImportService {
                     ).trim();
 
                 const particulars = this.getJournalParticulars(row);
-                const sourceSerialNoValue = String(this.getValue(
+                const sourceSerialNoValue = normalizeJournalText(this.getValue(
                     row, "Sr.No", "Sr. No", "Sr No", "Serial No", "S No"
-                ) || "").trim();
-                const rawPath = String(this.getValue(
+                ));
+                const rawPath = normalizeJournalText(this.getValue(
                     row, "Path", "Account Path", "Ledger Path"
-                ) || "").trim();
-                const pathParts = rawPath.split(/[\\/]/).map(value => value.trim()).filter(Boolean);
-                const accountName = String(this.getValue(
+                ));
+                const pathParts = rawPath.split(/[\\/]/).map(value => normalizeJournalText(value)).filter(Boolean);
+                const accountName = normalizeJournalText(this.getValue(
                     row, "Ledger / Account Name", "Account/Ledger", "Account / Ledger", "Ledger", "Account Name"
-                ) || pathParts[pathParts.length - 1] || particulars || "").trim();
+                ) || pathParts[pathParts.length - 1] || particulars || "");
                 const normalizedVoucherType = voucherType.replace(/_/g, " ").replace(/\s+/g, " ").trim();
                 const sourceSerialNo = sourceSerialNoValue || (
                     ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(normalizedVoucherType)
-                        ? `${voucherNo}:${index + 1}`
+                        ? `${normalizedVoucherNo}:${index + 1}`
                         : ""
                 );
 
@@ -2014,10 +2020,10 @@ export class ExcelImportService {
 
                     sourceRow: index + headerRow + 1,
                     sourceSerialNo,
-                    journalGroup: String(this.getValue(row, "Jrn Grp", "Journal Group", "Jrn Group") || pathParts[0] || "").trim(),
-                    subGroup: String(this.getValue(row, "Sub Grp", "Sub Group") || pathParts[1] || "").trim(),
-                    subGroup2: String(this.getValue(row, "Sub Grp 2", "Sub Group 2", "Sub Group2") || pathParts[2] || "").trim(),
-                    subGroup3: String(this.getValue(row, "Sub Grp 3", "Sub Group 3", "Sub Group3") || pathParts[3] || "").trim(),
+                    journalGroup: normalizeJournalText(this.getValue(row, "Jrn Grp", "Journal Group", "Jrn Group") || pathParts[0] || ""),
+                    subGroup: normalizeJournalText(this.getValue(row, "Sub Grp", "Sub Group") || pathParts[1] || ""),
+                    subGroup2: normalizeJournalText(this.getValue(row, "Sub Grp 2", "Sub Group 2", "Sub Group2") || pathParts[2] || ""),
+                    subGroup3: normalizeJournalText(this.getValue(row, "Sub Grp 3", "Sub Group 3", "Sub Group3") || pathParts[3] || ""),
                     accountName,
                     narration: String(this.getValue(row, "Narration") || ""),
                     remarks: String(this.getValue(row, "Remarks", "Remark") || ""),
@@ -2030,7 +2036,7 @@ export class ExcelImportService {
                             )
                         ),
 
-                    voucherNo,
+                    voucherNo: normalizedVoucherNo,
 
                     invoiceNo,
 
@@ -2043,7 +2049,7 @@ export class ExcelImportService {
                             this.getValue(row, "Type", "Account Type", "Purchase Type")
                         ) || undefined,
 
-                    path: String(this.getValue(row, "Path", "Account Path", "Ledger Path") || "").trim() || undefined,
+                    path: rawPath || undefined,
 
                     particulars,
 
