@@ -1,0 +1,71 @@
+{
+  "stats": {
+    "sourceRows": 11823,
+    "dbEntries": 11931,
+    "matched": 11823,
+    "unmatched": 0,
+    "duplicateHits": 0,
+    "extraNonOpening": 0,
+    "openingExtras": 108,
+    "missingLedgers": 0,
+    "agencyMismatches": 0,
+    "classified": {
+      "exactElsewhere": 0,
+      "sameNoTypeWrong": 0,
+      "noVoucher": 0,
+      "blankNo": 0
+    },
+    "unmatchedByType": {},
+    "extraByType": {},
+    "heads": {
+      "Sundry Creditors": {
+        "excelRows": 11061,
+        "excelDebit": 5486019254.2,
+        "excelCredit": 5434226296.34,
+        "dbRows": 11061,
+        "dbDebit": 5486019254.2,
+        "dbCredit": 5434226296.34,
+        "debitDiff": 0,
+        "creditDiff": 0,
+        "ledgers": 483,
+        "ledgerOpeningSigned": 0,
+        "openingVoucherSigned": -331060860.48,
+        "matched": 11061,
+        "unmatched": 0,
+        "extra": 0
+      },
+      "Advance From S. Debtors": {
+        "excelRows": 762,
+        "excelDebit": 1303583400.2,
+        "excelCredit": 1458415070.35,
+        "dbRows": 762,
+        "dbDebit": 1303583400.2,
+        "dbCredit": 1458415070.35,
+        "debitDiff": 0,
+        "creditDiff": 0,
+        "ledgers": 37,
+        "ledgerOpeningSigned": 0,
+        "openingVoucherSigned": -251339752.2,
+        "matched": 762,
+        "unmatched": 0,
+        "extra": 0
+      }
+    },
+    "missingLedgerSample": [],
+    "unmatchedSample": [],
+    "extraSample": [],
+    "exactElsewhereSample": [],
+    "noVoucherSample": []
+  },
+  "unmatched": [],
+  "extra": [],
+  "duplicateHits": [],
+  "classified": {
+    "exactElsewhere": [],
+    "sameNoTypeWrong": [],
+    "noVoucher": [],
+    "blankNo": []
+  },
+  "agencyMismatches": [],
+  "missingLedgers": []
+}

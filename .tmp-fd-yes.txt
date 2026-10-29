@@ -1,0 +1,23 @@
+                       A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+
+                            SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD
+                                 KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD
+                                             CIN: U11100MH2011PTC224243
+                                       E-Mail : info@ashtvinayakapetrochem.com
+
+                            FD WITH YES BANK 024840600029570 Book
+
+                           1-Apr-25 to 31-Mar-26
+
+Date      Particulars                         Vch Type  Vch No.            Debit          Page 1
+                                                                   5,34,380.00           Credit
+1-Apr-25 To Opening Balance                   Journal        2406
+                                              Journal        2407      9,765.00     39,104.00
+12-Jun-25 To INTEREST RECD ON FD YESBANK      Receipt      15429       9,944.00
+12-Sep-25 To INTEREST RECD ON FD YESBANK      Journal        4275                   39,104.00
+12-Dec-25 By YES BANK CA - 024863700003291                           10,015.00    5,25,000.00
+                                                                   5,64,104.00    5,64,104.00
+              To INTEREST RECD ON FD YESBANK
+                                                                   5,64,104.00
+      By  Closing Balance
+

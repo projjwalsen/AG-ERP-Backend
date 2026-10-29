@@ -1,0 +1,378 @@
+[
+  {
+    "head": "Sundry Creditors",
+    "name": "VIKRANT TRANSPORT SERVICES",
+    "canonicalId": "53fcf26e-1f69-4c43-a0de-4b495ff34043",
+    "losers": [
+      {
+        "id": "b0fec9ae-109b-4e77-9809-0067235f9f55",
+        "entries": 2,
+        "openings": 0,
+        "close": 5242
+      }
+    ],
+    "before": [
+      {
+        "id": "53fcf26e-1f69-4c43-a0de-4b495ff34043",
+        "entries": 6,
+        "openings": 0,
+        "close": -5242
+      },
+      {
+        "id": "b0fec9ae-109b-4e77-9809-0067235f9f55",
+        "entries": 2,
+        "openings": 0,
+        "close": 5242
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "M.S. BULK CARRIERS",
+    "canonicalId": "1aab3fb6-cbba-45d2-afcb-20ebb04867f0",
+    "losers": [
+      {
+        "id": "8f3b6563-641c-4787-8984-cba7ca04b90f",
+        "entries": 2,
+        "openings": 0,
+        "close": 17770
+      },
+      {
+        "id": "8b7e5616-0624-49fb-a599-a063baa21b31",
+        "entries": 1,
+        "openings": 0,
+        "close": 0.62
+      }
+    ],
+    "before": [
+      {
+        "id": "1aab3fb6-cbba-45d2-afcb-20ebb04867f0",
+        "entries": 16,
+        "openings": 1,
+        "close": -17770.62
+      },
+      {
+        "id": "8f3b6563-641c-4787-8984-cba7ca04b90f",
+        "entries": 2,
+        "openings": 0,
+        "close": 17770
+      },
+      {
+        "id": "8b7e5616-0624-49fb-a599-a063baa21b31",
+        "entries": 1,
+        "openings": 0,
+        "close": 0.62
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "P R Pathade & Co (Practicing Company Secretary)",
+    "canonicalId": "b57208fe-0b34-4725-abc1-f1787d3d1ce0",
+    "losers": [
+      {
+        "id": "ac316536-cab3-4cab-ada6-7ba235913dc7",
+        "entries": 1,
+        "openings": 0,
+        "close": -28500
+      }
+    ],
+    "before": [
+      {
+        "id": "b57208fe-0b34-4725-abc1-f1787d3d1ce0",
+        "entries": 12,
+        "openings": 0,
+        "close": 18000
+      },
+      {
+        "id": "ac316536-cab3-4cab-ada6-7ba235913dc7",
+        "entries": 1,
+        "openings": 0,
+        "close": -28500
+      }
+    ],
+    "afterClose": -10500
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "SRI RAVRAY LOGISTICS",
+    "canonicalId": "228cb31e-af46-40ce-9d10-75e5112654a5",
+    "losers": [
+      {
+        "id": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "entries": 4,
+        "openings": 0,
+        "close": 66064
+      }
+    ],
+    "before": [
+      {
+        "id": "228cb31e-af46-40ce-9d10-75e5112654a5",
+        "entries": 102,
+        "openings": 1,
+        "close": -1057741
+      },
+      {
+        "id": "5be30bea-4e77-4f4c-b458-ba0a870c807c",
+        "entries": 4,
+        "openings": 0,
+        "close": 66064
+      }
+    ],
+    "afterClose": -991677
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "Falguni Jain",
+    "canonicalId": "ef866409-3129-49ce-8b9a-075119afa7de",
+    "losers": [
+      {
+        "id": "03748770-aebd-447f-9071-55c4c694c1ab",
+        "entries": 1,
+        "openings": 0,
+        "close": -4500
+      }
+    ],
+    "before": [
+      {
+        "id": "ef866409-3129-49ce-8b9a-075119afa7de",
+        "entries": 25,
+        "openings": 1,
+        "close": 4500
+      },
+      {
+        "id": "03748770-aebd-447f-9071-55c4c694c1ab",
+        "entries": 1,
+        "openings": 0,
+        "close": -4500
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "NARAYAN LOGISTICS",
+    "canonicalId": "32cea3cb-f569-4e8e-96c6-f95b8987cc08",
+    "losers": [
+      {
+        "id": "f60dc1a9-0574-4b30-ba91-f681964500b1",
+        "entries": 1,
+        "openings": 0,
+        "close": 32680
+      }
+    ],
+    "before": [
+      {
+        "id": "32cea3cb-f569-4e8e-96c6-f95b8987cc08",
+        "entries": 63,
+        "openings": 0,
+        "close": -730562
+      },
+      {
+        "id": "f60dc1a9-0574-4b30-ba91-f681964500b1",
+        "entries": 1,
+        "openings": 0,
+        "close": 32680
+      }
+    ],
+    "afterClose": -697882
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "SHREE KUBER ROADLINES",
+    "canonicalId": "95403b87-4e6c-4d07-8b88-4a8797584b86",
+    "losers": [
+      {
+        "id": "f98fc565-3d44-40c4-9493-f90c1a35b18e",
+        "entries": 1,
+        "openings": 0,
+        "close": 2584
+      }
+    ],
+    "before": [
+      {
+        "id": "95403b87-4e6c-4d07-8b88-4a8797584b86",
+        "entries": 30,
+        "openings": 1,
+        "close": -2584
+      },
+      {
+        "id": "f98fc565-3d44-40c4-9493-f90c1a35b18e",
+        "entries": 1,
+        "openings": 0,
+        "close": 2584
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "UNIPROC ENERGIES PRIVATE LIMITED",
+    "canonicalId": "836e7260-67b0-444e-9895-91d0e9fe3103",
+    "losers": [
+      {
+        "id": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "entries": 4,
+        "openings": 0,
+        "close": 5590
+      }
+    ],
+    "before": [
+      {
+        "id": "836e7260-67b0-444e-9895-91d0e9fe3103",
+        "entries": 39,
+        "openings": 0,
+        "close": -5590
+      },
+      {
+        "id": "35eb173b-d505-4647-b173-c1b758f7b72a",
+        "entries": 4,
+        "openings": 0,
+        "close": 5590
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "A G ART PETROCHEM LLP - CR",
+    "canonicalId": "3954a8c5-c67a-4e3e-b996-8ece190c5608",
+    "losers": [
+      {
+        "id": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "entries": 41,
+        "openings": 0,
+        "close": -18779641
+      }
+    ],
+    "before": [
+      {
+        "id": "3954a8c5-c67a-4e3e-b996-8ece190c5608",
+        "entries": 191,
+        "openings": 1,
+        "close": 18779641
+      },
+      {
+        "id": "bd7d2fbc-9925-4b4d-81cd-0330effbf290",
+        "entries": 41,
+        "openings": 0,
+        "close": -18779641
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "NIRAJ SHARMA",
+    "canonicalId": "c1d94100-0331-4519-84b1-8894252bee2b",
+    "losers": [
+      {
+        "id": "cd19b181-c498-4f2d-b4d9-6cc080a5a8cf",
+        "entries": 1,
+        "openings": 0,
+        "close": -14114
+      }
+    ],
+    "before": [
+      {
+        "id": "c1d94100-0331-4519-84b1-8894252bee2b",
+        "entries": 5,
+        "openings": 0,
+        "close": 14114
+      },
+      {
+        "id": "cd19b181-c498-4f2d-b4d9-6cc080a5a8cf",
+        "entries": 1,
+        "openings": 0,
+        "close": -14114
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "PLATINUM PETROCHEM",
+    "canonicalId": "4478202f-ef6e-4ba0-8ead-24baab454495",
+    "losers": [
+      {
+        "id": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "entries": 16,
+        "openings": 0,
+        "close": 33580
+      }
+    ],
+    "before": [
+      {
+        "id": "4478202f-ef6e-4ba0-8ead-24baab454495",
+        "entries": 121,
+        "openings": 0,
+        "close": -33580
+      },
+      {
+        "id": "20926680-2ab7-4ae4-8bbc-c608c6b2ebc3",
+        "entries": 16,
+        "openings": 0,
+        "close": 33580
+      }
+    ],
+    "afterClose": 0
+  },
+  {
+    "head": "Sundry Creditors",
+    "name": "SHOBHA EXIM PRIVATE LIMITED - CR",
+    "canonicalId": "62e7d5ec-47e1-4b97-8ddd-c9c7ca31b5d8",
+    "losers": [
+      {
+        "id": "856b27d8-1f2d-4279-9c5d-6f2eb3a09aa7",
+        "entries": 1,
+        "openings": 0,
+        "close": 24415
+      }
+    ],
+    "before": [
+      {
+        "id": "62e7d5ec-47e1-4b97-8ddd-c9c7ca31b5d8",
+        "entries": 16,
+        "openings": 0,
+        "close": -432621.5
+      },
+      {
+        "id": "856b27d8-1f2d-4279-9c5d-6f2eb3a09aa7",
+        "entries": 1,
+        "openings": 0,
+        "close": 24415
+      }
+    ],
+    "afterClose": -408206.5
+  },
+  {
+    "head": "Advance From S. Debtors",
+    "name": "VENKETESHWARA ROADLINES - DR",
+    "canonicalId": "128c49f2-d03e-4ced-bddb-953cbd6e873a",
+    "losers": [
+      {
+        "id": "dc206494-7b13-4278-8591-8bcffd46c4ba",
+        "entries": 1,
+        "openings": 0,
+        "close": 140000
+      }
+    ],
+    "before": [
+      {
+        "id": "128c49f2-d03e-4ced-bddb-953cbd6e873a",
+        "entries": 45,
+        "openings": 1,
+        "close": -312258
+      },
+      {
+        "id": "dc206494-7b13-4278-8591-8bcffd46c4ba",
+        "entries": 1,
+        "openings": 0,
+        "close": 140000
+      }
+    ],
+    "afterClose": -172258
+  }
+]
