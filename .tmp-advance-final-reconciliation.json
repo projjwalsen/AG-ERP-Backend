@@ -1,0 +1,21 @@
+{
+  "targetLedgerCount": 37,
+  "dbEntryCount": 774,
+  "workbookMovementRows": 762,
+  "openingRows": 12,
+  "pdfAgencies": 33,
+  "totals": {
+    "openingDr": 2042216280,
+    "openingCr": 13964716500,
+    "moveDr": 130358340020,
+    "moveCr": 145841507035,
+    "pdfDr": 0,
+    "pdfCr": 27405667235,
+    "dbOpeningDr": 2042216280,
+    "dbOpeningCr": 13964716500,
+    "dbMoveDr": 130358340020,
+    "dbMoveCr": 145841507035
+  },
+  "mismatch": [],
+  "noEntries": []
+}
