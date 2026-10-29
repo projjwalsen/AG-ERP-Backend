@@ -1,0 +1,1133 @@
+{
+  "pdfGrand": {
+    "openDr": 75445285.04,
+    "openCr": 408075563.52,
+    "closeDr": 111541986.01,
+    "closeCr": 392379306.63
+  },
+  "dbEntries": {
+    "openingDebit": 75445285.04,
+    "openingCredit": 408075563.52,
+    "periodDebit": 5458661723.45,
+    "periodCredit": 5140778117.34,
+    "closingDebit": 327692517.06,
+    "closingCredit": 342439189.43,
+    "netClosingCredit": 14746672.37
+  },
+  "dbFields": {
+    "openingDebit": 0,
+    "openingCredit": 0,
+    "openingBalance": 0,
+    "currentBalanceSum": -280837320.62
+  },
+  "uiCalculateLedgerBalanceWouldShow": {
+    "closingDebit": 327692517.06,
+    "closingCredit": 342439189.43,
+    "netClosingCredit": 14746672.37
+  },
+  "matchEntriesToPdf": {
+    "openingDebit": true,
+    "openingCredit": true,
+    "periodDebit": false,
+    "periodCredit": false,
+    "closingDebit": false,
+    "closingCredit": false
+  },
+  "mismatchCount": 52,
+  "extraDbCount": 0,
+  "mismatches": [
+    {
+      "kind": "mismatch",
+      "name": "A G ART PETROCHEM LLP - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 1569418,
+        "moveDr": 157155193,
+        "moveCr": 155585775,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 1569418,
+        "moveDr": 157155193,
+        "moveCr": 142926675,
+        "close": 12659100,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "AMISHI INDUSTRIES INDIA PVT LTD (CR)",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 28165141,
+        "moveDr": 254141808,
+        "moveCr": 252273524.4,
+        "close": -26296857.4
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 28165141,
+        "moveDr": 254141808,
+        "moveCr": 240932876.4,
+        "close": -14956209.4,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "ANGEL TRADING FZE",
+      "pdf": {
+        "openDr": 16748362.8,
+        "openCr": 0,
+        "moveDr": 68099262.54,
+        "moveCr": 0,
+        "close": 84847625.34
+      },
+      "db": {
+        "openDr": 16748362.8,
+        "openCr": 0,
+        "moveDr": 50320690.04,
+        "moveCr": 0,
+        "close": 67069052.84,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "ARKA PETROCHEM FZC",
+      "pdf": {
+        "openDr": 52980798.23,
+        "openCr": 0,
+        "moveDr": 30720052.16,
+        "moveCr": 61409325.98,
+        "close": 22291524.41
+      },
+      "db": {
+        "openDr": 52980798.23,
+        "openCr": 0,
+        "moveDr": 21896870.91,
+        "moveCr": 61409325.98,
+        "close": 13468343.16,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "CATALYST ASPHALT PVT LTD-CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 23108675,
+        "moveDr": 34755369,
+        "moveCr": 11646694,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 23108675,
+        "moveDr": 34755369,
+        "moveCr": 9014549,
+        "close": 2632145,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "DARSHIL PETROCHEM CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 2330639,
+        "moveDr": 112684051,
+        "moveCr": 116390634,
+        "close": -6037222
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 2330639,
+        "moveDr": 112684051,
+        "moveCr": 92136305,
+        "close": 18217107,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "DARSH PETROCHEM PVT LTD-CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 12733,
+        "moveDr": 15038914,
+        "moveCr": 15026181,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 12733,
+        "moveDr": 15038914,
+        "moveCr": 14001432,
+        "close": 1024749,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "GASTRADE INTERNATIONAL",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 3655,
+        "moveDr": 28751199,
+        "moveCr": 28751199.2,
+        "close": -3655.2
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 3655,
+        "moveDr": 28751199,
+        "moveCr": 25603362.2,
+        "close": 3144181.8,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "GAURAV CHEMICALS - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 2059430,
+        "moveDr": 129867265,
+        "moveCr": 259870747,
+        "close": -132062912
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 2059430,
+        "moveDr": 129867265,
+        "moveCr": 249619758,
+        "close": -121811923,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "MIDAS TECHNOLOGIES",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 2871785,
+        "moveDr": 6401705,
+        "moveCr": 3529920,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 2871785,
+        "moveDr": 6401705,
+        "moveCr": 2834900,
+        "close": 695020,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "MURJI RAVJI AND COMPANY",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 9623,
+        "moveDr": 83464636,
+        "moveCr": 83455013,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 9623,
+        "moveDr": 83464636,
+        "moveCr": 80340165,
+        "close": 3114848,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "NANOTECH INDUSTRIES-CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 2022874,
+        "moveDr": 4606292,
+        "moveCr": 2583418,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 2022874,
+        "moveDr": 4606292,
+        "moveCr": 1000000,
+        "close": 1583418,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "NEPTUNE PETROCHEMICALS LIMITED",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 25103753,
+        "moveDr": 259933172,
+        "moveCr": 234829419,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 25103753,
+        "moveDr": 259933172,
+        "moveCr": 219491867,
+        "close": 15337552,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 17376219,
+        "moveDr": 155452780,
+        "moveCr": 160338911.4,
+        "close": -22262350.4
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 17376219,
+        "moveDr": 155452780,
+        "moveCr": 142164880.4,
+        "close": -4088319.4,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "SHREE GURU KRIPA ENTERPRISES (CR)",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 4883434,
+        "moveDr": 43005298,
+        "moveCr": 38121864,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 4883434,
+        "moveDr": 43005298,
+        "moveCr": 31354903,
+        "close": 6766961,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "SHRI GANESH TRADING CO- CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 2070555,
+        "moveDr": 186605499,
+        "moveCr": 185213383,
+        "close": -678439
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 2070555,
+        "moveDr": 186605499,
+        "moveCr": 171981333,
+        "close": 12553611,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "SKYLINE GLOBAL TRADERS CRS",
+      "pdf": {
+        "openDr": 4836988,
+        "openCr": 0,
+        "moveDr": 15732174.6,
+        "moveCr": 20569162.6,
+        "close": 0
+      },
+      "db": {
+        "openDr": 4836988,
+        "openCr": 0,
+        "moveDr": 15732174.6,
+        "moveCr": 17596529.6,
+        "close": 2972633,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "Sulaki Chemicals Pvt Ltd-CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 82486152,
+        "moveDr": 887877349.12,
+        "moveCr": 805391197.12,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 82486152,
+        "moveDr": 887877349.12,
+        "moveCr": 799459502.12,
+        "close": 5931695,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 41545009,
+        "moveCr": 41545009,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 41545009,
+        "moveCr": 39387141,
+        "close": 2157868,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED - RAJASTHAN CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 50334456,
+        "moveCr": 50334456,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 50334456,
+        "moveCr": 47723121,
+        "close": 2611335,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "LUBRICON INDIA - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 224364695.4,
+        "moveCr": 224364695.4,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 224364695.4,
+        "moveCr": 207011696.4,
+        "close": 17352999,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED - UP CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 68902048,
+        "moveCr": 68902048,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 68902048,
+        "moveCr": 58127530,
+        "close": 10774518,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 257569463.96,
+        "moveCr": 257892061.96,
+        "close": -322598
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 257569463.96,
+        "moveCr": 231590499.96,
+        "close": 25978964,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "KOTA OIL CORPORATION CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 46070885,
+        "moveCr": 46070885,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 46070885,
+        "moveCr": 41964869,
+        "close": 4106016,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "UNIPROC ENERGIES PRIVATE LIMITED",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 28321257.64,
+        "moveCr": 28321257.64,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 28321257.64,
+        "moveCr": 26455577.64,
+        "close": 1865680,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED_HARYANA CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 17626267,
+        "moveCr": 17626267,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 17626267,
+        "moveCr": 16451569,
+        "close": 1174698,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "AMAFHH OIL CORPORATION CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 5263143,
+        "moveCr": 5263143,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 5263143,
+        "moveCr": 3433662,
+        "close": 1829481,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "K. T. LATHIWALA",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 11738640,
+        "moveCr": 11738640,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 11738640,
+        "moveCr": 9869271,
+        "close": 1869369,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "ARS PETRO CHEMICAL CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 31867839,
+        "moveCr": 31867839,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 31867839,
+        "moveCr": 26437258,
+        "close": 5430581,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "BON BON INTERNATIONAL",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 19201079,
+        "moveCr": 19201079,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 19201079,
+        "moveCr": 13910581,
+        "close": 5290498,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "Central Depository Services (India) Limited",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 92850,
+        "moveCr": 92850,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 0,
+        "moveCr": 92850,
+        "close": -92850,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "BLUE SAPPHIRE GLOBAL TRADING LLP",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 8907406,
+        "moveCr": 8907406,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 8907406,
+        "moveCr": 7759160,
+        "close": 1148246,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "A J IMPEX",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 3923307,
+        "moveCr": 3923582,
+        "close": -275
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 3923307,
+        "moveCr": 2229696,
+        "close": 1693611,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "MAHADEV OIL INDUSTRIES CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 35777785,
+        "moveCr": 35777785,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 35777785,
+        "moveCr": 32678860,
+        "close": 3098925,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "G L KHANNA & SONS GUJ - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 52722456,
+        "moveCr": 52722456,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 52722456,
+        "moveCr": 44801702,
+        "close": 7920754,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "P S ENTERPRISES (UP) - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 22829368,
+        "moveCr": 22829368,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 22829368,
+        "moveCr": 21205782,
+        "close": 1623586,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "Future Universal Petrochem Pvt Ltd.",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 49528918,
+        "moveCr": 49528918,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 49528918,
+        "moveCr": 46428243,
+        "close": 3100675,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "PLATINUM PETROCHEM",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 121740934,
+        "moveCr": 121740934,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 121740934,
+        "moveCr": 114913102,
+        "close": 6827832,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "MADHUSUDAN ORGANICS PRIVATE LIMITED",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 29537528,
+        "moveCr": 29537528,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 29537528,
+        "moveCr": 24700735,
+        "close": 4836793,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "CATALYST PETROCHEM LLP",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 50751084,
+        "moveCr": 50751084,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 50751084,
+        "moveCr": 44659834,
+        "close": 6091250,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "RAJEEV TRADING COMPANY PVT LTD",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 44325669,
+        "moveCr": 44325669,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 44325669,
+        "moveCr": 39131210,
+        "close": 5194459,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "SELVAM INDUSTRIES",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 74653132,
+        "moveCr": 74653132,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 74653132,
+        "moveCr": 71610313,
+        "close": 3042819,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "K A DAS LOGISTICS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 11352662.4,
+        "moveCr": 11352662.4,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 11352662.4,
+        "moveCr": 10235420.4,
+        "close": 1117242,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "INDOREX CHEMICALS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 51543,
+        "moveCr": 51543,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 51543,
+        "moveCr": 0,
+        "close": 51543,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "BHUVI PETROLEUM PRIVATE LIMITED",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 159352707,
+        "moveCr": 159352707,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 159352707,
+        "moveCr": 141497022,
+        "close": 17855685,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "Premium Petro And Infra Projects Private Limited",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 75328494.8,
+        "moveCr": 75328494.8,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 75328494.8,
+        "moveCr": 71520303.8,
+        "close": 3808191,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "RAMDEV ENTERPRISES",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 15559451,
+        "moveCr": 15559451,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 15559451,
+        "moveCr": 12811260,
+        "close": 2748191,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "ROHAN ENTERPRISES - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 6573782,
+        "moveCr": 6575990,
+        "close": -2208
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 6573782,
+        "moveCr": 4953893,
+        "close": 1619889,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "INTERASIA ENTERPRISES",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 3059977,
+        "moveCr": 3059977,
+        "close": 0
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 3059977,
+        "moveCr": 2040032,
+        "close": 1019945,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "SANJIVANI PETROCHEM PRIVATE LIMITED - CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 34800610,
+        "moveCr": 34776240,
+        "close": 24370
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 34800610,
+        "moveCr": 31898619,
+        "close": 2901991,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED - PB CR",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 13103,
+        "moveCr": 15462163,
+        "close": -15449060
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 13103,
+        "moveCr": 11576334,
+        "close": -11563231,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    },
+    {
+      "kind": "mismatch",
+      "name": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "pdf": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 662927,
+        "moveCr": 7322811.2,
+        "close": -6659884.2
+      },
+      "db": {
+        "openDr": 0,
+        "openCr": 0,
+        "moveDr": 0,
+        "moveCr": 7322811.2,
+        "close": -7322811.2,
+        "fieldOpenDr": 0,
+        "fieldOpenCr": 0,
+        "fieldOpenBal": 0
+      }
+    }
+  ],
+  "extraDb": []
+}

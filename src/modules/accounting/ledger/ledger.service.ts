@@ -113,6 +113,27 @@ const ROOT_GROUPS: Record<string, { name: string; nature: LedgerNature }> = {
     SALES_ACCOUNTS: { name: "Sales Accounts", nature: LedgerNature.CREDIT }
 };
 
+const headingKey = (name: string) =>
+    String(name || "").normalize("NFKC").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+
+const descendantGroupIds = (
+    groups: Array<{ id: string; parentId: string | null }>,
+    rootId: string
+) => {
+    const ids = new Set([rootId]);
+    let changed = true;
+    while (changed) {
+        changed = false;
+        for (const group of groups) {
+            if (group.parentId && ids.has(group.parentId) && !ids.has(group.id)) {
+                ids.add(group.id);
+                changed = true;
+            }
+        }
+    }
+    return ids;
+};
+
 const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: LedgerNature }> = {
     CASH_IN_HAND: { name: "Cash-in-Hand", parentCode: "ASSETS", nature: LedgerNature.DEBIT },
     BANK_ACCOUNTS: { name: "Bank Accounts", parentCode: "ASSETS", nature: LedgerNature.DEBIT },
@@ -1901,13 +1922,26 @@ export class LedgerService {
                     data:
                         statements
                 };
-            case "CREDITORS":
-
-                const creditorLedgers =
-                    ledgers.filter(
-                        x =>
-                            x.category === LedgerType.VENDOR
-                    );
+            case "CREDITORS": {
+                const ledgerGroups = await prisma.ledgerGroup.findMany({
+                    select: { id: true, name: true, parentId: true }
+                });
+                const currentLiabilityIds = new Set(
+                    ledgerGroups
+                        .filter(group => headingKey(group.name) === "currentliabilities")
+                        .map(group => group.id)
+                );
+                const tallyCreditors = ledgerGroups.find(group =>
+                    headingKey(group.name) === "sundrycreditors" &&
+                    group.parentId != null &&
+                    currentLiabilityIds.has(group.parentId)
+                );
+                const tallyCreditorGroupIds = tallyCreditors
+                    ? descendantGroupIds(ledgerGroups, tallyCreditors.id)
+                    : new Set<string>();
+                const creditorLedgers = tallyCreditorGroupIds.size
+                    ? ledgers.filter(ledger => tallyCreditorGroupIds.has(ledger.groupId))
+                    : ledgers.filter(ledger => ledger.category === LedgerType.VENDOR);
 
                 const statemnt =
                     await Promise.all(
@@ -1954,6 +1988,7 @@ export class LedgerService {
                     data:
                         statemnt
                 };
+            }
             case "ACCOUNTING_LEDGER":
             default: {
 

@@ -1,0 +1,4024 @@
+{
+  "missingRows": 253,
+  "missingNos": 132,
+  "coverage": {
+    "notesFound": 110,
+    "notesNoVoucher": 0,
+    "salesFound": 17,
+    "purchasesFound": 3,
+    "none": 2
+  },
+  "tcsLedger": [
+    {
+      "id": "3454fdce-55d1-484a-8a9c-eb440ef78633",
+      "name": "TCS ON SALE OF SCRAP 1%",
+      "group": {
+        "name": "Indirect Expense"
+      }
+    },
+    {
+      "id": "97a89248-1884-483f-9fb5-a0e26e09a90d",
+      "name": "TCS ON SALE OF SCRAP 1%",
+      "group": {
+        "name": "TCS"
+      }
+    }
+  ],
+  "itcLedger": [
+    {
+      "id": "5fcab615-4bba-479a-91fd-45a049a7555b",
+      "name": "IGST ITC Not Reflected in GSTR-2B",
+      "group": {
+        "name": "INPUT GST"
+      }
+    }
+  ],
+  "samples": [
+    {
+      "no": "PDN/M/2526/003",
+      "excel": [
+        {
+          "name": "INPUT IGST 18%",
+          "side": "CREDIT",
+          "amount": 88200,
+          "type": "Inward Debit Note",
+          "date": "2025-03-20"
+        }
+      ],
+      "notes": [
+        {
+          "noteNo": "PDN/M/2526/003",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "f93728b2-3b08-4a1e-a2bb-6bbd86ceb25f",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / INPUT GST / INPUT IGST 18%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 88200,
+          "purchaseId": null,
+          "saleId": null
+        },
+        {
+          "noteNo": "PDN/M/2526/003",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "5ead8b1e-c259-494e-9cc5-63fe748d7de6",
+          "categoryPath": "Current Assets / Loans & Advances (Asset) / Advance to S. Creditors / NAYARA ENERGY LIMITED",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 578200,
+          "purchaseId": null,
+          "saleId": null
+        },
+        {
+          "noteNo": "PDN/M/2526/003",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "8a5b3de4-d1e0-490b-a24e-2c39528ffc7c",
+          "categoryPath": "Purchase Accounts / IGST PURCHASE",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 490000,
+          "purchaseId": null,
+          "saleId": null
+        }
+      ],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "DBN-E53D3746-F3A732EB87",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-10T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/003 | Invoice:PDN/M/2526/003 | NAYARA ENERGY LIMITED | NAYARA ENERGY LIMITED",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 88200,
+              "ledger": "NAYARA ENERGY LIMITED - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 88200,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-53B58198-61F5306BE6",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-10T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/003 | Invoice:PDN/M/2526/003 | NAYARA ENERGY LIMITED | NAYARA ENERGY LIMITED",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 578200,
+              "ledger": "NAYARA ENERGY LIMITED",
+              "category": "JOURNAL",
+              "group": "NAYARA ENERGY LIMITED"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 578200,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-342B980C-DCADDDE403",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-10T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/003 | Invoice:PDN/M/2526/003 | NAYARA ENERGY LIMITED | NAYARA ENERGY LIMITED",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 490000,
+              "ledger": "NAYARA ENERGY LIMITED - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 490000,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "PCN/M/2526/001",
+      "excel": [
+        {
+          "name": "INPUT IGST 18%",
+          "side": "DEBIT",
+          "amount": 32723.66,
+          "type": "Inward Credit Note",
+          "date": "2025-05-09"
+        },
+        {
+          "name": "TDS ON INTEREST ON UNSECURED LOAN",
+          "side": "CREDIT",
+          "amount": 18180,
+          "type": "Inward Credit Note",
+          "date": "2025-05-09"
+        }
+      ],
+      "notes": [
+        {
+          "noteNo": "PCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "e63e0dc7-61d7-487f-abc0-b8d0db6970ce",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / INPUT GST / INPUT IGST 18%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 32723.66,
+          "purchaseId": "e8c865d7-3754-4334-a4f1-7ecf8ca4cebb",
+          "saleId": null
+        },
+        {
+          "noteNo": "PCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "2f4706c5-ec8f-4cf7-97b1-afb7ae2cc656",
+          "categoryPath": "Indirect Expenses / Financial Expenses / Interest on Letter Credit (LC) / Interest on Letter Credit (LC)",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 181798.09,
+          "purchaseId": "e8c865d7-3754-4334-a4f1-7ecf8ca4cebb",
+          "saleId": null
+        },
+        {
+          "noteNo": "PCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "361e5d83-9cf6-4a94-9b04-487a6073e520",
+          "categoryPath": "Current Assets / Loans & Advances (Asset) / Advance to S. Creditors / RAAJ UNOCAL LUBRICANTS LTD",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 196342,
+          "purchaseId": "e8c865d7-3754-4334-a4f1-7ecf8ca4cebb",
+          "saleId": null
+        },
+        {
+          "noteNo": "PCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "14b44a80-3a1e-4fb1-a6e9-d7d08c4b0abf",
+          "categoryPath": "Current Liabilities / Duties & Taxes / TDS / TDS ON INTEREST ON UNSECURED LOAN",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 18180,
+          "purchaseId": "e8c865d7-3754-4334-a4f1-7ecf8ca4cebb",
+          "saleId": null
+        },
+        {
+          "noteNo": "PCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "d81e5dec-0e6f-4f9d-afed-793277561a0f",
+          "categoryPath": "Indirect Expenses / R / OFF",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 0.25,
+          "purchaseId": "e8c865d7-3754-4334-a4f1-7ecf8ca4cebb",
+          "saleId": null
+        }
+      ],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "CRN-C12EC258-0845AE4328",
+          "type": "CREDIT_NOTE",
+          "date": "2025-05-22T18:30:00.000Z",
+          "narration": "PURCHASE | CREDIT_NOTE | PCN/M/2526/001 | Invoice:INV/T/2025/0006 | RAAJ UNOCAL LUBRICANTS LTD | RAAJ UNOCAL LUBRICANTS ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.25,
+              "ledger": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 0.25,
+              "ledger": "Purchase Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-B42FE859-21CEE9F6FF",
+          "type": "CREDIT_NOTE",
+          "date": "2025-05-22T18:30:00.000Z",
+          "narration": "PURCHASE | CREDIT_NOTE | PCN/M/2526/001 | Invoice:INV/T/2025/0006 | RAAJ UNOCAL LUBRICANTS LTD | RAAJ UNOCAL LUBRICANTS ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 181798.09,
+              "ledger": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 181798.09,
+              "ledger": "Purchase Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-C3368317-805EF9D3F5",
+          "type": "CREDIT_NOTE",
+          "date": "2025-05-22T18:30:00.000Z",
+          "narration": "PURCHASE | CREDIT_NOTE | PCN/M/2526/001 | Invoice:INV/T/2025/0006 | RAAJ UNOCAL LUBRICANTS LTD | RAAJ UNOCAL LUBRICANTS ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 196342,
+              "ledger": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 196342,
+              "ledger": "Purchase Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-E2C9B6DD-BE8E31D3DC",
+          "type": "CREDIT_NOTE",
+          "date": "2025-05-22T18:30:00.000Z",
+          "narration": "PURCHASE | CREDIT_NOTE | PCN/M/2526/001 | Invoice:INV/T/2025/0006 | RAAJ UNOCAL LUBRICANTS LTD | RAAJ UNOCAL LUBRICANTS ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 18180,
+              "ledger": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 18180,
+              "ledger": "Purchase Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-0E20B576-347183D3C5",
+          "type": "CREDIT_NOTE",
+          "date": "2025-05-22T18:30:00.000Z",
+          "narration": "PURCHASE | CREDIT_NOTE | PCN/M/2526/001 | Invoice:INV/T/2025/0006 | RAAJ UNOCAL LUBRICANTS LTD | RAAJ UNOCAL LUBRICANTS ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 32723.66,
+              "ledger": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 32723.66,
+              "ledger": "Purchase Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "PCN/M/2526/001",
+          "type": "JOURNAL",
+          "date": "2025-05-22T18:30:00.000Z",
+          "narration": "Interest on LC inward credit note PCN/M/2526/001",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 196342,
+              "ledger": "INTEREST PAID TO S.CREDITORS",
+              "category": "PURCHASE",
+              "group": "INTEREST PAID TO S.CREDITORS"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 196342,
+              "ledger": "RAAJ UNOCAL LUBRICANTS LTD",
+              "category": "JOURNAL",
+              "group": "Advance to S. Creditors"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "SDN/M/2526/001",
+      "excel": [
+        {
+          "name": "OUTPUT CGST 9%",
+          "side": "CREDIT",
+          "amount": 19901.7,
+          "type": "Outward Debit Note",
+          "date": "2025-04-29"
+        },
+        {
+          "name": "OUTPUT SGST 9%",
+          "side": "CREDIT",
+          "amount": 19901.7,
+          "type": "Outward Debit Note",
+          "date": "2025-04-29"
+        }
+      ],
+      "notes": [
+        {
+          "noteNo": "SDN/M/2526/001",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "09662f74-2bf7-4570-a2d9-2a2afba2e4c2",
+          "categoryPath": "Sales Accounts / GST SALES",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 221130,
+          "purchaseId": null,
+          "saleId": "bfd54e7b-48f1-4203-9443-a5c52adcba30"
+        },
+        {
+          "noteNo": "SDN/M/2526/001",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "46340995-4ebc-4bf0-a3b3-4a90b5b0d775",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / OUTPUT GST / OUTPUT CGST 9%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 19901.7,
+          "purchaseId": null,
+          "saleId": "bfd54e7b-48f1-4203-9443-a5c52adcba30"
+        },
+        {
+          "noteNo": "SDN/M/2526/001",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "f5553e5f-6b25-427c-b3a7-9c39753dc706",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / OUTPUT GST / OUTPUT SGST 9%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 19901.7,
+          "purchaseId": null,
+          "saleId": "bfd54e7b-48f1-4203-9443-a5c52adcba30"
+        },
+        {
+          "noteNo": "SDN/M/2526/001",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "f5f1e0fc-9d0a-4171-8a7b-6245e391cbbd",
+          "categoryPath": "Indirect Expenses / R / OFF",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 0.4,
+          "purchaseId": null,
+          "saleId": "bfd54e7b-48f1-4203-9443-a5c52adcba30"
+        },
+        {
+          "noteNo": "SDN/M/2526/001",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "REJECTED",
+          "voucherId": null,
+          "categoryPath": "Current Assets / Sundry Debtors / FORTUNE ENTERPRISE - DR",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 260933,
+          "purchaseId": null,
+          "saleId": "bfd54e7b-48f1-4203-9443-a5c52adcba30"
+        }
+      ],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "DBN-20010FD7-A3E1787191",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-29T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/001 | Invoice:APM/G2526/0174 | FORTUNE ENTERPRISE - DR | FORTUNE ENTERPRISE - DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 221130,
+              "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 221130,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-B013D79E-A28067BE01",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-29T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/001 | Invoice:APM/G2526/0174 | FORTUNE ENTERPRISE - DR | FORTUNE ENTERPRISE - DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 19901.7,
+              "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 19901.7,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-89E84303-2E289342A0",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-29T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/001 | Invoice:APM/G2526/0174 | FORTUNE ENTERPRISE - DR | FORTUNE ENTERPRISE - DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 19901.7,
+              "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 19901.7,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-C2C1D557-5F19676B6A",
+          "type": "DEBIT_NOTE",
+          "date": "2025-04-29T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/001 | Invoice:APM/G2526/0174 | FORTUNE ENTERPRISE - DR | FORTUNE ENTERPRISE - DR",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.4,
+              "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 0.4,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "SCN/M/2526/001",
+      "excel": [
+        {
+          "name": "OUTPUT CGST 9%",
+          "side": "DEBIT",
+          "amount": 81.77,
+          "type": "Outward Credit Note",
+          "date": "2025-06-10"
+        },
+        {
+          "name": "OUTPUT SGST 9%",
+          "side": "DEBIT",
+          "amount": 81.77,
+          "type": "Outward Credit Note",
+          "date": "2025-06-10"
+        }
+      ],
+      "notes": [
+        {
+          "noteNo": "SCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "1d02f504-602a-4f74-b0bf-070b7b30a57c",
+          "categoryPath": "Sales Accounts / GST SALES",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 908.6,
+          "purchaseId": null,
+          "saleId": "d25a9a81-a40b-4ee1-bd12-958fc5abd9e3"
+        },
+        {
+          "noteNo": "SCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "f974054d-cc7c-4eca-b339-8c47ad0d7bb4",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / OUTPUT GST / OUTPUT CGST 9%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 81.77,
+          "purchaseId": null,
+          "saleId": "d25a9a81-a40b-4ee1-bd12-958fc5abd9e3"
+        },
+        {
+          "noteNo": "SCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "9319b014-f96d-49b2-a2b5-a4100645b58f",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / OUTPUT GST / OUTPUT SGST 9%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 81.77,
+          "purchaseId": null,
+          "saleId": "d25a9a81-a40b-4ee1-bd12-958fc5abd9e3"
+        },
+        {
+          "noteNo": "SCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "589dfc3a-f698-4296-9f8d-24af4a72f84c",
+          "categoryPath": "Indirect Expenses / R / OFF",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 0.14,
+          "purchaseId": null,
+          "saleId": "d25a9a81-a40b-4ee1-bd12-958fc5abd9e3"
+        },
+        {
+          "noteNo": "SCN/M/2526/001",
+          "type": "CREDIT_NOTE",
+          "sourceType": "SALE",
+          "status": "REJECTED",
+          "voucherId": null,
+          "categoryPath": "Current Assets / Sundry Debtors / MIDAS TECHNOLOGIES-DR",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 1072,
+          "purchaseId": null,
+          "saleId": "d25a9a81-a40b-4ee1-bd12-958fc5abd9e3"
+        }
+      ],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "CRN-41F86F0F-D2E24762DB",
+          "type": "CREDIT_NOTE",
+          "date": "2025-06-09T18:30:00.000Z",
+          "narration": "SALE | CREDIT_NOTE | SCN/M/2526/001 | Invoice:APM/G2526/0481 | MIDAS TECHNOLOGIES-DR | MIDAS TECHNOLOGIES-DR",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 908.6,
+              "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 908.6,
+              "ledger": "Sales Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-FFC2314B-C5BF166C7F",
+          "type": "CREDIT_NOTE",
+          "date": "2025-06-09T18:30:00.000Z",
+          "narration": "SALE | CREDIT_NOTE | SCN/M/2526/001 | Invoice:APM/G2526/0481 | MIDAS TECHNOLOGIES-DR | MIDAS TECHNOLOGIES-DR",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 81.77,
+              "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 81.77,
+              "ledger": "Sales Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-8CFBCE3A-8EFBEE63C7",
+          "type": "CREDIT_NOTE",
+          "date": "2025-06-09T18:30:00.000Z",
+          "narration": "SALE | CREDIT_NOTE | SCN/M/2526/001 | Invoice:APM/G2526/0481 | MIDAS TECHNOLOGIES-DR | MIDAS TECHNOLOGIES-DR",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 81.77,
+              "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 81.77,
+              "ledger": "Sales Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "CRN-0CE9AC1C-32861E8546",
+          "type": "CREDIT_NOTE",
+          "date": "2025-06-09T18:30:00.000Z",
+          "narration": "SALE | CREDIT_NOTE | SCN/M/2526/001 | Invoice:APM/G2526/0481 | MIDAS TECHNOLOGIES-DR | MIDAS TECHNOLOGIES-DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 0.14,
+              "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 0.14,
+              "ledger": "Sales Credit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "SAS/25-26-006",
+      "excel": [
+        {
+          "name": "IGST ITC Not Reflected in GSTR-2B",
+          "side": "DEBIT",
+          "amount": 200790,
+          "type": "Purchase",
+          "date": "2025-06-04"
+        }
+      ],
+      "notes": [],
+      "sales": [],
+      "purchases": [
+        {
+          "id": "00a723fe-8e05-4fce-825b-9e89b31c77a4",
+          "invoiceNo": "SAS/25-26-006"
+        }
+      ],
+      "vouchers": [
+        {
+          "voucherNo": "SAS/25-26-006",
+          "type": "PURCHASE",
+          "date": "2025-06-03T18:30:00.000Z",
+          "narration": "PURCHASE|SAS/25-26-006|Shri Achyuta Services - CR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 200790,
+              "ledger": "Round Off",
+              "category": "ROUND_OFF",
+              "group": "Indirect Expense"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 1115500,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1316290,
+              "ledger": "Shri Achyuta Services - CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "ARGJ/25-26/0121",
+      "excel": [
+        {
+          "name": "IGST ITC Not Reflected in GSTR-2B",
+          "side": "DEBIT",
+          "amount": 401760,
+          "type": "Purchase",
+          "date": "2025-07-11"
+        }
+      ],
+      "notes": [],
+      "sales": [],
+      "purchases": [
+        {
+          "id": "5f0ed211-df56-4e20-916e-a51a45c1e683",
+          "invoiceNo": "ARGJ/25-26/0121"
+        }
+      ],
+      "vouchers": [
+        {
+          "voucherNo": "ARGJ/25-26/0121",
+          "type": "PURCHASE",
+          "date": "2025-07-10T18:30:00.000Z",
+          "narration": "PURCHASE|ARGJ/25-26/0121|AVALANCHE REFINERIES PVT LTD",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 401760,
+              "ledger": "Round Off",
+              "category": "ROUND_OFF",
+              "group": "Indirect Expense"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 2232000,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2633760,
+              "ledger": "AVALANCHE REFINERIES PVT LTD",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "APM/G2526/0433",
+      "excel": [
+        {
+          "name": "TCS ON SALE OF SCRAP 1%",
+          "side": "CREDIT",
+          "amount": 2242,
+          "type": "Tax Invoice",
+          "date": ""
+        }
+      ],
+      "notes": [],
+      "sales": [
+        {
+          "id": "9b34a49a-59ff-49d1-8eca-a59cecfc4691",
+          "invoiceNo": "APM/G2526/0433",
+          "tcsAmount": "0",
+          "totalCGSTAmount": "0",
+          "totalSGSTAmount": "0",
+          "totalIGSTAmount": "34200"
+        }
+      ],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "SALE-9B34A49A-C0044DBFAA",
+          "type": "SALE",
+          "date": "2025-06-03T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0433|M N TRADERS",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 226442,
+              "ledger": "M N TRADERS - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 190000,
+              "ledger": "SCRAP DRUMS",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 34200,
+              "ledger": "OUTPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "233",
+      "excel": [
+        {
+          "name": "INPUT RCM CGST",
+          "side": "DEBIT",
+          "amount": 1974.23,
+          "type": "Journal",
+          "date": "2025-04-01"
+        },
+        {
+          "name": "INPUT RCM SGST",
+          "side": "DEBIT",
+          "amount": 1974.23,
+          "type": "Journal",
+          "date": "2025-04-01"
+        },
+        {
+          "name": "OUTPUT RCM CGST",
+          "side": "CREDIT",
+          "amount": 1974.23,
+          "type": "Journal",
+          "date": "2025-04-01"
+        },
+        {
+          "name": "OUTPUT RCM SGST",
+          "side": "CREDIT",
+          "amount": 1974.23,
+          "type": "Journal",
+          "date": "2025-04-01"
+        }
+      ],
+      "notes": [],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "S/233/25-26",
+          "type": "PURCHASE",
+          "date": "2025-06-24T18:30:00.000Z",
+          "narration": "PURCHASE|S/233/25-26|Sulaki Chemicals Pvt Ltd-CR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 152617.5,
+              "ledger": "INPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 1695750,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 152617.5,
+              "ledger": "INPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2000985,
+              "ledger": "Sulaki Chemicals Pvt Ltd-CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "ARS/25-26/233",
+          "type": "PURCHASE",
+          "date": "2025-08-01T18:30:00.000Z",
+          "narration": "PURCHASE|ARS/25-26/233|ARS PETRO CHEMICAL CRS",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.4,
+              "ledger": "Round Off",
+              "category": "ROUND_OFF",
+              "group": "Indirect Expense"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 270761.4,
+              "ledger": "INPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 1504230,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1774991,
+              "ledger": "ARS PETRO CHEMICAL CRS",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "17233",
+          "type": "PAYMENT",
+          "date": "2026-03-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 10,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "1233",
+          "type": "JOURNAL",
+          "date": "2025-05-12T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0256@ 1476000*0.10%=1476/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1476,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "1233",
+          "type": "JOURNAL",
+          "date": "2025-05-12T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0256@ 1476000*0.10%=1476/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1476,
+              "ledger": "MANAN ENTERPRISE - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2330",
+          "type": "JOURNAL",
+          "date": "2025-08-01T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0861 @1838100*0.10%=1838/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1838,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2330",
+          "type": "JOURNAL",
+          "date": "2025-08-01T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0861 @1838100*0.10%=1838/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1838,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2331",
+          "type": "JOURNAL",
+          "date": "2025-08-01T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0862 @1818300*0.10%=1818/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1818,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2331",
+          "type": "JOURNAL",
+          "date": "2025-08-01T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0862 @1818300*0.10%=1818/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1818,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2332",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0865 @1901350*0.10%=1901/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1901,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2332",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0865 @1901350*0.10%=1901/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1901,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2333",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0866 @1960750*0.10%=1961/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1961,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2333",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0866 @1960750*0.10%=1961/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1961,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2334",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0867 @1440450*0.10%=1440/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1440,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2334",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0867 @1440450*0.10%=1440/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1440,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2335",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0868 @2189000*0.10%=2189/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2189,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2335",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0868 @2189000*0.10%=2189/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 2189,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2336",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0869 @1868900*0.10%=1869/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1869,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2336",
+          "type": "JOURNAL",
+          "date": "2025-08-03T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0869 @1868900*0.10%=1869/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1869,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2337",
+          "type": "JOURNAL",
+          "date": "2025-08-04T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0879 @1702200*0.10%=1702/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1702,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2337",
+          "type": "JOURNAL",
+          "date": "2025-08-04T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0879 @1702200*0.10%=1702/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1702,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2338",
+          "type": "JOURNAL",
+          "date": "2025-08-06T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0889 @3280672.50*0.10%=3281/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 3281,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2338",
+          "type": "JOURNAL",
+          "date": "2025-08-06T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0889 @3280672.50*0.10%=3281/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 3281,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2339",
+          "type": "JOURNAL",
+          "date": "2025-08-06T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0893 @2107200*0.10%=2107/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2107,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2339",
+          "type": "JOURNAL",
+          "date": "2025-08-06T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/0893 @2107200*0.10%=2107/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 2107,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-BE0FA0C8-8482332B14",
+          "type": "BANK_PAYMENT",
+          "date": "2025-12-04T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-1B7B81C1 | A G ART PETROCHEM LLP - CR | PURCHASE-INVOICE:#AR/2526/0153",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1625252,
+              "ledger": "A G ART PETROCHEM LLP - CR - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1625252,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-7E5C2331-134025F2D9",
+          "type": "BANK_PAYMENT",
+          "date": "2025-04-04T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-BBF55049 | NXGEN ENFUEL SERVICES LLP CRS | PURCHASE-INVOICE:#2025-26/0005",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2680960,
+              "ledger": "NXGEN ENFUEL SERVICES LLP CRS - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2680960,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-EB23388F-BF9668D65F",
+          "type": "BANK_PAYMENT",
+          "date": "2025-04-18T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-4D2DAE7F | MITTAL SIDDHI INFRA PRIVATE LIMITED-CR | PURCHASE-INVOICE:#MSI/2025-26/51",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1771487,
+              "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1771487,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-A286A992-3233439492",
+          "type": "BANK_PAYMENT",
+          "date": "2025-07-25T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-1439E71F | AMISHI INDUSTRIES INDIA PVT LTD (CR) | PURCHASE-INVOICE:#AIM/G2526/078",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1144698,
+              "ledger": "AMISHI INDUSTRIES INDIA PVT LTD (CR) - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1144698,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-3249275D-38197233A0",
+          "type": "BANK_PAYMENT",
+          "date": "2025-09-25T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-18E4A3AA | Sulaki Chemicals Pvt Ltd-CR | PURCHASE-INVOICE:#S/392/25-26",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1677995,
+              "ledger": "Sulaki Chemicals Pvt Ltd-CR - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1677995,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-BBB233C6-1C15790276",
+          "type": "BANK_PAYMENT",
+          "date": "2025-11-27T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-F0A8F28B | PLATINUM PETROCHEM | PURCHASE-INVOICE:#PP/2025-26/1107",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2187693,
+              "ledger": "PLATINUM PETROCHEM - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2187693,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-2AB8233F-7836287357",
+          "type": "BANK_PAYMENT",
+          "date": "2025-12-20T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-F8CA2955 | AMISHI INDUSTRIES INDIA PVT LTD (CR) | PURCHASE-INVOICE:#AIM/G2526/277",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2837664,
+              "ledger": "AMISHI INDUSTRIES INDIA PVT LTD (CR) - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2837664,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-78A2339B-3A27D62DFE",
+          "type": "BANK_PAYMENT",
+          "date": "2026-02-10T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-19208105 | MITTAL SIDDHI INFRA PRIVATE LIMITED-CR | PURCHASE-INVOICE:#MSI/2025-26/548",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1702218,
+              "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1702218,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "BP-CEEAA237-52332AAB0D",
+          "type": "BANK_PAYMENT",
+          "date": "2026-03-15T18:30:00.000Z",
+          "narration": "PAYMENT | TXN:TRX-1BF9BFB2 | Goverdhan Energy And Petrochemicals Pvt Ltd - MH CR | PURCHASE-INVOICE:#G/25-26/1526",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 3466604,
+              "ledger": "Goverdhan Energy And Petrochemicals Pvt Ltd - MH CR - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 3466604,
+              "ledger": "Bank of Maharashtra",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2233",
+          "type": "JOURNAL",
+          "date": "2025-08-31T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/1011 @1631850*0.10%=1632/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1632,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "2233",
+          "type": "JOURNAL",
+          "date": "2025-08-31T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/1011 @1631850*0.10%=1632/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1632,
+              "ledger": "GAURAV CHEMICALS (Dr.) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "3233",
+          "type": "JOURNAL",
+          "date": "2025-10-13T18:30:00.000Z",
+          "narration": "BEING TRAVELING CHARGES FOR IST TO NAV & NAV TO IST OF SANDEEP SIR & FAMILY AGST INVOICE NO - DS/25/849 DTD - 14-10-2025",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 192108,
+              "ledger": "Travelling Expenses- International",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "3233",
+          "type": "JOURNAL",
+          "date": "2025-10-13T18:30:00.000Z",
+          "narration": "BEING TRAVELING CHARGES FOR IST TO NAV & NAV TO IST OF SANDEEP SIR & FAMILY AGST INVOICE NO - DS/25/849 DTD - 14-10-2025",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 192108,
+              "ledger": "DREAMS COME TRUE TRAVEL AND TOURS",
+              "category": "JOURNAL",
+              "group": "SUNDRY CREDITORS (OTHERS)"
+            }
+          ]
+        },
+        {
+          "voucherNo": "4233",
+          "type": "JOURNAL",
+          "date": "2025-12-10T18:30:00.000Z",
+          "narration": "BEING ELECTRICITY CHARGES OFFICE - 2403 PAID FOR THE MONTH OF DEC 25",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 4080,
+              "ledger": "Electricity Office 24th Floor",
+              "category": "JOURNAL",
+              "group": "Electricity Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "4233",
+          "type": "JOURNAL",
+          "date": "2025-12-10T18:30:00.000Z",
+          "narration": "BEING ELECTRICITY CHARGES OFFICE - 2403 PAID FOR THE MONTH OF DEC 25",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 4080,
+              "ledger": "Electricity Payable",
+              "category": "JOURNAL",
+              "group": "Provision for Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "5233",
+          "type": "JOURNAL",
+          "date": "2026-02-11T18:30:00.000Z",
+          "narration": "BEING TDS DEDUCTED @ 756650 *0.10%= 757/- AGST INVOICE NO - 25-26/SPPL/309",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 757,
+              "ledger": "SANJIVANI PETROCHEM PRIVATE LIMITED - CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "5233",
+          "type": "JOURNAL",
+          "date": "2026-02-11T18:30:00.000Z",
+          "narration": "BEING TDS DEDUCTED @ 756650 *0.10%= 757/- AGST INVOICE NO - 25-26/SPPL/309",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 757,
+              "ledger": "TDS ON PURCHASE OF GOODS @0.10%",
+              "category": "JOURNAL",
+              "group": "TDS"
+            }
+          ]
+        },
+        {
+          "voucherNo": "6233",
+          "type": "JOURNAL",
+          "date": "2026-02-27T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/2730 @460944*0.10%=461/-",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 461,
+              "ledger": "TDS ASSETS F.Y 2025-26",
+              "category": "JOURNAL",
+              "group": "Income Tax Credit"
+            }
+          ]
+        },
+        {
+          "voucherNo": "6233",
+          "type": "JOURNAL",
+          "date": "2026-02-27T18:30:00.000Z",
+          "narration": "BEING TDS RECEIVABLE AGST INVOICE NO APM/G2526/2730 @460944*0.10%=461/-",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 461,
+              "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-2331127E-A3FC805B50",
+          "type": "SALE",
+          "date": "2025-11-16T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/1712|SIDDHIVINAYAK CONSTRUCTION (DR)",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 384673,
+              "ledger": "SIDDHIVINAYAK CONSTRUCTION (DR) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 325993.7,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 29339.43,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 29339.43,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-1229068E-BCB3192233",
+          "type": "SALE",
+          "date": "2025-05-15T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0292|MIDAS TECHNOLOGIES-DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 574969,
+              "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 487261.9,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 43853.57,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 43853.57,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-2BCC4826-AB2A0A4233",
+          "type": "SALE",
+          "date": "2025-06-05T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0451|LUBRICON INDIA",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1234870,
+              "ledger": "LUBRICON INDIA - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1046500,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 94185,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 94185,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-59369233-42533E93A3",
+          "type": "SALE",
+          "date": "2025-06-23T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0576|MITTAL SIDDHI INFRA PRIVATE LIMITED-DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1101289,
+              "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 933295.5,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 83996.6,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 83996.6,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-44DCBA5A-628395233C",
+          "type": "SALE",
+          "date": "2025-07-02T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0623|SWARA ENTERPRISES DRS",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 542965,
+              "ledger": "SWARA ENTERPRISES DRS - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 460140,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 41412.6,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 41412.6,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-56283D9B-A3B299C233",
+          "type": "SALE",
+          "date": "2025-08-14T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0939|GAURAV CHEMICALS (Dr.)",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2233209,
+              "ledger": "GAURAV CHEMICALS (Dr.) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1892550,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 170329.5,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 170329.5,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-7121A99A-C167852339",
+          "type": "SALE",
+          "date": "2025-10-02T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/1307|Sulaki Chemicals Pvt. Ltd. (Drs)",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2040220,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1729000,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 155610,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 155610,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-3DE233CA-BEF47B8F46",
+          "type": "SALE",
+          "date": "2025-10-09T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/1345|Grasim Industries Limited DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1638230,
+              "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1388330.5,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 249899.49,
+              "ledger": "OUTPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-E5F76077-23317BB53E",
+          "type": "SALE",
+          "date": "2025-10-15T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/1386|Art Infrastructure Pvt Ltd",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 3508623,
+              "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2973409,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 267606.81,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 267606.81,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-1AF233DB-91883F1B17",
+          "type": "SALE",
+          "date": "2025-10-30T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/1567|SIDDHIVINAYAK CONSTRUCTION (DR)",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 333397,
+              "ledger": "SIDDHIVINAYAK CONSTRUCTION (DR) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 282540,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 25428.6,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 25428.6,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-3EB3FDF6-8B233BAEFD",
+          "type": "SALE",
+          "date": "2026-02-05T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/2378|MITTAL SIDDHI INFRA PRIVATE LIMITED-DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1249602,
+              "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1058984.4,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 95308.6,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 95308.6,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-AD0C0150-B06737E233",
+          "type": "SALE",
+          "date": "2026-02-11T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/2453|Art Infrastructure Pvt Ltd",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 985033,
+              "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 834774,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 75129.66,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 75129.66,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-A817B233-8E80C16D65",
+          "type": "SALE",
+          "date": "2026-03-02T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/2765|SWARA ENTERPRISES DRS",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 543036,
+              "ledger": "SWARA ENTERPRISES DRS - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 460200,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 41418,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 41418,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-78F398AD-4423314434",
+          "type": "SALE",
+          "date": "2026-03-10T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/2904|POWER2SME PRIVATE LIMITED - DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1530571,
+              "ledger": "POWER2SME PRIVATE LIMITED - DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1297093.7,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 116738.43,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 116738.43,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-F8A28B99-2233912D7E",
+          "type": "SALE",
+          "date": "2026-03-10T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/2905|POWER2SME PRIVATE LIMITED - DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1531131,
+              "ledger": "POWER2SME PRIVATE LIMITED - DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1297569,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 116781.21,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 116781.21,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-5241AFC6-9D5D422339",
+          "type": "SALE",
+          "date": "2026-03-16T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/3014|AJANTHA LUMBER INC",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1887528,
+              "ledger": "AJANTHA LUMBER INC - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1599600,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 287928,
+              "ledger": "OUTPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-829233FE-B47E7B7C15",
+          "type": "SALE",
+          "date": "2026-03-17T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/3038|MITTAL SIDDHI INFRA PRIVATE LIMITED-DR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1446500,
+              "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1225847.7,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 110326.29,
+              "ledger": "OUTPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 110326.29,
+              "ledger": "OUTPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "SALE-4545999F-823AB3233F",
+          "type": "SALE",
+          "date": "2026-03-24T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/3238|BRIJ CHEMICALS DRS",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1413759,
+              "ledger": "BRIJ CHEMICALS DRS - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1198100.7,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 215658.13,
+              "ledger": "OUTPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 17993,
+              "ledger": "Carriage Inwards RD",
+              "category": "JOURNAL",
+              "group": "Direct Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 449.83,
+              "ledger": "INPUT RCM CGST",
+              "category": "JOURNAL",
+              "group": "RCM"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 449.83,
+              "ledger": "INPUT RCM SGST",
+              "category": "JOURNAL",
+              "group": "RCM"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 17813,
+              "ledger": "Aditi Transtrade- Transport",
+              "category": "JOURNAL",
+              "group": "SUNDRY CREDITORS (OTHERS)"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 449.83,
+              "ledger": "OUTPUT RCM CGST",
+              "category": "JOURNAL",
+              "group": "RCM"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 449.83,
+              "ledger": "OUTPUT RCM SGST",
+              "category": "JOURNAL",
+              "group": "RCM"
+            }
+          ]
+        },
+        {
+          "voucherNo": "AT/25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-05-26T18:30:00.000Z",
+          "narration": "BEING TRANSPORTATION CHARGES PAYABLE FROM LOTE MIDC TO KHOPOLI FOR SULAKI CHEMICAL PVT LTD, REF NO S/134/25-26, VEHICLE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 180,
+              "ledger": "TDS ON CONTRACT",
+              "category": "JOURNAL",
+              "group": "TDS"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12233",
+          "type": "RECEIPT",
+          "date": "2025-08-27T18:30:00.000Z",
+          "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING RTGS RECEIVED FROM KANISHKA ENTERPRISES AGNST UTR KAR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1191116,
+              "ledger": "Bank Accounts",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1191116,
+              "ledger": "KANISHKA ENTERPRISES - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "17233",
+          "type": "RECEIPT",
+          "date": "2026-03-12T18:30:00.000Z",
+          "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING RTGS RECEIVED FROM SULAKI CHEMICAL PVT LTD AGNST UTR ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2977388,
+              "ledger": "Bank Accounts",
+              "category": "BANK",
+              "group": "Bank Accounts"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2977388,
+              "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "T/HR02/2526/2233",
+          "type": "JOURNAL",
+          "date": "2026-03-26T18:30:00.000Z",
+          "narration": "BEING INTEREST ON UNSECURED LOAN AGST INVOICE NO - T/HR02/2526/2233 DTD – 12.03.2026 AGST INVOICE NO – T/MH11/2526/0814 ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2410,
+              "ledger": "Interest on Unsecured Loan",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "T/HR02/2526/2233",
+          "type": "JOURNAL",
+          "date": "2026-03-26T18:30:00.000Z",
+          "narration": "BEING INTEREST ON UNSECURED LOAN AGST INVOICE NO - T/HR02/2526/2233 DTD – 12.03.2026 AGST INVOICE NO – T/MH11/2526/0814 ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 2410,
+              "ledger": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+              "category": "JOURNAL",
+              "group": "Unsecured from Other than Bank"
+            }
+          ]
+        },
+        {
+          "voucherNo": "233",
+          "type": "JOURNAL",
+          "date": "2025-09-07T18:30:00.000Z",
+          "narration": "Staff Welfare",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 220,
+              "ledger": "Cash",
+              "category": "JOURNAL",
+              "group": "Cash in Hand"
+            }
+          ]
+        },
+        {
+          "voucherNo": "VPS2623323480083",
+          "type": "JOURNAL",
+          "date": "2025-08-19T18:30:00.000Z",
+          "narration": "Interest on Corporate Card",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 34692,
+              "ledger": "HDFC CORPORATE CARD - V2P 3767",
+              "category": "JOURNAL",
+              "group": "Unsecured from Bank"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 34692,
+              "ledger": "Interest on Corporate Card",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "11233",
+          "type": "PAYMENT",
+          "date": "2025-05-02T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1.8,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM/R2526/0233",
+          "type": "RCM_PURCHASE",
+          "date": "2025-12-08T18:30:00.000Z",
+          "narration": "Narration: BEING TRANSPORTATION CHARGES FROM KANDLA TO PALI KHOPOLI, FOR A G ART PETROCHEM LLP, REF- AR/2526/0152, AR/25",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 236550,
+              "ledger": "Carriage Inward URD",
+              "category": "JOURNAL",
+              "group": "Direct Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM/R2526/0233",
+          "type": "RCM_PURCHASE",
+          "date": "2025-12-08T18:30:00.000Z",
+          "narration": "Narration: BEING TRANSPORTATION CHARGES FROM KANDLA TO PALI KHOPOLI, FOR A G ART PETROCHEM LLP, REF- AR/2526/0152, AR/25",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 231819,
+              "ledger": "D S LOGISTICS",
+              "category": "JOURNAL",
+              "group": "SUNDRY CREDITORS (OTHERS)"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM/R2526/0233",
+          "type": "RCM_PURCHASE",
+          "date": "2025-12-08T18:30:00.000Z",
+          "narration": "Narration: BEING TRANSPORTATION CHARGES FROM KANDLA TO PALI KHOPOLI, FOR A G ART PETROCHEM LLP, REF- AR/2526/0152, AR/25",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 4731,
+              "ledger": "TDS ON CONTRACT",
+              "category": "JOURNAL",
+              "group": "TDS"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12233",
+          "type": "PAYMENT",
+          "date": "2025-06-28T00:00:00.000Z",
+          "narration": "BEING RTGS MADE TO LUBRICON INDIA | BEING RTGS MADE TO LUBRICON INDIA",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 2344370,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 2344370,
+              "ledger": "LUBRICON INDIA - CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12330",
+          "type": "PAYMENT",
+          "date": "2025-07-04T00:00:00.000Z",
+          "narration": "BEING RTGS MADE TO N K ENTERPRISES AGNST UTR MAHBR52025070320999340 | BEING RTGS MADE TO N K ENTERPRISES AGNST UTR MAHBR",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 2372992,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 2372992,
+              "ledger": "N K ENTERPRISE",
+              "category": "CUSTOMER",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12331",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 10,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12332",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1.8,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12333",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING NEFT MADE TO SILVERBACK INFRA AGNST UTR MAHBR52025070320999119 | BEING NEFT MADE TO SILVERBACK INFRA AGNST UTR MAH",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 4202228,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 4202228,
+              "ledger": "SILVERBACK INFRA PRIVATE LIMITED",
+              "category": "JOURNAL",
+              "group": "Advance to S. Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12334",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 10,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12335",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1.8,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12337",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING NEFT MADE TO TATA CAPITAL LIMITED AGNST UTR MAHBR52025070421000195 | BEING NEFT MADE TO TATA CAPITAL LIMITED AGNST",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 7000000,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 7000000,
+              "ledger": "TATA CAPITAL LIMITED",
+              "category": "JOURNAL",
+              "group": "Unsecured from Other than Bank"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12338",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 10,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12339",
+          "type": "PAYMENT",
+          "date": "2025-07-03T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1.8,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12336",
+          "type": "PAYMENT",
+          "date": "2025-08-03T18:29:50.000Z",
+          "narration": "BEING EMI PAID FOR THE MONTH OF AUG 25 ( NATCH PROBLEM PAYMENT BY LINK 24567990718 ) | BEING EMI PAID FOR THE MONTH OF A",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 166240,
+              "ledger": "L &T FINANCE LIMITED BL250613256600976",
+              "category": "JOURNAL",
+              "group": "Unsecured from Other than Bank"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 14.16,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 260004.16,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 93750,
+              "ledger": "Interest on Unsecured Loan",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "13233",
+          "type": "PAYMENT",
+          "date": "2025-08-20T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEDUCTED BY BANK | BEING BANK CHARGES DEDUCTED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 10,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "14233",
+          "type": "PAYMENT",
+          "date": "2025-10-09T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEBITED BY BANK | BEING BANK CHARGES DEBITED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1.8,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "15233",
+          "type": "PAYMENT",
+          "date": "2025-11-17T18:29:50.000Z",
+          "narration": "BEING BANK CHARGES DEDUCTED BY BANK | BEING BANK CHARGES DEDUCTED BY BANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1.8,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "16233",
+          "type": "PAYMENT",
+          "date": "2026-01-12T00:00:00.000Z",
+          "narration": "BEING NEFT MADE TO G L KHANNA AND SONS VIDE UTR NO MAHBR52026011222676568 | BEING NEFT MADE TO G L KHANNA AND SONS VIDE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1450000,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 1450000,
+              "ledger": "G L KHANNA & SONS GUJ - CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "ARGJ/25-26/0233",
+          "type": "PURCHASE",
+          "date": "2025-08-13T18:30:00.000Z",
+          "narration": "PURCHASE|ARGJ/25-26/0233|AVALANCHE REFINERIES PVT LTD",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 303543,
+              "ledger": "INPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 1686350,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 1989893,
+              "ledger": "AVALANCHE REFINERIES PVT LTD",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "ART/25-26/1233",
+          "type": "PURCHASE",
+          "date": "2026-03-12T18:30:00.000Z",
+          "narration": "PURCHASE|ART/25-26/1233|Art Infrastructure Pvt Ltd- CR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2416700,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 2851706,
+              "ledger": "Art Infrastructure Pvt Ltd- CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 217503,
+              "ledger": "INPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 217503,
+              "ledger": "INPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DPCPL/25-26/233",
+          "type": "PURCHASE",
+          "date": "2026-03-27T18:30:00.000Z",
+          "narration": "PURCHASE|DPCPL/25-26/233|DUBEY PETROLEUM CHEMICALS PRIVATE LIMITED - CR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 635250,
+              "ledger": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "PURCHASE",
+              "group": "Purchase"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 749595,
+              "ledger": "DUBEY PETROLEUM CHEMICALS PRIVATE LIMITED - CR",
+              "category": "JOURNAL",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 57172.5,
+              "ledger": "INPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 57172.5,
+              "ledger": "INPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM/G2526/0233",
+          "type": "SALE",
+          "date": "2025-05-08T18:30:00.000Z",
+          "narration": "SALE|APM/G2526/0233|GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 1692960,
+              "ledger": "Sales - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+              "category": "SALES",
+              "group": "Sales"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 304732.8,
+              "ledger": "OUTPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "OUTPUT GST"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 1997693,
+              "ledger": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+              "category": "JOURNAL",
+              "group": "Advance From S. Debtors"
+            }
+          ]
+        },
+        {
+          "voucherNo": "4233",
+          "type": "JOURNAL",
+          "date": "2025-12-10T18:30:00.000Z",
+          "narration": "Narration: BEING ELECTRICITY CHARGES OFFICE - 2403 PAID FOR THE MONTH OF DEC 25",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 4080,
+              "ledger": "Electricity Payable",
+              "category": "JOURNAL",
+              "group": "Provision for Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "VPS2623323480083",
+          "type": "JOURNAL",
+          "date": "2026-10-28T19:23:02.072Z",
+          "narration": "Narration: BEING INTEREST\r\nON HDFC\r\nCORPORATE CARD\r\n- 3767 AGNST\r\nINVOICE NO\r\nVPS2623323480083\r\nDTD 20.08.2025",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 29400,
+              "ledger": "Interest on Corporate Card",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "25-26/0233",
+          "type": "JOURNAL",
+          "date": "2026-10-28T19:23:18.976Z",
+          "narration": "Narration: BEING PURCHASE ALLUMINIUM COMPOSITE\r\nPANEL (3MM - 8X4 - 01 NOS. - SB\r\n010) QTY ? 32 SQFT, ALLUMINIUM\r\nCOMPOSI",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.04,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "3233",
+          "type": "JOURNAL",
+          "date": "2026-10-28T19:25:00.971Z",
+          "narration": "Narration: BEING TRAVELING\r\nCHARGES FOR IST TO\r\nNAV & NAV TO IST\r\nOF SANDEEP SIR &\r\nFAMILY AGST\r\nINVOICE NO - DS/25\r\n/84",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 192108,
+              "ledger": "Travelling Expenses- International",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "4233",
+          "type": "JOURNAL",
+          "date": "2025-11-11T18:30:00.000Z",
+          "narration": "Narration: BEING\r\nELECTRICITY\r\nCHARGES\r\nOFFICE - 2403\r\nPAID FOR THE\r\nMONTH OF DEC\r\n25",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 4080,
+              "ledger": "Electricity Office 24th Floor",
+              "category": "JOURNAL",
+              "group": "Electricity Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "T/HR02\r\n/2526\r\n/2233",
+          "type": "JOURNAL",
+          "date": "2026-10-28T19:30:59.157Z",
+          "narration": "Narration: BEING INTEREST ON\r\nUNSECURED LOAN AGST\r\nINVOICE NO - T/HR02\r\n/2526/2233 DTD ? 12.\r\n03.2026 AGST INVOICE\r\nNO ?",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 2410,
+              "ledger": "Interest on Unsecured Loan",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "11233",
+          "type": "JOURNAL",
+          "date": "2025-03-04T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12331",
+          "type": "JOURNAL",
+          "date": "2025-04-06T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12332",
+          "type": "JOURNAL",
+          "date": "2025-04-06T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12335",
+          "type": "JOURNAL",
+          "date": "2025-04-06T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12338",
+          "type": "JOURNAL",
+          "date": "2025-04-06T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12339",
+          "type": "JOURNAL",
+          "date": "2025-04-06T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12336",
+          "type": "JOURNAL",
+          "date": "2025-04-07T18:30:00.000Z",
+          "narration": "Narration: BEING EMI\r\nPAID FOR THE\r\nMONTH OF AUG\r\n25 ( NATCH\r\nPROBLEM\r\nPAYMENT BY\r\nLINK 24567990718 )",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 93750,
+              "ledger": "Interest on Unsecured Loan",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "12336",
+          "type": "JOURNAL",
+          "date": "2025-04-07T18:30:00.000Z",
+          "narration": "Narration: BEING EMI\r\nPAID FOR THE\r\nMONTH OF AUG\r\n25 ( NATCH\r\nPROBLEM\r\nPAYMENT BY\r\nLINK 24567990718 )",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 14.16,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "13233",
+          "type": "JOURNAL",
+          "date": "2026-10-28T20:37:52.452Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEDUCTED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "233",
+          "type": "JOURNAL",
+          "date": "2025-08-08T18:30:00.000Z",
+          "narration": "Narration: BEING CASH\r\nPAID TO\r\nKAYYUM FOR\r\nLUNCH\r\nPURCHASE FOR\r\nSANDEEP SIR",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 220,
+              "ledger": "Staff Welfare",
+              "category": "JOURNAL",
+              "group": "Employee Benefit Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "14233",
+          "type": "JOURNAL",
+          "date": "2025-10-09T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "15233",
+          "type": "JOURNAL",
+          "date": "2026-10-28T21:14:38.810Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEDUCTED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1.8,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "17233",
+          "type": "JOURNAL",
+          "date": "2026-04-02T18:30:00.000Z",
+          "narration": "Narration: BEING BANK\r\nCHARGES\r\nDEBITED BY\r\nBANK",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 10,
+              "ledger": "Bank Charges",
+              "category": "JOURNAL",
+              "group": "Financial Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "VPS2623323480083",
+          "type": "JOURNAL",
+          "date": "2025-08-19T18:30:00.000Z",
+          "narration": "Narration: BEING INTEREST ON HDFC CORPORATE CARD - 3767 AGNST INVOICE NO VPS2623323480083 DTD 20.08.2025",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 34692,
+              "ledger": "HDFC CORPORATE CARD - V2P 3767",
+              "category": "JOURNAL",
+              "group": "Unsecured from Bank"
+            }
+          ]
+        },
+        {
+          "voucherNo": "VPS2623323480083",
+          "type": "JOURNAL",
+          "date": "2025-08-19T18:30:00.000Z",
+          "narration": "Narration: BEING INTEREST ON HDFC CORPORATE CARD - 3767 AGNST INVOICE NO VPS2623323480083 DTD 20.08.2025",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 5292,
+              "ledger": "INPUT IGST 18%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "VPS2623323480083",
+          "type": "JOURNAL",
+          "date": "2025-08-19T18:30:00.000Z",
+          "narration": "Narration: BEING INTEREST ON HDFC CORPORATE CARD - 3767 AGNST INVOICE NO VPS2623323480083 DTD 20.08.2025",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 29400,
+              "ledger": "Interest on Corporate Card",
+              "category": "JOURNAL",
+              "group": "Interest on Loans"
+            }
+          ]
+        },
+        {
+          "voucherNo": "25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-08-28T18:30:00.000Z",
+          "narration": "Narration: BEING PURCHASE ALLUMINIUM COMPOSITE PANEL (3MM - 8X4 - 01 NOS. - SB 010) QTY – 32 SQFT, ALLUMINIUM COMPOSITE ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1987.02,
+              "ledger": "INPUT SGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-08-28T18:30:00.000Z",
+          "narration": "Narration: BEING PURCHASE ALLUMINIUM COMPOSITE PANEL (3MM - 8X4 - 01 NOS. - SB 010) QTY – 32 SQFT, ALLUMINIUM COMPOSITE ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 1987.02,
+              "ledger": "INPUT CGST 9%",
+              "category": "JOURNAL",
+              "group": "INPUT GST"
+            }
+          ]
+        },
+        {
+          "voucherNo": "25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-08-28T18:30:00.000Z",
+          "narration": "Narration: BEING PURCHASE ALLUMINIUM COMPOSITE PANEL (3MM - 8X4 - 01 NOS. - SB 010) QTY – 32 SQFT, ALLUMINIUM COMPOSITE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 26052,
+              "ledger": "MANGALAM PLYWOOD",
+              "category": "JOURNAL",
+              "group": "SUNDRY CREDITORS (OTHERS)"
+            }
+          ]
+        },
+        {
+          "voucherNo": "25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-08-28T18:30:00.000Z",
+          "narration": "Narration: BEING PURCHASE ALLUMINIUM COMPOSITE PANEL (3MM - 8X4 - 01 NOS. - SB 010) QTY – 32 SQFT, ALLUMINIUM COMPOSITE ",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 22078,
+              "ledger": "Furniture & Fixtures",
+              "category": "JOURNAL",
+              "group": "Office Furniture"
+            }
+          ]
+        },
+        {
+          "voucherNo": "25-26/0233",
+          "type": "JOURNAL",
+          "date": "2025-08-28T18:30:00.000Z",
+          "narration": "Narration: BEING PURCHASE ALLUMINIUM COMPOSITE PANEL (3MM - 8X4 - 01 NOS. - SB 010) QTY – 32 SQFT, ALLUMINIUM COMPOSITE ",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.04,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /0233",
+          "type": "JOURNAL",
+          "date": "2025-05-08T18:30:00.000Z",
+          "narration": "Narration: BEING: SALES FUEL\r\nOIL QTY: 35270.00\r\nKGS @48/- AGST\r\nINVOICE NO APM\r\n/G2526/0233\r\nDATED: 09.05.2025\r\nVEHICLE",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.2,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "233",
+          "type": "PAYMENT",
+          "date": "2025-07-11T18:30:00.000Z",
+          "narration": "Tally Salary Payment 233 dated 2025-07-12",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 13600,
+              "ledger": "Salary Payable",
+              "category": "JOURNAL",
+              "group": "Outstanding Exp"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 13600,
+              "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+              "category": "JOURNAL",
+              "group": "Bank OD A/c & CC A/c"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /1233",
+          "type": "JOURNAL",
+          "date": "2025-09-27T18:30:00.000Z",
+          "narration": "Narration: BEING SALE\r\nBITUMEN- KG QNTY\r\n32750 KG @37.20/\r\n- AGST INV NO\r\nAPM/G2526/1233\r\nDATE: 28/09/2025\r\nVEHICLE NO R",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.25,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2233",
+          "type": "JOURNAL",
+          "date": "2026-01-21T18:30:00.000Z",
+          "narration": "Narration: BEING SALE\r\nBITUMEN QTY\r\n29140 KGS @38.\r\n20/- AGST INV\r\nNO APM/G2526\r\n/2233 DT 22.01.\r\n2026 VEHICLE NO MH43BX",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.36,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2330",
+          "type": "JOURNAL",
+          "date": "2026-01-30T18:30:00.000Z",
+          "narration": "Narration: BEING SALE MIX\r\nSOLVENT QNTY\r\n23890 LTR @64/-\r\nAGST INV NO APM\r\n/G2526/2330\r\nDATE: 31/01/2026\r\nVEHICLE NO MH4",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.2,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2331",
+          "type": "JOURNAL",
+          "date": "2026-01-30T18:30:00.000Z",
+          "narration": "Narration: BEING SALE MIX\r\nSOLVENT QNTY\r\n19660 LTR @64/-\r\nAGST INV NO APM\r\n/G2526/2331\r\nDATE: 31/01/2026\r\nVEHICLE NO MH4",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.2,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2333",
+          "type": "JOURNAL",
+          "date": "2026-01-30T18:30:00.000Z",
+          "narration": "Narration: BEING: SALE\r\nHYDROCARBON OIL\r\nQTY 42340 LTR @71\r\n/- AGST INVOICE\r\nNO APM/G2526/2333\r\nDATED: 31.01.2026\r\nVEHIC",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.2,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2334",
+          "type": "JOURNAL",
+          "date": "2026-02-01T18:30:00.000Z",
+          "narration": "Narration: BEING: SALE\r\nBITUMEN QTY 22.\r\n070 MTS @36400/-\r\nAGST INVOICE NO -\r\nAPM/G2526/2334\r\nDATED - 02.02.\r\n2026 VEHIC",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.36,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2335",
+          "type": "JOURNAL",
+          "date": "2026-02-01T18:30:00.000Z",
+          "narration": "Narration: BEING: SALE\r\nBITUMEN QTY 26.\r\n540 MTS @36400/-\r\nAGST INVOICE NO -\r\nAPM/G2526/2335\r\nDATED - 02.02.\r\n2026 VEHIC",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.08,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2336",
+          "type": "JOURNAL",
+          "date": "2026-02-01T18:30:00.000Z",
+          "narration": "Narration: BEING: SALE MINERAL\r\nHYDROCARBON OIL QTY\r\n17.630 MTS @48000/-\r\nAGST INVOICE NO APM\r\n/G2526/2336 DATED:\r\n02.02",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.2,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2337",
+          "type": "JOURNAL",
+          "date": "2026-02-01T18:30:00.000Z",
+          "narration": "Narration: BEING: SALE MINERAL\r\nHYDROCARBON OIL QTY\r\n17.720 MTS @48000/-\r\nAGST INVOICE NO APM\r\n/G2526/2337 DATED:\r\n02.02",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.2,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "APM /G2526 /2338",
+          "type": "JOURNAL",
+          "date": "2026-02-01T18:30:00.000Z",
+          "narration": "Narration: BEING: SALE\r\nBITUMEN QTY 8.030\r\nMTS @36400/- AGST\r\nINVOICE NO - APM\r\n/G2526/2338 DATED\r\n- 02.02.2026\r\nVEHICLE",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.44,
+              "ledger": "R/OFF",
+              "category": "JOURNAL",
+              "group": "Indirect Expenses"
+            }
+          ]
+        },
+        {
+          "voucherNo": "T/HR02/2526/2233",
+          "type": "JOURNAL",
+          "date": "2026-03-26T18:30:00.000Z",
+          "narration": "Narration: BEING INTEREST ON UNSECURED LOAN AGST INVOICE NO - T/HR02/2526/2233 DTD – 12.03.2026 AGST INVOICE NO – T/MH11",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 2410,
+              "ledger": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+              "category": "JOURNAL",
+              "group": "Unsecured from Other than Bank"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "PDN/M/2526/014",
+      "excel": [
+        {
+          "name": "INPUT CGST 14%",
+          "side": "CREDIT",
+          "amount": 9843.75,
+          "type": "Inward Debit Note",
+          "date": "2025-08-01"
+        },
+        {
+          "name": "INPUT SGST 14%",
+          "side": "CREDIT",
+          "amount": 9843.75,
+          "type": "Inward Debit Note",
+          "date": "2025-08-01"
+        }
+      ],
+      "notes": [
+        {
+          "noteNo": "PDN/M/2526/014",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "e2ae1223-7237-4585-b10c-fe70fcad2063",
+          "categoryPath": "Fixed Assets / Air Conditioner / Air Conditioner - Office",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 70312.5,
+          "purchaseId": null,
+          "saleId": null
+        },
+        {
+          "noteNo": "PDN/M/2526/014",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "d426c9ed-3c62-400f-a661-af542b06be57",
+          "categoryPath": "Current Liabilities / Sundry Creditors / SUNDRY CREDITORS (OTHERS) / TOP TEN ELECTRONIC SHOPPE NX",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 90000,
+          "purchaseId": null,
+          "saleId": null
+        },
+        {
+          "noteNo": "PDN/M/2526/014",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "f02a25f4-2235-490e-abcc-84f1b5a96bea",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / INPUT GST / INPUT CGST 14%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 9843.75,
+          "purchaseId": null,
+          "saleId": null
+        },
+        {
+          "noteNo": "PDN/M/2526/014",
+          "type": "DEBIT_NOTE",
+          "sourceType": "PURCHASE",
+          "status": "APPROVED",
+          "voucherId": "c6b2e0f3-efe0-4b0d-9817-1f9f04de737a",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / INPUT GST / INPUT SGST 14%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 9843.75,
+          "purchaseId": null,
+          "saleId": null
+        }
+      ],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "DBN-1AED2143-EAF0E325CA",
+          "type": "DEBIT_NOTE",
+          "date": "2025-08-13T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/014 | Invoice:PDN/M/2526/014 | TOP TEN ELECTRONIC SHOPPE NX | TOP TEN ELECTRONIC SHOP",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 9843.75,
+              "ledger": "TOP TEN ELECTRONIC SHOPPE NX - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 9843.75,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-FBFFA00F-6FBB4B4119",
+          "type": "DEBIT_NOTE",
+          "date": "2025-08-13T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/014 | Invoice:PDN/M/2526/014 | TOP TEN ELECTRONIC SHOPPE NX | TOP TEN ELECTRONIC SHOP",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 9843.75,
+              "ledger": "TOP TEN ELECTRONIC SHOPPE NX - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 9843.75,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-E64654B4-5996DDF5E6",
+          "type": "DEBIT_NOTE",
+          "date": "2025-08-13T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/014 | Invoice:PDN/M/2526/014 | TOP TEN ELECTRONIC SHOPPE NX | TOP TEN ELECTRONIC SHOP",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 70312.5,
+              "ledger": "TOP TEN ELECTRONIC SHOPPE NX - Sundry Creditor",
+              "category": "VENDOR",
+              "group": "Sundry Creditors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 70312.5,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "PDN/M/2526/014",
+          "type": "DEBIT_NOTE",
+          "date": "2025-08-13T18:30:00.000Z",
+          "narration": "PURCHASE | DEBIT_NOTE | PDN/M/2526/014 | Invoice:PDN/M/2526/014 | TOP TEN ELECTRONIC SHOPPE NX | TOP TEN ELECTRONIC SHOP",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 90000,
+              "ledger": "TOP TEN ELECTRONIC SHOPPE NX",
+              "category": "JOURNAL",
+              "group": "SUNDRY CREDITORS (OTHERS)"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 90000,
+              "ledger": "Purchase Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Purchase Accounts"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "no": "SDN/M/2526/004",
+      "excel": [
+        {
+          "name": "OUTPUT IGST 18%",
+          "side": "CREDIT",
+          "amount": 24333.12,
+          "type": "Outward Debit Note",
+          "date": "2025-11-21"
+        }
+      ],
+      "notes": [
+        {
+          "noteNo": "SDN/M/2526/004",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "a0dfae10-6b2c-4485-9012-92546b1160ac",
+          "categoryPath": "Sales Accounts / IGST SALES",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 135184,
+          "purchaseId": null,
+          "saleId": "a1fa27f6-b3fe-4ccc-bb11-fdfedf24a0b3"
+        },
+        {
+          "noteNo": "SDN/M/2526/004",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "1cc56822-6130-42c5-a7d6-1154514ccca1",
+          "categoryPath": "Current Liabilities / Duties & Taxes / GST / OUTPUT GST / OUTPUT IGST 18%",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 24333.12,
+          "purchaseId": null,
+          "saleId": "a1fa27f6-b3fe-4ccc-bb11-fdfedf24a0b3"
+        },
+        {
+          "noteNo": "SDN/M/2526/004",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "APPROVED",
+          "voucherId": "4776b1cc-56b3-46cb-aab9-a7e6f9482518",
+          "categoryPath": "Indirect Expenses / R / OFF",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 0.12,
+          "purchaseId": null,
+          "saleId": "a1fa27f6-b3fe-4ccc-bb11-fdfedf24a0b3"
+        },
+        {
+          "noteNo": "SDN/M/2526/004",
+          "type": "DEBIT_NOTE",
+          "sourceType": "SALE",
+          "status": "REJECTED",
+          "voucherId": null,
+          "categoryPath": "Current Assets / Sundry Debtors / Grasim Industries Limited DR",
+          "cgst": 0,
+          "sgst": 0,
+          "igst": 0,
+          "total": 159517,
+          "purchaseId": null,
+          "saleId": "a1fa27f6-b3fe-4ccc-bb11-fdfedf24a0b3"
+        }
+      ],
+      "sales": [],
+      "purchases": [],
+      "vouchers": [
+        {
+          "voucherNo": "DBN-54069D2C-F849FE5402",
+          "type": "DEBIT_NOTE",
+          "date": "2025-11-20T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/004 | Invoice:APM/G2526/1756 | Grasim Industries Limited DR | Grasim Industries Limited D",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 135184,
+              "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 135184,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-9D282C6A-871D0AA5A6",
+          "type": "DEBIT_NOTE",
+          "date": "2025-11-20T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/004 | Invoice:APM/G2526/1756 | Grasim Industries Limited DR | Grasim Industries Limited D",
+          "entries": [
+            {
+              "side": "DEBIT",
+              "amount": 24333.12,
+              "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "CREDIT",
+              "amount": 24333.12,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        },
+        {
+          "voucherNo": "DBN-070960D6-7CAB67BBCB",
+          "type": "DEBIT_NOTE",
+          "date": "2025-11-20T18:30:00.000Z",
+          "narration": "SALE | DEBIT_NOTE | SDN/M/2526/004 | Invoice:APM/G2526/1756 | Grasim Industries Limited DR | Grasim Industries Limited D",
+          "entries": [
+            {
+              "side": "CREDIT",
+              "amount": 0.12,
+              "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+              "category": "CUSTOMER",
+              "group": "Sundry Debtors"
+            },
+            {
+              "side": "DEBIT",
+              "amount": 0.12,
+              "ledger": "Sales Debit Note Adjustments",
+              "category": "JOURNAL",
+              "group": "Sales Accounts"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

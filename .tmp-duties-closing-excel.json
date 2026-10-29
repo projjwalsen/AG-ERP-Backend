@@ -1,0 +1,429 @@
+[
+  {
+    "name": "GST",
+    "od": 4421107.64,
+    "oc": 8951333.0,
+    "cd": 229972.85,
+    "cc": 4142911.33
+  },
+  {
+    "name": "CASH LEDGER",
+    "od": 301500.0,
+    "oc": 0.0,
+    "cd": 89372.0,
+    "cc": 92066.0
+  },
+  {
+    "name": "CGST CASH LEDGER",
+    "od": 11295.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 71437.0
+  },
+  {
+    "name": "IGST CASH LEDGER",
+    "od": 265583.0,
+    "oc": 0.0,
+    "cd": 89372.0,
+    "cc": 0.0
+  },
+  {
+    "name": "SGST CASH LEDGER",
+    "od": 24622.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 20629.0
+  },
+  {
+    "name": "GST BLOCKED",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "CGST-ITC BLOCKED",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "IGST-ITC BLOCKED",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "SGST-ITC BLOCKED",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "GST PAYABLE",
+    "od": 1578967.0,
+    "oc": 8758778.0,
+    "cd": 0.0,
+    "cc": 3728345.0
+  },
+  {
+    "name": "CGST- PAYABLE/REFUNDABLE",
+    "od": 1578967.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "IGST- PAYABLE/REFUNDABLE",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 3728345.0
+  },
+  {
+    "name": "SGST- PAYABLE/REFUNDABLE",
+    "od": 0.0,
+    "oc": 8758778.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT GST",
+    "od": 2540640.64,
+    "oc": 0.0,
+    "cd": 140600.85,
+    "cc": 0.0
+  },
+  {
+    "name": "CGST ITC Not Reflected in GSTR-2B",
+    "od": 85573.53,
+    "oc": 0.0,
+    "cd": 26786.25,
+    "cc": 0.0
+  },
+  {
+    "name": "IGST ITC Not Reflected in GSTR-2B",
+    "od": 2369493.58,
+    "oc": 0.0,
+    "cd": 87028.35,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT CGST 14%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT CGST 2.5%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT CGST 6%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT CGST 9%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT IGST 12%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT IGST 18%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT IGST 28%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT IGST 5%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT SGST 14%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT SGST 2.5%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT SGST 6%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT SGST 9%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "SGST ITC Not Reflected in GSTR-2B",
+    "od": 85573.53,
+    "oc": 0.0,
+    "cd": 26786.25,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT GST",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT CGST 2.5%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT CGST 9%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT IGST 12%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT IGST 18%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT SGST 2.5%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT SGST 9%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "RCM",
+    "od": 0.0,
+    "oc": 192555.0,
+    "cd": 0.0,
+    "cc": 322500.33
+  },
+  {
+    "name": "INPUT RCM CGST",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT RCM IGST",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "INPUT RCM SGST",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "OUTPUT RCM CGST",
+    "od": 0.0,
+    "oc": 81594.0,
+    "cd": 0.0,
+    "cc": 137038.0
+  },
+  {
+    "name": "OUTPUT RCM IGST",
+    "od": 0.0,
+    "oc": 29367.0,
+    "cd": 0.0,
+    "cc": 48424.33
+  },
+  {
+    "name": "OUTPUT RCM SGST",
+    "od": 0.0,
+    "oc": 81594.0,
+    "cd": 0.0,
+    "cc": 137038.0
+  },
+  {
+    "name": "TCS",
+    "od": 0.0,
+    "oc": 197423.0,
+    "cd": 0.0,
+    "cc": 15670.0
+  },
+  {
+    "name": "TCS ON SALE @0.1%",
+    "od": 0.0,
+    "oc": 197423.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "TCS ON SALE OF SCRAP 1%",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 15670.0
+  },
+  {
+    "name": "TDS",
+    "od": 72791.0,
+    "oc": 1354762.14,
+    "cd": 0.0,
+    "cc": 1412274.62
+  },
+  {
+    "name": "TDS ON COMMISSION",
+    "od": 0.0,
+    "oc": 10000.0,
+    "cd": 0.0,
+    "cc": 8000.0
+  },
+  {
+    "name": "TDS ON CONTRACT",
+    "od": 0.0,
+    "oc": 131743.0,
+    "cd": 0.0,
+    "cc": 198317.78
+  },
+  {
+    "name": "TDS ON INTEREST ON UNSECURED LOAN",
+    "od": 0.0,
+    "oc": 70843.31,
+    "cd": 0.0,
+    "cc": 66442.01
+  },
+  {
+    "name": "TDS ON LABOUR CHARGES",
+    "od": 0.0,
+    "oc": 544.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "TDS ON PROFESSIONAL FEES",
+    "od": 0.0,
+    "oc": 36602.0,
+    "cd": 0.0,
+    "cc": 19855.0
+  },
+  {
+    "name": "TDS ON PURCHASE OF GOODS @0.10%",
+    "od": 0.0,
+    "oc": 896150.83,
+    "cd": 0.0,
+    "cc": 472637.83
+  },
+  {
+    "name": "TDS ON RENT",
+    "od": 0.0,
+    "oc": 45983.0,
+    "cd": 0.0,
+    "cc": 60981.0
+  },
+  {
+    "name": "TDS ON SALARY",
+    "od": 0.0,
+    "oc": 162896.0,
+    "cd": 0.0,
+    "cc": 586041.0
+  },
+  {
+    "name": "TDS ON TECHNICAL FEES",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "UNCONSUMED CHALLAN",
+    "od": 72791.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "PROVIDENT FUND PAYABLE",
+    "od": 0.0,
+    "oc": 46000.0,
+    "cd": 0.0,
+    "cc": 46161.0
+  },
+  {
+    "name": "PTEC PAYABLE",
+    "od": 0.0,
+    "oc": 0.0,
+    "cd": 0.0,
+    "cc": 0.0
+  },
+  {
+    "name": "PTRC PAYABLE",
+    "od": 0.0,
+    "oc": 11575.0,
+    "cd": 0.0,
+    "cc": 11500.0
+  },
+  {
+    "name": "Grand Total",
+    "od": 4493898.64,
+    "oc": 10561093.14,
+    "cd": 229972.85,
+    "cc": 5628516.95
+  }
+]
