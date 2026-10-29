@@ -473,21 +473,61 @@ export class ReportingService {
                 group.name.trim().toLocaleLowerCase() === "advance from s. debtors"
             )
             : undefined;
-        const advanceFromSDebtorsGroupIds = new Set<string>();
-        if (advanceFromSDebtorsRoot) {
-            advanceFromSDebtorsGroupIds.add(advanceFromSDebtorsRoot.id);
+        const collectDescendantGroupIds = (rootId?: string) => {
+            const ids = new Set<string>();
+            if (!rootId) return ids;
+            ids.add(rootId);
             let hasNewGroup = true;
             while (hasNewGroup) {
                 hasNewGroup = false;
                 for (const group of groupRows) {
                     if (
                         group.parentId &&
-                        advanceFromSDebtorsGroupIds.has(group.parentId) &&
-                        !advanceFromSDebtorsGroupIds.has(group.id)
+                        ids.has(group.parentId) &&
+                        !ids.has(group.id)
                     ) {
-                        advanceFromSDebtorsGroupIds.add(group.id);
+                        ids.add(group.id);
                         hasNewGroup = true;
                     }
+                }
+            }
+            return ids;
+        };
+        const advanceFromSDebtorsGroupIds = collectDescendantGroupIds(
+            advanceFromSDebtorsRoot?.id
+        );
+        const outstandingExpRoot = currentLiabilitiesGroup
+            ? groupRows.find(group =>
+                group.parentId === currentLiabilitiesGroup.id &&
+                group.name.trim().toLocaleLowerCase() === "outstanding exp"
+            )
+            : undefined;
+        const outstandingExpGroupIds = collectDescendantGroupIds(
+            outstandingExpRoot?.id
+        );
+        const tallyDutiesRoot = currentLiabilitiesGroup
+            ? groupRows.find(group =>
+                group.parentId === currentLiabilitiesGroup.id &&
+                group.name.trim().toLocaleLowerCase() === "duties & taxes"
+            )
+            : undefined;
+        const tallyDutiesGroupIds = collectDescendantGroupIds(
+            tallyDutiesRoot?.id
+        );
+        const tallySundryCreditorsRoot = currentLiabilitiesGroup
+            ? groupRows.find(group =>
+                group.parentId === currentLiabilitiesGroup.id &&
+                group.name.trim().toLocaleLowerCase() === "sundry creditors"
+            )
+            : undefined;
+        const tallySundryCreditorGroupIds = collectDescendantGroupIds(
+            tallySundryCreditorsRoot?.id
+        );
+        const tallyUnsecuredLoanGroupIds = new Set<string>();
+        for (const group of groupRows) {
+            if (group.name.trim().toLocaleLowerCase() === "unsecured loans") {
+                for (const id of collectDescendantGroupIds(group.id)) {
+                    tallyUnsecuredLoanGroupIds.add(id);
                 }
             }
         }
@@ -713,7 +753,50 @@ export class ReportingService {
                             }
                         }
                     ]
-                }
+                },
+                ...(tallySundryCreditorGroupIds.size > 0
+                    ? [{
+                        // Tally Current Liabilities > Sundry Creditors is the
+                        // source group summary. Include every voucher on those
+                        // ledgers, including imported Journal/Purchase rows
+                        // that have no approved Journal relation.
+                        ledger: { groupId: { in: [...tallySundryCreditorGroupIds] } }
+                    }]
+                    : []),
+                ...(advanceFromSDebtorsGroupIds.size > 0
+                    ? [{
+                        // The Advance From S. Debtors subhead is reconciled
+                        // from the Tally voucher register. Include its posted
+                        // ledger entries even when an imported source voucher
+                        // has no approved Journal/Transaction master.
+                        ledger: { groupId: { in: [...advanceFromSDebtorsGroupIds] } }
+                    }]
+                    : []),
+                ...(outstandingExpGroupIds.size > 0
+                    ? [{
+                        // Outstanding Exp is reconciled from Tally ledger
+                        // statements, including approved and imported payment
+                        // vouchers without a Journal master relation.
+                        ledger: { groupId: { in: [...outstandingExpGroupIds] } }
+                    }]
+                    : []),
+                ...(tallyDutiesGroupIds.size > 0
+                    ? [{
+                        // Tally Current Liabilities > Duties & Taxes includes
+                        // GST on Sale/Purchase vouchers posted to these
+                        // ledgers, not only Journal-register rows.
+                        ledger: { groupId: { in: [...tallyDutiesGroupIds] } }
+                    }]
+                    : []),
+                ...(tallyUnsecuredLoanGroupIds.size > 0
+                    ? [{
+                        // Unsecured Loans is reconciled from Tally ledger
+                        // prints. Include every voucher on those ledgers,
+                        // including imported Journal rows with no approved
+                        // Journal master relation.
+                        ledger: { groupId: { in: [...tallyUnsecuredLoanGroupIds] } }
+                    }]
+                    : [])
             ]
         } as any);
         const scopedJournalEntryFilter: Prisma.LedgerEntryWhereInput = {
@@ -778,8 +861,70 @@ export class ReportingService {
                             }
                         }
                     }
-                }
-                , ...(branchId === TALLY_BANK_ACCOUNT_BRANCH_ID
+                },
+                ...(tallySundryCreditorGroupIds.size > 0
+                    ? [{
+                        groupId: { in: [...tallySundryCreditorGroupIds] },
+                        isActive: true
+                    } as Prisma.LedgerWhereInput]
+                    : []),
+                ...(advanceFromSDebtorsGroupIds.size > 0
+                    ? [{
+                        groupId: { in: [...advanceFromSDebtorsGroupIds] },
+                        isActive: true,
+                        ...(branchId
+                            ? {
+                                OR: [
+                                    { branchId },
+                                    { entries: { some: branchEntryFilter } }
+                                ]
+                            }
+                            : {})
+                    } as Prisma.LedgerWhereInput]
+                    : []),
+                ...(outstandingExpGroupIds.size > 0
+                    ? [{
+                        groupId: { in: [...outstandingExpGroupIds] },
+                        isActive: true,
+                        ...(branchId
+                            ? {
+                                OR: [
+                                    { branchId },
+                                    { entries: { some: branchEntryFilter } }
+                                ]
+                            }
+                            : {})
+                    } as Prisma.LedgerWhereInput]
+                    : []),
+                ...(tallyDutiesGroupIds.size > 0
+                    ? [{
+                        groupId: { in: [...tallyDutiesGroupIds] },
+                        isActive: true,
+                        ...(branchId
+                            ? {
+                                OR: [
+                                    { branchId },
+                                    { entries: { some: branchEntryFilter } }
+                                ]
+                            }
+                            : {})
+                    } as Prisma.LedgerWhereInput]
+                    : []),
+                ...(tallyUnsecuredLoanGroupIds.size > 0
+                    ? [{
+                        groupId: { in: [...tallyUnsecuredLoanGroupIds] },
+                        isActive: true,
+                        ...(branchId
+                            ? {
+                                OR: [
+                                    { branchId },
+                                    { entries: { some: branchEntryFilter } }
+                                ]
+                            }
+                            : {})
+                    } as Prisma.LedgerWhereInput]
+                    : []),
+                ...(branchId === TALLY_BANK_ACCOUNT_BRANCH_ID
                     ? [{
                         // Include the Tally-listed accounts even when their
                         // ledger has only opening-balance entries and no
@@ -978,12 +1123,17 @@ export class ReportingService {
                             // Journal and Voucher but no LedgerEntry, so
                             // include those rows as a fallback. The `none`
                             // condition prevents double-counting healthy
-                            // voucher-backed journals.
+                            // voucher-backed journals. Opening-balance
+                            // vouchers are already applied as opening, even
+                            // when they have no LedgerEntry.
                             OR: [
                                 { voucherId: null },
                                 {
                                     voucherId: { not: null },
-                                    voucher: { entries: { none: {} } }
+                                    voucher: {
+                                        entries: { none: {} },
+                                        voucherType: { not: VoucherType.OPENING_BALANCE }
+                                    }
                                 }
                             ],
                             ...(branchId ? { branchId } : {}),
@@ -1098,6 +1248,18 @@ export class ReportingService {
                 continue;
             }
             processedCategoryNotes.add(noteKey);
+            const categoryPathText = String(note.categoryPath || "");
+            // Party paths such as Current Liabilities / Sundry Creditors / ...
+            // already have their Tally register posting on the creditor
+            // ledger. Remapping the adjustment voucher onto that party
+            // doubles the debit in the Sundry Creditors group summary.
+            if (
+                /sundry\s+creditors|sundry\s+debtors|advance\s+from\s+s\.?\s*debtors|duties\s*&\s*taxes|(?:^|[/\\>])\s*unsecured\s+loans?(?:\s|$|[/\\>])|loan\s+from\s+directors?|unsecured\s+from\s+(?:bank|other)/i
+                    .test(categoryPathText)
+            ) {
+                categoryNoteIds.add(note.id);
+                continue;
+            }
             const targetName = categoryLeaf(note.categoryPath);
             const targetLedger = ledgers.find(ledger =>
                 ledger.branchId === (branchId || note.branchId) &&
@@ -1105,6 +1267,15 @@ export class ReportingService {
                 [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
             );
             if (!targetLedger) continue;
+            if (
+                tallySundryCreditorGroupIds.has(targetLedger.groupId) ||
+                advanceFromSDebtorsGroupIds.has(targetLedger.groupId) ||
+                tallyDutiesGroupIds.has(targetLedger.groupId) ||
+                tallyUnsecuredLoanGroupIds.has(targetLedger.groupId)
+            ) {
+                categoryNoteIds.add(note.id);
+                continue;
+            }
 
             // The same imported note may already have a journal-register
             // posting on the target category ledger. In that case the target
@@ -1301,6 +1472,13 @@ export class ReportingService {
         const duplicateLegacyOpeningLedgerIds = new Set<string>();
         for (const ledger of ledgers) {
             if (ledger.category !== LedgerType.JOURNAL) continue;
+            // Current Liabilities > Sundry Creditors is the Tally source
+            // head. Keep its opening vouchers even when a seeded vendor
+            // ledger stores the same party's opening on ledger fields.
+            if (
+                tallySundryCreditorGroupIds.has(ledger.groupId) ||
+                tallyUnsecuredLoanGroupIds.has(ledger.groupId)
+            ) continue;
 
             const base = partyBaseName(ledger.name);
             const branch = ledger.branchId || "";
@@ -1493,14 +1671,21 @@ export class ReportingService {
         // postings are different. Merge only JOURNAL ledgers with the same
         // name, branch, and top-level accounting group; unrelated groups are
         // kept separate.
-        const topLevelGroupCode = (groupId: string) => {
-            let group = ledgerGroups.find(item => item.id === groupId);
+        const groupByIdForMerge = new Map(ledgerGroups.map(group => [group.id, group]));
+        // Merge duplicate JOURNAL ledgers only within the same report head
+        // (Sundry Creditors vs Advance From S. Debtors). Walking to the
+        // Current Liabilities root mixed those heads and dropped creditor
+        // movement from the Tally group summary.
+        const reportHeadGroupId = (groupId: string) => {
+            let group = groupByIdForMerge.get(groupId);
             while (group?.parentId) {
-                group = ledgerGroups.find(item => item.id === group!.parentId);
+                const parent = groupByIdForMerge.get(group.parentId);
+                if (!parent?.parentId) return group.id;
+                group = parent;
             }
-            return group?.code || groupId;
+            return group?.id || groupId;
         };
-        const mergedJournalRows = new Map<string, any>();
+        const mergedJournalRows = new Map<string, any[]>();
         const nonMergedRows: any[] = [];
 
         for (const row of rawLedgerRows) {
@@ -1512,79 +1697,56 @@ export class ReportingService {
             const key = [
                 row.branchId || "",
                 String(row.account || "").trim().replace(/\s+/g, " ").toUpperCase(),
-                topLevelGroupCode(row.groupId)
+                reportHeadGroupId(row.groupId)
             ].join("|");
-            const existing = mergedJournalRows.get(key);
-            if (!existing) {
-                mergedJournalRows.set(key, { ...row });
-                continue;
-            }
-
-            // Duplicate imported ledgers can have the same account name but
-            // different groups. Keep the group path from the row that
-            // actually carries the balance instead of retaining an empty
-            // duplicate's group path.
-            const rowHasActivity = [
-                row.periodDebit,
-                row.periodCredit,
-                row.openingDebit,
-                row.openingCredit,
-                row.debit,
-                row.credit,
-                row.closingDebit,
-                row.closingCredit
-            ].some(value => Number(value || 0) !== 0);
-            const existingHasActivity = [
-                existing.periodDebit,
-                existing.periodCredit,
-                existing.openingDebit,
-                existing.openingCredit,
-                existing.debit,
-                existing.credit,
-                existing.closingDebit,
-                existing.closingCredit
-            ].some(value => Number(value || 0) !== 0);
-            if (rowHasActivity && !existingHasActivity) {
-                const totals = { ...row };
-                for (const field of [
-                    "periodDebit",
-                    "periodCredit",
-                    "openingDebit",
-                    "openingCredit",
-                    "debit",
-                    "credit",
-                    "closingDebit",
-                    "closingCredit",
-                    "closingSigned"
-                ]) {
-                    totals[field] = Math.round(
-                        (Number(existing[field] || 0) + Number(row[field] || 0)) * 100
-                    ) / 100;
-                }
-                mergedJournalRows.set(key, totals);
-                continue;
-            }
-
-            for (const field of [
-                "periodDebit",
-                "periodCredit",
-                "openingDebit",
-                "openingCredit",
-                "debit",
-                "credit",
-                "closingDebit",
-                "closingCredit",
-                "closingSigned"
-            ]) {
-                existing[field] = Math.round(
-                    (Number(existing[field] || 0) + Number(row[field] || 0)) * 100
-                ) / 100;
-            }
+            const rowsForKey = mergedJournalRows.get(key) || [];
+            rowsForKey.push(row);
+            mergedJournalRows.set(key, rowsForKey);
         }
+
+        const roundMerged = (value: number) => Math.round(value * 100) / 100;
+        const mergedJournalAccountRows = [...mergedJournalRows.values()].map(rowsForKey => {
+            const first = [...rowsForKey].sort((a, b) => {
+                const activity = (row: any) =>
+                    Number(row.periodDebit || 0) + Number(row.periodCredit || 0);
+                return activity(b) - activity(a);
+            })[0];
+            if (rowsForKey.length === 1) return { ...first };
+
+            const sum = (field: string) => rowsForKey.reduce(
+                (total, row) => total + Number(row[field] || 0),
+                0
+            );
+            const periodDebit = roundMerged(sum("periodDebit"));
+            const periodCredit = roundMerged(sum("periodCredit"));
+            const openingSignedValues = rowsForKey.map(row =>
+                roundMerged(Number(row.openingDebit || 0) - Number(row.openingCredit || 0))
+            );
+            const uniqueNonZeroOpenings = [...new Set(
+                openingSignedValues.filter(value => value !== 0)
+            )];
+            const openingSigned = uniqueNonZeroOpenings.length === 1
+                ? uniqueNonZeroOpenings[0]
+                : roundMerged(openingSignedValues.reduce((total, value) => total + value, 0));
+            const closingSigned = roundMerged(openingSigned + periodDebit - periodCredit);
+
+            return {
+                ...first,
+                periodDebit,
+                periodCredit,
+                openingDebit: openingSigned > 0 ? openingSigned : 0,
+                openingCredit: openingSigned < 0 ? Math.abs(openingSigned) : 0,
+                debit: closingSigned > 0 ? closingSigned : 0,
+                credit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                closingDebit: closingSigned > 0 ? closingSigned : 0,
+                closingCredit: closingSigned < 0 ? Math.abs(closingSigned) : 0,
+                closingSigned
+            };
+        });
 
         const consolidatedRawLedgerRows = [
             ...nonMergedRows,
-            ...mergedJournalRows.values()
+            ...mergedJournalAccountRows
         ];
 
         /*
@@ -1618,6 +1780,16 @@ export class ReportingService {
         const legacyJournalRows = new Set<any>();
         for (const row of consolidatedRawLedgerRows) {
             if (row.ledgerCategory !== LedgerType.JOURNAL) continue;
+            // Tally Sundry Creditors / Advance From S. Debtors journals are
+            // creditor control-head accounts. Folding them into a matching
+            // Sundry Debtor customer hides the creditor movement from the
+            // group summary even when the same party also has a debtor ledger.
+            if (
+                tallySundryCreditorGroupIds.has(row.groupId) ||
+                advanceFromSDebtorsGroupIds.has(row.groupId) ||
+                tallyDutiesGroupIds.has(row.groupId) ||
+                tallyUnsecuredLoanGroupIds.has(row.groupId)
+            ) continue;
 
             const target = customerRowsByParty.get(
                 `${row.branchId || ""}|${normalizePartyLedgerName(row.account)}`
@@ -2615,6 +2787,13 @@ export class ReportingService {
                 );
                 if (matchingChild) group = matchingChild;
             }
+            // Nested "Sundry Creditors > Sundry Creditors" is aliased away.
+            // Re-resolve after the child-group match so those ledgers still
+            // attach to the visible Current Liabilities heading.
+            if (group) {
+                const displayedId = displayGroupId(group.id);
+                group = groupById.get(displayedId) || group;
+            }
             const parentGroup = group?.parentId
                 ? groupById.get(group.parentId)
                 : undefined;
@@ -2698,9 +2877,32 @@ export class ReportingService {
             }
         }
 
+        // The seeded Liabilities > Sundry Creditors tree is an operational
+        // vendor copy. Tally's group summary lives under Current Liabilities.
+        const hiddenTrialBalanceGroupIds = new Set<string>();
+        const systemLiabilitiesRoot = ledgerGroups.find(group => group.code === "LIABILITIES");
+        if (systemLiabilitiesRoot) {
+            hiddenTrialBalanceGroupIds.add(systemLiabilitiesRoot.id);
+            let hasHiddenChild = true;
+            while (hasHiddenChild) {
+                hasHiddenChild = false;
+                for (const group of ledgerGroups) {
+                    if (
+                        group.parentId &&
+                        hiddenTrialBalanceGroupIds.has(group.parentId) &&
+                        !hiddenTrialBalanceGroupIds.has(group.id)
+                    ) {
+                        hiddenTrialBalanceGroupIds.add(group.id);
+                        hasHiddenChild = true;
+                    }
+                }
+            }
+        }
+
         const treeNodes = new Map<string, any>();
         for (const group of ledgerGroups) {
             if (displayGroupId(group.id) !== group.id) continue;
+            if (hiddenTrialBalanceGroupIds.has(group.id)) continue;
             if (!query?.includeZero && !visibleGroupIds.has(group.id)) continue;
             if (
                 collapsedGroupIds.has(group.id) &&
@@ -2749,6 +2951,12 @@ export class ReportingService {
             const groupNode = row.groupId ? treeNodes.get(row.groupId) : undefined;
             if (!groupNode) continue;
             if (row.isCollapsedTrialBalanceGroup) continue;
+            if (row.groupId && hiddenTrialBalanceGroupIds.has(row.groupId)) continue;
+            const repeatedHeading = normalizedName(row.account) === normalizedName(groupNode.name)
+                && ["CURRENT LIABILITIES", "SUNDRY CREDITORS", "LIABILITIES", "DUTIES & TAXES"].includes(
+                    normalizedName(groupNode.name)
+                );
+            if (repeatedHeading) continue;
             groupNode.children.push({
                 ...row,
                 id: `ledger:${row.ledgerId || row.ledgerCode}`,
@@ -2769,7 +2977,16 @@ export class ReportingService {
         const rootNodes: any[] = [];
         for (const node of treeNodes.values()) {
             const parent = node.parentId ? treeNodes.get(node.parentId.replace("group:", "")) : undefined;
-            if (parent) parent.children.push(node);
+            if (parent) {
+                if (normalizedName(node.name) === normalizedName(parent.name)) {
+                    for (const child of node.children || []) {
+                        child.parentId = parent.id;
+                        parent.children.push(child);
+                    }
+                    continue;
+                }
+                parent.children.push(node);
+            }
             else rootNodes.push(node);
         }
 
