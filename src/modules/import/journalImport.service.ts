@@ -209,8 +209,12 @@ export class JournalImportService {
 
                         const isCancelled =
                             ImportResolver.isCancelledTransactionImportRow(dto);
+                        const isUnclassifiedTaxInvoice =
+                            voucherType === "TAX INVOICE" &&
+                            !String(dto.accountingVoucherType || "").trim();
                         const isInvoiceTransaction =
-                            ["PURCHASE", "TAX INVOICE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType);
+                            ["PURCHASE", "TAX INVOICE", ...SPECIAL_PURCHASE_TYPES].includes(voucherType) &&
+                            !isUnclassifiedTaxInvoice;
                         const isDebitCreditNote =
                             ImportResolver.isDebitCreditNoteImportRow(dto);
 
@@ -218,7 +222,8 @@ export class JournalImportService {
                             ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(voucherType);
 
                         const isExplicitJournalVoucher =
-                            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "RECEIPT", "PAYMENT", "OPENING BALANCE"].includes(voucherType);
+                            ["CASH PAYMENT", "CASH RECEIPT", "BANK PAYMENT", "BANK RECEIPT", "RECEIPT", "PAYMENT", "OPENING BALANCE"].includes(voucherType) ||
+                            isUnclassifiedTaxInvoice;
 
                         const isInwardNote = ImportResolver.isInwardDebitCreditNoteImportRow(dto);
 

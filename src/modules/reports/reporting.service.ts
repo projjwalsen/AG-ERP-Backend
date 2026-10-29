@@ -66,6 +66,10 @@ const PURCHASE_TRIAL_BALANCE_HEADS = new Set([
     "INTEREST PAID TO S.CREDITORS",
     "VAT PURCHASE"
 ]);
+const SALES_NOTE_ADJUSTMENT_HEADS = new Set([
+    "SALES CREDIT NOTE ADJUSTMENTS",
+    "SALES DEBIT NOTE ADJUSTMENTS"
+]);
 // Keep party ledgers visible in the Trial Balance tree. Collapsing these
 // control groups into a synthetic summary row hid the individual debtor /
 // creditor movements and caused the group name to appear twice in exports.
@@ -2129,7 +2133,18 @@ export class ReportingService {
                 categoryPath: true,
                 type: true,
                 totalAmount: true,
-                noteDate: true
+                noteDate: true,
+                voucher: {
+                    select: {
+                        entries: {
+                            select: {
+                                ledger: {
+                                    select: { code: true, name: true, category: true }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
         const salesSubGroupMovements = new Map<string, {
@@ -2140,6 +2155,17 @@ export class ReportingService {
         for (const note of categorizedOutwardSaleNotes) {
             const category = salesCategoryFromImportedPath(note.categoryPath);
             if (!category) continue;
+
+            const alreadyOnTypedSales = note.voucher?.entries.some(entry =>
+                entry.ledger.category === LedgerType.SALES &&
+                String(entry.ledger.code || "").startsWith("SALES-TYPE-") &&
+                String(entry.ledger.name || "")
+                    .replace(/_/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase() === category
+            );
+            if (alreadyOnTypedSales) continue;
 
             const amount = Number(note.totalAmount || 0);
             if (!Number.isFinite(amount) || amount === 0) continue;
@@ -2358,7 +2384,8 @@ export class ReportingService {
             const grouped = new Map<string, any[]>();
             for (const row of sourceRows) {
                 const key = String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase();
-                if (key) grouped.set(key, [...(grouped.get(key) || []), row]);
+                if (!key || SALES_NOTE_ADJUSTMENT_HEADS.has(key)) continue;
+                grouped.set(key, [...(grouped.get(key) || []), row]);
             }
 
             return [...grouped.entries()].map(([key, rowsForCategory]) => {
@@ -2408,6 +2435,8 @@ export class ReportingService {
                 PURCHASE_TRIAL_BALANCE_HEADS.has(
                     String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
                 )
+            )).filter(row => !SALES_NOTE_ADJUSTMENT_HEADS.has(
+                String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
             )),
             ...purchaseAccountRows,
             ...salesAccountRows
