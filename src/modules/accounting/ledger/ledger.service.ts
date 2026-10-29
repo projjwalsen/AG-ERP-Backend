@@ -158,7 +158,19 @@ export class LedgerService {
         });
         if (existing) return existing;
         const code = `JRNIMP-${createHash("sha1").update(`${parentId || "ROOT"}|${normalized.toUpperCase()}`).digest("hex").slice(0, 20)}`;
-        return client.ledgerGroup.create({ data: { code, name: normalized, parentId, nature } });
+        try {
+            return await client.ledgerGroup.create({ data: { code, name: normalized, parentId, nature } });
+        } catch (error: any) {
+            // Concurrent journal rows can discover the same missing group at
+            // the same time. Reuse the row created by the other transaction.
+            if (error?.code === "P2002") {
+                const raced = await client.ledgerGroup.findFirst({
+                    where: { parentId, name: { equals: normalized, mode: "insensitive" } }
+                });
+                if (raced) return raced;
+            }
+            throw error;
+        }
     }
 
     static async getOrCreateImportedJournalLedger(
@@ -175,9 +187,22 @@ export class LedgerService {
         });
         if (existing) return existing;
         const code = `JRNIMP-${createHash("sha1").update(`${branchId}|${groupId}|${normalized.toUpperCase()}`).digest("hex").slice(0, 24)}`;
-        return client.ledger.create({
-            data: { code, name: normalized, category: LedgerType.JOURNAL, groupId, nature, branchId }
-        });
+        try {
+            return await client.ledger.create({
+                data: { code, name: normalized, category: LedgerType.JOURNAL, groupId, nature, branchId }
+            });
+        } catch (error: any) {
+            // The deterministic code is intentionally shared by identical
+            // imported ledgers. If concurrent rows race during creation,
+            // reuse the ledger created by the winner.
+            if (error?.code === "P2002") {
+                const raced = await client.ledger.findFirst({
+                    where: { branchId, groupId, category: LedgerType.JOURNAL, name: { equals: normalized, mode: "insensitive" } }
+                });
+                if (raced) return raced;
+            }
+            throw error;
+        }
     }
 
     private static voucherPrefix(voucherType: VoucherType) {

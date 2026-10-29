@@ -4,6 +4,8 @@ import { ImportResolver } from "./import.resolver";
 import pLimit from "p-limit";
 import { Express } from "express";
 import { createImportErrorReport } from "./multer.import";
+import { prisma } from "../../config/db";
+import { LedgerService } from "../accounting/ledger/ledger.service";
 
 const SPECIAL_PURCHASE_TYPES = [
     "IGST PURCHASE", "GST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE",
@@ -39,6 +41,9 @@ export class JournalImportService {
             };
         });
 
+        // Rows are committed in separate transactions. Serialising this
+        // import prevents concurrent hierarchy creation from leaving cached
+        // ids that belong to a transaction which later rolled back.
         const limit = pLimit(1);
 
         
@@ -158,6 +163,8 @@ export class JournalImportService {
 
             success: 0,
 
+            skipped: 0,
+
             failed: 0,
 
             percentage: 0,
@@ -165,12 +172,32 @@ export class JournalImportService {
             errors: [] as any[]
 
         };
-
+        const affectedLedgerIds = new Set<string>();
+        // Avoid reopening every already-imported row. The source row is part
+        // of the import identity for this workbook, so an exact source-row
+        // match is safe to skip and also protects against duplicate vouchers
+        // when an error report is retried.
+        const existingSourceRows = await prisma.journal.findMany({
+            where: {
+                sourceSheet: { in: [...new Set(data.map(dto => dto.sourceSheet).filter(Boolean) as string[])] }
+            },
+            select: { sourceSheet: true, sourceRow: true, voucherNo: true }
+        });
+        const existingKeys = new Set(
+            existingSourceRows.map(row => `${row.sourceSheet || ""}|${row.sourceRow}|${String(row.voucherNo || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim()}`)
+        );
+        const rowsToProcess = data.filter(dto =>
+            !existingKeys.has(`${dto.sourceSheet || ""}|${dto.sourceRow}|${String(dto.voucherNo || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim()}`)
+        );
+        summary.skipped = data.length - rowsToProcess.length;
+        summary.processed = summary.skipped;
         await Promise.all(
 
-            data.map(dto =>
+            rowsToProcess.map(dto =>
 
                 limit(async () => {
+
+                    let rowSkipped = false;
 
                     try {
 
@@ -208,11 +235,12 @@ export class JournalImportService {
                             // the dedicated inward-note endpoint so the
                             // categoryPath is persisted and the Purchase
                             // ledger mapping is repaired when needed.
-                            await ImportResolver.importInwardPurchaseNote(
+                            const result = await ImportResolver.importInwardPurchaseNote(
                                 actor,
                                 dto,
                                 { resolvePath: true }
                             );
+                            rowSkipped = (result as any)?.__importStatus === "skipped";
                         } else if (
                             (
                             (
@@ -225,7 +253,15 @@ export class JournalImportService {
                             )
                         ) {
                             if (ImportResolver.isJournalRegisterRow(dto)) {
-                                await ImportResolver.importJournalRegisterRow(actor, dto);
+                                const result = await ImportResolver.importJournalRegisterRow(
+                                    actor,
+                                    dto,
+                                    { skipBalanceSync: true }
+                                );
+                                if ((result as any)?.ledgerId) {
+                                    affectedLedgerIds.add((result as any).ledgerId);
+                                }
+                                rowSkipped = (result as any)?.__importStatus === "skipped";
                             } else {
                                 const payload = await ImportResolver.buildJournalPayload(actor, dto);
                                 const journal = await JournalService.createJournal(actor, payload);
@@ -250,15 +286,22 @@ export class JournalImportService {
 
                         }
 
-                        summary.success++;
+                        if (rowSkipped) summary.skipped++;
+                        else summary.success++;
 
                     }
 
                     catch (error: any) {
 
-                        summary.failed++;
+                        const errorMessage = String(error?.message || error || "Unknown import error");
+                        if (errorMessage === "SKIP_ALREADY_IMPORTED") {
+                            summary.skipped++;
+                            rowSkipped = true;
+                        } else {
+                            summary.failed++;
+                        }
 
-                        summary.errors.push({
+                        if (!rowSkipped) summary.errors.push({
 
                             sourceSerialNo:
                                 dto.sourceSerialNo,
@@ -281,13 +324,24 @@ export class JournalImportService {
                             voucherType:
                                 dto.voucherType,
 
-                            error:
-                                error.message,
+                            error: errorMessage,
 
                             meta:
                                 dto.raw
 
                         });
+
+                        if (!rowSkipped && summary.errors.length <= 20) {
+                            console.error("[journal-import] row failed", {
+                                sourceSerialNo: dto.sourceSerialNo,
+                                voucherNo: dto.voucherNo,
+                                accountName: dto.accountName,
+                                sourceSheet: dto.sourceSheet,
+                                sourceRow: dto.sourceRow,
+                                voucherType: dto.voucherType,
+                                error: error?.stack || errorMessage
+                            });
+                        }
 
                     }
 
@@ -304,7 +358,16 @@ export class JournalImportService {
                                 ).toFixed(2)
                             );
 
-                        onProgress?.(summary);
+                        // Updating the SSE stream for every row makes the
+                        // browser and server spend significant time rendering
+                        // progress for large workbooks. Keep progress smooth
+                        // without sending 28k individual events.
+                        if (
+                            summary.processed === summary.total ||
+                            summary.processed % 25 === 0
+                        ) {
+                            onProgress?.(summary);
+                        }
 
                     }
 
@@ -313,6 +376,21 @@ export class JournalImportService {
             )
 
         );
+
+        // Recalculate each affected ledger once after all rows are posted.
+        // Doing this inside every row transaction repeatedly scanned the
+        // same ledger entries and was the dominant import cost.
+        const balanceLimit = pLimit(8);
+        const balanceResults = await Promise.allSettled(
+            [...affectedLedgerIds].map(ledgerId =>
+                balanceLimit(() => LedgerService.syncCachedBalance(prisma, ledgerId))
+            )
+        );
+        for (const result of balanceResults) {
+            if (result.status === "rejected") {
+                console.error("[journal-import] balance sync failed", result.reason);
+            }
+        }
 
         if (summary.errors.length > 0) {
             summary.errorReport =
