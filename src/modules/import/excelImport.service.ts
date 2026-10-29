@@ -151,14 +151,59 @@ export class ExcelImportService {
 
     public static toDate(value: any): Date | undefined {
 
-        if (!value)
-            return undefined;
+        if (value instanceof Date) {
+            return Number.isNaN(value.getTime()) ? undefined : value;
+        }
 
-        const date = new Date(value);
+        // XLSX can expose an Excel serial when the cell is not formatted as
+        // a date. Parse it explicitly instead of passing it to Date(), which
+        // treats the number as milliseconds since 1970.
+        if (typeof value === "number" && Number.isFinite(value)) {
+            const parts = XLSX.SSF.parse_date_code(value);
+            if (!parts) return undefined;
+            const date = new Date(parts.y, parts.m - 1, parts.d);
+            return date.getFullYear() === parts.y &&
+                date.getMonth() === parts.m - 1 &&
+                date.getDate() === parts.d
+                ? date
+                : undefined;
+        }
 
-        return isNaN(date.getTime())
-            ? undefined
-            : date;
+        const text = String(value ?? "").trim();
+        if (!text) return undefined;
+
+        // Tally exports commonly use DD-MM-YYYY. JavaScript's Date parser is
+        // locale-dependent here and rejects dates such as 14-04-2025.
+        const dmy = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+        if (dmy) {
+            let year = Number(dmy[3]);
+            if (year < 100) year += year >= 70 ? 1900 : 2000;
+            const day = Number(dmy[1]);
+            const month = Number(dmy[2]);
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year &&
+                date.getMonth() === month - 1 &&
+                date.getDate() === day
+                ? date
+                : undefined;
+        }
+
+        const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (iso) {
+            const year = Number(iso[1]);
+            const month = Number(iso[2]);
+            const day = Number(iso[3]);
+            const date = new Date(year, month - 1, day);
+            return date.getFullYear() === year &&
+                date.getMonth() === month - 1 &&
+                date.getDate() === day
+                ? date
+                : undefined;
+        }
+
+        // Keep support for non-numeric values such as "Apr 14, 2025".
+        const date = new Date(text);
+        return Number.isNaN(date.getTime()) ? undefined : date;
 
     }
 

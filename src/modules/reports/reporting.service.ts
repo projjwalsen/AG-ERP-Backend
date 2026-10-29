@@ -63,6 +63,10 @@ const PURCHASE_TRIAL_BALANCE_HEADS = new Set([
     "INTEREST PAID TO S.CREDITORS",
     "VAT PURCHASE"
 ]);
+const SALES_NOTE_ADJUSTMENT_HEADS = new Set([
+    "SALES CREDIT NOTE ADJUSTMENTS",
+    "SALES DEBIT NOTE ADJUSTMENTS"
+]);
 // Keep party ledgers visible in the Trial Balance tree. Collapsing these
 // control groups into a synthetic summary row hid the individual debtor /
 // creditor movements and caused the group name to appear twice in exports.
@@ -459,7 +463,8 @@ export class ReportingService {
                                 VoucherType.CASH_RECEIPT,
                                 VoucherType.CASH_PAYMENT,
                                 VoucherType.BANK_RECEIPT,
-                                VoucherType.BANK_PAYMENT
+                                VoucherType.BANK_PAYMENT,
+                                VoucherType.CONTRA
                             ]
                         }
                     }
@@ -560,6 +565,23 @@ export class ReportingService {
                     voucher: {
                         voucherType: VoucherType.RCM_PURCHASE
                     }
+                },
+                {
+                    // Purchase bills post paise differences to the journal
+                    // Round Off ledger without a Journal row. Exclude them
+                    // and Indirect Expenses understates Tally R/OFF.
+                    AND: [
+                        {
+                            ledger: {
+                                name: { equals: "Round Off", mode: "insensitive" }
+                            }
+                        },
+                        {
+                            voucher: {
+                                voucherType: VoucherType.PURCHASE
+                            }
+                        }
+                    ]
                 },
                 {
                     // Debit/credit-note imports are also voucher-backed
@@ -1015,6 +1037,16 @@ export class ReportingService {
             }
             processedCategoryNotes.add(noteKey);
             const targetName = categoryLeaf(note.categoryPath);
+            // Only remap Purchase Accounts notes onto purchase/journal
+            // purchase heads. Indirect Expenses paths belong on their IE
+            // ledgers already; moving Purchase Debit Note Adjustments credits
+            // onto those IE heads understates Carriage and the IE total.
+            const importedRoot = String(note.categoryPath || "")
+                .replace(/\\/g, "/")
+                .split(/[/>]/)
+                .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
+                .filter(Boolean)[0];
+            if (importedRoot && importedRoot.toUpperCase() !== "PURCHASE ACCOUNTS") continue;
             const targetLedger = ledgers.find(ledger =>
                 ledger.branchId === (branchId || note.branchId) &&
                 normalizedName(ledger.name) === normalizedName(targetName) &&
@@ -1873,7 +1905,18 @@ export class ReportingService {
                 categoryPath: true,
                 type: true,
                 totalAmount: true,
-                noteDate: true
+                noteDate: true,
+                voucher: {
+                    select: {
+                        entries: {
+                            select: {
+                                ledger: {
+                                    select: { code: true, name: true, category: true }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
         const salesSubGroupMovements = new Map<string, {
@@ -1884,6 +1927,17 @@ export class ReportingService {
         for (const note of categorizedOutwardSaleNotes) {
             const category = salesCategoryFromImportedPath(note.categoryPath);
             if (!category) continue;
+
+            const alreadyOnTypedSales = note.voucher?.entries.some(entry =>
+                entry.ledger.category === LedgerType.SALES &&
+                String(entry.ledger.code || "").startsWith("SALES-TYPE-") &&
+                String(entry.ledger.name || "")
+                    .replace(/_/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase() === category
+            );
+            if (alreadyOnTypedSales) continue;
 
             const amount = Number(note.totalAmount || 0);
             if (!Number.isFinite(amount) || amount === 0) continue;
@@ -2152,6 +2206,8 @@ export class ReportingService {
                 PURCHASE_TRIAL_BALANCE_HEADS.has(
                     String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
                 )
+            )).filter(row => !SALES_NOTE_ADJUSTMENT_HEADS.has(
+                String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
             )),
             ...purchaseAccountRows,
             ...salesAccountRows

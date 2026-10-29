@@ -4992,6 +4992,79 @@ export class LedgerService {
         return targetLedger;
     }
 
+    static async assignOutwardNoteToImportedSalesType(
+        tx: Prisma.TransactionClient,
+        noteId: string,
+        importedType: string
+    ) {
+        const normalizedType = normalizeImportedTransactionType(importedType);
+        if (!normalizedType) {
+            throw new ApiError("Sales Transaction Type is required", 400);
+        }
+
+        const note = await tx.debitCreditNote.findUnique({
+            where: { id: noteId },
+            select: {
+                id: true,
+                branchId: true,
+                sourceType: true,
+                voucherId: true
+            }
+        });
+
+        if (!note) {
+            throw new ApiError("Debit/credit note not found", 404);
+        }
+        if (note.sourceType !== DebitCreditNoteSourceType.SALE) {
+            throw new ApiError("Only sale debit/credit notes can be classified as GST SALES", 400);
+        }
+        if (!note.voucherId) {
+            throw new ApiError("Debit/credit note has no accounting voucher", 400);
+        }
+
+        const targetLedger = await this.getOrCreateImportedSalesTypeLedger(
+            tx,
+            note.branchId,
+            normalizedType
+        );
+        const adjustmentEntries = await tx.ledgerEntry.findMany({
+            where: {
+                voucherId: note.voucherId,
+                ledger: {
+                    category: LedgerType.JOURNAL,
+                    OR: [
+                        { code: { startsWith: "SALE-DEBIT_NOTE-" } },
+                        { code: { startsWith: "SALE-CREDIT_NOTE-" } },
+                        { name: { equals: "Sales Debit Note Adjustments", mode: "insensitive" } },
+                        { name: { equals: "Sales Credit Note Adjustments", mode: "insensitive" } }
+                    ]
+                }
+            },
+            select: {
+                id: true,
+                ledgerId: true,
+                ledger: { select: { code: true, name: true } }
+            }
+        });
+
+        const previousLedgerIds = [...new Set(
+            adjustmentEntries.map(entry => entry.ledgerId)
+        )];
+
+        if (adjustmentEntries.length > 0) {
+            await tx.ledgerEntry.updateMany({
+                where: { id: { in: adjustmentEntries.map(entry => entry.id) } },
+                data: { ledgerId: targetLedger.id }
+            });
+        }
+
+        for (const ledgerId of [...previousLedgerIds, targetLedger.id]) {
+            await this.syncCachedBalance(tx, ledgerId);
+        }
+
+        return targetLedger;
+    }
+
     static async assignPurchaseToImportedType(
         purchaseId: string,
         importedType: string,
