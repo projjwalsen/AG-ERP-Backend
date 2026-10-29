@@ -1227,6 +1227,26 @@ export class ReportingService {
             .replace(/\s+/g, " ")
             .trim()
             .toUpperCase();
+        const compactNoteToken = (value: unknown) =>
+            String(value || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        const postedNoteTokensByLedger = new Map<string, Array<{ voucherNo: string; narration: string }>>();
+        const loadPostedNoteTokens = async (ledgerId: string) => {
+            const cached = postedNoteTokensByLedger.get(ledgerId);
+            if (cached) return cached;
+            const rows = await prisma.ledgerEntry.findMany({
+                where: { ledgerId },
+                select: {
+                    narration: true,
+                    voucher: { select: { voucherNo: true, narration: true } }
+                }
+            });
+            const tokens = rows.map(row => ({
+                voucherNo: compactNoteToken(row.voucher.voucherNo),
+                narration: compactNoteToken([row.narration, row.voucher.narration].join(" "))
+            }));
+            postedNoteTokensByLedger.set(ledgerId, tokens);
+            return tokens;
+        };
 
         const categoryLeaf = (value: string | null) => {
             const parts = String(value || "")
@@ -1265,11 +1285,14 @@ export class ReportingService {
                 continue;
             }
             const targetName = categoryLeaf(note.categoryPath);
-            const targetLedger = ledgers.find(ledger =>
-                ledger.branchId === (branchId || note.branchId) &&
+            const sameNamedLedgers = ledgers.filter(ledger =>
                 normalizedName(ledger.name) === normalizedName(targetName) &&
                 [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
             );
+            const targetCandidates = sameNamedLedgers.filter(ledger =>
+                ledger.branchId === (branchId || note.branchId)
+            );
+            const targetLedger = targetCandidates[0] || sameNamedLedgers[0];
             if (!targetLedger) continue;
             if (
                 tallySundryCreditorGroupIds.has(targetLedger.groupId) ||
@@ -1284,21 +1307,22 @@ export class ReportingService {
             // The same imported note may already have a journal-register
             // posting on the target category ledger. In that case the target
             // movement is already present and must not be added again from
-            // the accounting-only note voucher.
-            const alreadyPostedToTarget = await prisma.ledgerEntry.findFirst({
-                where: {
-                    ledgerId: targetLedger.id,
-                    OR: [
-                        { narration: { contains: note.noteNo } },
-                        {
-                            voucher: {
-                                narration: { contains: note.noteNo }
-                            }
-                        }
-                    ]
-                },
-                select: { id: true }
-            });
+            // the accounting-only note voucher. Imported journal voucher
+            // numbers often keep Tally's spaced form ("PDN/M /2526 /078")
+            // while the debit-note master stores "PDN/M/2526/078", so match
+            // on compact tokens rather than a literal contains(). Check every
+            // same-named ledger: imports can land the register on one copy
+            // and the note remap on another.
+            const noteToken = compactNoteToken(note.noteNo);
+            let alreadyPostedToTarget = false;
+            if (noteToken) {
+                for (const candidate of sameNamedLedgers) {
+                    alreadyPostedToTarget = (await loadPostedNoteTokens(candidate.id)).some(token =>
+                        token.voucherNo === noteToken || token.narration.includes(noteToken)
+                    );
+                    if (alreadyPostedToTarget) break;
+                }
+            }
             if (alreadyPostedToTarget) continue;
 
             const sourceEntries = note.voucher?.entries.filter(entry =>
