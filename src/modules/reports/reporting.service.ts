@@ -3,6 +3,7 @@ import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { importedTransactionTypeFromPath } from "../import/transaction-import.utils";
 import {
     buildTrialBalanceBranchFilter,
     calculateTrialBalanceAmounts,
@@ -24,6 +25,18 @@ import {
 } from "./tally-bank-accounts.allowlist";
 import { buildDuplicateLedgerGroupDisplayMap } from "../accounting/ledger/ledger-group-display";
 
+const PURCHASE_TB_VOUCHER_TYPES: VoucherType[] = [
+    VoucherType.PURCHASE,
+    VoucherType.RCM_PURCHASE,
+    VoucherType.GST_PURCHASE,
+    VoucherType.IGST_PURCHASE,
+    VoucherType.CST_PURCHASE,
+    VoucherType.DISCOUNT_PURCHASE,
+    VoucherType.HIGH_SEAS_PURCHASE,
+    VoucherType.IMPORT_PURCHASE,
+    VoucherType.VAT_PURCHASE,
+    VoucherType.INTEREST_SAUNDRY_CREDITORS
+];
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
 const BANK_VOUCHER_TYPES = [
@@ -65,6 +78,14 @@ const PURCHASE_TRIAL_BALANCE_HEADS = new Set([
     "INCENTIVES RECEIVED",
     "INTEREST PAID TO S.CREDITORS",
     "VAT PURCHASE"
+]);
+const SALES_NOTE_ADJUSTMENT_HEADS = new Set([
+    "SALES CREDIT NOTE ADJUSTMENTS",
+    "SALES DEBIT NOTE ADJUSTMENTS"
+]);
+const PURCHASE_NOTE_ADJUSTMENT_HEADS = new Set([
+    "PURCHASE CREDIT NOTE ADJUSTMENTS",
+    "PURCHASE DEBIT NOTE ADJUSTMENTS"
 ]);
 // Keep party ledgers visible in the Trial Balance tree. Collapsing these
 // control groups into a synthetic summary row hid the individual debtor /
@@ -112,15 +133,10 @@ const readPurchaseSubGroups = (remarks: string | null) => {
 // leaf category as the Purchase Accounts sub-row. Some approved notes do not
 // have a purchaseId, so their category must be resolved from this path.
 const purchaseCategoryFromImportedPath = (value: string | null) => {
-    const parts = String(value || "")
-        .replace(/\\/g, "/")
-        .split(/[/>]/)
-        .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
-        .filter(Boolean);
-
-    return parts.length > 0
-        ? parts[parts.length - 1].toUpperCase()
-        : "";
+    const head = importedTransactionTypeFromPath(value);
+    if (!head) return "";
+    if (head === "DISCOUNT PURCHASE") return "DISCOUNT";
+    return head;
 };
 
 const salesCategoryFromImportedPath = (value: string | null) => {
@@ -565,7 +581,7 @@ export class ReportingService {
                 ...(approvedPurchaseIds.length > 0
                     ? [{
                         voucher: {
-                            voucherType: VoucherType.PURCHASE,
+                            voucherType: { in: PURCHASE_TB_VOUCHER_TYPES },
                             sourceId: { in: approvedPurchaseIds }
                         }
                     }]
@@ -667,10 +683,7 @@ export class ReportingService {
                         {
                             voucher: {
                                 voucherType: {
-                                    in: [
-                                        VoucherType.PURCHASE,
-                                        VoucherType.RCM_PURCHASE
-                                    ]
+                                    in: PURCHASE_TB_VOUCHER_TYPES
                                 }
                             }
                         }
@@ -745,10 +758,7 @@ export class ReportingService {
                         {
                             voucher: {
                                 voucherType: {
-                                    in: [
-                                        VoucherType.PURCHASE,
-                                        VoucherType.RCM_PURCHASE
-                                    ]
+                                    in: PURCHASE_TB_VOUCHER_TYPES
                                 }
                             }
                         }
@@ -996,6 +1006,25 @@ export class ReportingService {
             })
         ]) as [any[], LedgerGroupReportRow[]];
 
+        const pathClassifiedPurchases = await prisma.purchase.findMany({
+            where: {
+                status: PurchaseStatus.APPROVED,
+                ...(branchId ? { branchId } : {}),
+                AND: [
+                    { path: { not: null } },
+                    { path: { not: "" } }
+                ]
+            },
+            select: {
+                id: true,
+                invoiceNo: true,
+                path: true,
+                invoiceDate: true,
+                createdAt: true
+            }
+        });
+        const pathClassifiedPurchaseIds = pathClassifiedPurchases.map(row => row.id);
+
         const aggregateWindows = async (
             window: "period" | "prior",
             purchaseAccountsOnly = false
@@ -1069,13 +1098,15 @@ export class ReportingService {
                                             voucherType: purchaseAccountsOnly
                                             ? {
                                                 in: [
-                                                    VoucherType.PURCHASE,
-                                                    VoucherType.RCM_PURCHASE,
+                                                    ...PURCHASE_TB_VOUCHER_TYPES,
                                                     VoucherType.DEBIT_NOTE,
                                                     VoucherType.CREDIT_NOTE
                                                 ]
                                             }
-                                            : { not: VoucherType.OPENING_BALANCE }
+                                            : { not: VoucherType.OPENING_BALANCE },
+                                            ...(purchaseAccountsOnly && pathClassifiedPurchaseIds.length > 0
+                                                ? { sourceId: { notIn: pathClassifiedPurchaseIds } }
+                                                : {})
                                         }
                                 },
                                 {
@@ -1223,6 +1254,26 @@ export class ReportingService {
             .replace(/\s+/g, " ")
             .trim()
             .toUpperCase();
+        const compactNoteToken = (value: unknown) =>
+            String(value || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        const postedNoteTokensByLedger = new Map<string, Array<{ voucherNo: string; narration: string }>>();
+        const loadPostedNoteTokens = async (ledgerId: string) => {
+            const cached = postedNoteTokensByLedger.get(ledgerId);
+            if (cached) return cached;
+            const rows = await prisma.ledgerEntry.findMany({
+                where: { ledgerId },
+                select: {
+                    narration: true,
+                    voucher: { select: { voucherNo: true, narration: true } }
+                }
+            });
+            const tokens = rows.map(row => ({
+                voucherNo: compactNoteToken(row.voucher.voucherNo),
+                narration: compactNoteToken([row.narration, row.voucher.narration].join(" "))
+            }));
+            postedNoteTokensByLedger.set(ledgerId, tokens);
+            return tokens;
+        };
 
         const categoryLeaf = (value: string | null) => {
             const parts = String(value || "")
@@ -1261,11 +1312,17 @@ export class ReportingService {
                 continue;
             }
             const targetName = categoryLeaf(note.categoryPath);
-            const targetLedger = ledgers.find(ledger =>
-                ledger.branchId === (branchId || note.branchId) &&
+            if (PURCHASE_TRIAL_BALANCE_HEADS.has(normalizedName(targetName))) {
+                continue;
+            }
+            const sameNamedLedgers = ledgers.filter(ledger =>
                 normalizedName(ledger.name) === normalizedName(targetName) &&
                 [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
             );
+            const targetCandidates = sameNamedLedgers.filter(ledger =>
+                ledger.branchId === (branchId || note.branchId)
+            );
+            const targetLedger = targetCandidates[0] || sameNamedLedgers[0];
             if (!targetLedger) continue;
             if (
                 tallySundryCreditorGroupIds.has(targetLedger.groupId) ||
@@ -1280,21 +1337,22 @@ export class ReportingService {
             // The same imported note may already have a journal-register
             // posting on the target category ledger. In that case the target
             // movement is already present and must not be added again from
-            // the accounting-only note voucher.
-            const alreadyPostedToTarget = await prisma.ledgerEntry.findFirst({
-                where: {
-                    ledgerId: targetLedger.id,
-                    OR: [
-                        { narration: { contains: note.noteNo } },
-                        {
-                            voucher: {
-                                narration: { contains: note.noteNo }
-                            }
-                        }
-                    ]
-                },
-                select: { id: true }
-            });
+            // the accounting-only note voucher. Imported journal voucher
+            // numbers often keep Tally's spaced form ("PDN/M /2526 /078")
+            // while the debit-note master stores "PDN/M/2526/078", so match
+            // on compact tokens rather than a literal contains(). Check every
+            // same-named ledger: imports can land the register on one copy
+            // and the note remap on another.
+            const noteToken = compactNoteToken(note.noteNo);
+            let alreadyPostedToTarget = false;
+            if (noteToken) {
+                for (const candidate of sameNamedLedgers) {
+                    alreadyPostedToTarget = (await loadPostedNoteTokens(candidate.id)).some(token =>
+                        token.voucherNo === noteToken || token.narration.includes(noteToken)
+                    );
+                    if (alreadyPostedToTarget) break;
+                }
+            }
             if (alreadyPostedToTarget) continue;
 
             const sourceEntries = note.voucher?.entries.filter(entry =>
@@ -1954,16 +2012,19 @@ export class ReportingService {
             }
         );
 
-        // Tally's Purchase Accounts workbook supplies a Sub Group and a
-        // debit/credit side for existing purchases. Keep that imported
-        // classification separate from accounting journals: it gives the
-        // Trial Balance its Purchase Accounts children without manufacturing
-        // a journal or voucher merely for reporting.
-        const classifiedPurchases = await prisma.purchase.findMany({
+        // Existing purchases carry an optional path (Group/Sub Group from
+        // Tally). Trial Balance groups those invoices under Purchase
+        // Accounts from the stored path and the voucher amounts already in
+        // the database. Excel-only voucher numbers are never invented here.
+        const remarksClassifiedPurchases = await prisma.purchase.findMany({
             where: {
                 ...(branchId ? { branchId } : {}),
                 status: PurchaseStatus.APPROVED,
-                remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` }
+                remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` },
+                OR: [
+                    { path: null },
+                    { path: "" }
+                ]
             },
             select: {
                 invoiceDate: true,
@@ -1994,7 +2055,6 @@ export class ReportingService {
                 ...(branchId ? { branchId } : {}),
                 sourceType: DebitCreditNoteSourceType.PURCHASE,
                 status: DebitCreditNoteStatus.APPROVED,
-                purchaseId: null,
                 categoryPath: { not: null },
                 noteDate: { lte: endDate },
                 AND: [
@@ -2034,7 +2094,57 @@ export class ReportingService {
             }
         });
 
-        for (const purchase of classifiedPurchases) {
+        const pathPurchaseEntries = pathClassifiedPurchaseIds.length > 0
+            ? await prisma.ledgerEntry.findMany({
+                where: {
+                    AND: [
+                        scopedJournalEntryFilter,
+                        {
+                            ledger: { category: LedgerType.PURCHASE },
+                            voucher: {
+                                sourceId: { in: pathClassifiedPurchaseIds },
+                                voucherType: {
+                                    in: [
+                                        ...PURCHASE_TB_VOUCHER_TYPES,
+                                        VoucherType.DEBIT_NOTE,
+                                        VoucherType.CREDIT_NOTE
+                                    ]
+                                },
+                                voucherDate: { lte: endDate }
+                            }
+                        }
+                    ]
+                },
+                select: {
+                    entryType: true,
+                    amount: true,
+                    voucher: { select: { sourceId: true, voucherDate: true } }
+                }
+            })
+            : [];
+        const pathByPurchaseId = new Map(
+            pathClassifiedPurchases.map(purchase => [purchase.id, purchase.path])
+        );
+
+        for (const entry of pathPurchaseEntries) {
+            const category = purchaseCategoryFromImportedPath(
+                pathByPurchaseId.get(entry.voucher.sourceId) || ""
+            );
+            if (!category || !PURCHASE_TRIAL_BALANCE_HEADS.has(category)) continue;
+
+            const current = purchaseSubGroupMovements.get(category) || {
+                prior: { debit: 0, credit: 0 },
+                period: { debit: 0, credit: 0 }
+            };
+            const target = entry.voucher.voucherDate < startDate
+                ? current.prior
+                : current.period;
+            target[entry.entryType === EntryType.DEBIT ? "debit" : "credit"] +=
+                Number(entry.amount || 0);
+            purchaseSubGroupMovements.set(category, current);
+        }
+
+        for (const purchase of remarksClassifiedPurchases) {
             const purchaseDate = purchase.invoiceDate || purchase.createdAt;
             if (purchaseDate > endDate) continue;
 
@@ -2055,6 +2165,10 @@ export class ReportingService {
             const category = purchaseCategoryFromImportedPath(note.categoryPath);
             const amount = Number(note.totalAmount || 0);
             if (!category || !Number.isFinite(amount) || amount === 0) continue;
+            if (
+                !PURCHASE_TRIAL_BALANCE_HEADS.has(category) ||
+                category === "INCENTIVES RECEIVED"
+            ) continue;
 
             const current = purchaseSubGroupMovements.get(category) || {
                 prior: { debit: 0, credit: 0 },
@@ -2129,7 +2243,18 @@ export class ReportingService {
                 categoryPath: true,
                 type: true,
                 totalAmount: true,
-                noteDate: true
+                noteDate: true,
+                voucher: {
+                    select: {
+                        entries: {
+                            select: {
+                                ledger: {
+                                    select: { code: true, name: true, category: true }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
         const salesSubGroupMovements = new Map<string, {
@@ -2140,6 +2265,17 @@ export class ReportingService {
         for (const note of categorizedOutwardSaleNotes) {
             const category = salesCategoryFromImportedPath(note.categoryPath);
             if (!category) continue;
+
+            const alreadyOnTypedSales = note.voucher?.entries.some(entry =>
+                entry.ledger.category === LedgerType.SALES &&
+                String(entry.ledger.code || "").startsWith("SALES-TYPE-") &&
+                String(entry.ledger.name || "")
+                    .replace(/_/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .toUpperCase() === category
+            );
+            if (alreadyOnTypedSales) continue;
 
             const amount = Number(note.totalAmount || 0);
             if (!Number.isFinite(amount) || amount === 0) continue;
@@ -2290,7 +2426,7 @@ export class ReportingService {
                     .replace(/\s+/g, " ")
                     .trim()
                     .toUpperCase();
-                if (!key) continue;
+                if (!key || PURCHASE_NOTE_ADJUSTMENT_HEADS.has(key)) continue;
                 grouped.set(key, [...(grouped.get(key) || []), row]);
             }
 
@@ -2358,7 +2494,8 @@ export class ReportingService {
             const grouped = new Map<string, any[]>();
             for (const row of sourceRows) {
                 const key = String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase();
-                if (key) grouped.set(key, [...(grouped.get(key) || []), row]);
+                if (!key || SALES_NOTE_ADJUSTMENT_HEADS.has(key)) continue;
+                grouped.set(key, [...(grouped.get(key) || []), row]);
             }
 
             return [...grouped.entries()].map(([key, rowsForCategory]) => {
@@ -2408,7 +2545,11 @@ export class ReportingService {
                 PURCHASE_TRIAL_BALANCE_HEADS.has(
                     String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
                 )
-            )),
+            )).filter(row => {
+                const key = String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase();
+                return !SALES_NOTE_ADJUSTMENT_HEADS.has(key) &&
+                    !PURCHASE_NOTE_ADJUSTMENT_HEADS.has(key);
+            }),
             ...purchaseAccountRows,
             ...salesAccountRows
         ];
@@ -2953,9 +3094,20 @@ export class ReportingService {
             if (row.isCollapsedTrialBalanceGroup) continue;
             if (row.groupId && hiddenTrialBalanceGroupIds.has(row.groupId)) continue;
             const repeatedHeading = normalizedName(row.account) === normalizedName(groupNode.name)
-                && ["CURRENT LIABILITIES", "SUNDRY CREDITORS", "LIABILITIES", "DUTIES & TAXES"].includes(
-                    normalizedName(groupNode.name)
-                );
+                && [
+                    "CURRENT LIABILITIES",
+                    "SUNDRY CREDITORS",
+                    "LIABILITIES",
+                    "DUTIES & TAXES",
+                    "GST",
+                    "GST PAYABLE",
+                    "INPUT GST",
+                    "OUTPUT GST",
+                    "TCS",
+                    "TDS",
+                    "RCM",
+                    "CASH LEDGER"
+                ].includes(normalizedName(groupNode.name));
             if (repeatedHeading) continue;
             groupNode.children.push({
                 ...row,
@@ -3038,6 +3190,8 @@ export class ReportingService {
 
             node.periodDebit = Number(node.periodDebit.toFixed(2));
             node.periodCredit = Number(node.periodCredit.toFixed(2));
+            node.openingDebit = Number(Number(node.openingDebit || 0).toFixed(2));
+            node.openingCredit = Number(Number(node.openingCredit || 0).toFixed(2));
             node.closingDebit = Number(node.closingDebit.toFixed(2));
             node.closingCredit = Number(node.closingCredit.toFixed(2));
             node.closingSigned = Number(node.closingSigned.toFixed(2));
@@ -3052,45 +3206,37 @@ export class ReportingService {
 
         /**
          * ============================================================
-         * 11. SUMMARY
+         * 11. SUMMARY / GRAND TOTAL
          * ============================================================
+         *
+         * Grand Total must sum only the main trial-balance heads
+         * (`accountGroups` / root nodes). Subgroups and ledgers are already
+         * rolled into those heads by `finalizeNode`. Summing `rows` (every
+         * leaf) or nested children as well double-counts and makes Opening
+         * Dr ≠ Opening Cr and Closing Dr ≠ Closing Cr in the Excel export.
          *
          * In a properly balanced double-entry system:
          *
-         * Period Debit = Period Credit
-         *
-         * and
-         *
+         * Opening Debit = Opening Credit
          * Closing Debit = Closing Credit
          */
 
         const summary =
-            rows.reduce(
-                (total, row) => {
-
-                    // Total Debit/Credit represent transaction turnover.
-                    // Closing balances are reported separately below.
-                    total.totalDebit +=
-                        row.periodDebit;
-
-                    total.totalCredit +=
-                        row.periodCredit;
-
-                    total.totalClosingDebit +=
-                        row.closingDebit;
-
-                    total.totalClosingCredit +=
-                        row.closingCredit;
-
-                    total.totalPeriodDebit +=
-                        row.periodDebit;
-
-                    total.totalPeriodCredit +=
-                        row.periodCredit;
-
+            accountGroups.reduce(
+                (total, head) => {
+                    total.totalOpeningDebit += Number(head.openingDebit || 0);
+                    total.totalOpeningCredit += Number(head.openingCredit || 0);
+                    total.totalClosingDebit += Number(head.closingDebit || 0);
+                    total.totalClosingCredit += Number(head.closingCredit || 0);
+                    total.totalDebit += Number(head.periodDebit || 0);
+                    total.totalCredit += Number(head.periodCredit || 0);
+                    total.totalPeriodDebit += Number(head.periodDebit || 0);
+                    total.totalPeriodCredit += Number(head.periodCredit || 0);
                     return total;
                 },
                 {
+                    totalOpeningDebit: 0,
+                    totalOpeningCredit: 0,
                     totalDebit: 0,
                     totalCredit: 0,
                     totalClosingDebit: 0,
@@ -3098,6 +3244,16 @@ export class ReportingService {
                     totalPeriodDebit: 0,
                     totalPeriodCredit: 0
                 }
+            );
+
+        summary.totalOpeningDebit =
+            Number(
+                summary.totalOpeningDebit.toFixed(2)
+            );
+
+        summary.totalOpeningCredit =
+            Number(
+                summary.totalOpeningCredit.toFixed(2)
             );
 
         summary.totalDebit =
@@ -3125,6 +3281,14 @@ export class ReportingService {
 
         summary.totalClosingCredit =
             Number(summary.totalClosingCredit.toFixed(2));
+
+        const openingDifference =
+            Number(
+                (
+                    summary.totalOpeningDebit -
+                    summary.totalOpeningCredit
+                ).toFixed(2)
+            );
 
         const periodDifference =
             Number(
@@ -3181,9 +3345,16 @@ export class ReportingService {
             summary: {
                 ...summary,
 
+                openingDifference,
+
                 periodDifference,
 
                 closingDifference,
+
+                isOpeningBalanced:
+                    Math.abs(
+                        openingDifference
+                    ) < 0.01,
 
                 isPeriodBalanced:
                     Math.abs(
@@ -3196,6 +3367,9 @@ export class ReportingService {
                     ) < 0.01,
 
                 isBalanced:
+                    Math.abs(
+                        openingDifference
+                    ) < 0.01 &&
                     Math.abs(
                         closingDifference
                     ) < 0.01
@@ -3966,6 +4140,56 @@ export class ReportingService {
     }
 
 
+    private static isRecordedGstParty(agency?: { id?: string | null; name?: string | null } | null) {
+        if (!agency?.id && !agency?.name) return false;
+        const name = String(agency?.name || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+        if (!name) return false;
+        return !/party\s+not\s+recorded/i.test(name);
+    }
+
+    private static normalizeGstLinePath(value: unknown) {
+        return String(value || "")
+            .replace(/\\/g, "/")
+            .replace(/_/g, " ")
+            .replace(/\s*\/\s*/g, " / ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
+    }
+
+    private static compactGstLinePath(value: unknown) {
+        return this.normalizeGstLinePath(value).replace(/[^A-Z0-9]/g, "");
+    }
+
+    private static classifyGstNoteLine(path: unknown): "taxable" | "igst" | "cgst" | "sgst" | "invoice" | null {
+        const compact = this.compactGstLinePath(path);
+        if (!compact) return null;
+        if (
+            compact.includes("INTERESTRECEIVABLEFROMSDEBTORS") ||
+            compact.includes("SALESACCOUNTSIGSTSALES") ||
+            compact.includes("SALESACCOUNTSGSTSALES") ||
+            compact.endsWith("IGSTSALES") ||
+            compact.endsWith("GSTSALES")
+        ) return "taxable";
+        if (compact.includes("OUTPUTIGST")) return "igst";
+        if (compact.includes("OUTPUTCGST")) return "cgst";
+        if (compact.includes("OUTPUTSGST")) return "sgst";
+        if (compact.includes("CURRENTASSETSSUNDRYDEBTORS")) return "invoice";
+        return null;
+    }
+
+    private static partyNameFromSundryDebtorPath(path: unknown) {
+        const normalized = this.normalizeGstLinePath(path);
+        const marker = "CURRENT ASSETS / SUNDRY DEBTORS";
+        const index = normalized.indexOf(marker);
+        if (index < 0) return "";
+        return normalized
+            .slice(index + marker.length)
+            .replace(/^[\s/]+/, "")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
     static async getGSTR1Report(
         actor: any,
         query?: {
@@ -3978,8 +4202,8 @@ export class ReportingService {
             throw new ApiError("Unauthorized", 401);
         }
 
-        const startDate = query?.startDate ? parseDate(query.startDate, "startDate") : undefined;
-        const endDate = query?.endDate ? parseDate(query.endDate, "endDate") : new Date();
+        const startDate = query?.startDate ? parseDate(query.startDate, "startDate") : parseDate("2025-04-01", "startDate");
+        const endDate = query?.endDate ? parseDate(query.endDate, "endDate") : parseDate("2026-03-31", "endDate");
 
         if(startDate) {
             startDate.setHours(0, 0, 0, 0);
@@ -4019,11 +4243,13 @@ export class ReportingService {
             }
         });
 
+        const recordedSales = sales.filter(sale => this.isRecordedGstParty(sale.agency));
+
         const money = (value: unknown) =>
             Math.round(Number(value || 0) * 100) / 100;
 
         const salesRows =
-            sales.map((sale) => {
+            recordedSales.map((sale) => {
 
                 const customerGSTIN =
                     sale.agency?.gstin || null;
@@ -4079,6 +4305,8 @@ export class ReportingService {
                     branchGst: sale.branch.gstin,
 
                     agency_id: sale.agencyId,
+
+                    agency_name: String(sale.agency?.name || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim(),
 
                     classification,
 
@@ -4136,28 +4364,141 @@ export class ReportingService {
                     }
                 } : {})
             },
-            include: { agency: true, branch: true },
+            include: {
+                agency: true,
+                branch: true,
+                particulars: true,
+                voucher: {
+                    select: {
+                        totalDebit: true,
+                        totalCredit: true,
+                        entries: {
+                            select: {
+                                amount: true,
+                                narration: true,
+                                ledger: { select: { name: true } }
+                            }
+                        }
+                    }
+                }
+            },
             orderBy: { noteDate: "asc" }
         });
 
-        const noteRows = noteRecords.map((note) => ({
+        const notesByVoucherNo = new Map<string, typeof noteRecords>();
+        for (const note of noteRecords) {
+            const key = String(note.noteNo || "").trim().toUpperCase();
+            if (!key) continue;
+            const group = notesByVoucherNo.get(key) || [];
+            group.push(note);
+            notesByVoucherNo.set(key, group);
+        }
+
+        const gstNoteAgencyName = (
+            note: (typeof noteRecords)[number],
+            fallback = ""
+        ) => String(note.agency?.name || fallback || "")
+            .replace(/[\r\n]+/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const voucherTaxableAmount = (item: (typeof noteRecords)[number]) => {
+            const debit = Math.abs(Number(item.voucher?.totalDebit || 0));
+            const credit = Math.abs(Number(item.voucher?.totalCredit || 0));
+            if (debit > 0 || credit > 0) return debit || credit;
+            return (item.voucher?.entries || []).reduce((sum, entry) => {
+                const kind = this.classifyGstNoteLine(entry.ledger?.name) || this.classifyGstNoteLine(entry.narration);
+                return kind === "taxable" ? sum + Math.abs(Number(entry.amount || 0)) : sum;
+            }, 0);
+        };
+
+        const noteRows = [...notesByVoucherNo.values()].flatMap((group) => {
+            const lines: Array<{ path: string; amount: number }> = [];
+            for (const item of group) {
+                let usedVoucherTaxable = false;
+                const posting = voucherTaxableAmount(item);
+                if (item.particulars?.length) {
+                    for (const particular of item.particulars) {
+                        const path = particular.description || item.categoryPath || "";
+                        const kind = this.classifyGstNoteLine(path);
+                        if (kind === "taxable" && posting > 0) {
+                            if (usedVoucherTaxable) continue;
+                            usedVoucherTaxable = true;
+                            lines.push({ path, amount: posting });
+                            continue;
+                        }
+                        lines.push({
+                            path,
+                            amount: Number(particular.amount || 0)
+                        });
+                    }
+                } else if (item.categoryPath) {
+                    const kind = this.classifyGstNoteLine(item.categoryPath);
+                    lines.push({
+                        path: item.categoryPath,
+                        amount: kind === "taxable" && posting > 0
+                            ? posting
+                            : Number(item.totalAmount || 0)
+                    });
+                }
+            }
+
+            let taxable = 0;
+            let igst = 0;
+            let cgst = 0;
+            let sgst = 0;
+            let invoice = 0;
+            let sundryParty = "";
+            for (const line of lines) {
+                const kind = this.classifyGstNoteLine(line.path);
+                const amount = Math.abs(Number(line.amount || 0));
+                if (!kind || !amount) continue;
+                if (kind === "taxable") taxable += amount;
+                if (kind === "igst") igst += amount;
+                if (kind === "cgst") cgst += amount;
+                if (kind === "sgst") sgst += amount;
+                if (kind === "invoice") {
+                    invoice += amount;
+                    sundryParty = sundryParty || this.partyNameFromSundryDebtorPath(line.path);
+                }
+            }
+
+            const cgstAmount = money(cgst);
+            const sgstAmount = money(sgst);
+            const igstAmount = money(igst);
+            const gstAmount = money(cgstAmount + sgstAmount + igstAmount);
+            if (gstAmount === 0) return [];
+
+            const note = group.find(item => this.isRecordedGstParty(item.agency)) || group[0];
+            const agencyName = gstNoteAgencyName(note, sundryParty);
+            if (!this.isRecordedGstParty({ id: note.agencyId, name: agencyName })) return [];
+
+            const isCreditNote =
+                group.some(item => item.type === DebitCreditNoteType.CREDIT_NOTE) ||
+                /^SCN\//i.test(String(note.noteNo || "").trim());
+            const signed = (value: number) => money(isCreditNote ? -Math.abs(value) : Math.abs(value));
+            const invoiceTotal = Math.round(Number(invoice || taxable + gstAmount));
+
+            return [{
             branchName: note.branch.name,
             branchGst: note.branch.gstin,
             agency_id: note.agencyId,
+                agency_name: agencyName,
             classification: "B2B" as const,
             customer_gstin: note.agency?.gstin || null,
             invoice_number: note.noteNo,
             invoice_date: note.noteDate,
             place_of_supply_pos: note.agency?.state || note.agency?.stateCode,
-            taxable_value: money(note.taxableAmount),
-            cgst_rate_amount: money(note.cgstAmount),
-            sgst_rate_amount: money(note.sgstAmount),
-            igst_rate_amount: money(note.igstAmount),
+                taxable_value: signed(taxable),
+                cgst_rate_amount: signed(cgstAmount),
+                sgst_rate_amount: signed(sgstAmount),
+                igst_rate_amount: signed(igstAmount),
             branch_state_code: note.branch.stateCode,
             customer_state_code: note.agency?.stateCode || null,
-            gst_amount: money(Number(note.cgstAmount) + Number(note.sgstAmount) + Number(note.igstAmount)),
-            invoice_total: money(note.totalAmount)
-        }));
+                gst_amount: signed(gstAmount),
+                invoice_total: signed(invoiceTotal)
+            }];
+        });
 
         // Keep the main B2B invoice rows limited to sales invoices. Debit and
         // credit notes belong only to creditDebitNoteSummary so adding GST
@@ -4169,11 +4510,12 @@ export class ReportingService {
         // Do not use GSTIN presence as the grouping filter: imported agencies
         // without master GSTIN/state data must still appear in the report.
         for (const row of rows) {
-            const key = row.agency_id || row.customer_gstin || row.customer_state_code || row.invoice_number;
+            if (!this.isRecordedGstParty({ id: row.agency_id, name: row.agency_name })) continue;
+            const key = row.agency_id || row.agency_name;
             const current = b2bSummaryMap.get(key) || {
                 agency_id: row.agency_id,
                 customer_gstin: row.customer_gstin,
-                agency_name: sales.find(sale => sale.invoiceNo === row.invoice_number)?.agency?.name || "",
+                agency_name: row.agency_name,
                 voucher_count: 0,
                 taxable_value: 0,
                 igst_rate_amount: 0,
@@ -4181,7 +4523,8 @@ export class ReportingService {
                 sgst_rate_amount: 0,
                 cess_amount: 0,
                 gst_amount: 0,
-                invoice_total: 0
+                invoice_total: 0,
+                vouchers: [] as any[]
             };
             current.voucher_count += 1;
             current.taxable_value += row.taxable_value;
@@ -4190,6 +4533,7 @@ export class ReportingService {
             current.sgst_rate_amount += row.sgst_rate_amount;
             current.gst_amount += row.gst_amount;
             current.invoice_total += row.invoice_total;
+            current.vouchers.push(row);
             b2bSummaryMap.set(key, current);
         }
 
@@ -4202,14 +4546,16 @@ export class ReportingService {
             cess_amount: money(row.cess_amount),
             gst_amount: money(row.gst_amount),
             invoice_total: money(row.invoice_total)
-        }));
+        })).sort((a, b) => String(a.agency_name).localeCompare(String(b.agency_name), "en", { sensitivity: "base" }));
 
         const noteSummaryMap = new Map<string, any>();
         for (const row of noteRows) {
-            const key = row.agency_id || row.customer_gstin || row.invoice_number;
+            if (!this.isRecordedGstParty({ id: row.agency_id, name: row.agency_name })) continue;
+            const key = row.agency_id || row.agency_name;
             const current = noteSummaryMap.get(key) || {
+                agency_id: row.agency_id,
                 customer_gstin: row.customer_gstin,
-                agency_name: noteRecords.find(note => note.noteNo === row.invoice_number)?.agency?.name || "",
+                agency_name: row.agency_name,
                 voucher_count: 0,
                 taxable_value: 0,
                 igst_rate_amount: 0,
@@ -4217,7 +4563,8 @@ export class ReportingService {
                 sgst_rate_amount: 0,
                 cess_amount: 0,
                 gst_amount: 0,
-                invoice_total: 0
+                invoice_total: 0,
+                vouchers: [] as any[]
             };
             current.voucher_count += 1;
             current.taxable_value += row.taxable_value;
@@ -4226,6 +4573,7 @@ export class ReportingService {
             current.sgst_rate_amount += row.sgst_rate_amount;
             current.gst_amount += row.gst_amount;
             current.invoice_total += row.invoice_total;
+            current.vouchers.push(row);
             noteSummaryMap.set(key, current);
         }
         const creditDebitNoteSummary = [...noteSummaryMap.values()].map(row => ({
@@ -4237,7 +4585,7 @@ export class ReportingService {
             cess_amount: money(row.cess_amount),
             gst_amount: money(row.gst_amount),
             invoice_total: money(row.invoice_total)
-        }));
+        })).sort((a, b) => String(a.agency_name).localeCompare(String(b.agency_name), "en", { sensitivity: "base" }));
 
         const summary = {
 
@@ -4300,6 +4648,43 @@ export class ReportingService {
                 )
         };
 
+        const totalsFor = (data: any[]) => data.reduce((sum, row) => ({
+            voucher_count: sum.voucher_count + Number(row.voucher_count || 0),
+            taxable_value: money(sum.taxable_value + Number(row.taxable_value || 0)),
+            igst_rate_amount: money(sum.igst_rate_amount + Number(row.igst_rate_amount || 0)),
+            cgst_rate_amount: money(sum.cgst_rate_amount + Number(row.cgst_rate_amount || 0)),
+            sgst_rate_amount: money(sum.sgst_rate_amount + Number(row.sgst_rate_amount || 0)),
+            cess_amount: money(sum.cess_amount + Number(row.cess_amount || 0)),
+            gst_amount: money(sum.gst_amount + Number(row.gst_amount || 0)),
+            invoice_total: money(sum.invoice_total + Number(row.invoice_total || 0))
+        }), { voucher_count: 0, taxable_value: 0, igst_rate_amount: 0, cgst_rate_amount: 0, sgst_rate_amount: 0, cess_amount: 0, gst_amount: 0, invoice_total: 0 });
+
+        const b2bTotals = totalsFor(b2bSummary);
+        const noteTotals = totalsFor(creditDebitNoteSummary);
+        const includedInReturn = b2bTotals.voucher_count + noteTotals.voucher_count;
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const formatPeriodPart = (date: Date) => `${date.getDate()}-${months[date.getMonth()]}-${String(date.getFullYear()).slice(-2)}`;
+        const periodLabel = `${formatPeriodPart(startDate)} to ${formatPeriodPart(endDate)}`;
+
+        const headerBranch = recordedSales[0]?.branch || noteRecords[0]?.branch || (branchId
+            ? await prisma.branch.findUnique({ where: { id: branchId }, select: { name: true, gstin: true } })
+            : null);
+
+        const sections = [
+            {
+                key: "b2b",
+                title: "B2B Invoices - 4A, 4B, 4C, 6B, 6C",
+                ...b2bTotals,
+                parties: b2bSummary
+            },
+            {
+                key: "cdn_registered",
+                title: "Credit or Debit Notes (Registered) - 9B",
+                ...noteTotals,
+                parties: creditDebitNoteSummary
+            }
+        ];
+
         return {
 
             reportName:
@@ -4310,16 +4695,42 @@ export class ReportingService {
 
             period: {
                 startDate,
-                endDate
+                endDate,
+                label: periodLabel
             },
 
             branchId,
+
+            branch: headerBranch
+                ? {
+                    name: headerBranch.name,
+                    branchName: headerBranch.name,
+                    gstin: headerBranch.gstin,
+                    branchGst: headerBranch.gstin
+                }
+                : null,
 
             summary,
 
             b2bSummary,
 
             creditDebitNoteSummary,
+
+            sections,
+
+            gstrStatus: {
+                totalVouchers: includedInReturn,
+                includedInReturn,
+                readyForUpload: includedInReturn,
+                modifiedAfterExport: 0,
+                noActionRequired: includedInReturn,
+                notRelevant: 0,
+                uncertain: 0,
+                markedForDeletion: 0,
+                conflictsWithMasters: 0,
+                filingStatus: "Not Filed",
+                lastOnlineActivity: "No Activity Found"
+            },
 
             rows
         };
@@ -4611,6 +5022,83 @@ export class ReportingService {
         };
     }
 
+    private static findOutstandingGroupNode(nodes: any[], name: string): any | null {
+        const want = String(name || "").replace(/\s+/g, " ").trim().toLowerCase();
+        for (const node of nodes || []) {
+            const have = String(node.name || node.account || "").replace(/\s+/g, " ").trim().toLowerCase();
+            if (have === want) return node;
+            const child = this.findOutstandingGroupNode(node.children || [], name);
+            if (child) return child;
+        }
+        return null;
+    }
+
+    private static flattenOutstandingLedgers(node: any): any[] {
+        const rows: any[] = [];
+        for (const child of node?.children || []) {
+            if (child.rowType === "accountingHeader" && Array.isArray(child.children) && child.children.length > 0) {
+                rows.push(...this.flattenOutstandingLedgers(child));
+                continue;
+            }
+            rows.push(child);
+        }
+        return rows;
+    }
+
+    private static istCalendarDate(value: Date) {
+        return new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Asia/Kolkata",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+        }).format(value);
+    }
+
+    private static agingDaysAsOn(from: Date, asOn: Date) {
+        const [fromYear, fromMonth, fromDay] = this.istCalendarDate(from).split("-").map(Number);
+        const [onYear, onMonth, onDay] = this.istCalendarDate(asOn).split("-").map(Number);
+        return Math.max(
+            0,
+            Math.round(
+                (Date.UTC(onYear, onMonth - 1, onDay) - Date.UTC(fromYear, fromMonth - 1, fromDay)) /
+                (24 * 60 * 60 * 1000)
+            )
+        );
+    }
+
+    private static fifoOutstandingAge(
+        isDebtor: boolean,
+        events: Array<{ date: Date; debit: number; credit: number }>,
+        asOn: Date
+    ) {
+        const byDay = new Map<string, { date: Date; debit: number; credit: number }>();
+        for (const event of events) {
+            const key = this.istCalendarDate(event.date);
+            const current = byDay.get(key) || { date: event.date, debit: 0, credit: 0 };
+            current.debit += Number(event.debit || 0);
+            current.credit += Number(event.credit || 0);
+            byDay.set(key, current);
+        }
+
+        const layers: Array<{ date: Date; remaining: number }> = [];
+        for (const day of [...byDay.values()].sort((a, b) =>
+            this.istCalendarDate(a.date).localeCompare(this.istCalendarDate(b.date))
+        )) {
+            const add = Number((isDebtor ? day.debit : day.credit).toFixed(2));
+            let settle = Number((isDebtor ? day.credit : day.debit).toFixed(2));
+            if (add > 0.005) layers.push({ date: day.date, remaining: add });
+            while (settle > 0.005 && layers.length) {
+                const take = Math.min(layers[0].remaining, settle);
+                layers[0].remaining = Number((layers[0].remaining - take).toFixed(2));
+                settle = Number((settle - take).toFixed(2));
+                if (layers[0].remaining <= 0.005) layers.shift();
+            }
+        }
+
+        if (!layers.length) return null;
+        return this.agingDaysAsOn(layers[0].date, asOn);
+    }
+
     static async getOutstandingReport(
         actor: any,
         query?: {
@@ -4618,6 +5106,8 @@ export class ReportingService {
             agencyId?: string;
             type?: "RECEIVABLE" | "PAYABLE";
             export?: boolean;
+            startDate?: string;
+            endDate?: string;
         }
     ) {
 
@@ -4652,754 +5142,225 @@ export class ReportingService {
             }
         }
 
-        const today = new Date();
-        const detailRows: any[] = [];
-        const resolveAgingBucket = (ageDays: number) => {
-            if (ageDays <= 60) return "0-60 Days";
-            if (ageDays <= 120) return "61-120 Days";
-            if (ageDays <= 180) return "121-180 Days";
-            return "180+ Days";
-        };
-
-        const agencyMap = new Map<
-            string,
-            {
-                agencyId: string;
-                agencyName: string;
-
-                vendorCode: string;
-                gstin: string | null;
-                branchName: string | null;
-                balanceType?: "RECEIVABLE" | "PAYABLE";
-                createdAt?: Date | null;
-                agingDays?: number;
-
-                totalOutstanding: number;
-
-                bucket_0_60_days: {
-                    amount: number;
-                    invoices: any[];
-                };
-                bucket_61_120_days: {
-                    amount: number;
-                    invoices: any[];
-                };
-                bucket_121_180_days: {
-                    amount: number;
-                    invoices: any[];
-                };
-                bucket_180_plus_days: {
-                    amount: number;
-                    invoices: any[];
-                };
-            }
-        >();
-
-        if(query.type === "RECEIVABLE") {
-            const sales = await prisma.sale.findMany({
-                where: {
-                    status: SalesStatus.APPROVED,
-
-                    ...(branchId && {
-                        branchId
-                    }),
-
-                    ...(query.agencyId && {
-                        agencyId: query.agencyId
-                    }),
-                    // AR must be based on agencies that have a customer ledger.
-                    agency: {
-                        ledger: {
-                            some: {
-                                category: LedgerType.CUSTOMER,
-                                ...(branchId
-                                    ? { OR: [{ branchId }, { branchId: null }] }
-                                    : {})
-                            }
-                        }
-                    }
-                },
-                include: {
-                    agency: true,
-                    branch: true,
-                    allocations: true,
-                    debitCreditNotes: {
-                        where: {
-                            status: DebitCreditNoteStatus.APPROVED
-                        }
-                    }
-                },
-                orderBy: {
-                    invoiceDate: "asc"
-                }
-            });
-
-            for(const sale of sales) {
-                const customerLedgers = await prisma.ledger.findMany({
-                    where: {
-                        agencyId: sale.agencyId,
-                        category: LedgerType.CUSTOMER,
-                        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {})
-                    },
-                    select: { id: true }
-                });
-                let customerBalance = 0;
-                for (const ledger of customerLedgers) {
-                    const balance = await LedgerService.calculateLedgerBalance(ledger.id);
-                    customerBalance += Math.abs(Number(balance.closingBalance));
-                }
-                if (customerLedgers.length > 0 && customerBalance <= 0) continue;
-
-                const allocated =
-                    sale.allocations.reduce(
-                        (sum, a) =>
-                            sum + Number(a.allocatedAmount),
-                        0
-                    );
-
-                const adjustedTotal = this.adjustedSaleTotal(sale);
-                const outstanding = adjustedTotal - allocated;
-
-                if(outstanding <= 0) continue;
-
-                const ageDays = 
-                    Math.floor(
-                        (
-                            today.getTime() -
-                            sale.invoiceDate.getTime()
-                        ) / 86400000
-                    );
-                detailRows.push({
-
-                    vendorCode:
-                        sale.agency.id, // change to agency.code later if added
-
-                    vendorName:
-                        sale.agency.name,
-
-                    billNo:
-                        sale.invoiceNo,
-
-                    billDate:
-                        sale.invoiceDate,
-
-                    dueDate:
-                        sale.invoiceDate, // replace when dueDate exists
-
-                    billAmount:
-                        Number(sale.subTotalAmount),
-
-                    gstAmount:
-                        Number(sale.totalGSTAmount),
-
-                    tds: 0,
-
-                    paidAmount:
-                        allocated,
-
-                    balanceAmount:
-                        outstanding,
-
-                    agingDays:
-                        ageDays,
-
-                    agingBucket:
-                        resolveAgingBucket(ageDays),
-
-                    branch:
-                        sale.branchId,
-
-                    remarks:
-                        sale.remarks ?? ""
-                });
-
-                const invoice = {
-
-                    invoiceId:
-                        sale.id,
-
-                    invoiceType:
-                        "SALE",
-
-                    invoiceNo:
-                        sale.invoiceNo,
-
-                    invoiceDate:
-                        sale.invoiceDate,
-
-                    invoiceAgeDays:
-                        ageDays,
-
-                    grandTotal:
-                        adjustedTotal,
-
-                    originalGrandTotal:
-                        Number(sale.grandTotal),
-
-                    allocatedAmount:
-                        allocated,
-
-                    outstandingAmount:
-                        outstanding,
-
-                    settlementStatus:
-                        allocated === 0
-                            ? "UNPAID"
-                            : outstanding === 0
-                                ? "FULLY_SETTLED"
-                                : "PARTIALLY_SETTLED",
-
-                    invoice:
-                        sale
-
-                };
-
-                if(!agencyMap.has(sale.agencyId)) {
-                    agencyMap.set(sale.agencyId, {
-                        agencyId: sale.agencyId,
-                        agencyName: sale.agency?.name || null,
-                        vendorCode: "",
-                        gstin: sale.agency?.gstin || null,
-                        branchName: sale.branch?.name || null,
-                        createdAt: sale.invoiceDate,
-                        totalOutstanding: 0,
-                        bucket_0_60_days: {
-                            amount: 0,
-                            invoices: []
-                        },
-                        bucket_61_120_days: {
-                            amount: 0,
-                            invoices: []
-                        },
-                        bucket_121_180_days: {
-                            amount: 0,
-                            invoices: []
-                        },
-                        bucket_180_plus_days: {
-                            amount: 0,
-                            invoices: []
-                        }
-                    })
-                }
-
-                const agency = agencyMap.get(sale.agencyId)!;
-
-                if (!agency.createdAt || sale.invoiceDate < agency.createdAt) {
-                    agency.createdAt = sale.invoiceDate;
-                }
-
-                if (agency.branchName && agency.branchName !== sale.branch?.name) {
-                    agency.branchName = "Multiple";
-                }
-
-                agency.totalOutstanding += outstanding;
-
-                let bucket;
-
-                if(ageDays <= 60){
-
-                    bucket =
-                        agency.bucket_0_60_days;
-
-                }
-                else if(ageDays <= 120){
-
-                    bucket =
-                        agency.bucket_61_120_days;
-
-                }
-                else if(ageDays <= 180){
-
-                    bucket =
-                        agency.bucket_121_180_days;
-
-                }
-                else{
-
-                    bucket =
-                        agency.bucket_180_plus_days;
-
-                }
-
-                bucket.amount += outstanding;
-
-                bucket.invoices.push(invoice);
-            }
-        } else {
-            const purchases = await prisma.purchase.findMany({
-                where: {
-                    status: PurchaseStatus.APPROVED,
-
-                    ...(branchId && {
-                        branchId
-                    }),
-
-                    ...(query.agencyId && {
-                        agencyId: query.agencyId
-                    })
-                },
-                include: {
-                    agency: true,
-                    branch: true,
-                    allocations: true
-                },
-                orderBy: {
-                    createdAt: "asc"
-                }
-            });
-
-            for(const purchase of purchases) {
-                // Do not show an invoice when the agency's vendor ledger is
-                // already cleared. Purchase allocations can lag behind
-                // accounting-ledger payments, so the ledger is authoritative
-                // for whether the agency still has an AP balance.
-                const vendorLedgersForAgency = await prisma.ledger.findMany({
-                    where: {
-                        agencyId: purchase.agencyId,
-                        category: LedgerType.VENDOR,
-                        ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {})
-                    },
-                    select: { id: true }
-                });
-                if (vendorLedgersForAgency.length > 0) {
-                    let vendorBalance = 0;
-                    for (const vendorLedger of vendorLedgersForAgency) {
-                        const balance = await LedgerService.calculateLedgerBalance(vendorLedger.id);
-                        vendorBalance += Math.abs(Number(balance.closingBalance));
-                    }
-                    if (vendorBalance <= 0) continue;
-                }
-
-                const allocated =
-                    purchase.allocations.reduce(
-                        (sum, a) =>
-                            sum + Number(a.allocatedAmount),
-                        0
-                    );
-
-                const outstanding =
-                    Number(purchase.grandTotal) - allocated;
-
-                if(outstanding <= 0) continue;
-                
-
-                const ageDays =
-                    Math.floor(
-                        (
-                            today.getTime() -
-                            purchase.createdAt.getTime()
-                        ) / 86400000
-                    );
-
-                detailRows.push({
-
-                    vendorCode:
-                        purchase.agency.id, // or agency.code later if you add one
-
-                    vendorName:
-                        purchase.agency.name,
-
-                    billNo:
-                        purchase.invoiceNo,
-
-                    billDate:
-                        purchase.createdAt,
-
-                    dueDate:
-                        purchase.createdAt, // replace with purchase.dueDate once added
-
-                    billAmount:
-                        Number(purchase.subtotalAmount),
-
-                    gstAmount:
-                        Number(purchase.totalGSTAmount),
-
-                    tds: 0,
-
-                    paidAmount:
-                        allocated,
-
-                    balanceAmount:
-                        outstanding,
-
-                    agingDays:
-                        ageDays,
-
-                    agingBucket:
-                        resolveAgingBucket(ageDays),
-
-                    branch:
-                        purchase.branchId,
-
-                    remarks:
-                        purchase.remarks ?? ""
-                });    
-
-                const invoice = {
-                    invoiceId:
-                        purchase.id,
-
-                    invoiceType:
-                        "PURCHASE",
-
-                    invoiceNo:
-                        purchase.invoiceNo,
-
-                    invoiceDate:
-                        purchase.createdAt,
-
-                    invoiceAgeDays:
-                        ageDays,
-
-                    grandTotal:
-                        Number(purchase.grandTotal),
-
-                    allocatedAmount:
-                        allocated,
-
-                    outstandingAmount:
-                        outstanding,
-
-                    settlementStatus:
-                        allocated === 0
-                            ? "UNPAID"
-                            : outstanding === 0
-                                ? "FULLY_SETTLED"
-                                : "PARTIALLY_SETTLED",
-
-                    invoice:
-                        purchase
-                };
-
-                if(!agencyMap.has(purchase.agencyId)) {
-                    agencyMap.set(purchase.agencyId, {
-                        agencyId: purchase.agencyId,
-                        agencyName: purchase.agency?.name || null,
-                        vendorCode: "",
-                        gstin: purchase.agency?.gstin || null,
-                        branchName: purchase.branch?.name || null,
-                        createdAt: purchase.createdAt,
-                        totalOutstanding: 0,
-                        bucket_0_60_days: {
-                            amount: 0,
-                            invoices: []
-                        },
-                        bucket_61_120_days: {
-                            amount: 0,
-                            invoices: []
-                        },
-                        bucket_121_180_days: {
-                            amount: 0,
-                            invoices: []
-                        },
-                        bucket_180_plus_days: {
-                            amount: 0,
-                            invoices: []
-                        }
-                    })
-                }
-
-                const agency = agencyMap.get(purchase.agencyId)!;
-
-                if (!agency.createdAt || purchase.createdAt < agency.createdAt) {
-                    agency.createdAt = purchase.createdAt;
-                }
-
-                if (agency.branchName && agency.branchName !== purchase.branch?.name) {
-                    agency.branchName = "Multiple";
-                }
-
-                agency.totalOutstanding += outstanding;
-
-                let bucket;
-
-                if (ageDays <= 60) {
-
-                    bucket =
-                        agency.bucket_0_60_days;
-
-                }
-                else if (ageDays <= 120) {
-
-                    bucket =
-                        agency.bucket_61_120_days;
-
-                }
-                else if (ageDays <= 180) {
-
-                    bucket =
-                        agency.bucket_121_180_days;
-
-                }
-                else {
-
-                    bucket =
-                        agency.bucket_180_plus_days;
-
-                }
-
-                bucket.amount +=
-                    outstanding;
-
-                bucket.invoices.push(
-                    invoice
-                );
-
-            }
-        }
-
-        /**
-         * AR is invoice-based above, but imported opening balances and other
-         * customer-ledger postings do not have a Sale row. Include the
-         * positive customer-ledger remainder so AR agrees with the agency
-         * ledger report. Existing invoice outstanding is not added twice.
-         */
-        if (query.type === "RECEIVABLE") {
-            const customerLedgers = await prisma.ledger.findMany({
-                where: {
-                    category: LedgerType.CUSTOMER,
-                    ...(branchId ? { branchId } : {}),
-                    ...(query.agencyId ? { agencyId: query.agencyId } : {})
-                },
-                include: {
-                    agency: true,
-                    branch: true
-                }
-            });
-
-            for (const ledger of customerLedgers) {
-                const balance = await LedgerService.calculateLedgerBalance(ledger.id);
-                const ledgerReceivable = Math.max(Number(balance.closingBalance), 0);
-                const invoiceOutstanding = agencyMap.get(ledger.agencyId)?.totalOutstanding || 0;
-                const remainder = Number((ledgerReceivable - invoiceOutstanding).toFixed(2));
-
-                if (remainder <= 0) continue;
-
-                let agency = agencyMap.get(ledger.agencyId);
-                if (!agency) {
-                    agency = {
-                        agencyId: ledger.agencyId,
-                        agencyName: ledger.agency?.name || ledger.name,
-                        vendorCode: "",
-                        gstin: ledger.agency?.gstin || null,
-                        branchName: ledger.branch?.name || null,
-                        createdAt: ledger.createdAt,
-                        totalOutstanding: 0,
-                        bucket_0_60_days: { amount: 0, invoices: [] },
-                        bucket_61_120_days: { amount: 0, invoices: [] },
-                        bucket_121_180_days: { amount: 0, invoices: [] },
-                        bucket_180_plus_days: { amount: 0, invoices: [] }
-                    };
-                    agencyMap.set(ledger.agencyId, agency);
-                }
-
-                const invoice = {
-                    invoiceId: `ledger-opening-${ledger.id}`,
-                    invoiceType: "OPENING_BALANCE",
-                    invoiceNo: "OPENING / LEDGER BALANCE",
-                    invoiceDate: ledger.createdAt,
-                    invoiceAgeDays: Math.max(
-                        Math.floor((today.getTime() - ledger.createdAt.getTime()) / 86400000),
-                        0
-                    ),
-                    grandTotal: remainder,
-                    originalGrandTotal: remainder,
-                    allocatedAmount: 0,
-                    outstandingAmount: remainder,
-                    settlementStatus: "UNPAID",
-                    sourceLedgerId: ledger.id
-                };
-
-                agency.totalOutstanding += remainder;
-                agency.bucket_180_plus_days.amount += remainder;
-                agency.bucket_180_plus_days.invoices.push(invoice);
-            }
-        } else {
-            // AP also includes vendor-ledger balances that do not have a
-            // Purchase row (opening balances and imported journal postings).
-            // Vendor ledgers are credit-natured, so a negative closing balance
-            // represents the payable amount.
-            const vendorLedgers = await prisma.ledger.findMany({
-                where: {
-                    category: LedgerType.VENDOR,
-                    ...(branchId ? { OR: [{ branchId }, { branchId: null }] } : {}),
-                    ...(query.agencyId ? { agencyId: query.agencyId } : {})
-                },
-                include: { agency: true, branch: true }
-            });
-
-            for (const ledger of vendorLedgers) {
-                const balance = await LedgerService.calculateLedgerBalance(ledger.id);
-                // Keep the same convention as the agency-ledger report:
-                // vendor balances are displayed as payable using absolute
-                // value, regardless of whether the ledger closing balance is
-                // debit- or credit-signed.
-                const ledgerPayable = Math.abs(Number(balance.closingBalance));
-                const invoiceOutstanding = agencyMap.get(ledger.agencyId)?.totalOutstanding || 0;
-                const remainder = Number((ledgerPayable - invoiceOutstanding).toFixed(2));
-                if (remainder <= 0) continue;
-
-                let row = agencyMap.get(ledger.agencyId);
-                if (!row) {
-                    row = {
-                        agencyId: ledger.agencyId,
-                        agencyName: ledger.agency?.name || ledger.name,
-                        vendorCode: "",
-                        gstin: ledger.agency?.gstin || null,
-                        branchName: ledger.branch?.name || null,
-                        createdAt: ledger.createdAt,
-                        totalOutstanding: 0,
-                        bucket_0_60_days: { amount: 0, invoices: [] },
-                        bucket_61_120_days: { amount: 0, invoices: [] },
-                        bucket_121_180_days: { amount: 0, invoices: [] },
-                        bucket_180_plus_days: { amount: 0, invoices: [] }
-                    };
-                    agencyMap.set(ledger.agencyId, row);
-                }
-
-                const invoice = {
-                    invoiceId: `ledger-opening-${ledger.id}`,
-                    invoiceType: "OPENING_BALANCE",
-                    invoiceNo: "OPENING / LEDGER BALANCE",
-                    invoiceDate: ledger.createdAt,
-                    invoiceAgeDays: Math.max(Math.floor((today.getTime() - ledger.createdAt.getTime()) / 86400000), 0),
-                    grandTotal: remainder,
-                    originalGrandTotal: remainder,
-                    allocatedAmount: 0,
-                    outstandingAmount: remainder,
-                    settlementStatus: "UNPAID",
-                    sourceLedgerId: ledger.id
-                };
-
-                row.totalOutstanding += remainder;
-                row.bucket_180_plus_days.amount += remainder;
-                row.bucket_180_plus_days.invoices.push(invoice);
-            }
-        }
-
-        const rows =
-        [...agencyMap.values()]
-            .sort(
-                (a, b) =>
-                    a.agencyName.localeCompare(
-                        b.agencyName
-                    )
-            );
-
-        rows.forEach((row, index) => {
-
-            row.vendorCode =
-                `V${String(index + 1).padStart(3, "0")}`;
-
-            // The account-level aging shown in the UI is based on its oldest
-            // outstanding invoice/balance date. Expose the same value for the
-            // summary Excel export.
-            row.agingDays = row.createdAt
-                ? Math.floor(
-                    (today.getTime() - row.createdAt.getTime()) /
-                    86400000
-                )
-                : 0;
-
-            row.balanceType =
-                query.type === "RECEIVABLE"
-                    ? "RECEIVABLE"
-                    : "PAYABLE";
-
+        const isPayable = query?.type === "PAYABLE";
+        const groupNames = isPayable
+            ? ["Sundry Debtors", "Sundry Debtor"]
+            : ["Sundry Creditors", "Sundry Creditor"];
+
+        const trialBalance = await this.getTrialBalanceReport(actor, {
+            branchId,
+            startDate: query?.startDate || "2025-04-01",
+            endDate: query?.endDate || "2026-03-31",
+            includeZero: false
         });
-        
 
-        const summary = {
+        const group = groupNames
+            .map(name => this.findOutstandingGroupNode(trialBalance.tree || [], name))
+            .find(Boolean);
 
-            totalAgencies:
-                rows.length,
+        let ledgerNodes = group ? this.flattenOutstandingLedgers(group) : [];
+        const normalizeName = (value: unknown) =>
+            String(value || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
 
-            totalInvoices:
-                rows.reduce(
-                    (sum, row) =>
-                        sum +
-                        row.bucket_0_60_days.invoices.length +
-                        row.bucket_61_120_days.invoices.length +
-                        row.bucket_121_180_days.invoices.length +
-                        row.bucket_180_plus_days.invoices.length,
-                    0
-                ),
+        if (query?.agencyId) {
+            const agencyName = normalizeName(agency?.name);
+            ledgerNodes = ledgerNodes.filter(node =>
+                node.agencyId === query.agencyId ||
+                normalizeName(node.account || node.name) === agencyName
+            );
+        }
 
-            totalOutstanding:
-                rows.reduce(
-                    (sum, row) =>
-                        sum +
-                        row.totalOutstanding,
-                    0
-                ),
-
-            bucket_0_60_days:
-                rows.reduce(
-                    (sum, row) =>
-                        sum +
-                        (row.bucket_0_60_days?.amount ?? 0),
-                    0
-                ),
-
-            bucket_61_120_days:
-                rows.reduce(
-                    (sum, row) =>
-                        sum +
-                        (row.bucket_61_120_days?.amount ?? 0),
-                    0
-                ),
-
-            bucket_121_180_days:
-                rows.reduce(
-                    (sum, row) =>
-                        sum +
-                        (row.bucket_121_180_days?.amount ?? 0),
-                    0
-                ),
-
-            bucket_180_plus_days:
-                rows.reduce(
-                    (sum, row) =>
-                        sum +
-                        (row.bucket_180_plus_days?.amount ?? 0),
-                    0
-                )
-
+        const nullableAmount = (value: number) => {
+            const rounded = Number(Number(value || 0).toFixed(2));
+            return rounded === 0 ? null : rounded;
         };
-        
 
-        const agencyDetails =
-            query?.agencyId
-                ? rows.find(
-                    row =>
-                        row.agencyId === query.agencyId
-                ) ?? null
-                : null;
+        const rows = ledgerNodes
+            .map(node => {
+                const openingDebit = Number(node.openingDebit || 0);
+                const openingCredit = Number(node.openingCredit || 0);
+                const closingDebit = Number(node.closingDebit || 0);
+                const closingCredit = Number(node.closingCredit || 0);
+                const openingBalance = isPayable
+                    ? openingDebit - openingCredit
+                    : openingCredit - openingDebit;
+                const closingBalance = isPayable
+                    ? closingDebit - closingCredit
+                    : closingCredit - closingDebit;
+
+                return {
+                    agencyId: node.agencyId || null,
+                    ledgerId: node.ledgerId || null,
+                    account: String(node.account || node.name || "").trim(),
+                    openingBalance: nullableAmount(openingBalance),
+                    transactionDebit: nullableAmount(Number(node.periodDebit || 0)),
+                    transactionCredit: nullableAmount(Number(node.periodCredit || 0)),
+                    closingBalance: nullableAmount(closingBalance),
+                    agingDays: null as number | null
+                };
+            })
+            .filter(row => {
+                const name = row.account.toLowerCase();
+                return row.account && !groupNames.some(groupName => groupName.toLowerCase() === name);
+            })
+            .sort((a, b) => a.account.localeCompare(b.account, "en", { sensitivity: "base" }));
+
+        const amount = (value: number | null) => Number(Number(value || 0).toFixed(2));
+        const summary = {
+            totalLedgers: rows.length,
+            openingBalance: amount(rows.reduce((sum, row) => sum + amount(row.openingBalance), 0)),
+            transactionDebit: amount(rows.reduce((sum, row) => sum + amount(row.transactionDebit), 0)),
+            transactionCredit: amount(rows.reduce((sum, row) => sum + amount(row.transactionCredit), 0)),
+            closingBalance: amount(rows.reduce((sum, row) => sum + amount(row.closingBalance), 0))
+        };
+
+        const periodStart = trialBalance.diagnostics?.period?.startDate
+            ? new Date(trialBalance.diagnostics.period.startDate)
+            : new Date(2025, 3, 1);
+        const periodEnd = trialBalance.diagnostics?.period?.endDate
+            ? new Date(trialBalance.diagnostics.period.endDate)
+            : new Date(2026, 2, 31, 23, 59, 59, 999);
+        const lastDateYmd = String(query?.endDate || "2026-03-31").slice(0, 10);
+        const [asOnYear, asOnMonth, asOnDay] = lastDateYmd.split("-").map(Number);
+        const asOnDate = new Date(Date.UTC(asOnYear, asOnMonth - 1, asOnDay, 18, 29, 59, 999));
+
+        const formatPeriodPart = (date: Date) => {
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${date.getDate()}-${months[date.getMonth()]}-${String(date.getFullYear()).slice(-2)}`;
+        };
+        const periodLabel = `${formatPeriodPart(periodStart)} to ${formatPeriodPart(periodEnd)}`;
+
+        const ledgerIds = [...new Set(rows.map(row => row.ledgerId).filter(Boolean))] as string[];
+        const eventsByLedger = new Map<string, Array<{ date: Date; debit: number; credit: number }>>();
+        for (let index = 0; index < ledgerIds.length; index += 400) {
+            const chunk = ledgerIds.slice(index, index + 400);
+            const [entries, journals] = await Promise.all([
+                prisma.ledgerEntry.findMany({
+                where: {
+                        ledgerId: { in: chunk },
+                        voucher: { voucherDate: { lte: asOnDate } }
+                    },
+                    select: {
+                        ledgerId: true,
+                        entryType: true,
+                        amount: true,
+                        voucher: { select: { voucherDate: true } }
+                    }
+                }),
+                prisma.journal.findMany({
+                    where: {
+                        status: JournalStatus.APPROVED,
+                        voucherId: null,
+                        journalDate: { lte: asOnDate },
+                        journalHead: { ledgerId: { in: chunk } }
+                    },
+                    select: {
+                        amount: true,
+                        direction: true,
+                        journalDate: true,
+                        journalHead: { select: { ledgerId: true, type: true } }
+                    }
+                })
+            ]);
+
+            for (const entry of entries) {
+                const list = eventsByLedger.get(entry.ledgerId) || [];
+                list.push({
+                    date: entry.voucher.voucherDate,
+                    debit: entry.entryType === EntryType.DEBIT ? Number(entry.amount || 0) : 0,
+                    credit: entry.entryType === EntryType.CREDIT ? Number(entry.amount || 0) : 0
+                });
+                eventsByLedger.set(entry.ledgerId, list);
+            }
+
+            for (const journal of journals) {
+                const ledgerId = journal.journalHead.ledgerId;
+                const inward = (journal.direction || journal.journalHead.type) === JournalDirection.INWARD;
+                const list = eventsByLedger.get(ledgerId) || [];
+                list.push({
+                    date: journal.journalDate,
+                    debit: inward ? Number(journal.amount || 0) : 0,
+                    credit: inward ? 0 : Number(journal.amount || 0)
+                });
+                eventsByLedger.set(ledgerId, list);
+            }
+        }
+
+        const agingByLedgerId = new Map<string, number>();
+        for (const row of rows) {
+            if (row.closingBalance === null || !row.ledgerId) continue;
+            const events = [...(eventsByLedger.get(row.ledgerId) || [])];
+            if (!events.length && row.openingBalance) {
+                const opening = amount(row.openingBalance);
+                events.push({
+                    date: periodStart,
+                    debit: isPayable ? Math.max(opening, 0) : Math.max(-opening, 0),
+                    credit: isPayable ? Math.max(-opening, 0) : Math.max(opening, 0)
+                });
+            }
+            const age = this.fifoOutstandingAge(isPayable, events, asOnDate);
+            if (age === null) continue;
+            agingByLedgerId.set(row.ledgerId, age);
+        }
+
+        for (const row of rows) {
+            row.agingDays = row.closingBalance === null || !row.ledgerId
+                ? null
+                : agingByLedgerId.get(row.ledgerId) ?? null;
+        }
+
+        const agingRows = rows
+            .filter(row => row.closingBalance !== null && row.agingDays !== null)
+            .map(row => ({
+                agencyName: row.account,
+                agingDays: row.agingDays as number,
+                outstandingAmount: Math.abs(amount(row.closingBalance))
+            }));
+
+        const company = trialBalance.branch?.name || "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra";
+        const groupLabel = isPayable ? "Sundry Debtor" : "Sundry Creditor";
 
         return {
-            reportName:
-                query.type === "RECEIVABLE"
-                    ? "Accounts Receivable Aging Report"
-                    : "Accounts Payable Aging Report",
-            generatedAt:
-                new Date(),
-            branchId,
+            reportName: isPayable
+                ? "Accounts Payable - Sundry Debtors"
+                : "Accounts Receivable - Sundry Creditors",
+            generatedAt: new Date(),
+            type: isPayable ? "PAYABLE" : "RECEIVABLE",
+            branchId: branchId || null,
             agency,
-            agencyId:
-                query.agencyId,
+            agencyId: query?.agencyId,
+            company,
+            companyDetails: {
+                addressLines: [
+                    "SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD",
+                    "KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD"
+                ],
+                identifier: "CIN: U11100MH2011PTC224243",
+                email: "E-Mail : info@ashtvinayakapetrochem.com"
+            },
+            group: isPayable ? "Sundry Debtors" : "Sundry Creditors",
+            branchHeading: `${company} (from ${formatPeriodPart(periodStart)})`,
+            period: {
+                startDate: periodStart,
+                endDate: periodEnd,
+                label: periodLabel
+            },
+            layout: {
+                reportTitle: groupLabel,
+                columns: [
+                    { key: "account", label: "Particulars" },
+                    { key: "openingBalance", label: "Opening Balance" },
+                    { key: "transactionDebit", label: "Transaction Debit", section: "Transactions" },
+                    { key: "transactionCredit", label: "Transaction Credit", section: "Transactions" },
+                    { key: "closingBalance", label: "Closing Balance" },
+                    { key: "agingDays", label: "Aging Days" }
+                ]
+            },
             summary,
-            rows:
-                query?.agencyId && !query?.export
-                    ? undefined
-                    : rows,
-            agencyDetails:
-                query?.agencyId && !query?.export
-                    ? agencyDetails
-                    : undefined,
-            exportData:
-                query?.export
-                    ? detailRows
-                    : undefined
+            rows,
+            agingRows,
+            agencyDetails: query?.agencyId ? (rows[0] || null) : undefined,
+            exportData: query?.export ? rows : undefined
         };
     }
 }

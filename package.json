@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx --watch -r tsconfig-paths/register src/server.ts",
     "build": "tsc",
-    "test": "tsx --test src/modules/reports/trial-balance.utils.test.ts src/modules/import/transaction-import.utils.test.ts src/modules/import/sales-transaction-import.test.ts",
+    "test": "tsx --test src/modules/reports/trial-balance.utils.test.ts src/modules/import/transaction-import.utils.test.ts src/modules/import/sales-transaction-import.test.ts src/modules/import/excel-import-date.test.ts",
     "start": "node -r tsconfig-paths/register dist/server.js",
     "seed": "tsx prisma/seed.ts",
     "repair:import-credit-notes": "tsx src/scripts/repair-imported-inward-credit-notes.ts",
@@ -21,6 +21,7 @@
     "dedupe:opening-balances": "tsx src/scripts/dedupe-opening-balance-entries.ts",
     "remove:duplicate-opening-balances": "tsx src/scripts/remove-duplicate-opening-balance-entries.ts",
     "seed:purchase-account-journals": "tsx src/scripts/seed-purchase-account-journals.ts",
+    "populate:purchase-path": "tsx src/scripts/populate-purchase-path-from-excel.ts",
     "repair:inward-note-purchase-ledgers": "tsx src/scripts/repair-inward-note-purchase-ledgers.ts",
     "diagnose:inward-note-trial-balance": "tsx src/scripts/diagnose-inward-note-trial-balance.ts",
     "superuser:seed": "tsx src/modules/rbac/superuser.seeder.ts",

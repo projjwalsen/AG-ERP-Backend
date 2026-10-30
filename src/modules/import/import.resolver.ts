@@ -124,6 +124,8 @@ export class ImportResolver {
     static isJournalRegisterRow(dto: JournalImportDTO) {
         const type = String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
         const isRcmNoteRegister = ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(type);
+        const isUnclassifiedTaxInvoice = type === "TAX INVOICE" &&
+            !String(dto.accountingVoucherType || "").trim();
         return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup) &&
             // Register exports contain ledger-side CASH/BANK/PAYMENT/RECEIPT
             // rows. They must use the same direct-ledger path as journal
@@ -131,7 +133,10 @@ export class ImportResolver {
             // receipt/payment register with an agency counterparty.
             type !== "OPENING BALANCE" &&
             (isRcmNoteRegister || !this.isDebitCreditNoteImportRow(dto)) &&
-            !["PURCHASE", "TAX INVOICE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type);
+            (
+                isUnclassifiedTaxInvoice ||
+                !["PURCHASE", "TAX INVOICE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type)
+            );
     }
 
     static async importJournalRegisterRow(
@@ -4415,9 +4420,13 @@ export class ImportResolver {
         }
 
         const importedParty = normalizeImportedPartyName(dto.particulars);
-        if (!importedParty || importedParty === "BY" || importedParty === "TO") {
-            throw new Error(`Sales receipt ${dto.voucherNo} requires a customer`);
-        }
+        // Some Tally Tax Invoice rows contain no customer column. Keep the
+        // accounting import non-blocking by assigning those rows to one
+        // explicit placeholder agency; never infer a real customer from
+        // R/OFF, product text, or narration.
+        const saleParty = !importedParty || importedParty === "BY" || importedParty === "TO"
+            ? "PARTY NOT RECORDED"
+            : importedParty;
 
         let sale: any =
             await this.resolveSaleForJournalTransaction(
@@ -4429,7 +4438,7 @@ export class ImportResolver {
             sale = await this.createAccountingOnlySaleForTransactionImport(
                 actor,
                 dto,
-                importedParty
+                saleParty
             );
 
         }
@@ -4438,9 +4447,10 @@ export class ImportResolver {
         const importedType = normalizeImportedTransactionType(
             dto.accountingVoucherType
         );
-        if (!importedType) {
-            throw new Error(`Sale ${dto.voucherNo} requires a valid Type column`);
-        }
+        // Tax Invoice transaction imports may be accounting-only receipts.
+        // When Type is blank, keep the transaction unclassified so approval
+        // does not assign it to a Sales Accounts ledger. The source ledger
+        // row (for example R/OFF) remains the journal-side classification.
 
         if (dto.debitAmount > 0 || dto.creditAmount <= 0) {
             throw new Error(
@@ -4488,7 +4498,7 @@ export class ImportResolver {
             paymentMode: PaymentMode.ONLINE,
             paymentThrough: PaymentType.CHEQUE,
             referenceNo: `CHQ-${randomUUID().slice(0, 12).toUpperCase()}`,
-            type: importedType,
+            type: importedType || undefined,
             importKey,
             transactionDate: dto.date || new Date(),
 
@@ -4766,7 +4776,10 @@ export class ImportResolver {
             : [];
 
         const importedParty = normalizeImportedPartyName(dto.particulars);
-        let matches = importedParty
+        const hasImportedParty = Boolean(importedParty) &&
+            importedParty !== "BY" &&
+            importedParty !== "TO";
+        let matches = hasImportedParty
             ? sales.filter(sale =>
                 normalizeImportedPartyName(sale.agency.name) === importedParty
             )

@@ -525,6 +525,8 @@ model Purchase {
 
   invoiceNo String @unique
 
+  path String?
+
   /** ---------------- Purchase Document ---------------- */
   invoiceDate DateTime?          // Vendor Invoice Date
   supplierInvoiceDate DateTime?  // If supplier invoice differs

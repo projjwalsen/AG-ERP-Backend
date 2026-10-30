@@ -5002,6 +5002,79 @@ export class LedgerService {
         return targetLedger;
     }
 
+    static async assignOutwardNoteToImportedSalesType(
+        tx: Prisma.TransactionClient,
+        noteId: string,
+        importedType: string
+    ) {
+        const normalizedType = normalizeImportedTransactionType(importedType);
+        if (!normalizedType) {
+            throw new ApiError("Sales Transaction Type is required", 400);
+        }
+
+        const note = await tx.debitCreditNote.findUnique({
+            where: { id: noteId },
+            select: {
+                id: true,
+                branchId: true,
+                sourceType: true,
+                voucherId: true
+            }
+        });
+
+        if (!note) {
+            throw new ApiError("Debit/credit note not found", 404);
+        }
+        if (note.sourceType !== DebitCreditNoteSourceType.SALE) {
+            throw new ApiError("Only sale debit/credit notes can be classified as GST SALES", 400);
+        }
+        if (!note.voucherId) {
+            throw new ApiError("Debit/credit note has no accounting voucher", 400);
+        }
+
+        const targetLedger = await this.getOrCreateImportedSalesTypeLedger(
+            tx,
+            note.branchId,
+            normalizedType
+        );
+        const adjustmentEntries = await tx.ledgerEntry.findMany({
+            where: {
+                voucherId: note.voucherId,
+                ledger: {
+                    category: LedgerType.JOURNAL,
+                    OR: [
+                        { code: { startsWith: "SALE-DEBIT_NOTE-" } },
+                        { code: { startsWith: "SALE-CREDIT_NOTE-" } },
+                        { name: { equals: "Sales Debit Note Adjustments", mode: "insensitive" } },
+                        { name: { equals: "Sales Credit Note Adjustments", mode: "insensitive" } }
+                    ]
+                }
+            },
+            select: {
+                id: true,
+                ledgerId: true,
+                ledger: { select: { code: true, name: true } }
+            }
+        });
+
+        const previousLedgerIds = [...new Set(
+            adjustmentEntries.map(entry => entry.ledgerId)
+        )];
+
+        if (adjustmentEntries.length > 0) {
+            await tx.ledgerEntry.updateMany({
+                where: { id: { in: adjustmentEntries.map(entry => entry.id) } },
+                data: { ledgerId: targetLedger.id }
+            });
+        }
+
+        for (const ledgerId of [...previousLedgerIds, targetLedger.id]) {
+            await this.syncCachedBalance(tx, ledgerId);
+        }
+
+        return targetLedger;
+    }
+
     static async assignPurchaseToImportedType(
         purchaseId: string,
         importedType: string,
@@ -5554,6 +5627,33 @@ export class LedgerService {
 
         // Legacy reporting-only Purchase mappings are included by the Trial
         // Balance report and therefore exposed as a separate audit source.
+        const pathPurchases = await prisma.purchase.findMany({
+            where: {
+                ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+                status: PurchaseStatus.APPROVED,
+                AND: [
+                    { path: { not: null } },
+                    { path: { not: "" } }
+                ]
+            },
+            select: {
+                id: true,
+                invoiceNo: true,
+                path: true,
+                invoiceDate: true,
+                grandTotal: true,
+                voucherType: true,
+                agency: { select: { id: true, name: true } }
+            }
+        });
+        const normalizePurchaseHead = (value: string | null | undefined) => {
+            const head = importedTransactionTypeFromPath(value);
+            return head === "DISCOUNT PURCHASE" ? "DISCOUNT" : head;
+        };
+        const pathMatchedPurchases = pathPurchases.filter(purchase =>
+            normalizePurchaseHead(purchase.path) === importedType
+        );
+
         const legacyPurchases = await prisma.purchase.findMany({
             where: {
                 ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
@@ -5638,6 +5738,33 @@ export class LedgerService {
             : [];
 
         const voucherList = [...voucherRows.values()];
+        const voucherPurchaseIds = new Set(
+            voucherList.map(row => row.purchaseId).filter(Boolean)
+        );
+        for (const purchase of pathMatchedPurchases) {
+            if (voucherPurchaseIds.has(purchase.id)) continue;
+            voucherList.push({
+                purchaseId: purchase.id,
+                invoiceNo: purchase.invoiceNo,
+                voucherNo: purchase.invoiceNo,
+                voucherId: null,
+                voucherDate: purchase.invoiceDate,
+                status: PurchaseStatus.APPROVED,
+                sourceType: "PURCHASE_PATH",
+                voucherType: purchase.voucherType,
+                purchaseVoucherType: purchase.voucherType,
+                invoiceDate: purchase.invoiceDate,
+                purchaseGrandTotal: Number(purchase.grandTotal || 0),
+                agency: purchase.agency,
+                narration: purchase.path,
+                countedUnderPath: true,
+                ledger: importedType,
+                debit: Number(purchase.grandTotal || 0),
+                credit: 0
+            });
+            voucherPurchaseIds.add(purchase.id);
+        }
+        const pathPurchaseIds = new Set(pathMatchedPurchases.map(purchase => purchase.id));
         const legacyPurchaseIds = new Set(legacyRows.map(row => row.purchaseId));
         const requested = requestedVoucherNos.map(requested => {
             const key = requested.toUpperCase();
@@ -5665,7 +5792,12 @@ export class LedgerService {
             return {
                 requestedVoucherNo: requested,
                 exists,
-                countedUnderPath: Boolean(matchingVoucher.length || legacy.length || note.length),
+                countedUnderPath: Boolean(
+                    matchingVoucher.length ||
+                    legacy.length ||
+                    note.length ||
+                    (matchingPurchase && pathPurchaseIds.has(matchingPurchase.id))
+                ),
                 purchase: matchingVoucher[0] || matchingPurchase || null,
                 systemVoucher: matchingSystemVoucher || null,
                 legacyMappings: legacy,
