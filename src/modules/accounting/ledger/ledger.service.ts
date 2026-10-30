@@ -5627,6 +5627,33 @@ export class LedgerService {
 
         // Legacy reporting-only Purchase mappings are included by the Trial
         // Balance report and therefore exposed as a separate audit source.
+        const pathPurchases = await prisma.purchase.findMany({
+            where: {
+                ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+                status: PurchaseStatus.APPROVED,
+                AND: [
+                    { path: { not: null } },
+                    { path: { not: "" } }
+                ]
+            },
+            select: {
+                id: true,
+                invoiceNo: true,
+                path: true,
+                invoiceDate: true,
+                grandTotal: true,
+                voucherType: true,
+                agency: { select: { id: true, name: true } }
+            }
+        });
+        const normalizePurchaseHead = (value: string | null | undefined) => {
+            const head = importedTransactionTypeFromPath(value);
+            return head === "DISCOUNT PURCHASE" ? "DISCOUNT" : head;
+        };
+        const pathMatchedPurchases = pathPurchases.filter(purchase =>
+            normalizePurchaseHead(purchase.path) === importedType
+        );
+
         const legacyPurchases = await prisma.purchase.findMany({
             where: {
                 ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
@@ -5711,6 +5738,33 @@ export class LedgerService {
             : [];
 
         const voucherList = [...voucherRows.values()];
+        const voucherPurchaseIds = new Set(
+            voucherList.map(row => row.purchaseId).filter(Boolean)
+        );
+        for (const purchase of pathMatchedPurchases) {
+            if (voucherPurchaseIds.has(purchase.id)) continue;
+            voucherList.push({
+                purchaseId: purchase.id,
+                invoiceNo: purchase.invoiceNo,
+                voucherNo: purchase.invoiceNo,
+                voucherId: null,
+                voucherDate: purchase.invoiceDate,
+                status: PurchaseStatus.APPROVED,
+                sourceType: "PURCHASE_PATH",
+                voucherType: purchase.voucherType,
+                purchaseVoucherType: purchase.voucherType,
+                invoiceDate: purchase.invoiceDate,
+                purchaseGrandTotal: Number(purchase.grandTotal || 0),
+                agency: purchase.agency,
+                narration: purchase.path,
+                countedUnderPath: true,
+                ledger: importedType,
+                debit: Number(purchase.grandTotal || 0),
+                credit: 0
+            });
+            voucherPurchaseIds.add(purchase.id);
+        }
+        const pathPurchaseIds = new Set(pathMatchedPurchases.map(purchase => purchase.id));
         const legacyPurchaseIds = new Set(legacyRows.map(row => row.purchaseId));
         const requested = requestedVoucherNos.map(requested => {
             const key = requested.toUpperCase();
@@ -5738,7 +5792,12 @@ export class LedgerService {
             return {
                 requestedVoucherNo: requested,
                 exists,
-                countedUnderPath: Boolean(matchingVoucher.length || legacy.length || note.length),
+                countedUnderPath: Boolean(
+                    matchingVoucher.length ||
+                    legacy.length ||
+                    note.length ||
+                    (matchingPurchase && pathPurchaseIds.has(matchingPurchase.id))
+                ),
                 purchase: matchingVoucher[0] || matchingPurchase || null,
                 systemVoucher: matchingSystemVoucher || null,
                 legacyMappings: legacy,
