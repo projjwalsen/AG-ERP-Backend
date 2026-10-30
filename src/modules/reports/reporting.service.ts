@@ -3190,6 +3190,8 @@ export class ReportingService {
 
             node.periodDebit = Number(node.periodDebit.toFixed(2));
             node.periodCredit = Number(node.periodCredit.toFixed(2));
+            node.openingDebit = Number(Number(node.openingDebit || 0).toFixed(2));
+            node.openingCredit = Number(Number(node.openingCredit || 0).toFixed(2));
             node.closingDebit = Number(node.closingDebit.toFixed(2));
             node.closingCredit = Number(node.closingCredit.toFixed(2));
             node.closingSigned = Number(node.closingSigned.toFixed(2));
@@ -3204,45 +3206,37 @@ export class ReportingService {
 
         /**
          * ============================================================
-         * 11. SUMMARY
+         * 11. SUMMARY / GRAND TOTAL
          * ============================================================
+         *
+         * Grand Total must sum only the main trial-balance heads
+         * (`accountGroups` / root nodes). Subgroups and ledgers are already
+         * rolled into those heads by `finalizeNode`. Summing `rows` (every
+         * leaf) or nested children as well double-counts and makes Opening
+         * Dr ≠ Opening Cr and Closing Dr ≠ Closing Cr in the Excel export.
          *
          * In a properly balanced double-entry system:
          *
-         * Period Debit = Period Credit
-         *
-         * and
-         *
+         * Opening Debit = Opening Credit
          * Closing Debit = Closing Credit
          */
 
         const summary =
-            rows.reduce(
-                (total, row) => {
-
-                    // Total Debit/Credit represent transaction turnover.
-                    // Closing balances are reported separately below.
-                    total.totalDebit +=
-                        row.periodDebit;
-
-                    total.totalCredit +=
-                        row.periodCredit;
-
-                    total.totalClosingDebit +=
-                        row.closingDebit;
-
-                    total.totalClosingCredit +=
-                        row.closingCredit;
-
-                    total.totalPeriodDebit +=
-                        row.periodDebit;
-
-                    total.totalPeriodCredit +=
-                        row.periodCredit;
-
+            accountGroups.reduce(
+                (total, head) => {
+                    total.totalOpeningDebit += Number(head.openingDebit || 0);
+                    total.totalOpeningCredit += Number(head.openingCredit || 0);
+                    total.totalClosingDebit += Number(head.closingDebit || 0);
+                    total.totalClosingCredit += Number(head.closingCredit || 0);
+                    total.totalDebit += Number(head.periodDebit || 0);
+                    total.totalCredit += Number(head.periodCredit || 0);
+                    total.totalPeriodDebit += Number(head.periodDebit || 0);
+                    total.totalPeriodCredit += Number(head.periodCredit || 0);
                     return total;
                 },
                 {
+                    totalOpeningDebit: 0,
+                    totalOpeningCredit: 0,
                     totalDebit: 0,
                     totalCredit: 0,
                     totalClosingDebit: 0,
@@ -3250,6 +3244,16 @@ export class ReportingService {
                     totalPeriodDebit: 0,
                     totalPeriodCredit: 0
                 }
+            );
+
+        summary.totalOpeningDebit =
+            Number(
+                summary.totalOpeningDebit.toFixed(2)
+            );
+
+        summary.totalOpeningCredit =
+            Number(
+                summary.totalOpeningCredit.toFixed(2)
             );
 
         summary.totalDebit =
@@ -3277,6 +3281,14 @@ export class ReportingService {
 
         summary.totalClosingCredit =
             Number(summary.totalClosingCredit.toFixed(2));
+
+        const openingDifference =
+            Number(
+                (
+                    summary.totalOpeningDebit -
+                    summary.totalOpeningCredit
+                ).toFixed(2)
+            );
 
         const periodDifference =
             Number(
@@ -3333,9 +3345,16 @@ export class ReportingService {
             summary: {
                 ...summary,
 
+                openingDifference,
+
                 periodDifference,
 
                 closingDifference,
+
+                isOpeningBalanced:
+                    Math.abs(
+                        openingDifference
+                    ) < 0.01,
 
                 isPeriodBalanced:
                     Math.abs(
@@ -3348,6 +3367,9 @@ export class ReportingService {
                     ) < 0.01,
 
                 isBalanced:
+                    Math.abs(
+                        openingDifference
+                    ) < 0.01 &&
                     Math.abs(
                         closingDifference
                     ) < 0.01
