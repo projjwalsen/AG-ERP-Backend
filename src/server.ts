@@ -21,6 +21,7 @@ app.use(cors({
     "http://localhost:3000",
   ],
   credentials: true,
+  exposedHeaders: ["Content-Disposition"],
 }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

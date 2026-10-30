@@ -329,13 +329,14 @@ export class ExcelService {
 
         for (const row of report.rows || []) {
             const agingKey = normalizeAgencyKey(row.account);
+            const agingDays = row.agingDays ?? agingByAgency.get(agingKey) ?? null;
             writeValues([
                 row.account,
                 row.openingBalance,
                 row.transactionDebit,
                 row.transactionCredit,
                 row.closingBalance,
-                agingByAgency.get(agingKey) ?? null
+                agingDays
             ]);
         }
         const totalRow = writeValues([
@@ -356,9 +357,10 @@ export class ExcelService {
             "Content-Type",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         );
+        const downloadName = `${options.filename}.xlsx`;
         res.setHeader(
             "Content-Disposition",
-            `attachment; filename="${options.filename}.xlsx"`
+            `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`
         );
         await workbook.xlsx.write(res as any);
         res.end();
@@ -967,14 +969,15 @@ export class ExcelService {
 
         worksheet.columns = [12, 42, 14, 18, 16, 16, 16, 14, 16, 18].map(width => ({ width }));
         worksheet.getColumn(3).numFmt = "0";
-        worksheet.getRow(headerRow + 2).eachCell(cell => cell.numFmt = "#,##0.00");
-        worksheet.getColumn(4).numFmt = "#,##0.00";
-        worksheet.getColumn(5).numFmt = "#,##0.00";
-        worksheet.getColumn(6).numFmt = "#,##0.00";
-        worksheet.getColumn(7).numFmt = "#,##0.00";
-        worksheet.getColumn(8).numFmt = "#,##0.00";
-        worksheet.getColumn(9).numFmt = "#,##0.00";
-        worksheet.getColumn(10).numFmt = "#,##0.00";
+        const signedAmountFormat = "#,##0.00;-#,##0.00";
+        worksheet.getRow(headerRow + 2).eachCell(cell => cell.numFmt = signedAmountFormat);
+        worksheet.getColumn(4).numFmt = signedAmountFormat;
+        worksheet.getColumn(5).numFmt = signedAmountFormat;
+        worksheet.getColumn(6).numFmt = signedAmountFormat;
+        worksheet.getColumn(7).numFmt = signedAmountFormat;
+        worksheet.getColumn(8).numFmt = signedAmountFormat;
+        worksheet.getColumn(9).numFmt = signedAmountFormat;
+        worksheet.getColumn(10).numFmt = signedAmountFormat;
         // Keep the worksheet fully scrollable; Tally's report does not lock
         // the detail header as a split/frozen pane.
         worksheet.views = [{ state: "normal" }];
