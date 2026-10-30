@@ -4137,6 +4137,7 @@ export class ExcelService {
         const hasSourceBalances =
             options.summary.totalOpeningDebit !== undefined &&
             options.summary.totalOpeningCredit !== undefined;
+        const mainHeadRowNumbers: number[] = [];
 
         const appendTreeNode = (node: any, level = 0) => {
             const openingDebit = hasSourceBalances
@@ -4167,6 +4168,9 @@ export class ExcelService {
             if (node.rowType === "accountingHeader") {
                 row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
             }
+            // Grand Total must add only root heads. Nested subgroup and
+            // ledger amounts are already included in those head cells.
+            if (level === 0) mainHeadRowNumbers.push(row.number);
             for (const child of node.children || []) appendTreeNode(child, level + 1);
         };
 
@@ -4231,6 +4235,7 @@ export class ExcelService {
                     type: "pattern",
                     pattern: "none"
                 };
+                mainHeadRowNumbers.push(groupRow.number);
             }
 
             group.items
@@ -4258,17 +4263,32 @@ export class ExcelService {
            TOTAL ROW
         ============================================================ */
 
-        const totalOpeningDebit = options.summary.totalOpeningDebit ??
-            options.data.reduce((sum, item) => sum + Number(item.openingDebit || 0), 0);
-        const totalOpeningCredit = options.summary.totalOpeningCredit ??
-            options.data.reduce((sum, item) => sum + Number(item.openingCredit || 0), 0);
-        const totalRow = worksheet.addRow([
-            "Grand Total",
-            amountValue(totalOpeningDebit),
-            amountValue(totalOpeningCredit),
-            amountValue(Number(options.summary.totalClosingDebit.toFixed(2))),
-            amountValue(Number(options.summary.totalClosingCredit.toFixed(2)))
-        ]);
+        const totalRow = worksheet.addRow(["Grand Total", null, null, null, null]);
+        const mainHeadColumnLetters = ["B", "C", "D", "E"] as const;
+        mainHeadColumnLetters.forEach((column, offset) => {
+            const cell = totalRow.getCell(offset + 2);
+            if (mainHeadRowNumbers.length) {
+                const result = Number(
+                    mainHeadRowNumbers
+                        .reduce((sum, rowNumber) =>
+                            sum + Number(worksheet.getCell(rowNumber, offset + 2).value || 0), 0)
+                        .toFixed(2)
+                );
+                cell.value = {
+                    formula: `SUM(${mainHeadRowNumbers.map(rowNumber => `${column}${rowNumber}`).join(",")})`,
+                    result
+                };
+            } else {
+                const fallback = offset === 0
+                    ? Number(options.summary.totalOpeningDebit || 0)
+                    : offset === 1
+                        ? Number(options.summary.totalOpeningCredit || 0)
+                        : offset === 2
+                            ? Number(options.summary.totalClosingDebit.toFixed(2))
+                            : Number(options.summary.totalClosingCredit.toFixed(2));
+                cell.value = amountValue(fallback);
+            }
+        });
 
         totalRow.height = 15;
 
