@@ -25,6 +25,7 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
             grandTotal,
 
             remarks,
+            path,
 
             transport,
 
@@ -47,6 +48,7 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
             totalGSTAmount,
             grandTotal,
             remarks,
+            path,
             transport,
             items,
         });
@@ -65,7 +67,7 @@ export const createPurchase = async (req: Request, res: Response, next: NextFunc
 export const getAllPurchases = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const actor = (req as any).user;
-        const { page, limit, branchId, status, voucherType, search } = (req as any).query;
+        const { page, limit, branchId, status, voucherType, search, path } = (req as any).query;
 
         const purchases = await PurchaseService.getAllPurchases(actor, { 
             page: Number(page) || 1,
@@ -73,7 +75,8 @@ export const getAllPurchases = async (req: Request, res: Response, next: NextFun
             branchId,
             status,
             voucherType: voucherType as VoucherType,
-            search
+            search,
+            path
         });
 
         return res.status(200).json({
@@ -155,6 +158,7 @@ export const updatePurchase = async (req: Request, res: Response, next: NextFunc
             otherReference,
             roundOffAmount,
             remarks,
+            path,
             transport,
             items,
         } = req.body;
@@ -168,6 +172,7 @@ export const updatePurchase = async (req: Request, res: Response, next: NextFunc
             otherReference,
             roundOffAmount,
             remarks,
+            path,
             transport,
             items,
         });

@@ -566,7 +566,13 @@ model Purchase {
 
   invoiceNo String
 
-  
+  /**
+   * Optional Tally purchase-account path, stored as
+   * Group/Sub Group (for example "Purchase Accounts/GST Purchase").
+   * Used by Trial Balance to place existing invoices under Purchase Accounts.
+   */
+  path String?
+
   purchaseOrderId String?
   purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId],references: [id],onDelete: SetNull)
 
@@ -630,6 +636,7 @@ model Purchase {
   @@index([branchId])
   @@index([purchaseOrderId])
   @@index([status])
+  @@index([path])
   @@unique([branchId, agencyId, invoiceNo])
 }
 

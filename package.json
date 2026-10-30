@@ -21,6 +21,7 @@
     "dedupe:opening-balances": "tsx src/scripts/dedupe-opening-balance-entries.ts",
     "remove:duplicate-opening-balances": "tsx src/scripts/remove-duplicate-opening-balance-entries.ts",
     "seed:purchase-account-journals": "tsx src/scripts/seed-purchase-account-journals.ts",
+    "populate:purchase-path": "tsx src/scripts/populate-purchase-path-from-excel.ts",
     "repair:inward-note-purchase-ledgers": "tsx src/scripts/repair-inward-note-purchase-ledgers.ts",
     "diagnose:inward-note-trial-balance": "tsx src/scripts/diagnose-inward-note-trial-balance.ts",
     "superuser:seed": "tsx src/modules/rbac/superuser.seeder.ts",

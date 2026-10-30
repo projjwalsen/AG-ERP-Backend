@@ -72,6 +72,11 @@ router.use(authMiddleware);
  *                 type: string
  *                 example: Fresh stock received from supplier.
  *
+ *               path:
+ *                 type: string
+ *                 description: Optional Tally Group/Sub Group path used by Trial Balance (for example Purchase Accounts/GST Purchase).
+ *                 example: Purchase Accounts/GST Purchase
+ *
  *               roundOffAmount:
  *                 type: number
  *                 example: -0.25
@@ -241,6 +246,12 @@ router.post(
  *           enum: [PURCHASE, RCM_PURCHASE]
  *         description: Filter normal or RCM purchases.
 
+ *       - in: query
+ *         name: path
+ *         schema:
+ *           type: string
+ *         description: Filter by Tally Group/Sub Group path (for example Purchase Accounts/GST Purchase).
+ *
  *       - in: query
  *         name: search
  *         schema:

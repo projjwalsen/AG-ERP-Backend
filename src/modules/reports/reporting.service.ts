@@ -3,6 +3,7 @@ import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
 import { parseDate, resolveBalanceType } from "../../core/utils/loc.utils";
 import { LedgerService } from "../accounting/ledger/ledger.service";
+import { importedTransactionTypeFromPath } from "../import/transaction-import.utils";
 import {
     buildTrialBalanceBranchFilter,
     calculateTrialBalanceAmounts,
@@ -24,6 +25,18 @@ import {
 } from "./tally-bank-accounts.allowlist";
 import { buildDuplicateLedgerGroupDisplayMap } from "../accounting/ledger/ledger-group-display";
 
+const PURCHASE_TB_VOUCHER_TYPES: VoucherType[] = [
+    VoucherType.PURCHASE,
+    VoucherType.RCM_PURCHASE,
+    VoucherType.GST_PURCHASE,
+    VoucherType.IGST_PURCHASE,
+    VoucherType.CST_PURCHASE,
+    VoucherType.DISCOUNT_PURCHASE,
+    VoucherType.HIGH_SEAS_PURCHASE,
+    VoucherType.IMPORT_PURCHASE,
+    VoucherType.VAT_PURCHASE,
+    VoucherType.INTEREST_SAUNDRY_CREDITORS
+];
 const BANK_RECEIPT_TYPE = (VoucherType as any).BANK_RECEIPT ?? "BANK_RECEIPT";
 const BANK_PAYMENT_TYPE = VoucherType.BANK_PAYMENT;
 const BANK_VOUCHER_TYPES = [
@@ -69,6 +82,10 @@ const PURCHASE_TRIAL_BALANCE_HEADS = new Set([
 const SALES_NOTE_ADJUSTMENT_HEADS = new Set([
     "SALES CREDIT NOTE ADJUSTMENTS",
     "SALES DEBIT NOTE ADJUSTMENTS"
+]);
+const PURCHASE_NOTE_ADJUSTMENT_HEADS = new Set([
+    "PURCHASE CREDIT NOTE ADJUSTMENTS",
+    "PURCHASE DEBIT NOTE ADJUSTMENTS"
 ]);
 // Keep party ledgers visible in the Trial Balance tree. Collapsing these
 // control groups into a synthetic summary row hid the individual debtor /
@@ -116,15 +133,10 @@ const readPurchaseSubGroups = (remarks: string | null) => {
 // leaf category as the Purchase Accounts sub-row. Some approved notes do not
 // have a purchaseId, so their category must be resolved from this path.
 const purchaseCategoryFromImportedPath = (value: string | null) => {
-    const parts = String(value || "")
-        .replace(/\\/g, "/")
-        .split(/[/>]/)
-        .map(part => part.replace(/_/g, " ").replace(/\s+/g, " ").trim())
-        .filter(Boolean);
-
-    return parts.length > 0
-        ? parts[parts.length - 1].toUpperCase()
-        : "";
+    const head = importedTransactionTypeFromPath(value);
+    if (!head) return "";
+    if (head === "DISCOUNT PURCHASE") return "DISCOUNT";
+    return head;
 };
 
 const salesCategoryFromImportedPath = (value: string | null) => {
@@ -569,7 +581,7 @@ export class ReportingService {
                 ...(approvedPurchaseIds.length > 0
                     ? [{
                         voucher: {
-                            voucherType: VoucherType.PURCHASE,
+                            voucherType: { in: PURCHASE_TB_VOUCHER_TYPES },
                             sourceId: { in: approvedPurchaseIds }
                         }
                     }]
@@ -671,10 +683,7 @@ export class ReportingService {
                         {
                             voucher: {
                                 voucherType: {
-                                    in: [
-                                        VoucherType.PURCHASE,
-                                        VoucherType.RCM_PURCHASE
-                                    ]
+                                    in: PURCHASE_TB_VOUCHER_TYPES
                                 }
                             }
                         }
@@ -749,10 +758,7 @@ export class ReportingService {
                         {
                             voucher: {
                                 voucherType: {
-                                    in: [
-                                        VoucherType.PURCHASE,
-                                        VoucherType.RCM_PURCHASE
-                                    ]
+                                    in: PURCHASE_TB_VOUCHER_TYPES
                                 }
                             }
                         }
@@ -1000,6 +1006,25 @@ export class ReportingService {
             })
         ]) as [any[], LedgerGroupReportRow[]];
 
+        const pathClassifiedPurchases = await prisma.purchase.findMany({
+            where: {
+                status: PurchaseStatus.APPROVED,
+                ...(branchId ? { branchId } : {}),
+                AND: [
+                    { path: { not: null } },
+                    { path: { not: "" } }
+                ]
+            },
+            select: {
+                id: true,
+                invoiceNo: true,
+                path: true,
+                invoiceDate: true,
+                createdAt: true
+            }
+        });
+        const pathClassifiedPurchaseIds = pathClassifiedPurchases.map(row => row.id);
+
         const aggregateWindows = async (
             window: "period" | "prior",
             purchaseAccountsOnly = false
@@ -1073,13 +1098,15 @@ export class ReportingService {
                                             voucherType: purchaseAccountsOnly
                                             ? {
                                                 in: [
-                                                    VoucherType.PURCHASE,
-                                                    VoucherType.RCM_PURCHASE,
+                                                    ...PURCHASE_TB_VOUCHER_TYPES,
                                                     VoucherType.DEBIT_NOTE,
                                                     VoucherType.CREDIT_NOTE
                                                 ]
                                             }
-                                            : { not: VoucherType.OPENING_BALANCE }
+                                            : { not: VoucherType.OPENING_BALANCE },
+                                            ...(purchaseAccountsOnly && pathClassifiedPurchaseIds.length > 0
+                                                ? { sourceId: { notIn: pathClassifiedPurchaseIds } }
+                                                : {})
                                         }
                                 },
                                 {
@@ -1285,6 +1312,9 @@ export class ReportingService {
                 continue;
             }
             const targetName = categoryLeaf(note.categoryPath);
+            if (PURCHASE_TRIAL_BALANCE_HEADS.has(normalizedName(targetName))) {
+                continue;
+            }
             const sameNamedLedgers = ledgers.filter(ledger =>
                 normalizedName(ledger.name) === normalizedName(targetName) &&
                 [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
@@ -1982,16 +2012,19 @@ export class ReportingService {
             }
         );
 
-        // Tally's Purchase Accounts workbook supplies a Sub Group and a
-        // debit/credit side for existing purchases. Keep that imported
-        // classification separate from accounting journals: it gives the
-        // Trial Balance its Purchase Accounts children without manufacturing
-        // a journal or voucher merely for reporting.
-        const classifiedPurchases = await prisma.purchase.findMany({
+        // Existing purchases carry an optional path (Group/Sub Group from
+        // Tally). Trial Balance groups those invoices under Purchase
+        // Accounts from the stored path and the voucher amounts already in
+        // the database. Excel-only voucher numbers are never invented here.
+        const remarksClassifiedPurchases = await prisma.purchase.findMany({
             where: {
                 ...(branchId ? { branchId } : {}),
                 status: PurchaseStatus.APPROVED,
-                remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` }
+                remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` },
+                OR: [
+                    { path: null },
+                    { path: "" }
+                ]
             },
             select: {
                 invoiceDate: true,
@@ -2022,7 +2055,6 @@ export class ReportingService {
                 ...(branchId ? { branchId } : {}),
                 sourceType: DebitCreditNoteSourceType.PURCHASE,
                 status: DebitCreditNoteStatus.APPROVED,
-                purchaseId: null,
                 categoryPath: { not: null },
                 noteDate: { lte: endDate },
                 AND: [
@@ -2062,7 +2094,57 @@ export class ReportingService {
             }
         });
 
-        for (const purchase of classifiedPurchases) {
+        const pathPurchaseEntries = pathClassifiedPurchaseIds.length > 0
+            ? await prisma.ledgerEntry.findMany({
+                where: {
+                    AND: [
+                        scopedJournalEntryFilter,
+                        {
+                            ledger: { category: LedgerType.PURCHASE },
+                            voucher: {
+                                sourceId: { in: pathClassifiedPurchaseIds },
+                                voucherType: {
+                                    in: [
+                                        ...PURCHASE_TB_VOUCHER_TYPES,
+                                        VoucherType.DEBIT_NOTE,
+                                        VoucherType.CREDIT_NOTE
+                                    ]
+                                },
+                                voucherDate: { lte: endDate }
+                            }
+                        }
+                    ]
+                },
+                select: {
+                    entryType: true,
+                    amount: true,
+                    voucher: { select: { sourceId: true, voucherDate: true } }
+                }
+            })
+            : [];
+        const pathByPurchaseId = new Map(
+            pathClassifiedPurchases.map(purchase => [purchase.id, purchase.path])
+        );
+
+        for (const entry of pathPurchaseEntries) {
+            const category = purchaseCategoryFromImportedPath(
+                pathByPurchaseId.get(entry.voucher.sourceId) || ""
+            );
+            if (!category || !PURCHASE_TRIAL_BALANCE_HEADS.has(category)) continue;
+
+            const current = purchaseSubGroupMovements.get(category) || {
+                prior: { debit: 0, credit: 0 },
+                period: { debit: 0, credit: 0 }
+            };
+            const target = entry.voucher.voucherDate < startDate
+                ? current.prior
+                : current.period;
+            target[entry.entryType === EntryType.DEBIT ? "debit" : "credit"] +=
+                Number(entry.amount || 0);
+            purchaseSubGroupMovements.set(category, current);
+        }
+
+        for (const purchase of remarksClassifiedPurchases) {
             const purchaseDate = purchase.invoiceDate || purchase.createdAt;
             if (purchaseDate > endDate) continue;
 
@@ -2083,6 +2165,10 @@ export class ReportingService {
             const category = purchaseCategoryFromImportedPath(note.categoryPath);
             const amount = Number(note.totalAmount || 0);
             if (!category || !Number.isFinite(amount) || amount === 0) continue;
+            if (
+                !PURCHASE_TRIAL_BALANCE_HEADS.has(category) ||
+                category === "INCENTIVES RECEIVED"
+            ) continue;
 
             const current = purchaseSubGroupMovements.get(category) || {
                 prior: { debit: 0, credit: 0 },
@@ -2340,7 +2426,7 @@ export class ReportingService {
                     .replace(/\s+/g, " ")
                     .trim()
                     .toUpperCase();
-                if (!key) continue;
+                if (!key || PURCHASE_NOTE_ADJUSTMENT_HEADS.has(key)) continue;
                 grouped.set(key, [...(grouped.get(key) || []), row]);
             }
 
@@ -2459,9 +2545,11 @@ export class ReportingService {
                 PURCHASE_TRIAL_BALANCE_HEADS.has(
                     String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
                 )
-            )).filter(row => !SALES_NOTE_ADJUSTMENT_HEADS.has(
-                String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase()
-            )),
+            )).filter(row => {
+                const key = String(row.account || "").replace(/\s+/g, " ").trim().toUpperCase();
+                return !SALES_NOTE_ADJUSTMENT_HEADS.has(key) &&
+                    !PURCHASE_NOTE_ADJUSTMENT_HEADS.has(key);
+            }),
             ...purchaseAccountRows,
             ...salesAccountRows
         ];
@@ -3006,9 +3094,20 @@ export class ReportingService {
             if (row.isCollapsedTrialBalanceGroup) continue;
             if (row.groupId && hiddenTrialBalanceGroupIds.has(row.groupId)) continue;
             const repeatedHeading = normalizedName(row.account) === normalizedName(groupNode.name)
-                && ["CURRENT LIABILITIES", "SUNDRY CREDITORS", "LIABILITIES", "DUTIES & TAXES"].includes(
-                    normalizedName(groupNode.name)
-                );
+                && [
+                    "CURRENT LIABILITIES",
+                    "SUNDRY CREDITORS",
+                    "LIABILITIES",
+                    "DUTIES & TAXES",
+                    "GST",
+                    "GST PAYABLE",
+                    "INPUT GST",
+                    "OUTPUT GST",
+                    "TCS",
+                    "TDS",
+                    "RCM",
+                    "CASH LEDGER"
+                ].includes(normalizedName(groupNode.name));
             if (repeatedHeading) continue;
             groupNode.children.push({
                 ...row,
