@@ -1,0 +1,66 @@
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD
+KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD
+CIN: U11100MH2011PTC224243
+E-Mail : info@ashtvinayakapetrochem.com
+CGST ITC Not Reflected in GSTR-2B
+Ledger Account
+1-Apr-25 to 31-Mar-26
+Page 1
+Date Particulars Credit DebitVch No.Vch Type
+1-Apr-25 To Opening Balance 85,573.53
+29-Apr-25 To EKVIRA TRANSPORT AND LOGISTICS 6,541.92022/2025-2026Journal Expenses
+30-Apr-25 By INPUT CGST 9% 1,467.50415Journal
+By INPUT CGST 9% 2,727.00416Journal
+23-May-25 To THE NEW LIGHT ELECTRICAL ENTERPRISES 27 344.2510Journal Expenses
+31-May-25 To VR 9 PEST CONTROL 1,440.00VR9PC-25/26-29Journal Expenses
+By INPUT CGST 2.5% 6,842.00787Journal
+4-Jun-25 To LOTUS ENTERPRISES 387.90166/2025-26Journal Expenses
+6-Jun-25 To DRAVYAM INDUSTRIES PRIVATE LIMITED - CR 81,489.10DIPL/2526/0184Purchase
+9-Jun-25 To DRAVYAM INDUSTRIES PRIVATE LIMITED - CR 83,048.18DIPL/2526/0192Purchase
+16-Jun-25 To DRAVYAM INDUSTRIES PRIVATE LIMITED - CR 84,487.54DIPL/2526/0197Purchase
+19-Jun-25 To DRAVYAM INDUSTRIES PRIVATE LIMITED - CR 83,751.95DIPL/2526/0198Purchase
+To NAVKAR ENTERPRISES 2,547.0025-26/1024Journal Expenses
+30-Jun-25 To LOTUS ENTERPRISES 662.79237/2025-26Journal Expenses
+By INPUT CGST 9% 1,784.251373Journal
+2-Jul-25 To Appa Electrical Hardware 397.0844Journal Expenses
+12-Jul-25 To Appa Electrical Hardware 283.2347Journal Expenses
+26-Jul-25 To Appa Electrical Hardware 245.7051Journal Expenses
+31-Jul-25 By INPUT CGST 9% 3,36,374.461938Journal
+To Appa Electrical Hardware 357.3053Journal Expenses
+2-Aug-25 To Appa Electrical Hardware 189.3654Journal Expenses
+10-Aug-25 To Appa Electrical Hardware 504.9057Journal Expenses
+20-Aug-25 To Appa Electrical Hardware 248.1360Journal Expenses
+31-Aug-25 By INPUT CGST 9% 1,283.312379Journal
+27-Sep-25 To BAJAJ ALLIANZ GENERAL INSURANCE COMPANY LIMITED 1,305.00464316917/1Journal Expenses
+To BAJAJ ALLIANZ GENERAL INSURANCE COMPANY LIMITED 1,418.00464320748/1Journal Expenses
+To BAJAJ ALLIANZ GENERAL INSURANCE COMPANY LIMITED 1,305.00464319294/1Journal Expenses
+30-Sep-25 By INPUT CGST 9% 942.393011Journal
+17-Oct-25 To THE NEW INDIA ASSURANCE CO LIMITED 62,996.0017020025E0005779Journal Expenses
+24-Oct-25 To THE NEW INDIA ASSURANCE CO LIMITED 41,288.0017020025E0005886Journal Expenses
+31-Oct-25 By Ineligible ITC 17(5) -CGST 107.823708Journal
+30-Nov-25 By INPUT CGST 9% 1,04,284.004226Journal
+By Written Off 74,034.004829Journal
+By Written Off 6,304.504830Journal
+By Written Off 457.634831Journal
+By Written Off 180.004832Journal
+3-Dec-25 To Appa Electrical Hardware 175.6890Journal Expenses
+15-Dec-25 To Appa Electrical Hardware 409.0595Journal Expenses
+To DELTA VALUERS AND APPRAISERS LLP 675.002146/VAL/MUM/25Journal Expenses
+30-Dec-25 To THE NEW LIGHT ELECTRICAL ENTERPRISES 27 180.0044Journal Expenses
+1-Jan-26 To G K TRANSPORT 16,658.55951Journal Expenses
+13-Jan-26 To POOJA TYRES 5,917.1251005Journal Expenses
+31-Jan-26 By INPUT CGST 9% 764.735285Journal
+20-Feb-26 To THE NEW LIGHT ELECTRICAL ENTERPRISES 27 600.3059Journal Expenses
+28-Feb-26 By INPUT CGST 9% 5,917.125784Journal
+Carried Over 5,43,470.71 5,65,427.56
+continued ...
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+CGST ITC Not Reflected in GSTR-2B Ledger Account : 1-Apr-25 to 31-Mar-26 Page 2
+Date Particulars Credit DebitVch No.Vch Type
+Brought Forward 5,43,470.71 5,65,427.56
+31-Mar-26 To G K TRANSPORT 5,429.70952Journal Expenses
+By INPUT CGST 9% 600.306800Journal
+5,44,071.015,70,857.26
+By Closing Balance 26,786.25
+5,70,857.265,70,857.26

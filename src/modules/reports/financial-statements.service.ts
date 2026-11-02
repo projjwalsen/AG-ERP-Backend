@@ -1,7 +1,9 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
+import { prisma } from "../../config/db";
 import profitAndLossWorkbook from "./PLAC/PandL_full.json";
 import balanceSheetSource from "./BLSHEET/BSheet-pure.json";
+import { ReportingService } from "./reporting.service";
 
 type StatementKind = "PROFIT_AND_LOSS" | "BALANCE_SHEET";
 type PureStatementItem = { name: string; amount: number; isDetail?: boolean; children?: PureStatementItem[]; items?: PureStatementItem[] };
@@ -28,6 +30,21 @@ export type FinancialStatementReport = {
     };
     rows: unknown[][];
 };
+type TrialBalanceNode = {
+    name?: string;
+    account?: string;
+    closingDebit?: number;
+    closingCredit?: number;
+    closingSigned?: number;
+    children?: TrialBalanceNode[];
+};
+type LiveStatementQuery = {
+    branchId?: string;
+    startDate?: string;
+    endDate?: string;
+    includeZero?: boolean;
+};
+type StatementItem = { name: string; amount: number };
 
 const text = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
 const rupee = String.fromCharCode(0x20b9);
@@ -87,10 +104,116 @@ const pairStatementSides = (leftRows: unknown[][], rightRows: unknown[][]) => {
     });
 };
 
+const money = (value: number) => Math.round((Number(value) || 0) * 100) / 100;
+
+const headingKey = (name: string) =>
+    String(name || "").normalize("NFKC").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+
+const headingsMatch = (name: string, candidates: string[]) => {
+    const key = headingKey(name);
+    return candidates.some(candidate => {
+        const other = headingKey(candidate);
+        return key === other || key === `${other}s` || other === `${key}s`;
+    });
+};
+/** Name of a trial balance node */
+const nodeName = (node: TrialBalanceNode) => text(node.name || node.account);
+
+const findTrialHead = (tree: TrialBalanceNode[], candidates: string[]) =>
+    tree.find(node => headingsMatch(nodeName(node), candidates));
+
+const signedDebit = (node?: TrialBalanceNode) => {
+    if (!node) return 0;
+    if (typeof node.closingSigned === "number") return money(node.closingSigned);
+    return money(Number(node.closingDebit || 0) - Number(node.closingCredit || 0));
+};
+
+const expenseAmount = (node?: TrialBalanceNode) => signedDebit(node);
+const incomeAmount = (node?: TrialBalanceNode) => money(-signedDebit(node));
+
+const firstLevelItems = (
+    node: TrialBalanceNode | undefined,
+    amountOf: (child: TrialBalanceNode) => number
+): StatementItem[] => {
+    if (!node?.children?.length) return [];
+    const parent = headingKey(nodeName(node));
+    return node.children
+        .filter(child => headingKey(nodeName(child)) !== parent)
+        .map(child => ({ name: nodeName(child), amount: amountOf(child) }))
+        .filter(item => item.name);
+};
+
+const sectionRows = (name: string, amount: number | null, items: StatementItem[]) => {
+    const rows: unknown[][] = [[name, null, amount]];
+    for (const item of items) {
+        rows.push([item.name, item.amount === 0 ? null : item.amount, null]);
+    }
+    return rows;
+};
+
+const isoKolkata = (value: Date | string) =>
+    new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date(value));
+
+const loadOpeningStockItems = async (): Promise<StatementItem[]> => {
+    const products = await prisma.product.findMany({
+        where: {
+            OR: [
+                { openingStockKG: { gt: 0 } },
+                { openingStockKG: { lt: 0 } }
+            ]
+        },
+        select: {
+            name: true,
+            openingStockKG: true,
+            sellPricePerUnit: true
+        },
+        orderBy: { name: "asc" }
+    });
+
+    const byName = new Map<string, number>();
+    for (const product of products) {
+        const name = text(product.name);
+        if (!name) continue;
+        const amount = money(Number(product.openingStockKG) * Number(product.sellPricePerUnit || 0));
+        byName.set(name, money((byName.get(name) || 0) + amount));
+    }
+    return [...byName.entries()].map(([name, amount]) => ({ name, amount }));
+};
+
+const loadClosingStockItems = async (): Promise<StatementItem[]> => {
+    const products = await prisma.product.findMany({
+        where: {
+            OR: [
+                { tempClosingBalance: { gt: 0 } },
+                { tempClosingBalance: { lt: 0 } }
+            ]
+        },
+        select: {
+            name: true,
+            tempClosingBalance: true
+        },
+        orderBy: { name: "asc" }
+    });
+
+    const byName = new Map<string, number>();
+    for (const product of products) {
+        const name = text(product.name);
+        if (!name) continue;
+        const amount = money(Number(product.tempClosingBalance || 0));
+        byName.set(name, money((byName.get(name) || 0) + amount));
+    }
+    return [...byName.entries()].map(([name, amount]) => ({ name, amount }));
+};
+
 const balanceSheetRows = (source: PureBalanceSheet) => {
     const liabilities = flattenSections(source.liabilities);
     const assets = flattenSections(source.assets);
-    const rows = reportHeaderRows(source.company, source.report, periodLabel(source.period));
+    const rows: unknown[][] = reportHeaderRows(source.company, source.report, periodLabel(source.period));
     rows.push(["", "", null, "", "", null]);
     rows.push(["Liabilities", `as at ${displayDate(source.period.to)}`, null, "Assets", `as at ${displayDate(source.period.to)}`, null]);
     rows.push(...pairStatementSides(liabilities, assets));
@@ -308,5 +431,121 @@ export class Srv1FinancialStatementsService {
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
         return res.send(Buffer.from(buffer));
+    }
+
+    /** Live Balance Sheet Service  */
+    static async getLiveBalanceSheetReport() {
+        // Implementation for live balance sheet report
+    }
+
+    /** Live Profit and Loss Service  */
+    static async getLiveProfitAndLossReport(
+        actor: any,
+        query?: LiveStatementQuery
+    ): Promise<FinancialStatementReport> {
+        const [trial, openingStockItems, closingStockItems] = await Promise.all([
+            ReportingService.getTrialBalanceReport(actor, {
+                branchId: query?.branchId,
+                startDate: query?.startDate,
+                endDate: query?.endDate,
+                includeZero: query?.includeZero
+            }),
+            loadOpeningStockItems(),
+            loadClosingStockItems()
+        ]);
+
+        const tree = (trial.tree || []) as TrialBalanceNode[];
+        const purchaseHead = findTrialHead(tree, ["Purchase Accounts"]);
+        const directExpenseHead = findTrialHead(tree, ["Direct Expenses", "Direct Expense"]);
+        const indirectExpenseHead = findTrialHead(tree, ["Indirect Expenses", "Indirect Expense"]);
+        const salesHead = findTrialHead(tree, ["Sales Accounts"]);
+        const indirectIncomeHead = findTrialHead(tree, ["Indirect Incomes", "Indirect Income"]);
+
+        const openingStock = money(openingStockItems.reduce((sum, item) => sum + item.amount, 0));
+        const closingStock = money(closingStockItems.reduce((sum, item) => sum + item.amount, 0));
+
+        const purchaseAccounts = expenseAmount(purchaseHead);
+        const directExpenses = expenseAmount(directExpenseHead);
+        const indirectExpenses = expenseAmount(indirectExpenseHead);
+        const salesAccounts = incomeAmount(salesHead);
+        const indirectIncomes = incomeAmount(indirectIncomeHead);
+
+        const grossProfit = money(
+            (salesAccounts + closingStock) - (openingStock + purchaseAccounts + directExpenses)
+        );
+        const nettProfit = money(grossProfit + indirectIncomes - indirectExpenses);
+
+        const leftRows: unknown[][] = [
+            ...sectionRows("Opening Stock", openingStock, openingStockItems),
+            ...sectionRows("Purchase Accounts", purchaseAccounts, firstLevelItems(purchaseHead, expenseAmount)),
+            ...sectionRows("Direct Expenses", directExpenses, firstLevelItems(directExpenseHead, expenseAmount))
+        ];
+        const rightRows: unknown[][] = [
+            ...sectionRows("Sales Accounts", salesAccounts, firstLevelItems(salesHead, incomeAmount)),
+            ...sectionRows("Closing Stock", closingStock || null, closingStockItems)
+        ];
+
+        if (grossProfit >= 0) {
+            leftRows.push(["Gross Profit c/o", null, grossProfit]);
+        } else {
+            rightRows.push(["Gross Loss c/o", null, money(-grossProfit)]);
+        }
+
+        const tradingTotal = money(
+            openingStock + purchaseAccounts + directExpenses + Math.max(grossProfit, 0)
+        );
+        leftRows.push([null, tradingTotal || null, null]);
+        rightRows.push([null, tradingTotal || null, null]);
+
+        if (grossProfit < 0) {
+            leftRows.push(["Gross Loss b/f", null, money(-grossProfit)]);
+        }
+        leftRows.push(
+            ...sectionRows("Indirect Expenses", indirectExpenses, firstLevelItems(indirectExpenseHead, expenseAmount))
+        );
+
+        if (grossProfit >= 0) {
+            rightRows.push(["Gross Profit b/f", null, grossProfit]);
+        }
+        rightRows.push(
+            ...sectionRows("Indirect Incomes", indirectIncomes, firstLevelItems(indirectIncomeHead, incomeAmount))
+        );
+
+        if (nettProfit >= 0) {
+            leftRows.push(["Nett Profit", null, nettProfit]);
+        } else {
+            rightRows.push(["Nett Loss", null, money(-nettProfit)]);
+        }
+
+        const debitTotal = money(
+            (grossProfit < 0 ? money(-grossProfit) : 0) + indirectExpenses + Math.max(nettProfit, 0)
+        );
+        const creditTotal = money(
+            (grossProfit >= 0 ? grossProfit : 0) + indirectIncomes + Math.max(-nettProfit, 0)
+        );
+
+        const startIso = isoKolkata(trial.period.startDate);
+        const endIso = isoKolkata(trial.period.endDate);
+        const period = periodLabel({ from: startIso, to: endIso });
+        const company = text(trial.branch?.name) || "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra";
+
+        const rows: unknown[][] = reportHeaderRows(company, "Profit & Loss A/c", period);
+        rows.push(["", "", null, "", "", null]);
+        rows.push(["Particulars", period, null, "Particulars", period, null]);
+        rows.push(...pairStatementSides(leftRows, rightRows));
+        rows.push(["Total", null, debitTotal as any, "Total", null, creditTotal]);
+
+        return {
+            statementType: "PROFIT_AND_LOSS",
+            reportName: "Profit & Loss A/c",
+            company,
+            period,
+            companyDetails: {
+                address: [...companyAddress],
+                identifier: companyIdentifier,
+                email: companyEmail
+            },
+            rows
+        };
     }
 }

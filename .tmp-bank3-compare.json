@@ -1,0 +1,855 @@
+{
+  "kfd": {
+    "pdfN": 2,
+    "dbN": 3,
+    "matched": 2,
+    "missingN": 0,
+    "extraN": 1,
+    "missing": [],
+    "extra": [
+      {
+        "id": "d2733d17-ded6-4e1d-a07f-debdf92927de",
+        "ledgerId": "760af6cd-3501-41e5-8e72-f702781eca47",
+        "no": "KFD401-CONTRA-20251114",
+        "type": "CONTRA",
+        "date": "2025-11-14",
+        "side": "CREDIT",
+        "amt": 594953,
+        "others": [
+          {
+            "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+            "side": "DEBIT",
+            "amt": 594953,
+            "group": "Loans (Liability) > Bank OD A/c & CC A/c"
+          }
+        ]
+      }
+    ],
+    "extraCr": 594953,
+    "extraDr": 0,
+    "missCr": 0,
+    "missDr": 0
+  },
+  "cb": {
+    "pdfN": 6,
+    "dbN": 7,
+    "matched": 6,
+    "missingN": 0,
+    "extraN": 1,
+    "missing": [],
+    "extra": [
+      {
+        "id": "c6ee5d31-2bdf-4ffc-bde7-8016343b9432",
+        "ledgerId": "d3dc36a5-f716-4bb5-b97d-c43b5cbcab9b",
+        "no": "CB-CONTRA-20260307",
+        "type": "CONTRA",
+        "date": "2026-03-07",
+        "side": "CREDIT",
+        "amt": 51713,
+        "others": [
+          {
+            "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+            "side": "DEBIT",
+            "amt": 51713,
+            "group": "Loans (Liability) > Bank OD A/c & CC A/c"
+          }
+        ]
+      }
+    ],
+    "extraCr": 51713,
+    "extraDr": 0,
+    "missCr": 0,
+    "missDr": 0
+  },
+  "bomca": {
+    "pdfN": 222,
+    "dbN": 222,
+    "matched": 213,
+    "missingN": 9,
+    "extraN": 9,
+    "missing": [
+      {
+        "pdf": {
+          "no": "10797",
+          "date": "2025-04-15",
+          "side": "CREDIT",
+          "amt": 459037,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "03b33616-dbf5-4420-a437-77233161d752",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10797",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "side": "CREDIT",
+            "amt": 349229,
+            "others": [
+              {
+                "name": "ICICI BANK CE LOAN- LQPVL00047732425-PAVER",
+                "side": "DEBIT",
+                "amt": 349229,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10779",
+          "date": "2025-05-15",
+          "side": "CREDIT",
+          "amt": 45201,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "aeee5ec0-286b-4de1-b3cf-506d6e0d9602",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10779",
+            "type": "PAYMENT",
+            "date": "2025-05-15",
+            "side": "CREDIT",
+            "amt": 34272,
+            "others": [
+              {
+                "name": "HDFC BANK 160603957 COMM. VEH. MH43CK6521",
+                "side": "DEBIT",
+                "amt": 34272,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10756",
+          "date": "2025-07-07",
+          "side": "CREDIT",
+          "amt": 59625,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "7804964c-e7d2-4b55-85fc-aac4f9d0addc",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10756",
+            "type": "PAYMENT",
+            "date": "2025-07-07",
+            "side": "CREDIT",
+            "amt": 46714.54,
+            "others": [
+              {
+                "name": "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+                "side": "DEBIT",
+                "amt": 46714.54,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10768",
+          "date": "2025-07-07",
+          "side": "CREDIT",
+          "amt": 42650,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "5d052045-e701-4968-bc36-f8806cfde7fc",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10768",
+            "type": "PAYMENT",
+            "date": "2025-07-07",
+            "side": "CREDIT",
+            "amt": 40068.62,
+            "others": [
+              {
+                "name": "HDFC BANK AUTO LOAN-139545540 KIA SONET",
+                "side": "DEBIT",
+                "amt": 40068.62,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10761",
+          "date": "2025-12-07",
+          "side": "CREDIT",
+          "amt": 59625,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "8252b9c3-cfda-4299-88ec-c2c3a6fe3d97",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10761",
+            "type": "PAYMENT",
+            "date": "2025-12-07",
+            "side": "CREDIT",
+            "amt": 48474.03,
+            "others": [
+              {
+                "name": "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+                "side": "DEBIT",
+                "amt": 48474.03,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10774",
+          "date": "2026-01-07",
+          "side": "CREDIT",
+          "amt": 42650,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "72bc9776-6398-4064-96d4-5a2c631a3a2a",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10774",
+            "type": "PAYMENT",
+            "date": "2026-01-07",
+            "side": "CREDIT",
+            "amt": 41989.47,
+            "others": [
+              {
+                "name": "HDFC BANK AUTO LOAN-139545540 KIA SONET",
+                "side": "DEBIT",
+                "amt": 41989.47,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10807",
+          "date": "2026-02-15",
+          "side": "CREDIT",
+          "amt": 460537,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "b5386f81-2f62-477a-82d7-fce4b16a45fa",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10807",
+            "type": "PAYMENT",
+            "date": "2026-02-15",
+            "side": "CREDIT",
+            "amt": 376012,
+            "others": [
+              {
+                "name": "ICICI BANK CE LOAN- LQPVL00047732425-PAVER",
+                "side": "DEBIT",
+                "amt": 376012,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10764",
+          "date": "2026-03-07",
+          "side": "CREDIT",
+          "amt": 59625,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "28fa436b-2ca3-410f-9eb7-6ca4b7213b7f",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10764",
+            "type": "PAYMENT",
+            "date": "2026-03-07",
+            "side": "CREDIT",
+            "amt": 49561.37,
+            "others": [
+              {
+                "name": "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+                "side": "DEBIT",
+                "amt": 49561.37,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "pdf": {
+          "no": "10789",
+          "date": "2026-03-15",
+          "side": "CREDIT",
+          "amt": 45201,
+          "particular": "(as per details)",
+          "type": "Payment"
+        },
+        "dbSameNo": [
+          {
+            "id": "aa3f6c4f-7b4c-4fc3-8112-f1278fdab8bd",
+            "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+            "no": "10789",
+            "type": "PAYMENT",
+            "date": "2026-03-15",
+            "side": "CREDIT",
+            "amt": 37011,
+            "others": [
+              {
+                "name": "HDFC BANK 160603957 COMM. VEH. MH43CK6521",
+                "side": "DEBIT",
+                "amt": 37011,
+                "group": "Loans (Liability) > Secured Loans"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "extra": [
+      {
+        "id": "aeee5ec0-286b-4de1-b3cf-506d6e0d9602",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10779",
+        "type": "PAYMENT",
+        "date": "2025-05-15",
+        "side": "CREDIT",
+        "amt": 34272,
+        "others": [
+          {
+            "name": "HDFC BANK 160603957 COMM. VEH. MH43CK6521",
+            "side": "DEBIT",
+            "amt": 34272,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "aa3f6c4f-7b4c-4fc3-8112-f1278fdab8bd",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10789",
+        "type": "PAYMENT",
+        "date": "2026-03-15",
+        "side": "CREDIT",
+        "amt": 37011,
+        "others": [
+          {
+            "name": "HDFC BANK 160603957 COMM. VEH. MH43CK6521",
+            "side": "DEBIT",
+            "amt": 37011,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "7804964c-e7d2-4b55-85fc-aac4f9d0addc",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10756",
+        "type": "PAYMENT",
+        "date": "2025-07-07",
+        "side": "CREDIT",
+        "amt": 46714.54,
+        "others": [
+          {
+            "name": "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+            "side": "DEBIT",
+            "amt": 46714.54,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "8252b9c3-cfda-4299-88ec-c2c3a6fe3d97",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10761",
+        "type": "PAYMENT",
+        "date": "2025-12-07",
+        "side": "CREDIT",
+        "amt": 48474.03,
+        "others": [
+          {
+            "name": "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+            "side": "DEBIT",
+            "amt": 48474.03,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "28fa436b-2ca3-410f-9eb7-6ca4b7213b7f",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10764",
+        "type": "PAYMENT",
+        "date": "2026-03-07",
+        "side": "CREDIT",
+        "amt": 49561.37,
+        "others": [
+          {
+            "name": "HDFC BANK AUTO LOAN-140544428 INNOVA HYCROSS",
+            "side": "DEBIT",
+            "amt": 49561.37,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "5d052045-e701-4968-bc36-f8806cfde7fc",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10768",
+        "type": "PAYMENT",
+        "date": "2025-07-07",
+        "side": "CREDIT",
+        "amt": 40068.62,
+        "others": [
+          {
+            "name": "HDFC BANK AUTO LOAN-139545540 KIA SONET",
+            "side": "DEBIT",
+            "amt": 40068.62,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "72bc9776-6398-4064-96d4-5a2c631a3a2a",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10774",
+        "type": "PAYMENT",
+        "date": "2026-01-07",
+        "side": "CREDIT",
+        "amt": 41989.47,
+        "others": [
+          {
+            "name": "HDFC BANK AUTO LOAN-139545540 KIA SONET",
+            "side": "DEBIT",
+            "amt": 41989.47,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "03b33616-dbf5-4420-a437-77233161d752",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10797",
+        "type": "PAYMENT",
+        "date": "2025-04-15",
+        "side": "CREDIT",
+        "amt": 349229,
+        "others": [
+          {
+            "name": "ICICI BANK CE LOAN- LQPVL00047732425-PAVER",
+            "side": "DEBIT",
+            "amt": 349229,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      },
+      {
+        "id": "b5386f81-2f62-477a-82d7-fce4b16a45fa",
+        "ledgerId": "ac66bb2e-78f7-49a4-a6f6-6c6d83d1fd4b",
+        "no": "10807",
+        "type": "PAYMENT",
+        "date": "2026-02-15",
+        "side": "CREDIT",
+        "amt": 376012,
+        "others": [
+          {
+            "name": "ICICI BANK CE LOAN- LQPVL00047732425-PAVER",
+            "side": "DEBIT",
+            "amt": 376012,
+            "group": "Loans (Liability) > Secured Loans"
+          }
+        ]
+      }
+    ],
+    "extraCr": 1023332.03,
+    "extraDr": 0,
+    "missCr": 1274151,
+    "missDr": 0
+  },
+  "special": [
+    {
+      "no": "13784",
+      "type": "JOURNAL",
+      "date": "2025-07-18",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "6729de75-0b64-4bd0-90cd-ae3ea4d0f258",
+          "status": "APPROVED",
+          "direction": "OUTWARD",
+          "amount": "0.57"
+        }
+      ],
+      "entries": [
+        {
+          "id": "dfbcf135-b238-4b11-8b5b-d308e0ffbe22",
+          "ledgerId": "5f182cd8-fa7d-4659-969b-eaed8996fa59",
+          "name": "Bank Charges",
+          "active": true,
+          "group": "Indirect Expenses > Financial Expenses",
+          "side": "DEBIT",
+          "amt": 0.57,
+          "narr": "Particulars: Bank Charges | Narration: BEING BANK CHARGES PAID TO TRANSFER /PC:S"
+        }
+      ]
+    },
+    {
+      "no": "17209",
+      "type": "PAYMENT",
+      "date": "2026-03-01",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [],
+      "entries": [
+        {
+          "id": "765e7303-bc80-4057-959e-6ae23e5d1295",
+          "ledgerId": "1b063e40-d479-4163-a3cf-09362ffb95f0",
+          "name": "A G ASHTAVINAYAKA PETROCHEM PVT LTD-TELANGANA",
+          "active": true,
+          "group": "undefined > Branch / Divisions",
+          "side": "DEBIT",
+          "amt": 300000,
+          "narr": "BEING RTGS PAID TO SIDDHIVINAYAK MINERAL AGNST UTR MAHBR52026030223148114"
+        },
+        {
+          "id": "3ddef53f-2dbe-4f23-8c04-e24935bc2e7f",
+          "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+          "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+          "active": true,
+          "group": "Loans (Liability) > Bank OD A/c & CC A/c",
+          "side": "CREDIT",
+          "amt": 300000,
+          "narr": "BEING RTGS PAID TO SIDDHIVINAYAK MINERAL AGNST UTR MAHBR52026030223148114"
+        }
+      ]
+    },
+    {
+      "no": "3829",
+      "type": "JOURNAL",
+      "date": "2025-11-14",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "97fb4875-9a77-4657-9250-700a410f689b",
+          "status": "APPROVED",
+          "direction": "OUTWARD",
+          "amount": "19671"
+        }
+      ],
+      "entries": [
+        {
+          "id": "d573eca0-d5e4-4e8b-a892-1431c274e38f",
+          "ledgerId": "760af6cd-3501-41e5-8e72-f702781eca47",
+          "name": "KARNATAKA BANK FD AC NO - 5201500202002401",
+          "active": true,
+          "group": "Bank Accounts > Deposits with Bank",
+          "side": "DEBIT",
+          "amt": 19671,
+          "narr": "BEING INTEREST RECEIVED FROM KARNATAKA BANK FD AC NO 5201500202002401 ( AS PER I"
+        }
+      ]
+    },
+    {
+      "no": "3829",
+      "type": "JOURNAL",
+      "date": "2025-11-14",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "4712a7ea-a8ba-4355-8631-2c55503a56dd",
+          "status": "APPROVED",
+          "direction": "INWARD",
+          "amount": "19671"
+        }
+      ],
+      "entries": [
+        {
+          "id": "7d4e25c7-078e-4e45-a4f2-0135c8fbc8f2",
+          "ledgerId": "6f5a9269-1ed2-40e2-a438-cdf21c0c10cd",
+          "name": "INTEREST RECD ON FD KARNATAKA BANK",
+          "active": true,
+          "group": "undefined > Indirect Incomes",
+          "side": "CREDIT",
+          "amt": 19671,
+          "narr": "BEING INTEREST RECEIVED FROM KARNATAKA BANK FD AC NO 5201500202002401 ( AS PER I"
+        }
+      ]
+    },
+    {
+      "no": "13784",
+      "type": "RECEIPT",
+      "date": "2025-10-14",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "7effa905-1a7b-4739-9f4e-320f2489cd90",
+          "status": "APPROVED",
+          "direction": "OUTWARD",
+          "amount": "1000000"
+        }
+      ],
+      "entries": [
+        {
+          "id": "ddbf62a4-dfa2-4c70-9729-3bbb64e33b52",
+          "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+          "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+          "active": true,
+          "group": "Loans (Liability) > Bank OD A/c & CC A/c",
+          "side": "DEBIT",
+          "amt": 1000000,
+          "narr": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING RTGS RECEIVED"
+        },
+        {
+          "id": "747f68ea-a6fb-4c28-9ff7-e59138cc1935",
+          "ledgerId": "696565dc-f48c-4e4d-bded-1654e2971d75",
+          "name": "SIDDHIVINAYAK CONSTRUCTION (DR) - Sundry Debtor",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "side": "CREDIT",
+          "amt": 1000000,
+          "narr": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING RTGS RECEIVED"
+        }
+      ]
+    },
+    {
+      "no": "13784",
+      "type": "JOURNAL",
+      "date": "2025-07-18",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "e1401f1d-d4ad-48da-a873-6aca04787e49",
+          "status": "APPROVED",
+          "direction": "INWARD",
+          "amount": "0.57"
+        }
+      ],
+      "entries": [
+        {
+          "id": "cd4ee163-84f4-49e2-baf6-ce60835a618c",
+          "ledgerId": "cd37008f-f3fb-47bb-b73e-7269a2991e1f",
+          "name": "Central Bank - 3224976293",
+          "active": false,
+          "group": "Bank Accounts > Central Bank - 3224976293",
+          "side": "CREDIT",
+          "amt": 0.57,
+          "narr": "BEING BANK CHARGES PAID TO TRANSFER/PC:SMS CHARGES+GST:JUN 2025"
+        }
+      ]
+    },
+    {
+      "no": "14080",
+      "type": "JOURNAL",
+      "date": "2025-11-14",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "8ed197eb-3030-4feb-bc29-cd43f0061292",
+          "status": "APPROVED",
+          "direction": "INWARD",
+          "amount": "594953"
+        }
+      ],
+      "entries": [
+        {
+          "id": "ebecbb1e-8a5d-4e1a-9b63-2812dc5113bb",
+          "ledgerId": "760af6cd-3501-41e5-8e72-f702781eca47",
+          "name": "KARNATAKA BANK FD AC NO - 5201500202002401",
+          "active": true,
+          "group": "Bank Accounts > Deposits with Bank",
+          "side": "CREDIT",
+          "amt": 594953,
+          "narr": "BEING BG CANCELLED. AND BG AGNST FD CLOSE KARNATAKA BANK TO MAHARASHTRA BANK 860"
+        }
+      ]
+    },
+    {
+      "no": "17209",
+      "type": "JOURNAL",
+      "date": "2026-03-07",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "f6b97617-0dd3-467f-bdae-884740849726",
+          "status": "APPROVED",
+          "direction": "OUTWARD",
+          "amount": "0.11"
+        }
+      ],
+      "entries": [
+        {
+          "id": "b8656bca-dc42-4214-9da4-b96995a84d85",
+          "ledgerId": "cd37008f-f3fb-47bb-b73e-7269a2991e1f",
+          "name": "Central Bank - 3224976293",
+          "active": false,
+          "group": "Bank Accounts > Central Bank - 3224976293",
+          "side": "DEBIT",
+          "amt": 0.11,
+          "narr": "BEING CR CLOS AMT RND"
+        }
+      ]
+    },
+    {
+      "no": "8908",
+      "type": "JOURNAL",
+      "date": "2026-03-07",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "df498f1d-2524-44a1-9844-6f8cae966a0a",
+          "status": "APPROVED",
+          "direction": "INWARD",
+          "amount": "51713"
+        }
+      ],
+      "entries": [
+        {
+          "id": "9338715f-fc51-4d54-b7ef-1e2c5910fa96",
+          "ledgerId": "cd37008f-f3fb-47bb-b73e-7269a2991e1f",
+          "name": "Central Bank - 3224976293",
+          "active": false,
+          "group": "Bank Accounts > Central Bank - 3224976293",
+          "side": "CREDIT",
+          "amt": 51713,
+          "narr": "BEING ACCOUNT CLOSE CENTRAL BANK FUND RECEIVED FROM BANK OF MAHARASHTRA AC ( \"NE"
+        }
+      ]
+    },
+    {
+      "no": "14080",
+      "type": "PAYMENT",
+      "date": "2025-10-04",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [],
+      "entries": [
+        {
+          "id": "38489b98-c714-4dc5-b00b-a62c1b9cadab",
+          "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+          "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+          "active": true,
+          "group": "Loans (Liability) > Bank OD A/c & CC A/c",
+          "side": "CREDIT",
+          "amt": 22562,
+          "narr": "BEING NEFT MADE TO NATIONAL COLOR CHEM CORP AGNST UTR MAHBN12025100426353064"
+        },
+        {
+          "id": "108cd928-d3f0-4b63-a715-7d35c14158f7",
+          "ledgerId": "6d513c87-1ffb-487b-ba3e-c30db52e3d99",
+          "name": "NATIONAL COLOR CHEM CORP",
+          "active": true,
+          "group": "Sundry Creditors > SUNDRY CREDITORS (OTHERS)",
+          "side": "DEBIT",
+          "amt": 22562,
+          "narr": "BEING NEFT MADE TO NATIONAL COLOR CHEM CORP AGNST UTR MAHBN12025100426353064"
+        }
+      ]
+    },
+    {
+      "no": "17209",
+      "type": "JOURNAL",
+      "date": "2026-03-07",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [
+        {
+          "id": "86365577-aaf0-4a83-8431-3a8de726f41b",
+          "status": "APPROVED",
+          "direction": "INWARD",
+          "amount": "0.11"
+        }
+      ],
+      "entries": [
+        {
+          "id": "276e8a30-a512-4a6f-ab1a-48163f7da095",
+          "ledgerId": "6ef23090-8524-48a7-814f-2e46e95c1bf8",
+          "name": "Bank Charges",
+          "active": true,
+          "group": "Indirect Expenses > Financial Expenses",
+          "side": "CREDIT",
+          "amt": 0.11,
+          "narr": "Narration: BEING CR CLOS\r\nAMT RND"
+        }
+      ]
+    },
+    {
+      "no": "CB-CONTRA-20260307",
+      "type": "CONTRA",
+      "date": "2026-03-07",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [],
+      "entries": [
+        {
+          "id": "6391a84a-234d-43cc-92d6-d57d26989b5b",
+          "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+          "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+          "active": true,
+          "group": "Loans (Liability) > Bank OD A/c & CC A/c",
+          "side": "DEBIT",
+          "amt": 51713,
+          "narr": "Transfer closing balance to BANK OF MAHARASHTRA- C/C 60434886441 as per Central "
+        },
+        {
+          "id": "c6ee5d31-2bdf-4ffc-bde7-8016343b9432",
+          "ledgerId": "d3dc36a5-f716-4bb5-b97d-c43b5cbcab9b",
+          "name": "Central Bank - 3224976293",
+          "active": true,
+          "group": "Current Assets > Bank Accounts",
+          "side": "CREDIT",
+          "amt": 51713,
+          "narr": "Transfer closing balance to BANK OF MAHARASHTRA- C/C 60434886441 as per Central "
+        }
+      ]
+    },
+    {
+      "no": "KFD401-CONTRA-20251114",
+      "type": "CONTRA",
+      "date": "2025-11-14",
+      "branch": "47fdc8aa-83ba-46f9-93ec-4517e0eb13bb",
+      "journals": [],
+      "entries": [
+        {
+          "id": "3c246be2-e213-40a7-8d9a-fc4fda1d6e4c",
+          "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+          "name": "BANK OF MAHARASHTRA- C/C 60434886441",
+          "active": true,
+          "group": "Loans (Liability) > Bank OD A/c & CC A/c",
+          "side": "DEBIT",
+          "amt": 594953,
+          "narr": "Transfer matured Karnataka FD 5201500202002401 to BANK OF MAHARASHTRA- C/C 60434"
+        },
+        {
+          "id": "d2733d17-ded6-4e1d-a07f-debdf92927de",
+          "ledgerId": "760af6cd-3501-41e5-8e72-f702781eca47",
+          "name": "KARNATAKA BANK FD AC NO - 5201500202002401",
+          "active": true,
+          "group": "Bank Accounts > Deposits with Bank",
+          "side": "CREDIT",
+          "amt": 594953,
+          "narr": "Transfer matured Karnataka FD 5201500202002401 to BANK OF MAHARASHTRA- C/C 60434"
+        }
+      ]
+    }
+  ]
+}

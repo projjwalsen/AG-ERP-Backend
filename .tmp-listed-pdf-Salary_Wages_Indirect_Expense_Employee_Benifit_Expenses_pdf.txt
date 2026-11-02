@@ -1,0 +1,54 @@
+A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra
+SURVEY NO - 222, VILLAGE - HEDAVALI, Tl- SUDHAGAD
+KHOPOLI - PALI ROAD, KHOPOLI, DIST - RAIGAD
+CIN: U11100MH2011PTC224243
+E-Mail : info@ashtvinayakapetrochem.com
+Salary & Wages
+Ledger Account
+1-Apr-25 to 31-Mar-26
+Page 1
+Date Particulars Credit DebitVch No.Vch Type
+30-Apr-25 To Salary Payable 34,920.006Salary Journal
+To Salary Payable 1,867.007Salary Journal
+To Salary Payable 6,22,268.008Salary Journal
+To Salary Payable 13,000.009Salary Journal
+To Salary Payable 14,53,734.0010Salary Journal
+To Salary Payable 18,150.0013Salary Journal
+By Anil Menda Salary 3,50,000.0016Salary Journal
+31-May-25 To Salary Payable 16,63,730.0014Salary Journal
+By Anil Menda Salary 3,50,000.0017Salary Journal
+To Salary Payable 3,161.0020Salary Journal
+To Salary Payable 6,51,258.0021Salary Journal
+30-Jun-25 To Salary Payable 16,94,136.0023Salary Journal
+To Salary Payable 7,23,999.0025Salary Journal
+By Anil Menda Salary 3,50,000.0028Salary Journal
+31-Jul-25 To Salary Payable 18,50,785.0030Salary Journal
+By Anil Menda Salary 3,50,000.0031Salary Journal
+To Salary Payable 7,20,567.0032Salary Journal
+31-Aug-25 To Salary Payable 17,99,933.0036Salary Journal
+To Salary Payable 7,22,439.0037Salary Journal
+By Anil Menda Salary 3,50,000.0038Salary Journal
+30-Sep-25 By Anil Menda Salary 3,50,000.0039Salary Journal
+To Salary Payable 17,72,654.0041Salary Journal
+To Salary Payable 6,67,033.0042Salary Journal
+31-Oct-25 To Salary Payable 6,54,858.0044Salary Journal
+To Salary Payable 17,98,376.0047Salary Journal
+By Anil Menda Salary 3,50,000.0048Salary Journal
+30-Nov-25 To Salary Payable 17,74,049.0050Salary Journal
+To Salary Payable 6,37,667.0051Salary Journal
+By Anil Menda Salary 3,50,000.0052Salary Journal
+31-Dec-25 By Anil Menda Salary 3,50,000.0053Salary Journal
+To Salary Payable 18,77,730.0055Salary Journal
+To Salary Payable 6,38,020.0056Salary Journal
+31-Jan-26 To Salary Payable 17,70,150.0065Salary Journal
+To Salary Payable 6,28,245.0067Salary Journal
+By Anil Menda Salary 3,50,000.0070Salary Journal
+28-Feb-26 By Anil Menda Salary 3,50,000.0071Salary Journal
+To Salary Payable 20,47,687.0072Salary Journal
+To Salary Payable 5,58,707.0074Salary Journal
+31-Mar-26 To Salary Payable 21,33,828.0075Salary Journal
+To Salary Payable 6,06,793.0076Salary Journal
+By Anil Menda Salary 3,50,000.0077Salary Journal
+42,00,000.002,95,39,744.00
+By Closing Balance 2,53,39,744.00
+2,95,39,744.002,95,39,744.00

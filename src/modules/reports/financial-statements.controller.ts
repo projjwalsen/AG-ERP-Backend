@@ -41,3 +41,20 @@ export const getSrv1BalanceSheetReport = (req: Request, res: Response, next: Nex
         "srv1-balance-sheet",
         "Balance Sheet"
     );
+
+export const getLiveProfitAndLossReport = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const report = await Srv1FinancialStatementsService.getLiveProfitAndLossReport(
+            (req as any).user,
+            {
+                branchId: req.query.branchId as string,
+                startDate: req.query.startDate as string,
+                endDate: req.query.endDate as string,
+                includeZero: String(req.query.includeZero ?? "").toLowerCase() === "true"
+            }
+        );
+        return sendReport(req, res, next, report, "profit-and-loss", "Profit & Loss");
+    } catch (error) {
+        return next(error);
+    }
+};

@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('C:/Users/razon/Documents/Prepaid Insurance.pdf').toString('latin1');for(const n of [10,18]){const m=new RegExp(`(?:^|\\n)${n} 0 obj`).exec(s);const a=s.indexOf('stream',m.index)+7,b=s.indexOf('endstream',a);console.log('\n',n,s.slice(a,b));}
