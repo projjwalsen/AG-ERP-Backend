@@ -58,3 +58,20 @@ export const getLiveProfitAndLossReport = async (req: Request, res: Response, ne
         return next(error);
     }
 };
+
+export const getLiveBalanceSheetReport = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const report = await Srv1FinancialStatementsService.getLiveBalanceSheetReport(
+            (req as any).user,
+            {
+                branchId: req.query.branchId as string,
+                startDate: req.query.startDate as string,
+                endDate: req.query.endDate as string,
+                includeZero: String(req.query.includeZero ?? "").toLowerCase() === "true"
+            }
+        );
+        return sendReport(req, res, next, report, "balance-sheet", "Balance Sheet");
+    } catch (error) {
+        return next(error);
+    }
+};

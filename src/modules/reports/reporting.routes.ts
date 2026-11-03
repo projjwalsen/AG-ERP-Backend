@@ -9,7 +9,7 @@ router.use(authMiddleware)
  * @openapi
  * /api/reports/trial-balance:
  *   get:
- *     summary: Trial Balance Report
+ *     summary: Live Trial Balance Report
  *     description: |
  *       Generates a Tally-style Trial Balance using LedgerEntry rows posted
  *       through approved Journal records only.

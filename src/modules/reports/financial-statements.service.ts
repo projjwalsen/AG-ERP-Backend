@@ -130,6 +130,10 @@ const signedDebit = (node?: TrialBalanceNode) => {
 
 const expenseAmount = (node?: TrialBalanceNode) => signedDebit(node);
 const incomeAmount = (node?: TrialBalanceNode) => money(-signedDebit(node));
+/** Balance Sheet liability side: net closing credit. */
+const liabilityAmount = (node?: TrialBalanceNode) => incomeAmount(node);
+/** Balance Sheet asset side: net closing debit. */
+const assetAmount = (node?: TrialBalanceNode) => expenseAmount(node);
 
 const firstLevelItems = (
     node: TrialBalanceNode | undefined,
@@ -149,6 +153,154 @@ const sectionRows = (name: string, amount: number | null, items: StatementItem[]
         rows.push([item.name, item.amount === 0 ? null : item.amount, null]);
     }
     return rows;
+};
+
+const sumItems = (items: StatementItem[]) =>
+    money(items.reduce((sum, item) => sum + Number(item.amount || 0), 0));
+
+const currentAssetsBalanceSheetItems = (
+    node: TrialBalanceNode | undefined,
+    closingStock: number
+): StatementItem[] => {
+    const items = firstLevelItems(node, assetAmount);
+    const hasCashInHand = items.some(item => headingKey(item.name) === headingKey("Cash-in-hand"));
+    const withoutDuplicateCash = hasCashInHand
+        ? items.filter(item => headingKey(item.name) !== headingKey("Cash"))
+        : items;
+
+    const replaced: StatementItem[] = [];
+    let openingReplaced = false;
+    for (const item of withoutDuplicateCash) {
+        if (headingKey(item.name) === headingKey("Opening Stock")) {
+            replaced.push({ name: "Closing Stock", amount: closingStock });
+            openingReplaced = true;
+        } else {
+            replaced.push(item);
+        }
+    }
+    if (!openingReplaced && closingStock) {
+        replaced.unshift({ name: "Closing Stock", amount: closingStock });
+    }
+    return replaced;
+};
+
+const computeNettProfit = (
+    tree: TrialBalanceNode[],
+    openingStock: number,
+    closingStock: number
+) => {
+    const purchaseAccounts = expenseAmount(findTrialHead(tree, ["Purchase Accounts"]));
+    const directExpenses = expenseAmount(findTrialHead(tree, ["Direct Expenses", "Direct Expense"]));
+    const indirectExpenses = expenseAmount(findTrialHead(tree, ["Indirect Expenses", "Indirect Expense"]));
+    const salesAccounts = incomeAmount(findTrialHead(tree, ["Sales Accounts"]));
+    const indirectIncomes = incomeAmount(findTrialHead(tree, ["Indirect Incomes", "Indirect Income"]));
+    const grossProfit = money(
+        (salesAccounts + closingStock) - (openingStock + purchaseAccounts + directExpenses)
+    );
+    return money(grossProfit + indirectIncomes - indirectExpenses);
+};
+
+/** Trading / P&L roots — never placed on the Balance Sheet. */
+const isProfitAndLossTradingHead = (name: string) =>
+    headingsMatch(name, [
+        "Purchase Accounts",
+        "Sales Accounts",
+        "Direct Expenses",
+        "Direct Expense",
+        "Direct Incomes",
+        "Direct Income",
+        "Indirect Expenses",
+        "Indirect Expense",
+        "Indirect Incomes",
+        "Indirect Income",
+        "Expenses",
+        "Income"
+    ]);
+
+/** Handled separately from net Dr/Cr classification. */
+const isProfitAndLossAccountHead = (name: string) =>
+    headingsMatch(name, ["Profit & Loss A/c", "Profit & Loss"]);
+
+const isSuspenseHead = (name: string) =>
+    headingsMatch(name, ["Suspense A/c", "Suspense Account", "Suspense"]);
+
+const isCurrentAssetsHead = (name: string) =>
+    headingsMatch(name, ["Current Assets"]);
+
+/** Preferred Excel-like order; unknown heads keep TB alphabetical order after these. */
+const LIABILITY_HEAD_ORDER = [
+    "Capital Account",
+    "Loans (Liability)",
+    "Current Liabilities",
+    "Branch / Divisions"
+];
+const ASSET_HEAD_ORDER = [
+    "Fixed Assets",
+    "Investments",
+    "Current Assets"
+];
+
+const sortBalanceSheetHeads = (heads: TrialBalanceNode[], preferred: string[]) => {
+    const rank = (name: string) => {
+        const index = preferred.findIndex(candidate => headingsMatch(name, [candidate]));
+        return index >= 0 ? index : preferred.length;
+    };
+    return [...heads].sort((a, b) => {
+        const left = rank(nodeName(a));
+        const right = rank(nodeName(b));
+        if (left !== right) return left - right;
+        return nodeName(a).localeCompare(nodeName(b));
+    });
+};
+
+const classifyBalanceSheetHeads = (tree: TrialBalanceNode[]) => {
+    const liabilityHeads: TrialBalanceNode[] = [];
+    const assetHeads: TrialBalanceNode[] = [];
+    let profitAndLossHead: TrialBalanceNode | undefined;
+    let suspenseHead: TrialBalanceNode | undefined;
+
+    for (const head of tree) {
+        const name = nodeName(head);
+        if (!name || isProfitAndLossTradingHead(name)) continue;
+        if (isProfitAndLossAccountHead(name)) {
+            profitAndLossHead = head;
+            continue;
+        }
+        if (isSuspenseHead(name)) {
+            suspenseHead = head;
+            continue;
+        }
+
+        const closing = signedDebit(head);
+        // closingSigned = closingDebit - closingCredit
+        // net Cr (closing < 0) → Liabilities (left)
+        // net Dr (closing > 0) → Assets (right)
+        if (closing < 0) liabilityHeads.push(head);
+        else if (closing > 0) assetHeads.push(head);
+    }
+
+    return {
+        liabilityHeads: sortBalanceSheetHeads(liabilityHeads, LIABILITY_HEAD_ORDER),
+        assetHeads: sortBalanceSheetHeads(assetHeads, ASSET_HEAD_ORDER),
+        profitAndLossHead,
+        suspenseHead
+    };
+};
+
+const balanceSheetSectionFromHead = (
+    head: TrialBalanceNode,
+    closingStock: number
+): unknown[][] => {
+    const name = nodeName(head);
+    if (isCurrentAssetsHead(name)) {
+        const items = currentAssetsBalanceSheetItems(head, closingStock);
+        return sectionRows(name, sumItems(items) || null, items);
+    }
+
+    const amountOf = signedDebit(head) < 0 ? liabilityAmount : assetAmount;
+    const items = firstLevelItems(head, amountOf);
+    const total = amountOf(head);
+    return sectionRows(name, total || null, items);
 };
 
 const isoKolkata = (value: Date | string) =>
@@ -434,8 +586,91 @@ export class Srv1FinancialStatementsService {
     }
 
     /** Live Balance Sheet Service  */
-    static async getLiveBalanceSheetReport() {
-        // Implementation for live balance sheet report
+    static async getLiveBalanceSheetReport(
+        actor: any,
+        query?: LiveStatementQuery
+    ): Promise<FinancialStatementReport> {
+        const [trial, openingStockItems, closingStockItems] = await Promise.all([
+            ReportingService.getTrialBalanceReport(actor, {
+                branchId: query?.branchId,
+                startDate: query?.startDate,
+                endDate: query?.endDate,
+                includeZero: query?.includeZero
+            }),
+            loadOpeningStockItems(),
+            loadClosingStockItems()
+        ]);
+
+        const tree = (trial.tree || []) as TrialBalanceNode[];
+        const openingStock = sumItems(openingStockItems);
+        const closingStock = sumItems(closingStockItems);
+        const nettProfit = computeNettProfit(tree, openingStock, closingStock);
+
+        const {
+            liabilityHeads,
+            assetHeads,
+            profitAndLossHead,
+            suspenseHead
+        } = classifyBalanceSheetHeads(tree);
+
+        const leftRows: unknown[][] = [];
+        for (const head of liabilityHeads) {
+            leftRows.push(...balanceSheetSectionFromHead(head, closingStock));
+        }
+
+        const suspenseItems = suspenseHead
+            ? firstLevelItems(suspenseHead, liabilityAmount)
+            : [{ name: "SUSPENSE", amount: 0 }];
+        leftRows.push(...sectionRows(nodeName(suspenseHead || { name: "Suspense A/c" }), 0, suspenseItems));
+
+        const profitAndLossOpening = profitAndLossHead ? liabilityAmount(profitAndLossHead) : 0;
+        const profitAndLossTotal = money(profitAndLossOpening + nettProfit);
+        leftRows.push(...sectionRows("Profit & Loss A/c", profitAndLossTotal || null, [
+            { name: "Opening Balance", amount: profitAndLossOpening },
+            { name: "Current Period", amount: nettProfit }
+        ]));
+
+        const rightRows: unknown[][] = [];
+        for (const head of assetHeads) {
+            rightRows.push(...balanceSheetSectionFromHead(head, closingStock));
+        }
+
+        const liabilitiesTotal = money(
+            liabilityHeads.reduce((sum, head) => sum + liabilityAmount(head), 0) + profitAndLossTotal
+        );
+        const assetsTotal = money(
+            assetHeads.reduce((sum, head) => {
+                if (isCurrentAssetsHead(nodeName(head))) {
+                    return sum + sumItems(currentAssetsBalanceSheetItems(head, closingStock));
+                }
+                return sum + assetAmount(head);
+            }, 0)
+        );
+
+        const startIso = isoKolkata(trial.period.startDate);
+        const endIso = isoKolkata(trial.period.endDate);
+        const period = periodLabel({ from: startIso, to: endIso });
+        const company = text(trial.branch?.name) || "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra";
+        const asAt = `as at ${displayDate(endIso)}`;
+
+        const rows: unknown[][] = reportHeaderRows(company, "Balance Sheet", period);
+        rows.push(["", "", null, "", "", null]);
+        rows.push(["Liabilities", asAt, null, "Assets", asAt, null]);
+        rows.push(...pairStatementSides(leftRows, rightRows));
+        rows.push(["Total", null, liabilitiesTotal, "Total", null, assetsTotal]);
+
+        return {
+            statementType: "BALANCE_SHEET",
+            reportName: "Balance Sheet",
+            company,
+            period,
+            companyDetails: {
+                address: [...companyAddress],
+                identifier: companyIdentifier,
+                email: companyEmail
+            },
+            rows
+        };
     }
 
     /** Live Profit and Loss Service  */
