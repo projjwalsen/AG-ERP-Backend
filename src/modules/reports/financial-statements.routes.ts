@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
 import {
+    getLiveBalanceSheetReport,
+    getLiveProfitAndLossReport,
     getSrv1BalanceSheetReport,
     getSrv1ProfitAndLossReport
 } from "./financial-statements.controller";
@@ -46,6 +48,87 @@ router.use(authMiddleware);
  *         description: Unauthorized.
  */
 router.get("/srv1-profit&loss", getSrv1ProfitAndLossReport);
+
+/**
+ * @openapi
+ * /api/reports/profit-and-loss:
+ *   get:
+ *     summary: Live Profit and Loss Statement
+ *     description: |
+ *       Builds a Tally-style Profit & Loss A/c from the live Trial Balance tree
+ *       plus product opening stock (openingStockKG × sellPricePerUnit)
+ *       and closing stock from Product.tempClosingBalance.
+ *       Use export=true to download an Excel workbook in the same layout as srv1-profit&loss.
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         example: 2025-04-01
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         example: 2026-03-31
+ *       - in: query
+ *         name: export
+ *         schema:
+ *           type: string
+ *           enum: ["true", xlsx]
+ *     responses:
+ *       200:
+ *         description: Live Profit and Loss JSON report or Excel workbook.
+ *       401:
+ *         description: Unauthorized.
+ */
+router.get("/profit-and-loss", getLiveProfitAndLossReport);
+
+/**
+ * @openapi
+ * /api/reports/balance-sheet:
+ *   get:
+ *     summary: Live Balance Sheet
+ *     description: |
+ *       Builds a Tally-style Balance Sheet from the live Trial Balance tree.
+ *       Classification is dynamic from each TB root closing:
+ *       net Cr (closingDebit - closingCredit < 0) → Liabilities (left),
+ *       net Dr (closingDebit - closingCredit > 0) → Assets (right).
+ *       Skips P&L trading heads (Purchase/Sales/Direct/Indirect).
+ *       Special cases: Suspense A/c (left), Profit & Loss A/c (opening from TB +
+ *       Current Period = Nett Profit), Current Assets Opening Stock replaced by
+ *       Closing Stock from Product.tempClosingBalance.
+ *       Use export=true to download an Excel workbook in the same layout as srv1-BlSheet.
+ *     tags: [Reports]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: branchId
+ *         schema: { type: string }
+ *       - in: query
+ *         name: startDate
+ *         schema: { type: string, format: date }
+ *         example: 2025-04-01
+ *       - in: query
+ *         name: endDate
+ *         schema: { type: string, format: date }
+ *         example: 2026-03-31
+ *       - in: query
+ *         name: export
+ *         schema:
+ *           type: string
+ *           enum: ["true", xlsx]
+ *     responses:
+ *       200:
+ *         description: Live Balance Sheet JSON report or Excel workbook.
+ *       401:
+ *         description: Unauthorized.
+ */
+router.get("/balance-sheet", getLiveBalanceSheetReport);
 
 /**
  * @openapi

@@ -1,0 +1,1 @@
+const X=require('xlsx');for(const f of ['C:/Users/razon/Downloads/Sundry_Creditors_Vouchers.xlsx','C:/Users/razon/Downloads/Advance_From_S_Debtors.xlsx']){const w=X.readFile(f),s=w.Sheets['Voucher Details'],r=X.utils.sheet_to_json(s,{header:1,defval:null,raw:false});console.log(f,JSON.stringify(r.slice(-8)));}

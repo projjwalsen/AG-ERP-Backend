@@ -1,0 +1,1408 @@
+{
+  "sourceVoucherRows": 11061,
+  "dbLedgerEntries": 11135,
+  "missingExpectedRows": 28,
+  "missingPresentElsewhere": 0,
+  "missingNoGlobalExact": 28,
+  "globalTypeCounts": {
+    "BANK_PAYMENT": 29,
+    "PAYMENT": 2558,
+    "PURCHASE": 2734,
+    "DEBIT_NOTE": 117,
+    "CREDIT_NOTE": 9,
+    "RECEIPT": 109,
+    "JOURNAL": 5095,
+    "CASH_PAYMENT": 16,
+    "OPENING_BALANCE": 88,
+    "RCM_PURCHASE": 380
+  },
+  "missingByAccount": [
+    {
+      "agency": "CHOLAMANDALAM MS GENERAL INSURANCE COMPANY LIMITED_MAH",
+      "dr": 0,
+      "cr": 29294,
+      "count": 1
+    },
+    {
+      "agency": "MSC MEDITERRANEAN SHIPPING CO. S.A.AGENT MSC AGENCY (INDIA)",
+      "dr": 0,
+      "cr": 247363.81,
+      "count": 3
+    },
+    {
+      "agency": "Central Depository Services (India) Limited",
+      "dr": 92850,
+      "cr": 0,
+      "count": 1
+    },
+    {
+      "agency": "PARSHWA TRADERS",
+      "dr": 0,
+      "cr": 2313,
+      "count": 1
+    },
+    {
+      "agency": "UNIVERSAL SOMPO GENERAL INSURANCE COMPANY LIMITED",
+      "dr": 0,
+      "cr": 18419,
+      "count": 1
+    },
+    {
+      "agency": "SHEET AIRCON",
+      "dr": 0,
+      "cr": 115000,
+      "count": 1
+    },
+    {
+      "agency": "ARIHANT AGRO DISTILLATION AND LIQUID TERMINALS LIMITED",
+      "dr": 0,
+      "cr": 1482189,
+      "count": 1
+    },
+    {
+      "agency": "ROYAL SUNDARAM GENERAL INSURANCE CO. LIMITED",
+      "dr": 0,
+      "cr": 28683.44,
+      "count": 1
+    },
+    {
+      "agency": "AMISHI INDUSTRIES INDIA PVT LTD (CR)",
+      "dr": 0,
+      "cr": 2060610,
+      "count": 1
+    },
+    {
+      "agency": "ANGEL TRADING FZE",
+      "dr": 17778572.5,
+      "cr": 0,
+      "count": 1
+    },
+    {
+      "agency": "ARKA PETROCHEM FZC",
+      "dr": 8823181.25,
+      "cr": 0,
+      "count": 1
+    },
+    {
+      "agency": "NAVNIT MOTORS PVT LTD",
+      "dr": 0,
+      "cr": 110094,
+      "count": 1
+    },
+    {
+      "agency": "LUBRICON INDIA - CR",
+      "dr": 3150140,
+      "cr": 0,
+      "count": 1
+    },
+    {
+      "agency": "Goverdhan Energy And Petrochemicals Pvt Ltd - MH CR",
+      "dr": 0,
+      "cr": 148554,
+      "count": 1
+    },
+    {
+      "agency": "ICICI LOMBARD GENERAL INSURANCE COMPANY LIMITED – DELHI",
+      "dr": 0,
+      "cr": 885,
+      "count": 1
+    },
+    {
+      "agency": "ICICI LOMBARD GENERAL INSURANCE COMPANY LIMITED – GJ",
+      "dr": 0,
+      "cr": 59732,
+      "count": 1
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "dr": 662927,
+      "cr": 0,
+      "count": 10
+    }
+  ],
+  "accountDiff": [
+    {
+      "agency": "Aditi Transtrade- Transport",
+      "pdfVoucherCount": 1403,
+      "dbVoucherCount": 1404,
+      "pdfDr": 6588574,
+      "dbDr": 6588574,
+      "pdfCr": 16924262,
+      "dbCr": 18409341.73,
+      "diffDr": 0,
+      "diffCr": 1485079.73
+    },
+    {
+      "agency": "DIVYA CHAND - Shiva Nand",
+      "pdfVoucherCount": 15,
+      "dbVoucherCount": 16,
+      "pdfDr": 1568000,
+      "dbDr": 1568000,
+      "pdfCr": 1372000,
+      "dbCr": 1568000,
+      "diffDr": 0,
+      "diffCr": 196000
+    },
+    {
+      "agency": "GOEL PETRO ENERGY LIMITED CRS",
+      "pdfVoucherCount": 6,
+      "dbVoucherCount": 7,
+      "pdfDr": 4519240,
+      "dbDr": 4519240,
+      "pdfCr": 4487895,
+      "dbCr": 4519240,
+      "diffDr": 0,
+      "diffCr": 31345
+    },
+    {
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "pdfVoucherCount": 336,
+      "dbVoucherCount": 337,
+      "pdfDr": 155452780,
+      "dbDr": 155452780,
+      "pdfCr": 160338911.4,
+      "dbCr": 177715130.4,
+      "diffDr": 0,
+      "diffCr": 17376219
+    },
+    {
+      "agency": "SKG TRANSPORT SERVICES",
+      "pdfVoucherCount": 81,
+      "dbVoucherCount": 82,
+      "pdfDr": 2577941,
+      "dbDr": 2577941,
+      "pdfCr": 3457372,
+      "dbCr": 3576530,
+      "diffDr": 0,
+      "diffCr": 119158
+    },
+    {
+      "agency": "MARUTI BITUMEN PRIVATE LIMITED-Cr",
+      "pdfVoucherCount": 4,
+      "dbVoucherCount": 5,
+      "pdfDr": 2969759,
+      "dbDr": 2969759,
+      "pdfCr": 0,
+      "dbCr": 2969759,
+      "diffDr": 0,
+      "diffCr": 2969759
+    },
+    {
+      "agency": "SHIVA ASPHALTIC PRODUCTS PRIVATE LIMITED-CR",
+      "pdfVoucherCount": 2,
+      "dbVoucherCount": 3,
+      "pdfDr": 28095.3,
+      "dbDr": 28095.3,
+      "pdfCr": 0,
+      "dbCr": 28095.3,
+      "diffDr": 0,
+      "diffCr": 28095.3
+    },
+    {
+      "agency": "SHIVAM SEATRANS PVT LTD",
+      "pdfVoucherCount": 68,
+      "dbVoucherCount": 69,
+      "pdfDr": 39029839,
+      "dbDr": 39030817,
+      "pdfCr": 39030817,
+      "dbCr": 39030817,
+      "diffDr": 978,
+      "diffCr": 0
+    },
+    {
+      "agency": "SHREE GURU KRIPA ENTERPRISES (CR)",
+      "pdfVoucherCount": 51,
+      "dbVoucherCount": 52,
+      "pdfDr": 43005298,
+      "dbDr": 43005298,
+      "pdfCr": 38121864,
+      "dbCr": 43005298,
+      "diffDr": 0,
+      "diffCr": 4883434
+    },
+    {
+      "agency": "SHREE KUBER ROADLINES",
+      "pdfVoucherCount": 30,
+      "dbVoucherCount": 31,
+      "pdfDr": 3689612,
+      "dbDr": 3689612,
+      "pdfCr": 3578558,
+      "dbCr": 3689612,
+      "diffDr": 0,
+      "diffCr": 111054
+    },
+    {
+      "agency": "SRI RAVRAY LOGISTICS",
+      "pdfVoucherCount": 105,
+      "dbVoucherCount": 106,
+      "pdfDr": 11613554,
+      "dbDr": 11613554,
+      "pdfCr": 12349012,
+      "dbCr": 12605231,
+      "diffDr": 0,
+      "diffCr": 256219
+    },
+    {
+      "agency": "SUPREME CARRIERS",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 96928,
+      "dbDr": 96928,
+      "pdfCr": 0,
+      "dbCr": 96928,
+      "diffDr": 0,
+      "diffCr": 96928
+    },
+    {
+      "agency": "TBS BULK CARRIERS",
+      "pdfVoucherCount": 33,
+      "dbVoucherCount": 34,
+      "pdfDr": 3980477,
+      "dbDr": 3980477,
+      "pdfCr": 5790521,
+      "dbCr": 5907288,
+      "diffDr": 0,
+      "diffCr": 116767
+    },
+    {
+      "agency": "A G ART PETROCHEM LLP - CR",
+      "pdfVoucherCount": 231,
+      "dbVoucherCount": 232,
+      "pdfDr": 157155193,
+      "dbDr": 157155193,
+      "pdfCr": 155585775,
+      "dbCr": 157155193,
+      "diffDr": 0,
+      "diffCr": 1569418
+    },
+    {
+      "agency": "KONE ELEVATOR INDIA PRIVATE LIMITED",
+      "pdfVoucherCount": 2,
+      "dbVoucherCount": 3,
+      "pdfDr": 55195.94,
+      "dbDr": 55195.94,
+      "pdfCr": 0,
+      "dbCr": 55195.94,
+      "diffDr": 0,
+      "diffCr": 55195.94
+    },
+    {
+      "agency": "SARVAYA TRADEX LLP",
+      "pdfVoucherCount": 36,
+      "dbVoucherCount": 37,
+      "pdfDr": 4075583,
+      "dbDr": 4075583,
+      "pdfCr": 3623183,
+      "dbCr": 4075583,
+      "diffDr": 0,
+      "diffCr": 452400
+    },
+    {
+      "agency": "SHRI GANESH TRADING CO- CR",
+      "pdfVoucherCount": 386,
+      "dbVoucherCount": 387,
+      "pdfDr": 186605499,
+      "dbDr": 186605499,
+      "pdfCr": 185213383,
+      "dbCr": 187283938,
+      "diffDr": 0,
+      "diffCr": 2070555
+    },
+    {
+      "agency": "Sulaki Chemicals Pvt Ltd-CR",
+      "pdfVoucherCount": 1177,
+      "dbVoucherCount": 1178,
+      "pdfDr": 887877349.12,
+      "dbDr": 887877349.12,
+      "pdfCr": 805391197.12,
+      "dbCr": 887877349.12,
+      "diffDr": 0,
+      "diffCr": 82486152
+    },
+    {
+      "agency": "USHA ASHVIN THAKKER",
+      "pdfVoucherCount": 8,
+      "dbVoucherCount": 9,
+      "pdfDr": 396000,
+      "dbDr": 396000,
+      "pdfCr": 114750,
+      "dbCr": 402750,
+      "diffDr": 0,
+      "diffCr": 288000
+    },
+    {
+      "agency": "M.S. BULK CARRIERS",
+      "pdfVoucherCount": 18,
+      "dbVoucherCount": 19,
+      "pdfDr": 2049368.62,
+      "dbDr": 2049368.62,
+      "pdfCr": 1825415.62,
+      "dbCr": 2049368.62,
+      "diffDr": 0,
+      "diffCr": 223953
+    },
+    {
+      "agency": "PAWAN ROADLINES",
+      "pdfVoucherCount": 18,
+      "dbVoucherCount": 19,
+      "pdfDr": 953107,
+      "dbDr": 953107,
+      "pdfCr": 1213815,
+      "dbCr": 1264295,
+      "diffDr": 0,
+      "diffCr": 50480
+    },
+    {
+      "agency": "R.S. CARRIER",
+      "pdfVoucherCount": 4,
+      "dbVoucherCount": 5,
+      "pdfDr": 983636,
+      "dbDr": 983636,
+      "pdfCr": 429997,
+      "dbCr": 983636,
+      "diffDr": 0,
+      "diffCr": 553639
+    },
+    {
+      "agency": "DARSHAN CHEM",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 23600,
+      "dbDr": 23600,
+      "pdfCr": 0,
+      "dbCr": 23600,
+      "diffDr": 0,
+      "diffCr": 23600
+    },
+    {
+      "agency": "KHOPADE TRADERS",
+      "pdfVoucherCount": 39,
+      "dbVoucherCount": 40,
+      "pdfDr": 88994,
+      "dbDr": 88994,
+      "pdfCr": 95373,
+      "dbCr": 103566,
+      "diffDr": 0,
+      "diffCr": 8193
+    },
+    {
+      "agency": "MANGALAM PLYWOOD",
+      "pdfVoucherCount": 60,
+      "dbVoucherCount": 61,
+      "pdfDr": 2206471,
+      "dbDr": 2206471,
+      "pdfCr": 1932565,
+      "dbCr": 2206471,
+      "diffDr": 0,
+      "diffCr": 273906
+    },
+    {
+      "agency": "NXGEN ENFUEL SERVICES LLP CRS",
+      "pdfVoucherCount": 39,
+      "dbVoucherCount": 40,
+      "pdfDr": 87016352,
+      "dbDr": 87016352,
+      "pdfCr": 27546864,
+      "dbCr": 87238738,
+      "diffDr": 0,
+      "diffCr": 59691874
+    },
+    {
+      "agency": "PACIFIC INTERNATIONAL",
+      "pdfVoucherCount": 41,
+      "dbVoucherCount": 42,
+      "pdfDr": 29380735,
+      "dbDr": 29380735,
+      "pdfCr": 29379231,
+      "dbCr": 29380735,
+      "diffDr": 0,
+      "diffCr": 1504
+    },
+    {
+      "agency": "NANOTECH INDUSTRIES-CR",
+      "pdfVoucherCount": 8,
+      "dbVoucherCount": 9,
+      "pdfDr": 4606292,
+      "dbDr": 4606292,
+      "pdfCr": 2583418,
+      "dbCr": 4606292,
+      "diffDr": 0,
+      "diffCr": 2022874
+    },
+    {
+      "agency": "DARSHIL PETROCHEM CRS",
+      "pdfVoucherCount": 167,
+      "dbVoucherCount": 168,
+      "pdfDr": 112684051,
+      "dbDr": 112684051,
+      "pdfCr": 116390634,
+      "dbCr": 118721273,
+      "diffDr": 0,
+      "diffCr": 2330639
+    },
+    {
+      "agency": "SUPER COMPUTER SYSTEMS",
+      "pdfVoucherCount": 39,
+      "dbVoucherCount": 40,
+      "pdfDr": 355864,
+      "dbDr": 355864,
+      "pdfCr": 369259,
+      "dbCr": 386187,
+      "diffDr": 0,
+      "diffCr": 16928
+    },
+    {
+      "agency": "ANGEL TRADING FZE",
+      "pdfVoucherCount": 4,
+      "dbVoucherCount": 4,
+      "pdfDr": 68099262.54,
+      "dbDr": 67069052.84,
+      "pdfCr": 0,
+      "dbCr": 0,
+      "diffDr": -1030209.7,
+      "diffCr": 0
+    },
+    {
+      "agency": "Jai Ambe Transport",
+      "pdfVoucherCount": 42,
+      "dbVoucherCount": 43,
+      "pdfDr": 1765796,
+      "dbDr": 1765796,
+      "pdfCr": 2344042,
+      "dbCr": 2471751,
+      "diffDr": 0,
+      "diffCr": 127709
+    },
+    {
+      "agency": "S LINE LOGISTICS",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 4,
+      "pdfDr": 207787,
+      "dbDr": 220261,
+      "pdfCr": 220261,
+      "dbCr": 220261,
+      "diffDr": 12474,
+      "diffCr": 0
+    },
+    {
+      "agency": "VERTAXIS FUTURETECH PVT LTD",
+      "pdfVoucherCount": 2,
+      "dbVoucherCount": 3,
+      "pdfDr": 60960,
+      "dbDr": 122320,
+      "pdfCr": 122320,
+      "dbCr": 122320,
+      "diffDr": 61360,
+      "diffCr": 0
+    },
+    {
+      "agency": "GURU RAJENDRA RICE MILL",
+      "pdfVoucherCount": 17,
+      "dbVoucherCount": 18,
+      "pdfDr": 141950,
+      "dbDr": 141950,
+      "pdfCr": 127430,
+      "dbCr": 141950,
+      "diffDr": 0,
+      "diffCr": 14520
+    },
+    {
+      "agency": "Aadi Cables & Electricals",
+      "pdfVoucherCount": 35,
+      "dbVoucherCount": 36,
+      "pdfDr": 756925,
+      "dbDr": 756925,
+      "pdfCr": 648686,
+      "dbCr": 756925,
+      "diffDr": 0,
+      "diffCr": 108239
+    },
+    {
+      "agency": "B J SCIENTIFIC COMPANY",
+      "pdfVoucherCount": 12,
+      "dbVoucherCount": 13,
+      "pdfDr": 60190,
+      "dbDr": 60190,
+      "pdfCr": 43520,
+      "dbCr": 72189,
+      "diffDr": 0,
+      "diffCr": 28669
+    },
+    {
+      "agency": "KAMAL MOTORS",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 4,
+      "pdfDr": 6552,
+      "dbDr": 31868,
+      "pdfCr": 31868,
+      "dbCr": 31868,
+      "diffDr": 25316,
+      "diffCr": 0
+    },
+    {
+      "agency": "Art Infrastructure Pvt Ltd- CR",
+      "pdfVoucherCount": 267,
+      "dbVoucherCount": 268,
+      "pdfDr": 233165003.22,
+      "dbDr": 233165003.22,
+      "pdfCr": 198311735.87,
+      "dbCr": 277847648.51,
+      "diffDr": 0,
+      "diffCr": 79535912.64
+    },
+    {
+      "agency": "G K TRANSPORT",
+      "pdfVoucherCount": 6,
+      "dbVoucherCount": 7,
+      "pdfDr": 366619,
+      "dbDr": 366619,
+      "pdfCr": 287148,
+      "dbCr": 437206,
+      "diffDr": 0,
+      "diffCr": 150058
+    },
+    {
+      "agency": "BHARAT DEKHO",
+      "pdfVoucherCount": 70,
+      "dbVoucherCount": 71,
+      "pdfDr": 911853,
+      "dbDr": 911853,
+      "pdfCr": 1028509,
+      "dbCr": 1054492,
+      "diffDr": 0,
+      "diffCr": 25983
+    },
+    {
+      "agency": "CHITTRANJAN SHAH KAYLEGAL & ASSOCIATES LLP",
+      "pdfVoucherCount": 9,
+      "dbVoucherCount": 10,
+      "pdfDr": 270000,
+      "dbDr": 270000,
+      "pdfCr": 216000,
+      "dbCr": 270000,
+      "diffDr": 0,
+      "diffCr": 54000
+    },
+    {
+      "agency": "DARSH PETROCHEM PVT LTD-CR",
+      "pdfVoucherCount": 22,
+      "dbVoucherCount": 23,
+      "pdfDr": 15038914,
+      "dbDr": 15038914,
+      "pdfCr": 15026181,
+      "dbCr": 15038914,
+      "diffDr": 0,
+      "diffCr": 12733
+    },
+    {
+      "agency": "Sameer Enterprises",
+      "pdfVoucherCount": 11,
+      "dbVoucherCount": 12,
+      "pdfDr": 20414,
+      "dbDr": 20414,
+      "pdfCr": 13924,
+      "dbCr": 20414,
+      "diffDr": 0,
+      "diffCr": 6490
+    },
+    {
+      "agency": "FORTUNE ENTERPRISE",
+      "pdfVoucherCount": 5,
+      "dbVoucherCount": 6,
+      "pdfDr": 5599323,
+      "dbDr": 5599323,
+      "pdfCr": 4840524,
+      "dbCr": 5599323,
+      "diffDr": 0,
+      "diffCr": 758799
+    },
+    {
+      "agency": "RSP COMPUTER CONSUMABLES",
+      "pdfVoucherCount": 26,
+      "dbVoucherCount": 27,
+      "pdfDr": 36376,
+      "dbDr": 36376,
+      "pdfCr": 47094,
+      "dbCr": 56355,
+      "diffDr": 0,
+      "diffCr": 9261
+    },
+    {
+      "agency": "Falguni Jain",
+      "pdfVoucherCount": 25,
+      "dbVoucherCount": 26,
+      "pdfDr": 272250,
+      "dbDr": 497250,
+      "pdfCr": 497250,
+      "dbCr": 497250,
+      "diffDr": 225000,
+      "diffCr": 0
+    },
+    {
+      "agency": "R.K.ENTERPRISES(Internet Khopoli)",
+      "pdfVoucherCount": 9,
+      "dbVoucherCount": 10,
+      "pdfDr": 55000,
+      "dbDr": 55000,
+      "pdfCr": 65000,
+      "dbCr": 70000,
+      "diffDr": 0,
+      "diffCr": 5000
+    },
+    {
+      "agency": "MIRA INFORM PVT LTD",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 4,
+      "pdfDr": 6254,
+      "dbDr": 6254,
+      "pdfCr": 3894,
+      "dbCr": 6254,
+      "diffDr": 0,
+      "diffCr": 2360
+    },
+    {
+      "agency": "VIJAY SALES",
+      "pdfVoucherCount": 4,
+      "dbVoucherCount": 5,
+      "pdfDr": 274000,
+      "dbDr": 274000,
+      "pdfCr": 10000,
+      "dbCr": 327548,
+      "diffDr": 0,
+      "diffCr": 317548
+    },
+    {
+      "agency": "SKYLINE GLOBAL TRADERS CRS",
+      "pdfVoucherCount": 26,
+      "dbVoucherCount": 27,
+      "pdfDr": 15732174.6,
+      "dbDr": 20569162.6,
+      "pdfCr": 20569162.6,
+      "dbCr": 20569162.6,
+      "diffDr": 4836988,
+      "diffCr": 0
+    },
+    {
+      "agency": "AGARWAL INDUSTRIAL CORPORATION LIMITED-CR",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 4,
+      "pdfDr": 44714920,
+      "dbDr": 44714920,
+      "pdfCr": 37894,
+      "dbCr": 44714920,
+      "diffDr": 0,
+      "diffCr": 44677026
+    },
+    {
+      "agency": "Vikas Hardware Trading Co. Pvt. Ltd.",
+      "pdfVoucherCount": 23,
+      "dbVoucherCount": 24,
+      "pdfDr": 512734,
+      "dbDr": 512734,
+      "pdfCr": 634610,
+      "dbCr": 668813,
+      "diffDr": 0,
+      "diffCr": 34203
+    },
+    {
+      "agency": "THERESA TRANSPORT",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 0,
+      "dbDr": 0,
+      "pdfCr": 765501,
+      "dbCr": 934643,
+      "diffDr": 0,
+      "diffCr": 169142
+    },
+    {
+      "agency": "RAJESH DUBEY",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 53100,
+      "dbDr": 53100,
+      "pdfCr": 0,
+      "dbCr": 53100,
+      "diffDr": 0,
+      "diffCr": 53100
+    },
+    {
+      "agency": "NEPTUNE PETROCHEMICALS LIMITED",
+      "pdfVoucherCount": 255,
+      "dbVoucherCount": 256,
+      "pdfDr": 259933172,
+      "dbDr": 259933172,
+      "pdfCr": 234829419,
+      "dbCr": 259933172,
+      "diffDr": 0,
+      "diffCr": 25103753
+    },
+    {
+      "agency": "CATALYST ASPHALT PVT LTD-CR",
+      "pdfVoucherCount": 35,
+      "dbVoucherCount": 36,
+      "pdfDr": 34755369,
+      "dbDr": 34755369,
+      "pdfCr": 11646694,
+      "dbCr": 34755369,
+      "diffDr": 0,
+      "diffCr": 23108675
+    },
+    {
+      "agency": "LOTUS ENTERPRISES",
+      "pdfVoucherCount": 13,
+      "dbVoucherCount": 14,
+      "pdfDr": 81161,
+      "dbDr": 81161,
+      "pdfCr": 112387,
+      "dbCr": 127053,
+      "diffDr": 0,
+      "diffCr": 14666
+    },
+    {
+      "agency": "RAREX GLOBAL LLP-CR",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 3583046,
+      "dbDr": 3583046,
+      "pdfCr": 0,
+      "dbCr": 3583046,
+      "diffDr": 0,
+      "diffCr": 3583046
+    },
+    {
+      "agency": "MUMBAI WASTE MANAGEMENT LTD",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 26419,
+      "dbDr": 26419,
+      "pdfCr": 0,
+      "dbCr": 26419,
+      "diffDr": 0,
+      "diffCr": 26419
+    },
+    {
+      "agency": "AMISHI INDUSTRIES INDIA PVT LTD (CR)",
+      "pdfVoucherCount": 364,
+      "dbVoucherCount": 364,
+      "pdfDr": 254141808,
+      "dbDr": 254141808,
+      "pdfCr": 252273524.4,
+      "dbCr": 278378055.4,
+      "diffDr": 0,
+      "diffCr": 26104531
+    },
+    {
+      "agency": "SITARAM TRANSPORT CO.",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 137640,
+      "dbDr": 137640,
+      "pdfCr": 0,
+      "dbCr": 137640,
+      "diffDr": 0,
+      "diffCr": 137640
+    },
+    {
+      "agency": "MIDAS TECHNOLOGIES",
+      "pdfVoucherCount": 11,
+      "dbVoucherCount": 12,
+      "pdfDr": 6401705,
+      "dbDr": 6401705,
+      "pdfCr": 3529920,
+      "dbCr": 6401705,
+      "diffDr": 0,
+      "diffCr": 2871785
+    },
+    {
+      "agency": "LUCKY STATIONERS",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 53100,
+      "dbDr": 53100,
+      "pdfCr": 0,
+      "dbCr": 53100,
+      "diffDr": 0,
+      "diffCr": 53100
+    },
+    {
+      "agency": "Central Depository Services (India) Limited",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 2,
+      "pdfDr": 92850,
+      "dbDr": 0,
+      "pdfCr": 92850,
+      "dbCr": 92850,
+      "diffDr": -92850,
+      "diffCr": 0
+    },
+    {
+      "agency": "Shree Rewinders & Electricals",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 5771,
+      "dbDr": 5771,
+      "pdfCr": 0,
+      "dbCr": 5771,
+      "diffDr": 0,
+      "diffCr": 5771
+    },
+    {
+      "agency": "JAIN SONS INDIA CRS",
+      "pdfVoucherCount": 9,
+      "dbVoucherCount": 10,
+      "pdfDr": 1903532.92,
+      "dbDr": 1903532.92,
+      "pdfCr": 7217383.09,
+      "dbCr": 9119800.01,
+      "diffDr": 0,
+      "diffCr": 1902416.92
+    },
+    {
+      "agency": "ATLANTIC GLOBAL SHIPPING PVT LTD",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 4,
+      "pdfDr": 0,
+      "dbDr": 554008.01,
+      "pdfCr": 554008.01,
+      "dbCr": 554008.01,
+      "diffDr": 554008.01,
+      "diffCr": 0
+    },
+    {
+      "agency": "GAURAV CHEMICALS - CR",
+      "pdfVoucherCount": 308,
+      "dbVoucherCount": 309,
+      "pdfDr": 129867265,
+      "dbDr": 129867265,
+      "pdfCr": 259870747,
+      "dbCr": 261930177,
+      "diffDr": 0,
+      "diffCr": 2059430
+    },
+    {
+      "agency": "HARSHIT LOGISTICS",
+      "pdfVoucherCount": 2,
+      "dbVoucherCount": 3,
+      "pdfDr": 2213749,
+      "dbDr": 2213749,
+      "pdfCr": 0,
+      "dbCr": 2213749,
+      "diffDr": 0,
+      "diffCr": 2213749
+    },
+    {
+      "agency": "VISHVARAJ ROADLINES",
+      "pdfVoucherCount": 2,
+      "dbVoucherCount": 3,
+      "pdfDr": 458075,
+      "dbDr": 458075,
+      "pdfCr": 0,
+      "dbCr": 670995,
+      "diffDr": 0,
+      "diffCr": 670995
+    },
+    {
+      "agency": "Gaurav Star Vision",
+      "pdfVoucherCount": 4,
+      "dbVoucherCount": 5,
+      "pdfDr": 10220,
+      "dbDr": 10220,
+      "pdfCr": 10360,
+      "dbCr": 13220,
+      "diffDr": 0,
+      "diffCr": 2860
+    },
+    {
+      "agency": "GASTRADE INTERNATIONAL",
+      "pdfVoucherCount": 41,
+      "dbVoucherCount": 42,
+      "pdfDr": 28751199,
+      "dbDr": 28751199,
+      "pdfCr": 28751199.2,
+      "dbCr": 28754854.2,
+      "diffDr": 0,
+      "diffCr": 3655
+    },
+    {
+      "agency": "RAJESH SHITOLE",
+      "pdfVoucherCount": 4,
+      "dbVoucherCount": 5,
+      "pdfDr": 208000,
+      "dbDr": 208000,
+      "pdfCr": 202599,
+      "dbCr": 208692,
+      "diffDr": 0,
+      "diffCr": 6093
+    },
+    {
+      "agency": "AADITYA BULK MOVERS",
+      "pdfVoucherCount": 6,
+      "dbVoucherCount": 7,
+      "pdfDr": 23547,
+      "dbDr": 23547,
+      "pdfCr": 83457,
+      "dbCr": 87996,
+      "diffDr": 0,
+      "diffCr": 4539
+    },
+    {
+      "agency": "ADVIK ENTERPRISE - CR",
+      "pdfVoucherCount": 3,
+      "dbVoucherCount": 4,
+      "pdfDr": 4977226.11,
+      "dbDr": 4977226.11,
+      "pdfCr": 0,
+      "dbCr": 4977226.11,
+      "diffDr": 0,
+      "diffCr": 4977226.11
+    },
+    {
+      "agency": "MURJI RAVJI AND COMPANY",
+      "pdfVoucherCount": 102,
+      "dbVoucherCount": 103,
+      "pdfDr": 83464636,
+      "dbDr": 83464636,
+      "pdfCr": 83455013,
+      "dbCr": 83464636,
+      "diffDr": 0,
+      "diffCr": 9623
+    },
+    {
+      "agency": "ARKA PETROCHEM FZC",
+      "pdfVoucherCount": 19,
+      "dbVoucherCount": 19,
+      "pdfDr": 30720052.16,
+      "dbDr": 74877669.14,
+      "pdfCr": 61409325.98,
+      "dbCr": 61409325.98,
+      "diffDr": 44157616.98,
+      "diffCr": 0
+    },
+    {
+      "agency": "GEETA TRANSLINES",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 66467,
+      "dbDr": 66467,
+      "pdfCr": 0,
+      "dbCr": 66467,
+      "diffDr": 0,
+      "diffCr": 66467
+    },
+    {
+      "agency": "S K ROADLINES",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 15158,
+      "dbDr": 15158,
+      "pdfCr": 0,
+      "dbCr": 15158,
+      "diffDr": 0,
+      "diffCr": 15158
+    },
+    {
+      "agency": "S R FREIGHT CARRIER",
+      "pdfVoucherCount": 1,
+      "dbVoucherCount": 2,
+      "pdfDr": 23859,
+      "dbDr": 23859,
+      "pdfCr": 0,
+      "dbCr": 51678,
+      "diffDr": 0,
+      "diffCr": 51678
+    },
+    {
+      "agency": "PRAMILA VERMA & CO",
+      "pdfVoucherCount": 2,
+      "dbVoucherCount": 3,
+      "pdfDr": 22740,
+      "dbDr": 22740,
+      "pdfCr": 0,
+      "dbCr": 22740,
+      "diffDr": 0,
+      "diffCr": 22740
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "pdfVoucherCount": 20,
+      "dbVoucherCount": 10,
+      "pdfDr": 662927,
+      "dbDr": 0,
+      "pdfCr": 7322811.2,
+      "dbCr": 7322811.2,
+      "diffDr": -662927,
+      "diffCr": 0
+    }
+  ],
+  "missing": [
+    {
+      "agency": "CHOLAMANDALAM MS GENERAL INSURANCE COMPANY LIMITED_MAH",
+      "agencyKey": "CHOLAMANDALAMMSGENERALINSURANCECOMPANYLIMITEDMAH",
+      "no": "2025042700380875Insurance",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 2929400,
+      "date": "2025-04-15",
+      "particulars": "- Vehicles",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "MSC MEDITERRANEAN SHIPPING CO. S.A.AGENT MSC AGENCY (INDIA)",
+      "agencyKey": "MSCMEDITERRANEANSHIPPINGCOSAAGENTMSCAGENCYINDIA",
+      "no": "INGINPM250006064Import",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 23470200,
+      "date": "2025-04-24",
+      "particulars": "Clearing & Forwarding Expenses",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "MSC MEDITERRANEAN SHIPPING CO. S.A.AGENT MSC AGENCY (INDIA)",
+      "agencyKey": "MSCMEDITERRANEANSHIPPINGCOSAAGENTMSCAGENCYINDIA",
+      "no": "INGINPD250002639Import",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 1195381,
+      "date": "2025-05-16",
+      "particulars": "Clearing & Forwarding Expenses",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "MSC MEDITERRANEAN SHIPPING CO. S.A.AGENT MSC AGENCY (INDIA)",
+      "agencyKey": "MSCMEDITERRANEANSHIPPINGCOSAAGENTMSCAGENCYINDIA",
+      "no": "INGINPM250012675Import",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 70800,
+      "date": "2025-05-16",
+      "particulars": "Clearing & Forwarding Expenses",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "Central Depository Services (India) Limited",
+      "agencyKey": "CENTRALDEPOSITORYSERVICESINDIALIMITED",
+      "no": "11784",
+      "types": [
+        "PAYMENT",
+        "BANK_PAYMENT"
+      ],
+      "side": "DEBIT",
+      "amount": 9285000,
+      "date": "2025-06-02",
+      "particulars": "Bank Charges",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "PARSHWA TRADERS",
+      "agencyKey": "PARSHWATRADERS",
+      "no": "PT",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 231300,
+      "date": "2025-06-04",
+      "particulars": "/ 1850 Repairs & Maintence of P & M",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "UNIVERSAL SOMPO GENERAL INSURANCE COMPANY LIMITED",
+      "agencyKey": "UNIVERSALSOMPOGENERALINSURANCECOMPANYLIMITED",
+      "no": "09HY250113567Insurance",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 1841900,
+      "date": "2025-07-25",
+      "particulars": "- Vehicles",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "SHEET AIRCON",
+      "agencyKey": "SHEETAIRCON",
+      "no": "SA",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 11500000,
+      "date": "2025-07-29",
+      "particulars": "278/2025-26 Airconditioner",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "ARIHANT AGRO DISTILLATION AND LIQUID TERMINALS LIMITED",
+      "agencyKey": "ARIHANTAGRODISTILLATIONANDLIQUIDTERMINALSLIMITED",
+      "no": "AAD/1597/25-26GST",
+      "types": [
+        "PURCHASE"
+      ],
+      "side": "CREDIT",
+      "amount": 148218900,
+      "date": "2025-08-26",
+      "particulars": "PURCHASE",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "ROYAL SUNDARAM GENERAL INSURANCE CO. LIMITED",
+      "agencyKey": "ROYALSUNDARAMGENERALINSURANCECOLIMITED",
+      "no": "VPC136582305000Insurance",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 2868344,
+      "date": "2025-09-15",
+      "particulars": "- Vehicles",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "AMISHI INDUSTRIES INDIA PVT LTD (CR)",
+      "agencyKey": "AMISHIINDUSTRIESINDIAPVTLTDCR",
+      "no": "AIM/G2526/137",
+      "types": [
+        "PURCHASE"
+      ],
+      "side": "CREDIT",
+      "amount": 206061000,
+      "date": "2025-09-19",
+      "particulars": "GST PURCHASE",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "ANGEL TRADING FZE",
+      "agencyKey": "ANGELTRADINGFZE",
+      "no": "13903",
+      "types": [
+        "PAYMENT",
+        "BANK_PAYMENT"
+      ],
+      "side": "DEBIT",
+      "amount": 1777857250,
+      "date": "2025-09-27",
+      "particulars": "Bank Charges",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "ARKA PETROCHEM FZC",
+      "agencyKey": "ARKAPETROCHEMFZC",
+      "no": "14612",
+      "types": [
+        "PAYMENT",
+        "BANK_PAYMENT"
+      ],
+      "side": "DEBIT",
+      "amount": 882318125,
+      "date": "2025-10-27",
+      "particulars": "Bank Charges",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "NAVNIT MOTORS PVT LTD",
+      "agencyKey": "NAVNITMOTORSPVTLTD",
+      "no": "OG-26-1934-1817-00001315Insurance",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 11009400,
+      "date": "2025-11-30",
+      "particulars": "- Vehicles",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "LUBRICON INDIA - CR",
+      "agencyKey": "LUBRICONINDIACR",
+      "no": "BANK",
+      "types": [
+        "PAYMENT",
+        "BANK_PAYMENT"
+      ],
+      "side": "DEBIT",
+      "amount": 315014000,
+      "date": "2026-02-28",
+      "particulars": "OF MAHARASHTRA- C/C 60434886441",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "Goverdhan Energy And Petrochemicals Pvt Ltd - MH CR",
+      "agencyKey": "GOVERDHANENERGYANDPETROCHEMICALSPVTLTDMHCR",
+      "no": "PCN/M/2526/011GST",
+      "types": [
+        "CREDIT_NOTE"
+      ],
+      "side": "CREDIT",
+      "amount": 14855400,
+      "date": "2026-03-07",
+      "particulars": "PURCHASE",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "ICICI LOMBARD GENERAL INSURANCE COMPANY LIMITED – DELHI",
+      "agencyKey": "ICICILOMBARDGENERALINSURANCECOMPANYLIMITEDDELHI",
+      "no": "1003261461659INSURANCE",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 88500,
+      "date": "2026-03-14",
+      "particulars": "",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "ICICI LOMBARD GENERAL INSURANCE COMPANY LIMITED – GJ",
+      "agencyKey": "ICICILOMBARDGENERALINSURANCECOMPANYLIMITEDGJ",
+      "no": "1003261239399Insurance",
+      "types": [
+        "JOURNAL"
+      ],
+      "side": "CREDIT",
+      "amount": 5973200,
+      "date": "2026-03-14",
+      "particulars": "- Vehicles",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/077",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 9932900,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/078",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 10006800,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/079",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 9907600,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/080",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 3966100,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/081",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 6009300,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/082",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 2615800,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/083",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 2627600,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/084",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 6903300,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/085",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 9028100,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    },
+    {
+      "agency": "BRBL INDIA (OPC) PRIVATE LIMITED- CRS",
+      "agencyKey": "BRBLINDIAOPCPRIVATELIMITEDCRS",
+      "no": "PDN/M/2526/086",
+      "types": [
+        "DEBIT_NOTE"
+      ],
+      "side": "DEBIT",
+      "amount": 5295200,
+      "date": "2026-03-27",
+      "particulars": "Carriage Outwards RD",
+      "exactElsewhere": []
+    }
+  ]
+}

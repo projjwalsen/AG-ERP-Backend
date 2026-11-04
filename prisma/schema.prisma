@@ -361,13 +361,15 @@ model Product {
   baseUnit ProductUnit @default(KG)
   density  Decimal?    @db.Decimal(10, 4)
 
-  sellPricePerUnit Decimal  @db.Decimal(18, 2)
-  sellPriceLTR     Decimal? @db.Decimal(18, 2)
+  sellPricePerUnit Decimal  @db.Decimal(18, 10)
+  sellPriceLTR     Decimal? @db.Decimal(18, 10)
 
   operationalUnit ProductUnit @default(LTR)
   minimumStockKG  Decimal?    @db.Decimal(18, 3)
 
   openingStockKG Decimal @default(0)
+
+  tempClosingBalance Decimal? @db.Decimal(18, 7) 
 
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -566,7 +568,13 @@ model Purchase {
 
   invoiceNo String
 
-  
+  /**
+   * Optional Tally purchase-account path, stored as
+   * Group/Sub Group (for example "Purchase Accounts/GST Purchase").
+   * Used by Trial Balance to place existing invoices under Purchase Accounts.
+   */
+  path String?
+
   purchaseOrderId String?
   purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId],references: [id],onDelete: SetNull)
 
@@ -630,6 +638,7 @@ model Purchase {
   @@index([branchId])
   @@index([purchaseOrderId])
   @@index([status])
+  @@index([path])
   @@unique([branchId, agencyId, invoiceNo])
 }
 

@@ -1,0 +1,1 @@
+const d=require('./.tmp-ledger-scope-dump.json');const x=d.roots.find(r=>r.name==='Advance From S. Debtors');console.log(JSON.stringify({entries:x.entries.filter(e=>e.no==='10647'),source:require('./.tmp-ledger-workbook-match.json')[1].allRows.filter(r=>r.no==='10647')},null,2));

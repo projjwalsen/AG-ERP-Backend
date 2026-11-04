@@ -1,10 +1,15 @@
 import ExcelJS from "exceljs";
 import { Response } from "express";
-import profitAndLossSource from "./PLAC/PandL-pure.json";
+import { prisma } from "../../config/db";
+import profitAndLossWorkbook from "./PLAC/PandL_full.json";
 import balanceSheetSource from "./BLSHEET/BSheet-pure.json";
+import { ReportingService } from "./reporting.service";
 
 type StatementKind = "PROFIT_AND_LOSS" | "BALANCE_SHEET";
-type PureStatementItem = { name: string; amount: number; children?: PureStatementItem[]; items?: PureStatementItem[] };
+type PureStatementItem = { name: string; amount: number; isDetail?: boolean; children?: PureStatementItem[]; items?: PureStatementItem[] };
+type FullStatementCell = { column: string; value: unknown };
+type FullStatementRow = { rowNumber: number; cells: FullStatementCell[] };
+type FullStatementWorkbook = { sheets: Array<{ rows: FullStatementRow[] }> };
 type PureBalanceSheet = {
     report: string;
     company: string;
@@ -13,15 +18,6 @@ type PureBalanceSheet = {
     assets: PureStatementItem[];
     totals: { liabilities: number; assets: number };
 };
-type PureProfitAndLoss = {
-    report: string;
-    company: string;
-    period: { from: string; to: string };
-    debit: Record<string, PureStatementItem>;
-    credit: Record<string, PureStatementItem>;
-    totals: { debit: number; credit: number };
-};
-
 export type FinancialStatementReport = {
     statementType: StatementKind;
     reportName: string;
@@ -34,6 +30,21 @@ export type FinancialStatementReport = {
     };
     rows: unknown[][];
 };
+type TrialBalanceNode = {
+    name?: string;
+    account?: string;
+    closingDebit?: number;
+    closingCredit?: number;
+    closingSigned?: number;
+    children?: TrialBalanceNode[];
+};
+type LiveStatementQuery = {
+    branchId?: string;
+    startDate?: string;
+    endDate?: string;
+    includeZero?: boolean;
+};
+type StatementItem = { name: string; amount: number };
 
 const text = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
 const rupee = String.fromCharCode(0x20b9);
@@ -65,7 +76,9 @@ const reportHeaderRows = (company: string, reportName: string, period: string) =
 ];
 
 const flattenSections = (sections: PureStatementItem[]) => sections.flatMap(section => {
-    const rows: unknown[][] = [[section.name, null, section.amount]];
+    const rows: unknown[][] = [section.isDetail
+        ? [section.name, section.amount, null]
+        : [section.name, null, section.amount]];
     const children = section.children ?? section.items ?? [];
     const appendChildren = (items: PureStatementItem[]) => {
         for (const child of items) {
@@ -91,10 +104,268 @@ const pairStatementSides = (leftRows: unknown[][], rightRows: unknown[][]) => {
     });
 };
 
+const money = (value: number) => Math.round((Number(value) || 0) * 100) / 100;
+
+const headingKey = (name: string) =>
+    String(name || "").normalize("NFKC").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+
+const headingsMatch = (name: string, candidates: string[]) => {
+    const key = headingKey(name);
+    return candidates.some(candidate => {
+        const other = headingKey(candidate);
+        return key === other || key === `${other}s` || other === `${key}s`;
+    });
+};
+/** Name of a trial balance node */
+const nodeName = (node: TrialBalanceNode) => text(node.name || node.account);
+
+const findTrialHead = (tree: TrialBalanceNode[], candidates: string[]) =>
+    tree.find(node => headingsMatch(nodeName(node), candidates));
+
+const signedDebit = (node?: TrialBalanceNode) => {
+    if (!node) return 0;
+    if (typeof node.closingSigned === "number") return money(node.closingSigned);
+    return money(Number(node.closingDebit || 0) - Number(node.closingCredit || 0));
+};
+
+const expenseAmount = (node?: TrialBalanceNode) => signedDebit(node);
+const incomeAmount = (node?: TrialBalanceNode) => money(-signedDebit(node));
+/** Balance Sheet liability side: net closing credit. */
+const liabilityAmount = (node?: TrialBalanceNode) => incomeAmount(node);
+/** Balance Sheet asset side: net closing debit. */
+const assetAmount = (node?: TrialBalanceNode) => expenseAmount(node);
+
+const firstLevelItems = (
+    node: TrialBalanceNode | undefined,
+    amountOf: (child: TrialBalanceNode) => number
+): StatementItem[] => {
+    if (!node?.children?.length) return [];
+    const parent = headingKey(nodeName(node));
+    return node.children
+        .filter(child => headingKey(nodeName(child)) !== parent)
+        .map(child => ({ name: nodeName(child), amount: amountOf(child) }))
+        .filter(item => item.name);
+};
+
+const sectionRows = (name: string, amount: number | null, items: StatementItem[]) => {
+    const rows: unknown[][] = [[name, null, amount]];
+    for (const item of items) {
+        rows.push([item.name, item.amount === 0 ? null : item.amount, null]);
+    }
+    return rows;
+};
+
+const sumItems = (items: StatementItem[]) =>
+    money(items.reduce((sum, item) => sum + Number(item.amount || 0), 0));
+
+const currentAssetsBalanceSheetItems = (
+    node: TrialBalanceNode | undefined,
+    closingStock: number
+): StatementItem[] => {
+    const items = firstLevelItems(node, assetAmount);
+    const hasCashInHand = items.some(item => headingKey(item.name) === headingKey("Cash-in-hand"));
+    const withoutDuplicateCash = hasCashInHand
+        ? items.filter(item => headingKey(item.name) !== headingKey("Cash"))
+        : items;
+
+    const replaced: StatementItem[] = [];
+    let openingReplaced = false;
+    for (const item of withoutDuplicateCash) {
+        if (headingKey(item.name) === headingKey("Opening Stock")) {
+            replaced.push({ name: "Closing Stock", amount: closingStock });
+            openingReplaced = true;
+        } else {
+            replaced.push(item);
+        }
+    }
+    if (!openingReplaced && closingStock) {
+        replaced.unshift({ name: "Closing Stock", amount: closingStock });
+    }
+    return replaced;
+};
+
+const computeNettProfit = (
+    tree: TrialBalanceNode[],
+    openingStock: number,
+    closingStock: number
+) => {
+    const purchaseAccounts = expenseAmount(findTrialHead(tree, ["Purchase Accounts"]));
+    const directExpenses = expenseAmount(findTrialHead(tree, ["Direct Expenses", "Direct Expense"]));
+    const indirectExpenses = expenseAmount(findTrialHead(tree, ["Indirect Expenses", "Indirect Expense"]));
+    const salesAccounts = incomeAmount(findTrialHead(tree, ["Sales Accounts"]));
+    const indirectIncomes = incomeAmount(findTrialHead(tree, ["Indirect Incomes", "Indirect Income"]));
+    const grossProfit = money(
+        (salesAccounts + closingStock) - (openingStock + purchaseAccounts + directExpenses)
+    );
+    return money(grossProfit + indirectIncomes - indirectExpenses);
+};
+
+/** Trading / P&L roots — never placed on the Balance Sheet. */
+const isProfitAndLossTradingHead = (name: string) =>
+    headingsMatch(name, [
+        "Purchase Accounts",
+        "Sales Accounts",
+        "Direct Expenses",
+        "Direct Expense",
+        "Direct Incomes",
+        "Direct Income",
+        "Indirect Expenses",
+        "Indirect Expense",
+        "Indirect Incomes",
+        "Indirect Income",
+        "Expenses",
+        "Income"
+    ]);
+
+/** Handled separately from net Dr/Cr classification. */
+const isProfitAndLossAccountHead = (name: string) =>
+    headingsMatch(name, ["Profit & Loss A/c", "Profit & Loss"]);
+
+const isSuspenseHead = (name: string) =>
+    headingsMatch(name, ["Suspense A/c", "Suspense Account", "Suspense"]);
+
+const isCurrentAssetsHead = (name: string) =>
+    headingsMatch(name, ["Current Assets"]);
+
+/** Preferred Excel-like order; unknown heads keep TB alphabetical order after these. */
+const LIABILITY_HEAD_ORDER = [
+    "Capital Account",
+    "Loans (Liability)",
+    "Current Liabilities",
+    "Branch / Divisions"
+];
+const ASSET_HEAD_ORDER = [
+    "Fixed Assets",
+    "Investments",
+    "Current Assets"
+];
+
+const sortBalanceSheetHeads = (heads: TrialBalanceNode[], preferred: string[]) => {
+    const rank = (name: string) => {
+        const index = preferred.findIndex(candidate => headingsMatch(name, [candidate]));
+        return index >= 0 ? index : preferred.length;
+    };
+    return [...heads].sort((a, b) => {
+        const left = rank(nodeName(a));
+        const right = rank(nodeName(b));
+        if (left !== right) return left - right;
+        return nodeName(a).localeCompare(nodeName(b));
+    });
+};
+
+const classifyBalanceSheetHeads = (tree: TrialBalanceNode[]) => {
+    const liabilityHeads: TrialBalanceNode[] = [];
+    const assetHeads: TrialBalanceNode[] = [];
+    let profitAndLossHead: TrialBalanceNode | undefined;
+    let suspenseHead: TrialBalanceNode | undefined;
+
+    for (const head of tree) {
+        const name = nodeName(head);
+        if (!name || isProfitAndLossTradingHead(name)) continue;
+        if (isProfitAndLossAccountHead(name)) {
+            profitAndLossHead = head;
+            continue;
+        }
+        if (isSuspenseHead(name)) {
+            suspenseHead = head;
+            continue;
+        }
+
+        const closing = signedDebit(head);
+        // closingSigned = closingDebit - closingCredit
+        // net Cr (closing < 0) → Liabilities (left)
+        // net Dr (closing > 0) → Assets (right)
+        if (closing < 0) liabilityHeads.push(head);
+        else if (closing > 0) assetHeads.push(head);
+    }
+
+    return {
+        liabilityHeads: sortBalanceSheetHeads(liabilityHeads, LIABILITY_HEAD_ORDER),
+        assetHeads: sortBalanceSheetHeads(assetHeads, ASSET_HEAD_ORDER),
+        profitAndLossHead,
+        suspenseHead
+    };
+};
+
+const balanceSheetSectionFromHead = (
+    head: TrialBalanceNode,
+    closingStock: number
+): unknown[][] => {
+    const name = nodeName(head);
+    if (isCurrentAssetsHead(name)) {
+        const items = currentAssetsBalanceSheetItems(head, closingStock);
+        return sectionRows(name, sumItems(items) || null, items);
+    }
+
+    const amountOf = signedDebit(head) < 0 ? liabilityAmount : assetAmount;
+    const items = firstLevelItems(head, amountOf);
+    const total = amountOf(head);
+    return sectionRows(name, total || null, items);
+};
+
+const isoKolkata = (value: Date | string) =>
+    new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date(value));
+
+const loadOpeningStockItems = async (): Promise<StatementItem[]> => {
+    const products = await prisma.product.findMany({
+        where: {
+            OR: [
+                { openingStockKG: { gt: 0 } },
+                { openingStockKG: { lt: 0 } }
+            ]
+        },
+        select: {
+            name: true,
+            openingStockKG: true,
+            sellPricePerUnit: true
+        },
+        orderBy: { name: "asc" }
+    });
+
+    const byName = new Map<string, number>();
+    for (const product of products) {
+        const name = text(product.name);
+        if (!name) continue;
+        const amount = money(Number(product.openingStockKG) * Number(product.sellPricePerUnit || 0));
+        byName.set(name, money((byName.get(name) || 0) + amount));
+    }
+    return [...byName.entries()].map(([name, amount]) => ({ name, amount }));
+};
+
+const loadClosingStockItems = async (): Promise<StatementItem[]> => {
+    const products = await prisma.product.findMany({
+        where: {
+            OR: [
+                { tempClosingBalance: { gt: 0 } },
+                { tempClosingBalance: { lt: 0 } }
+            ]
+        },
+        select: {
+            name: true,
+            tempClosingBalance: true
+        },
+        orderBy: { name: "asc" }
+    });
+
+    const byName = new Map<string, number>();
+    for (const product of products) {
+        const name = text(product.name);
+        if (!name) continue;
+        const amount = money(Number(product.tempClosingBalance || 0));
+        byName.set(name, money((byName.get(name) || 0) + amount));
+    }
+    return [...byName.entries()].map(([name, amount]) => ({ name, amount }));
+};
+
 const balanceSheetRows = (source: PureBalanceSheet) => {
     const liabilities = flattenSections(source.liabilities);
     const assets = flattenSections(source.assets);
-    const rows = reportHeaderRows(source.company, source.report, periodLabel(source.period));
+    const rows: unknown[][] = reportHeaderRows(source.company, source.report, periodLabel(source.period));
     rows.push(["", "", null, "", "", null]);
     rows.push(["Liabilities", `as at ${displayDate(source.period.to)}`, null, "Assets", `as at ${displayDate(source.period.to)}`, null]);
     rows.push(...pairStatementSides(liabilities, assets));
@@ -102,30 +373,24 @@ const balanceSheetRows = (source: PureBalanceSheet) => {
     return rows;
 };
 
-const profitAndLossRows = (source: PureProfitAndLoss) => {
-    const debit = source.debit;
-    const credit = source.credit;
-    const leftSections = [debit.openingStock, debit.purchaseAccounts, debit.directExpenses, debit.indirectExpenses]
-        .filter((section): section is PureStatementItem => Boolean(section));
-    const rightSections: PureStatementItem[] = [];
+const fullStatementRows = (source: FullStatementWorkbook) => {
+    const worksheet = source.sheets?.[0];
+    if (!worksheet?.rows?.length) throw new Error("The full P&L workbook JSON does not contain worksheet rows");
 
-    if (credit.salesAccounts) {
-        rightSections.push({ ...credit.salesAccounts, children: credit.salesLedgers?.items ?? [] });
+    const columnIndexes: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5 };
+    const rows: unknown[][] = Array.from(
+        { length: Math.max(...worksheet.rows.map(row => row.rowNumber)) },
+        () => Array(6).fill(null)
+    );
+
+    for (const sourceRow of worksheet.rows) {
+        const row = rows[sourceRow.rowNumber - 1];
+        for (const cell of sourceRow.cells) {
+            const columnIndex = columnIndexes[cell.column];
+            if (columnIndex !== undefined) row[columnIndex] = cell.value === "" ? null : cell.value ?? null;
+        }
     }
-    for (const key of ["closingStock", "grossProfitBf", "indirectIncomes"] as const) {
-        const section = credit[key];
-        if (section) rightSections.push(section);
-    }
 
-    // Profit is the balancing debit in the final Profit & Loss account.
-    const netProfit = credit.netProfit;
-    if (netProfit) leftSections.push({ ...netProfit, name: netProfit.name || "Nett Profit" });
-
-    const rows = reportHeaderRows(source.company, source.report, periodLabel(source.period));
-    rows.push(["", "", null, "", "", null]);
-    rows.push(["Particulars", periodLabel(source.period), null, "Particulars", periodLabel(source.period), null]);
-    rows.push(...pairStatementSides(flattenSections(leftSections), flattenSections(rightSections)));
-    rows.push(["Total", null, source.totals.debit, "Total", null, source.totals.credit]);
     return rows;
 };
 
@@ -161,14 +426,21 @@ const reorderProfitAndLossSectionsForExport = (rows: unknown[][]) => {
 
 export class Srv1FinancialStatementsService {
     static getProfitAndLossReport() {
-        const source = profitAndLossSource as PureProfitAndLoss;
+        const rows = fullStatementRows(profitAndLossWorkbook as FullStatementWorkbook);
+        const company = text(rows[0]?.[0]);
+        const reportName = text(rows[5]?.[0]);
+        const period = text(rows[6]?.[0]);
         return {
             statementType: "PROFIT_AND_LOSS" as const,
-            reportName: source.report,
-            company: source.company,
-            period: periodLabel(source.period),
-            companyDetails: { address: companyAddress, identifier: companyIdentifier, email: companyEmail },
-            rows: profitAndLossRows(source)
+            reportName,
+            company,
+            period,
+            companyDetails: {
+                address: [text(rows[1]?.[0]), text(rows[2]?.[0])].filter(Boolean),
+                identifier: text(rows[3]?.[0]),
+                email: text(rows[4]?.[0])
+            },
+            rows
         };
     }
 
@@ -311,5 +583,204 @@ export class Srv1FinancialStatementsService {
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
         return res.send(Buffer.from(buffer));
+    }
+
+    /** Live Balance Sheet Service  */
+    static async getLiveBalanceSheetReport(
+        actor: any,
+        query?: LiveStatementQuery
+    ): Promise<FinancialStatementReport> {
+        const [trial, openingStockItems, closingStockItems] = await Promise.all([
+            ReportingService.getTrialBalanceReport(actor, {
+                branchId: query?.branchId,
+                startDate: query?.startDate,
+                endDate: query?.endDate,
+                includeZero: query?.includeZero
+            }),
+            loadOpeningStockItems(),
+            loadClosingStockItems()
+        ]);
+
+        const tree = (trial.tree || []) as TrialBalanceNode[];
+        const openingStock = sumItems(openingStockItems);
+        const closingStock = sumItems(closingStockItems);
+        const nettProfit = computeNettProfit(tree, openingStock, closingStock);
+
+        const {
+            liabilityHeads,
+            assetHeads,
+            profitAndLossHead,
+            suspenseHead
+        } = classifyBalanceSheetHeads(tree);
+
+        const leftRows: unknown[][] = [];
+        for (const head of liabilityHeads) {
+            leftRows.push(...balanceSheetSectionFromHead(head, closingStock));
+        }
+
+        const suspenseItems = suspenseHead
+            ? firstLevelItems(suspenseHead, liabilityAmount)
+            : [{ name: "SUSPENSE", amount: 0 }];
+        leftRows.push(...sectionRows(nodeName(suspenseHead || { name: "Suspense A/c" }), 0, suspenseItems));
+
+        const profitAndLossOpening = profitAndLossHead ? liabilityAmount(profitAndLossHead) : 0;
+        const profitAndLossTotal = money(profitAndLossOpening + nettProfit);
+        leftRows.push(...sectionRows("Profit & Loss A/c", profitAndLossTotal || null, [
+            { name: "Opening Balance", amount: profitAndLossOpening },
+            { name: "Current Period", amount: nettProfit }
+        ]));
+
+        const rightRows: unknown[][] = [];
+        for (const head of assetHeads) {
+            rightRows.push(...balanceSheetSectionFromHead(head, closingStock));
+        }
+
+        const liabilitiesTotal = money(
+            liabilityHeads.reduce((sum, head) => sum + liabilityAmount(head), 0) + profitAndLossTotal
+        );
+        const assetsTotal = money(
+            assetHeads.reduce((sum, head) => {
+                if (isCurrentAssetsHead(nodeName(head))) {
+                    return sum + sumItems(currentAssetsBalanceSheetItems(head, closingStock));
+                }
+                return sum + assetAmount(head);
+            }, 0)
+        );
+
+        const startIso = isoKolkata(trial.period.startDate);
+        const endIso = isoKolkata(trial.period.endDate);
+        const period = periodLabel({ from: startIso, to: endIso });
+        const company = text(trial.branch?.name) || "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra";
+        const asAt = `as at ${displayDate(endIso)}`;
+
+        const rows: unknown[][] = reportHeaderRows(company, "Balance Sheet", period);
+        rows.push(["", "", null, "", "", null]);
+        rows.push(["Liabilities", asAt, null, "Assets", asAt, null]);
+        rows.push(...pairStatementSides(leftRows, rightRows));
+        rows.push(["Total", null, liabilitiesTotal, "Total", null, assetsTotal]);
+
+        return {
+            statementType: "BALANCE_SHEET",
+            reportName: "Balance Sheet",
+            company,
+            period,
+            companyDetails: {
+                address: [...companyAddress],
+                identifier: companyIdentifier,
+                email: companyEmail
+            },
+            rows
+        };
+    }
+
+    /** Live Profit and Loss Service  */
+    static async getLiveProfitAndLossReport(
+        actor: any,
+        query?: LiveStatementQuery
+    ): Promise<FinancialStatementReport> {
+        const [trial, openingStockItems, closingStockItems] = await Promise.all([
+            ReportingService.getTrialBalanceReport(actor, {
+                branchId: query?.branchId,
+                startDate: query?.startDate,
+                endDate: query?.endDate,
+                includeZero: query?.includeZero
+            }),
+            loadOpeningStockItems(),
+            loadClosingStockItems()
+        ]);
+
+        const tree = (trial.tree || []) as TrialBalanceNode[];
+        const purchaseHead = findTrialHead(tree, ["Purchase Accounts"]);
+        const directExpenseHead = findTrialHead(tree, ["Direct Expenses", "Direct Expense"]);
+        const indirectExpenseHead = findTrialHead(tree, ["Indirect Expenses", "Indirect Expense"]);
+        const salesHead = findTrialHead(tree, ["Sales Accounts"]);
+        const indirectIncomeHead = findTrialHead(tree, ["Indirect Incomes", "Indirect Income"]);
+
+        const openingStock = money(openingStockItems.reduce((sum, item) => sum + item.amount, 0));
+        const closingStock = money(closingStockItems.reduce((sum, item) => sum + item.amount, 0));
+
+        const purchaseAccounts = expenseAmount(purchaseHead);
+        const directExpenses = expenseAmount(directExpenseHead);
+        const indirectExpenses = expenseAmount(indirectExpenseHead);
+        const salesAccounts = incomeAmount(salesHead);
+        const indirectIncomes = incomeAmount(indirectIncomeHead);
+
+        const grossProfit = money(
+            (salesAccounts + closingStock) - (openingStock + purchaseAccounts + directExpenses)
+        );
+        const nettProfit = money(grossProfit + indirectIncomes - indirectExpenses);
+
+        const leftRows: unknown[][] = [
+            ...sectionRows("Opening Stock", openingStock, openingStockItems),
+            ...sectionRows("Purchase Accounts", purchaseAccounts, firstLevelItems(purchaseHead, expenseAmount)),
+            ...sectionRows("Direct Expenses", directExpenses, firstLevelItems(directExpenseHead, expenseAmount))
+        ];
+        const rightRows: unknown[][] = [
+            ...sectionRows("Sales Accounts", salesAccounts, firstLevelItems(salesHead, incomeAmount)),
+            ...sectionRows("Closing Stock", closingStock || null, closingStockItems)
+        ];
+
+        if (grossProfit >= 0) {
+            leftRows.push(["Gross Profit c/o", null, grossProfit]);
+        } else {
+            rightRows.push(["Gross Loss c/o", null, money(-grossProfit)]);
+        }
+
+        const tradingTotal = money(
+            openingStock + purchaseAccounts + directExpenses + Math.max(grossProfit, 0)
+        );
+        leftRows.push([null, tradingTotal || null, null]);
+        rightRows.push([null, tradingTotal || null, null]);
+
+        if (grossProfit < 0) {
+            leftRows.push(["Gross Loss b/f", null, money(-grossProfit)]);
+        }
+        leftRows.push(
+            ...sectionRows("Indirect Expenses", indirectExpenses, firstLevelItems(indirectExpenseHead, expenseAmount))
+        );
+
+        if (grossProfit >= 0) {
+            rightRows.push(["Gross Profit b/f", null, grossProfit]);
+        }
+        rightRows.push(
+            ...sectionRows("Indirect Incomes", indirectIncomes, firstLevelItems(indirectIncomeHead, incomeAmount))
+        );
+
+        if (nettProfit >= 0) {
+            leftRows.push(["Nett Profit", null, nettProfit]);
+        } else {
+            rightRows.push(["Nett Loss", null, money(-nettProfit)]);
+        }
+
+        const debitTotal = money(
+            (grossProfit < 0 ? money(-grossProfit) : 0) + indirectExpenses + Math.max(nettProfit, 0)
+        );
+        const creditTotal = money(
+            (grossProfit >= 0 ? grossProfit : 0) + indirectIncomes + Math.max(-nettProfit, 0)
+        );
+
+        const startIso = isoKolkata(trial.period.startDate);
+        const endIso = isoKolkata(trial.period.endDate);
+        const period = periodLabel({ from: startIso, to: endIso });
+        const company = text(trial.branch?.name) || "A G Ashtavinayaka Petrochem Pvt Ltd - Maharashtra";
+
+        const rows: unknown[][] = reportHeaderRows(company, "Profit & Loss A/c", period);
+        rows.push(["", "", null, "", "", null]);
+        rows.push(["Particulars", period, null, "Particulars", period, null]);
+        rows.push(...pairStatementSides(leftRows, rightRows));
+        rows.push(["Total", null, debitTotal as any, "Total", null, creditTotal]);
+
+        return {
+            statementType: "PROFIT_AND_LOSS",
+            reportName: "Profit & Loss A/c",
+            company,
+            period,
+            companyDetails: {
+                address: [...companyAddress],
+                identifier: companyIdentifier,
+                email: companyEmail
+            },
+            rows
+        };
     }
 }

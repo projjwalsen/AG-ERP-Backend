@@ -1,0 +1,1 @@
+const wb=require('./.tmp-global-voucher-findings.json')[1];const ds=wb.findings.filter(x=>x.status==='voucher-number-has-other-lines');console.log('count',ds.length);console.log(JSON.stringify(ds.slice(0,30),null,2));

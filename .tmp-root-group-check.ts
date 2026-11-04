@@ -1,0 +1,2 @@
+import 'dotenv/config'; import {prisma} from './src/config/db';
+(async()=>{for(const n of ['Sundry Creditors','Advance From S. Debtors']){const g=await prisma.ledgerGroup.findFirst({where:{name:n,parent:{name:'Current Liabilities'}},include:{ledgers:{where:{branchId:'47fdc8aa-83ba-46f9-93ec-4517e0eb13bb'},take:8}}});console.log(n,g&&{id:g.id,nature:g.nature,code:g.code,ledgers:g.ledgers.map(l=>({id:l.id,name:l.name,code:l.code,category:l.category,nature:l.nature}))})} await prisma.$disconnect()})()

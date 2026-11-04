@@ -1,0 +1,1641 @@
+[
+  {
+    "ledger": "Art Infrastructure Pvt Ltd - Loan A/c",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "930bbcc6-41b5-44d0-9768-7f0cf07caac4",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "930bbcc6-41b5-44d0-9768-7f0cf07caac4",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 214,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "6bd992d7-3fcb-4467-beda-67039dafe937",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "ae44b194-9036-4000-b957-91e56b6f1439",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 214,
+      "dr": 498852404,
+      "cr": 499056253.57,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 39796150.43,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-31",
+        "side": "DEBIT",
+        "amount": 40000000
+      },
+      "wantCloseSigned": -40000000
+    },
+    "db": {
+      "n": 214,
+      "dr": 498852404,
+      "cr": 499056253.57,
+      "openDr": 0,
+      "openCr": 39796150.43,
+      "closeSigned": -40000000
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 214,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "c9998dee-e2d5-4aa8-84e9-12fe665bd367",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "c9998dee-e2d5-4aa8-84e9-12fe665bd367",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 283,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "34afb4ff-9c8e-4b19-8667-10aee3137705",
+        "path": "Unsecured Loans > Unsecured from Other than Bank > Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "ba5a5621-f2d5-4367-bd7f-3aabc540df32",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "03f55faa-5839-4974-a81f-3f3a46746d16",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 283,
+      "dr": 14386787,
+      "cr": 14960233,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 1891761.06,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-31",
+        "side": "DEBIT",
+        "amount": 2465207.06
+      },
+      "wantCloseSigned": -2465207.06
+    },
+    "db": {
+      "n": 283,
+      "dr": 14386787,
+      "cr": 14960233,
+      "openDr": 0,
+      "openCr": 1891761.06,
+      "closeSigned": -2465207.06
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 283,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "AXIS BANK BPR032712902112",
+    "group": "Unsecured from Bank",
+    "canonId": "9e7428f5-4f17-4042-856e-4b69b78e1b92",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+    "copies": [
+      {
+        "id": "9e7428f5-4f17-4042-856e-4b69b78e1b92",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 12,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "aef515ae-ee2b-469a-a026-16335a637189",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "c806c593-abd5-4328-a39f-bee8619c533b",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "63f4321c-445a-4383-952a-f35d50d8279e",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 12,
+      "dr": 1641202,
+      "cr": 7493685,
+      "open": null,
+      "close": {
+        "date": "2026-03-20",
+        "side": "DEBIT",
+        "amount": 5852483
+      },
+      "wantCloseSigned": -5852483
+    },
+    "db": {
+      "n": 12,
+      "dr": 1641202,
+      "cr": 7493685,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": -5852483
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 12,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "AXIS CORPORATE CARD 0344",
+    "group": "Unsecured from Bank",
+    "canonId": "f4c94567-50f9-46ca-9601-5bad1b032da7",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+    "copies": [
+      {
+        "id": "f4c94567-50f9-46ca-9601-5bad1b032da7",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 114,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "662a10ae-b2ec-4423-a4b7-2dafe991572b",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "05e1c412-2f57-44d9-921e-a214486a1fbe",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 114,
+      "dr": 11360935,
+      "cr": 20164794.19,
+      "open": null,
+      "close": {
+        "date": "2026-03-31",
+        "side": "DEBIT",
+        "amount": 8803859.19
+      },
+      "wantCloseSigned": -8803859.19
+    },
+    "db": {
+      "n": 114,
+      "dr": 11360935,
+      "cr": 20164794.19,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": -8803859.19
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 114,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "HDFC CORPORATE CARD -9607",
+    "group": "Unsecured from Bank",
+    "canonId": "8222f3c8-3918-4268-9db3-b879ab0f8e8d",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+    "copies": [
+      {
+        "id": "8222f3c8-3918-4268-9db3-b879ab0f8e8d",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 17,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "8717d163-2c30-43c6-9891-2c19e78cb249",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "99244a7e-de7c-4126-853d-7aeafadfcab1",
+        "path": "Unsecured Loans > Unsecured from Bank > HDFC CORPORATE CARD -9607",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "e9f386e7-5138-4aee-bc32-c4b0469ca561",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "19774c50-cff4-4a76-91e6-b85aa180f2de",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 17,
+      "dr": 261006,
+      "cr": 261006,
+      "open": null,
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 17,
+      "dr": 261006,
+      "cr": 261006,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 17,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "HDFC CORPORATE CARD - V2P 3288",
+    "group": "Unsecured from Bank",
+    "canonId": "b860c1fb-1c1c-4909-aad7-ab392da8317e",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+    "copies": [
+      {
+        "id": "b860c1fb-1c1c-4909-aad7-ab392da8317e",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 41,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "9b769aaf-cb73-4887-a89b-7bfebde25c0e",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "d96b0430-b9b8-4ad0-823d-6181dd097116",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "83f88ec0-7a12-4937-aac0-faa979b00320",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 41,
+      "dr": 35274831,
+      "cr": 35376070.32,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 2024780.12,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-05",
+        "side": "DEBIT",
+        "amount": 2126019.44
+      },
+      "wantCloseSigned": -2126019.44
+    },
+    "db": {
+      "n": 41,
+      "dr": 35274831,
+      "cr": 35376070.32,
+      "openDr": 0,
+      "openCr": 2024780.12,
+      "closeSigned": -2126019.44
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 41,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "HDFC CORPORATE CARD - V2P 3767",
+    "group": "Unsecured from Bank",
+    "canonId": "21d57148-8742-4b93-a89c-e88c00bd7e78",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+    "copies": [
+      {
+        "id": "21d57148-8742-4b93-a89c-e88c00bd7e78",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 39,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "f6dd56b1-eb49-4c58-836b-2b97413a2d51",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "c56dccd8-f8da-4293-94ab-8a51f5e45773",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 39,
+      "dr": 34269604.86,
+      "cr": 30625000,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 3644604.86,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 39,
+      "dr": 34269604.86,
+      "cr": 30625000,
+      "openDr": 0,
+      "openCr": 3644604.86,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 39,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "IDBI BANK LIMITED",
+    "group": "Unsecured from Bank",
+    "canonId": "1656bede-2c14-42a3-bcbd-d4b5c78bb943",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+    "copies": [
+      {
+        "id": "1656bede-2c14-42a3-bcbd-d4b5c78bb943",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Bank",
+        "nPer": 44,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "01c31b3f-af9f-4e59-95ce-e4956681463c",
+        "path": " > Current Assets > Bank Accounts",
+        "nPer": 0,
+        "cat": "BANK"
+      },
+      {
+        "id": "3dbe38ce-fd5a-4ae6-9894-322cfdaca6cb",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 44,
+      "dr": 1876269.32,
+      "cr": 71877468.68,
+      "open": null,
+      "close": {
+        "date": "2026-03-06",
+        "side": "DEBIT",
+        "amount": 70001199.36
+      },
+      "wantCloseSigned": -70001199.36
+    },
+    "db": {
+      "n": 44,
+      "dr": 1876269.32,
+      "cr": 71877468.68,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": -70001199.36
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 44,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "L&T Finance Holdings Limited. BL231224040100133",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "3fc204a3-1ec4-43fc-b81e-8f0bc0c2cacf",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "3fc204a3-1ec4-43fc-b81e-8f0bc0c2cacf",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 13,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "35bd0177-9381-4e86-96e0-53714cad2d13",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "7e9c6ae7-274a-425b-ac87-70bf76b928a6",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 13,
+      "dr": 3371159.09,
+      "cr": 51708.36,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 3319450.73,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 13,
+      "dr": 3371159.09,
+      "cr": 51708.36,
+      "openDr": 0,
+      "openCr": 3319450.73,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 13,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "L &T FINANCE LIMITED BL250613256600976",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "e4117ef2-933a-42f7-8d03-b299fe037d78",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "e4117ef2-933a-42f7-8d03-b299fe037d78",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 35,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "fd54429d-fab9-43b1-89e6-75cb6c26d4ae",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "0f764354-1d90-4f05-8d88-65aa55a647e2",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "0567d26f-b66e-4113-ad6e-7cd3761a2787",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 35,
+      "dr": 1462899.52,
+      "cr": 7573318,
+      "open": null,
+      "close": {
+        "date": "2026-03-03",
+        "side": "DEBIT",
+        "amount": 6110418.48
+      },
+      "wantCloseSigned": -6110418.48
+    },
+    "db": {
+      "n": 35,
+      "dr": 1462899.52,
+      "cr": 7573318,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": -6110418.48
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 35,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "MAS FINANCIAL SERVICES LTD -5391230",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "e40bc416-68ea-414b-8bee-74b2674c6110",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "e40bc416-68ea-414b-8bee-74b2674c6110",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 36,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "262871c8-c516-467b-9da7-93d255e897a8",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "6a333d8e-e105-4c6c-9228-dcb64713bf2d",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 36,
+      "dr": 2190855,
+      "cr": 39806,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 3365154,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-05",
+        "side": "DEBIT",
+        "amount": 1214105
+      },
+      "wantCloseSigned": -1214105
+    },
+    "db": {
+      "n": 36,
+      "dr": 2190855,
+      "cr": 39806,
+      "openDr": 0,
+      "openCr": 3365154,
+      "closeSigned": -1214105
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 36,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "Mahima Menda - Loan From Director",
+    "group": "Loan From Directors",
+    "canonId": "b314bbdb-5a40-48ce-a49a-dc91541a6523",
+    "path": "Loans (Liability) > Unsecured Loans > Loan From Directors",
+    "copies": [
+      {
+        "id": "b314bbdb-5a40-48ce-a49a-dc91541a6523",
+        "path": "Loans (Liability) > Unsecured Loans > Loan From Directors",
+        "nPer": 47,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "d7184c67-8f9f-4007-8254-ed6c6972adc9",
+        "path": "Loans (Liability) > Unsecured Loans > Loan From Directors",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "03c832ea-1957-411b-bb4d-47f5f109540b",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 47,
+      "dr": 20594862,
+      "cr": 12568000,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 21297518,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-26",
+        "side": "DEBIT",
+        "amount": 13270656
+      },
+      "wantCloseSigned": -13270656
+    },
+    "db": {
+      "n": 47,
+      "dr": 20594862,
+      "cr": 12568000,
+      "openDr": 0,
+      "openCr": 21297518,
+      "closeSigned": -13270656
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 47,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "Sandeep Singh - Loan From Director",
+    "group": "Loan From Directors",
+    "canonId": "0a02fb12-c2ec-4ea4-84b1-c35d95daf8bd",
+    "path": "Loans (Liability) > Unsecured Loans > Loan From Directors",
+    "copies": [
+      {
+        "id": "0a02fb12-c2ec-4ea4-84b1-c35d95daf8bd",
+        "path": "Loans (Liability) > Unsecured Loans > Loan From Directors",
+        "nPer": 22,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "23f77ce0-63e4-424e-8389-a2b6e7d9c123",
+        "path": "Loans (Liability) > Unsecured Loans > Loan From Directors",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "da4d81fa-9be3-49c7-aef3-232794d1e4a7",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 22,
+      "dr": 26601907,
+      "cr": 32800000,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 2289320.62,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-07",
+        "side": "DEBIT",
+        "amount": 8487413.62
+      },
+      "wantCloseSigned": -8487413.62
+    },
+    "db": {
+      "n": 22,
+      "dr": 26601907,
+      "cr": 32800000,
+      "openDr": 0,
+      "openCr": 2289320.62,
+      "closeSigned": -8487413.62
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 22,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "SHREE GURU KRIPA ENTERPRISES (DR)",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "85362d42-a783-43e6-a0c1-afa9d3f5ad4a",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "85362d42-a783-43e6-a0c1-afa9d3f5ad4a",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 11,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "34021f2a-bcf5-444f-b77e-ed0a187bbc36",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 11,
+      "dr": 12500000,
+      "cr": 12500000,
+      "open": null,
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 11,
+      "dr": 12500000,
+      "cr": 12500000,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 11,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "TATA CAPITAL LIMITED",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "8c4cec67-0b07-4dd2-b04a-b20e01c04955",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "8c4cec67-0b07-4dd2-b04a-b20e01c04955",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 97,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "2e4a11af-3701-4198-b396-e11324d2d2a5",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "4c894a1e-4e25-4c54-a5c8-5ea3dd866ad4",
+        "path": "Unsecured Loans > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 96,
+      "dr": 248467590,
+      "cr": 248456794.3,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 50497520,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-31",
+        "side": "DEBIT",
+        "amount": 50486724.3
+      },
+      "wantCloseSigned": -50486724.3
+    },
+    "db": {
+      "n": 97,
+      "dr": 248467590,
+      "cr": 248456794.3,
+      "openDr": 0,
+      "openCr": 50497520,
+      "closeSigned": -50486724.3
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 95,
+    "missing": 1,
+    "extra": 2,
+    "missByType": {
+      "Payment": {
+        "n": 1,
+        "dr": 9900000,
+        "cr": 0
+      }
+    },
+    "missSample": [
+      {
+        "date": "2025-04-02",
+        "particular": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "type": "Payment",
+        "no": "10665",
+        "side": "DEBIT",
+        "amount": 9900000
+      }
+    ],
+    "extraSample": [
+      {
+        "no": "10665",
+        "type": "PAYMENT",
+        "date": "2025-04-01",
+        "side": "DEBIT",
+        "amount": 497520
+      },
+      {
+        "no": "10665",
+        "type": "PAYMENT",
+        "date": "2025-04-01",
+        "side": "DEBIT",
+        "amount": 9402480
+      }
+    ]
+  },
+  {
+    "ledger": "UNITY SMALL FINANCE BANK LTD",
+    "group": "Unsecured from Other than Bank",
+    "canonId": "f665df3e-f5ac-4906-b8f3-09fce3507f36",
+    "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+    "copies": [
+      {
+        "id": "f665df3e-f5ac-4906-b8f3-09fce3507f36",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured from Other than Bank",
+        "nPer": 12,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "791af15c-b471-4f39-98d3-bdf7bb6eaf16",
+        "path": "Unsecured Loans > Unsecured from Other than Bank > UNITY SMALL FINANCE BANK LTD",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "2a2808cb-ca8b-4510-8cee-83f0206ce3c3",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 12,
+      "dr": 1924516,
+      "cr": 0,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 2276085,
+        "type": "Opening Balance"
+      },
+      "close": {
+        "date": "2026-03-04",
+        "side": "DEBIT",
+        "amount": 351569
+      },
+      "wantCloseSigned": -351569
+    },
+    "db": {
+      "n": 12,
+      "dr": 1924516,
+      "cr": 0,
+      "openDr": 0,
+      "openCr": 2276085,
+      "closeSigned": -351569
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 12,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "AXIS BANK LOAN - BPR064708241270",
+    "group": "Unsecured Loans",
+    "canonId": "e75b2a04-3cde-4112-aaeb-5c96703b972f",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "e75b2a04-3cde-4112-aaeb-5c96703b972f",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 5,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "9f1f10a5-d061-4921-bfea-2e717468b725",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "ed618480-c074-4611-a63e-1dc8d173bfcd",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "9601daf0-5ae4-4b5f-bca9-632f20d04c5e",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 5,
+      "dr": 1890297,
+      "cr": 0,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 1890297,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 5,
+      "dr": 1890297,
+      "cr": 0,
+      "openDr": 0,
+      "openCr": 1890297,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 5,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "CLIX CAPITAL SERVICES PVT LTD",
+    "group": "Unsecured Loans",
+    "canonId": "923bd5f8-2d9b-4ed6-9831-e4cf6fcb36ac",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "923bd5f8-2d9b-4ed6-9831-e4cf6fcb36ac",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 4,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "eaf4b0f6-6940-4c2d-8a90-905bae0df0ba",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "8f402e63-c068-4173-84f5-e6444ec0ab0f",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "3c9f27d9-1b6f-422b-bda4-1d29ceec8e98",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 4,
+      "dr": 243409,
+      "cr": 365,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 243044,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 4,
+      "dr": 243409,
+      "cr": 365,
+      "openDr": 0,
+      "openCr": 243044,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 4,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "HDFC CORPORATE CARD -4385",
+    "group": "Unsecured Loans",
+    "canonId": "da2bfff0-13f1-423b-b010-f15e8e27d396",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "da2bfff0-13f1-423b-b010-f15e8e27d396",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 4,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "26e49c59-6b50-4ea4-a5aa-08a2bc5f3a78",
+        "path": "Loans (Liability) > Unsecured Loans > HDFC CORPORATE CARD -4385",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "2ebcbc4b-c17b-4248-b0ef-ead0a1a2b415",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "253ed12b-4571-40fa-ad7e-8cf62379a205",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 4,
+      "dr": 1072081,
+      "cr": 164434.6,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 907646.4,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 4,
+      "dr": 1072081,
+      "cr": 164434.6,
+      "openDr": 0,
+      "openCr": 907646.4,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 4,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "ICICI Business Loan - UPMUM00046126149",
+    "group": "Unsecured Loans",
+    "canonId": "ba931f8b-7564-426f-a979-d9d7fb9211e0",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "ba931f8b-7564-426f-a979-d9d7fb9211e0",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 12,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "bc9712b5-e933-4dcf-bb78-140ba918f787",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "7f32131c-c07e-45c1-99aa-f0d354d80458",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "79c99e0b-0eb3-46cd-bbff-6060508451fc",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 12,
+      "dr": 871877.8,
+      "cr": 32279.2,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 839598.6,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 12,
+      "dr": 871877.8,
+      "cr": 32279.2,
+      "openDr": 0,
+      "openCr": 839598.6,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 12,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "IVC LOGISTICS LIMITED",
+    "group": "Unsecured Loans",
+    "canonId": "80433b95-1b39-4701-bd1c-5ab23297209f",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "80433b95-1b39-4701-bd1c-5ab23297209f",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 4,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "2f2f8b39-0848-4f7c-a599-7e82d08ba1d3",
+        "path": "Loans (Liability) > Unsecured Loans > IVC LOGISTICS LIMITED",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "73823239-c166-4bb4-aac0-c41e1dff0ca7",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 4,
+      "dr": 20000000,
+      "cr": 20000000,
+      "open": null,
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 4,
+      "dr": 20000000,
+      "cr": 20000000,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 4,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "MAS FINANCIAL SERVICES LTD - VENDOR",
+    "group": "Unsecured Loans",
+    "canonId": "c5419675-7065-44b4-a29d-77e73aa62ce7",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "c5419675-7065-44b4-a29d-77e73aa62ce7",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 2,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "a02786f7-2532-45b8-83f3-2ca27e12fc0d",
+        "path": "Loans (Liability) > Unsecured Loans > MAS FINANCIAL SERVICES LTD - VENDOR",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "3bff0d5f-7294-4ca8-ab15-8fac19925f01",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 2,
+      "dr": 3862952,
+      "cr": 0,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 3862952,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 2,
+      "dr": 3862952,
+      "cr": 0,
+      "openDr": 0,
+      "openCr": 3862952,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 2,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "MONEYWISE FINANCIAL SERICES PVT LTD - BL00711",
+    "group": "Unsecured Loans",
+    "canonId": "9a0234de-18e8-4f18-a0bc-bd0875886b7a",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "9a0234de-18e8-4f18-a0bc-bd0875886b7a",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 2,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "27a9395b-c184-4e5f-9242-ba90b2bc306e",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "7cd4d32a-9929-4695-b9d8-a9cfe4c17004",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 2,
+      "dr": 7499.5,
+      "cr": 4500,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 2999.5,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 2,
+      "dr": 7499.5,
+      "cr": 4500,
+      "openDr": 0,
+      "openCr": 2999.5,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 2,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "POONAWALA FINCORP LTD - BLU0027DSC000006124326",
+    "group": "Unsecured Loans",
+    "canonId": "1750ef3d-85f5-47a7-8018-4674edb7b04f",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "1750ef3d-85f5-47a7-8018-4674edb7b04f",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 27,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "e530fadc-05c2-472f-9ba1-d109199fa4f1",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "fcce6ece-55ba-4a47-9288-fc969d872c97",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 27,
+      "dr": 1194774,
+      "cr": 8052,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 1186722,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 27,
+      "dr": 1194774,
+      "cr": 8052,
+      "openDr": 0,
+      "openCr": 1186722,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 27,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "SHRIRAM FINANCE LIMITED",
+    "group": "Unsecured Loans",
+    "canonId": "ab5c9920-9222-403c-a5f6-161b9a802898",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "ab5c9920-9222-403c-a5f6-161b9a802898",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 72,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "a209d212-5096-405a-b613-9d296cdbb990",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "e69af142-9b14-4c38-8bb9-245026785510",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 72,
+      "dr": 91704572,
+      "cr": 61820169,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 29884403,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 72,
+      "dr": 91704572,
+      "cr": 61820169,
+      "openDr": 0,
+      "openCr": 29884403,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 72,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "VAISHNAVI ENTERPRISES",
+    "group": "Unsecured Loans",
+    "canonId": "b1f28a08-3b4f-4f65-b0b5-c242dbeeb0f8",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "b1f28a08-3b4f-4f65-b0b5-c242dbeeb0f8",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 4,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "195ff418-a213-46eb-9297-584ab22f2ba4",
+        "path": "Loans (Liability) > Unsecured Loans > VAISHNAVI ENTERPRISES",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "74e34e47-be90-4047-b8b6-a704a12a0b0b",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 4,
+      "dr": 5000000,
+      "cr": 5000000,
+      "open": null,
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 4,
+      "dr": 5000000,
+      "cr": 5000000,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 4,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "YES BANK TERM LOAN 803LA42250690001",
+    "group": "Unsecured Loans",
+    "canonId": "db81ab2b-552e-431f-8436-00c60839c28c",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "db81ab2b-552e-431f-8436-00c60839c28c",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 9,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "d61393e9-a3ab-456c-a639-36525cd4d5b4",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "63a33333-e480-4267-9ea6-72969e475330",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "dfabf9ce-1f99-400d-b15f-189b56cf2042",
+        "path": " > Income > Indirect Income",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 9,
+      "dr": 25654280.81,
+      "cr": 654280.81,
+      "open": {
+        "date": "2025-04-01",
+        "side": "CREDIT",
+        "amount": 25000000,
+        "type": "Opening Balance"
+      },
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 9,
+      "dr": 25654280.81,
+      "cr": 654280.81,
+      "openDr": 0,
+      "openCr": 25000000,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 9,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  },
+  {
+    "ledger": "YES BANK TERM LOAN 803LA42250920001",
+    "group": "Unsecured Loans",
+    "canonId": "7a8dc0be-5ac4-4dcb-b5dc-2cebbbb12588",
+    "path": " > Loans (Liability) > Unsecured Loans",
+    "copies": [
+      {
+        "id": "7a8dc0be-5ac4-4dcb-b5dc-2cebbbb12588",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 9,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "cc0b4d83-9034-49dc-a0c5-042037e9a2a4",
+        "path": " > Loans (Liability) > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "ef0fa5b3-83f3-445c-bcf6-39f272a9c95a",
+        "path": "Loans (Liability) > Unsecured Loans > Unsecured Loans",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      },
+      {
+        "id": "ff02d965-cfc0-49d4-bf8c-63ea56806061",
+        "path": " > Expenses > Indirect Expense",
+        "nPer": 0,
+        "cat": "JOURNAL"
+      }
+    ],
+    "excel": {
+      "n": 9,
+      "dr": 25662671.23,
+      "cr": 25662671.23,
+      "open": null,
+      "close": null,
+      "wantCloseSigned": 0
+    },
+    "db": {
+      "n": 9,
+      "dr": 25662671.23,
+      "cr": 25662671.23,
+      "openDr": 0,
+      "openCr": 0,
+      "closeSigned": 0
+    },
+    "dDr": 0,
+    "dCr": 0,
+    "matched": 9,
+    "missing": 0,
+    "extra": 0,
+    "missByType": {},
+    "missSample": [],
+    "extraSample": []
+  }
+]

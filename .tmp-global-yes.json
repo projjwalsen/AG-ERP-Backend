@@ -1,0 +1,1059 @@
+{
+  "counts": {
+    "targetMissing": 105,
+    "hasSameBankLineElsewhere": 0,
+    "noGlobalLine": 105
+  },
+  "details": [
+    {
+      "line": 21,
+      "date": "2025-04-01",
+      "no": "10644",
+      "part": "YES BANK TERM LOAN 803LA42250690001",
+      "side": "CREDIT",
+      "amount": 161986.3,
+      "type": "PAYMENT",
+      "candidates": []
+    },
+    {
+      "line": 25,
+      "date": "2025-04-03",
+      "no": "1",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 7944222,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 69,
+      "date": "2025-04-08",
+      "no": "3",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 3700000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 132,
+      "date": "2025-04-20",
+      "no": "5",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 1750000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 136,
+      "date": "2025-04-21",
+      "no": "7",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 3794000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 138,
+      "date": "2025-04-21",
+      "no": "8",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 2044140,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 190,
+      "date": "2025-04-30",
+      "no": "9",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 440000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 202,
+      "date": "2025-05-31",
+      "no": "14",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 470000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 210,
+      "date": "2025-06-02",
+      "no": "15",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 100000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 212,
+      "date": "2025-06-03",
+      "no": "16",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 100000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 216,
+      "date": "2025-06-06",
+      "no": "18",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 5050000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 229,
+      "date": "2025-06-06",
+      "no": "19",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 20000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 231,
+      "date": "2025-06-06",
+      "no": "20",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 237,
+      "date": "2025-06-07",
+      "no": "22",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 243,
+      "date": "2025-06-18",
+      "no": "24",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 3266802,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 245,
+      "date": "2025-06-18",
+      "no": "25",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 20000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 247,
+      "date": "2025-06-18",
+      "no": "11833",
+      "part": "Bank Charges",
+      "side": "DEBIT",
+      "amount": 1,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 249,
+      "date": "2025-06-19",
+      "no": "26",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 1733198,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 251,
+      "date": "2025-06-26",
+      "no": "28",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 2500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 261,
+      "date": "2025-07-01",
+      "no": "29",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 7500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 267,
+      "date": "2025-07-01",
+      "no": "30",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 9000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 269,
+      "date": "2025-07-01",
+      "no": "31",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 3000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 271,
+      "date": "2025-07-01",
+      "no": "32",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 1000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 277,
+      "date": "2025-07-02",
+      "no": "34",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 5000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 279,
+      "date": "2025-07-04",
+      "no": "11877",
+      "part": "Bank Charges",
+      "side": "DEBIT",
+      "amount": 5758.35,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 287,
+      "date": "2025-07-09",
+      "no": "37",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 10000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 289,
+      "date": "2025-07-09",
+      "no": "38",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 11076693,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 291,
+      "date": "2025-07-09",
+      "no": "39",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 1393000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 293,
+      "date": "2025-07-11",
+      "no": "40",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 959468,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 295,
+      "date": "2025-07-14",
+      "no": "41",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 995000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 297,
+      "date": "2025-07-14",
+      "no": "43",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 960000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 301,
+      "date": "2025-07-16",
+      "no": "44",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 250000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 323,
+      "date": "2025-07-31",
+      "no": "46",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 450000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 348,
+      "date": "2025-08-01",
+      "no": "47",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 11870000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 350,
+      "date": "2025-08-29",
+      "no": "54",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 356,
+      "date": "2025-09-10",
+      "no": "56",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 360000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 372,
+      "date": "2025-09-15",
+      "no": "58",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 25101000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 378,
+      "date": "2025-09-22",
+      "no": "60",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 17700000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 386,
+      "date": "2025-09-26",
+      "no": "62",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 17800000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 394,
+      "date": "2025-09-30",
+      "no": "64",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 300000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 404,
+      "date": "2025-10-06",
+      "no": "67",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 25000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 416,
+      "date": "2025-10-14",
+      "no": "69",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 100,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 424,
+      "date": "2025-10-16",
+      "no": "70",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 25000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 426,
+      "date": "2025-10-17",
+      "no": "71",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 2882744,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 430,
+      "date": "2025-10-20",
+      "no": "8827",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 2500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 432,
+      "date": "2025-10-22",
+      "no": "8829",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 5000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 434,
+      "date": "2025-10-22",
+      "no": "8830",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 4900000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 436,
+      "date": "2025-10-22",
+      "no": "8831",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 3500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 438,
+      "date": "2025-10-22",
+      "no": "8832",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 1500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 440,
+      "date": "2025-10-22",
+      "no": "8828",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 100000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 442,
+      "date": "2025-10-25",
+      "no": "8834",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 100000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 455,
+      "date": "2025-10-25",
+      "no": "8835",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 457,
+      "date": "2025-10-25",
+      "no": "8836",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 459,
+      "date": "2025-10-25",
+      "no": "8837",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 400000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 461,
+      "date": "2025-10-25",
+      "no": "8838",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 463,
+      "date": "2025-10-25",
+      "no": "8839",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 465,
+      "date": "2025-10-25",
+      "no": "8840",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 467,
+      "date": "2025-10-25",
+      "no": "8841",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 469,
+      "date": "2025-10-25",
+      "no": "8842",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 471,
+      "date": "2025-10-25",
+      "no": "8843",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 473,
+      "date": "2025-10-25",
+      "no": "8844",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 475,
+      "date": "2025-10-25",
+      "no": "8845",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 477,
+      "date": "2025-10-25",
+      "no": "8846",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 479,
+      "date": "2025-10-25",
+      "no": "8847",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 487,
+      "date": "2025-10-25",
+      "no": "8848",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 489,
+      "date": "2025-10-27",
+      "no": "8850",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 5000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 491,
+      "date": "2025-10-27",
+      "no": "13878",
+      "part": "Gauri Impex -Cr",
+      "side": "DEBIT",
+      "amount": 500000,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 493,
+      "date": "2025-10-27",
+      "no": "13879",
+      "part": "Gauri Impex -Cr",
+      "side": "DEBIT",
+      "amount": 10000000,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 495,
+      "date": "2025-10-27",
+      "no": "13880",
+      "part": "Gauri Impex -Cr",
+      "side": "DEBIT",
+      "amount": 10000000,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 497,
+      "date": "2025-10-27",
+      "no": "13881",
+      "part": "Gauri Impex -Cr",
+      "side": "DEBIT",
+      "amount": 6000000,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 517,
+      "date": "2025-11-03",
+      "no": "8852",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 519,
+      "date": "2025-11-03",
+      "no": "8853",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 200000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 523,
+      "date": "2025-11-03",
+      "no": "8854",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 2000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 525,
+      "date": "2025-11-03",
+      "no": "8855",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 533,
+      "date": "2025-11-15",
+      "no": "8858",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 25000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 535,
+      "date": "2025-11-15",
+      "no": "8859",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 1000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 537,
+      "date": "2025-11-15",
+      "no": "8860",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 24000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 539,
+      "date": "2025-11-15",
+      "no": "8861",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 25000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 547,
+      "date": "2025-11-19",
+      "no": "8862",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 25000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 557,
+      "date": "2025-12-15",
+      "no": "8867",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 6500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 570,
+      "date": "2025-12-15",
+      "no": "8868",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 572,
+      "date": "2025-12-16",
+      "no": "8869",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 300000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 574,
+      "date": "2025-12-16",
+      "no": "8870",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 1000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 576,
+      "date": "2025-12-16",
+      "no": "8871",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 7000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 578,
+      "date": "2025-12-16",
+      "no": "8872",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 13000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 580,
+      "date": "2025-12-16",
+      "no": "8873",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 20000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 582,
+      "date": "2025-12-16",
+      "no": "8874",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 8000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 584,
+      "date": "2025-12-16",
+      "no": "8875",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 150000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 588,
+      "date": "2025-12-26",
+      "no": "8878",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 590,
+      "date": "2025-12-26",
+      "no": "8879",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 500000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 598,
+      "date": "2026-01-06",
+      "no": "8882",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 200000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 600,
+      "date": "2026-01-06",
+      "no": "15587",
+      "part": "MAZAGON DOCK",
+      "side": "DEBIT",
+      "amount": 23000,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 602,
+      "date": "2026-01-07",
+      "no": "8884",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 200000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 608,
+      "date": "2026-02-17",
+      "no": "8892",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 20000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 610,
+      "date": "2026-02-17",
+      "no": "8893",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 20000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 612,
+      "date": "2026-02-17",
+      "no": "8894",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 10000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 614,
+      "date": "2026-02-17",
+      "no": "8895",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 10000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 616,
+      "date": "2026-02-18",
+      "no": "8896",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 34600000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 618,
+      "date": "2026-02-18",
+      "no": "8897",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "DEBIT",
+      "amount": 15031000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 632,
+      "date": "2026-03-27",
+      "no": "8911",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 10000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 634,
+      "date": "2026-03-28",
+      "no": "8912",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 1000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 636,
+      "date": "2026-03-28",
+      "no": "8913",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 9800000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 638,
+      "date": "2026-03-28",
+      "no": "17938",
+      "part": "ACCELERATOR GENERAL TRADING LLC-DR",
+      "side": "DEBIT",
+      "amount": 12792617.97,
+      "type": "RECEIPT",
+      "candidates": []
+    },
+    {
+      "line": 640,
+      "date": "2026-03-28",
+      "no": "8914",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "side": "CREDIT",
+      "amount": 2000000,
+      "type": "CONTRA",
+      "candidates": []
+    },
+    {
+      "line": 644,
+      "date": "2026-03-30",
+      "no": "2",
+      "part": "SIDDHIVINAYAK CONSTRUCTION (DR)",
+      "side": "DEBIT",
+      "amount": 3000000,
+      "type": "RECEIPT",
+      "candidates": []
+    }
+  ]
+}

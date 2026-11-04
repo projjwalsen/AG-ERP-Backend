@@ -1,0 +1,4769 @@
+[
+  {
+    "workbook": "Sundry Creditors",
+    "stats": {
+      "need": 5529,
+      "uniqueNo": 5465,
+      "noVoucher": 2764,
+      "matchingLineWrongDate": 0,
+      "matchingLineWrongLedger": 2677,
+      "matchedVoucherNoOnly": 88,
+      "ambiguous": 0
+    },
+    "findings": [
+      {
+        "agency": "DIVYA CHAND - Shiva Nand",
+        "no": "2",
+        "date": "2025-04-01",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 19600000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "749c3d91-1da7-4ca6-93e6-cf50ecfa1831",
+            "no": "2",
+            "type": "PAYMENT",
+            "date": "2025-03-31",
+            "expectedDate": "2025-04-01",
+            "deltaDays": 1,
+            "narration": "BEING COMMSIION PAID TO DIVYA CHAND AGNST UTR MAHBN82025040108903033 | BEING COMMSIION PAID TO DIVYA CHAND AGNST UTR MAHBN82025040108903033",
+            "sourceId": "28307bee-85c8-4904-b9f1-f679997263b7",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 19600000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DIVYA CHAND - Shiva Nand - Sundry Creditor",
+                "ledgerId": "606748d4-d47b-46df-9b81-5a7a5399ea82",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 19600000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "GOEL PETRO ENERGY LIMITED CRS",
+        "no": "1",
+        "date": "2025-04-01",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 3134500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "263b381c-2aa0-44a6-b819-69b10c385843",
+            "no": "1",
+            "type": "PAYMENT",
+            "date": "2025-03-31",
+            "expectedDate": "2025-04-01",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO GOEL PETRO ENERGY LIMITED AGNST UTR MAHBN82025040108902403 | BEING NEFT MADE TO GOEL PETRO ENERGY LIMITED AGNST UTR MAHBN82025040108902403",
+            "sourceId": "b39ed85d-585a-45d3-a092-8dd7edb07d43",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 3134500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "GOEL PETRO ENERGY LIMITED CRS - Sundry Creditor",
+                "ledgerId": "b1568ddd-4187-4801-a3a2-e27463d3f415",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 3134500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+        "no": "2145",
+        "date": "2025-04-01",
+        "type": "Journal",
+        "side": "DEBIT",
+        "amountCents": 700,
+        "particulars": "R/OFF",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "MARUTI BITUMEN PRIVATE LIMITED-Cr",
+        "no": "10646",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 176500000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "99387764-38b2-4dc1-9fba-9a756c3c2038",
+            "no": "10646",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO MARUTI BITUMEN PVT LTD AGNST UTRMAHBN12025040208960270 | BEING RTGS MADE TO MARUTI BITUMEN PVT LTD AGNST UTRMAHBN12025040208960270",
+            "sourceId": "b62932ef-6419-4e9b-bd17-54b6e239ac50",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 176500000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "MARUTI BITUMEN PRIVATE LIMITED-Cr - Sundry Creditor",
+                "ledgerId": "aa9e048c-ccac-41ed-8331-c2f1404bab9e",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 176500000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHAL SEA SHIPPING LLC (GUJ)",
+        "no": "10656",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 52316000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "65022407-446b-44f5-8a09-2c982ead24d5",
+            "no": "10656",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHAL SEA SHIPPING LLC AGNST UTR MAHBR52025040220162194 | BEING RTGS MADE TO SHAL SEA SHIPPING LLC AGNST UTR MAHBR52025040220162194",
+            "sourceId": "f99b4326-3a9c-4ede-b92a-09f8f7c81fae",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 52316000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHAL SEA SHIPPING LLC (GUJ) - Sundry Creditor",
+                "ledgerId": "8363495a-80b1-47eb-8164-8598a499cb81",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 52316000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVA ASPHALTIC PRODUCTS PRIVATE LIMITED-CR",
+        "no": "10645",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 2809500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "c4e8d2f2-8795-4fa9-ab0b-43f7acfe1435",
+            "no": "10645",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVA ASPHALTIC PRODUCTS AGNST UTR MAHBN12025040208959637 | BEING RTGS MADE TO SHIVA ASPHALTIC PRODUCTS AGNST UTR MAHBN12025040208959637",
+            "sourceId": "866ead42-9617-493f-8433-e882ea6170e9",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 2809500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVA ASPHALTIC PRODUCTS PRIVATE LIMITED-CR - Sundry Creditor",
+                "ledgerId": "f65fb925-f195-43db-898c-eb6271f9cbb7",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 2809500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10653",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 242001400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "d2f44d00-94e4-4f0b-bdc8-ffbf44995f97",
+            "no": "10653",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040220162092 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040220162092",
+            "sourceId": "92f02b9c-9a99-4196-9b2a-545b3cd2bb60",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 242001400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 242001400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10659",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 241981500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "199ac574-a81f-4dfe-b885-f9e180d5da4f",
+            "no": "10659",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040220164242 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040220164242",
+            "sourceId": "feb97bdd-c961-409c-ba26-3621c1f8f5ce",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 241981500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 241981500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHREE GURU KRIPA ENTERPRISES (CR)",
+        "no": "10648",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 199998800,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "f70697ef-ef9a-47b4-82d9-666021b7243c",
+            "no": "10648",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025040208962082 | BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025040208962082",
+            "sourceId": "d26775fd-da66-40ce-b68d-4d7685abc2d5",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 199998800,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHREE GURU KRIPA ENTERPRISES (CR) - Sundry Creditor",
+                "ledgerId": "3456e18a-241f-440e-bc62-7d34e5647f09",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 199998800,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHREE KUBER ROADLINES",
+        "no": "10663",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 11105400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "54b3287b-add4-412f-b50b-fdbfa557b478",
+            "no": "10663",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHREE KUBER ROADLINES AGNST UTR MAHBN12025040209011731 | BEING RTGS MADE TO SHREE KUBER ROADLINES AGNST UTR MAHBN12025040209011731",
+            "sourceId": "9f5f4a96-90db-48e2-9e4d-2a6169ce7994",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 11105400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHREE KUBER ROADLINES - Sundry Creditor",
+                "ledgerId": "06b2e709-2962-49f5-b6ed-98c1b564a3e8",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 11105400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SKG TRANSPORT SERVICES",
+        "no": "1066",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 3934100,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "5e8de6d8-9ba9-4501-af7d-24b6b14c3900",
+            "no": "1066",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SKG TRANSPORT SERVICES AGNST UTR MAHBN12025040209010573 | BEING NEFT MADE TO SKG TRANSPORT SERVICES AGNST UTR MAHBN12025040209010573",
+            "sourceId": "61cfff26-270f-4524-94bf-286879ae1f06",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 3934100,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SKG TRANSPORT SERVICES - Sundry Creditor",
+                "ledgerId": "eba99d93-db54-4351-b57a-06f0ce5bbdd4",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 3934100,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SUPREME CARRIERS",
+        "no": "10664",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 9692800,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "4065d90c-52b7-4b35-9e6a-89e57d4f665e",
+            "no": "10664",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SUPREME CARRIERS AGNST UTR MAHBN12025040209012330 | BEING NEFT MADE TO SUPREME CARRIERS AGNST UTR MAHBN12025040209012330",
+            "sourceId": "7edfe090-bba5-4561-9729-439c8be322b6",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 9692800,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SUPREME CARRIERS - Sundry Creditor",
+                "ledgerId": "3acdc961-20b6-4342-a9ac-5221e151f666",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 9692800,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "TBS BULK CARRIERS",
+        "no": "10662",
+        "date": "2025-04-02",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 11676700,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "e97b8aad-8d05-4994-98a5-91c59b63ee35",
+            "no": "10662",
+            "type": "PAYMENT",
+            "date": "2025-04-01",
+            "expectedDate": "2025-04-02",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO TBS BULK CARRIERS AGNST UTR MAHBN12025040209010887 | BEING NEFT MADE TO TBS BULK CARRIERS AGNST UTR MAHBN12025040209010887",
+            "sourceId": "d3b5f3c3-5756-40bb-a684-b61a5dd123cc",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 11676700,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "TBS BULK CARRIERS - Sundry Creditor",
+                "ledgerId": "27531a24-fc9c-4f66-b25d-4de29a8ee76f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 11676700,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "A G ART PETROCHEM LLP - CR",
+        "no": "10721",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 794422200,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "9d0de4f4-124a-46af-b3b3-57abd3b8b55a",
+            "no": "10721",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO AG ART PETROCHEM LLP | BEING RTGS MADE TO AG ART PETROCHEM LLP",
+            "sourceId": "e33ae3ba-14bb-4fb8-baa2-b8f3b4a3369c",
+            "lines": [
+              {
+                "ledger": "A G ART PETROCHEM LLP - CR - Sundry Creditor",
+                "ledgerId": "23a85d9c-13c2-482c-846f-8c4592daa207",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 794422200,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 794422200,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "BHARTI AIRTEL LIMITED",
+        "no": "10705",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 23482,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "a4d52ce3-88a6-4934-8c3e-08399623f36d",
+            "no": "10705",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO BHARTI AIRTEL LIMITED AGNST UTR 23031393246 | BEING NEFT MADE TO BHARTI AIRTEL LIMITED AGNST UTR 23031393246",
+            "sourceId": "eaf8cdef-694d-4955-bef7-546b0e7b92f6",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 23482,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "BHARTI AIRTEL LIMITED - Sundry Creditor",
+                "ledgerId": "6d04713a-f274-4ff9-a8ee-87e8a0d3552b",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 23482,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "10716",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 351974500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "cbda27f4-151e-4e30-9fc9-b8b8d619b980",
+            "no": "10716",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD | BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD",
+            "sourceId": "1729cf5f-761a-4e20-848b-5a148d0d6652",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 351974500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR - Sundry Creditor",
+                "ledgerId": "21cc6ca3-075f-4dab-8bf9-4e83e13f629a",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 351974500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "10722",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 185767400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "38f165ef-7f34-435e-922c-94fe2daf132c",
+            "no": "10722",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD | BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD",
+            "sourceId": "26fd6aca-0f52-4d97-be33-40eeb684ffba",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 185767400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR - Sundry Creditor",
+                "ledgerId": "21cc6ca3-075f-4dab-8bf9-4e83e13f629a",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 185767400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "DIPL/2526/0007",
+        "date": "2025-04-03",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 166078200,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "DIPL/2526/0008",
+        "date": "2025-04-03",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 185896300,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "DIPL/2526/0010",
+        "date": "2025-04-03",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 185767400,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "KONE ELEVATOR INDIA PRIVATE LIMITED",
+        "no": "10724",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 5519500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "25d67b09-8f12-43fb-9d00-708e9a204eec",
+            "no": "10724",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO KONE ELEVATOR INDIA AGNST UTR MAHBN12025040309166766 | BEING NEFT MADE TO KONE ELEVATOR INDIA AGNST UTR MAHBN12025040309166766",
+            "sourceId": "99e91787-af0c-4067-be9d-d6b319267d11",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 5519500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "KONE ELEVATOR INDIA PRIVATE LIMITED - Sundry Creditor",
+                "ledgerId": "9fc71a20-fa15-4cd7-a522-00d2a2e20415",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 5519500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+        "no": "10671",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 253555900,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "3e911a06-cd33-4c86-80c5-1a7c3dabbbac",
+            "no": "10671",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING FUND TRANSFER POWER2SME PVT LTD AGNST CHEQUE : 144209 | BEING FUND TRANSFER POWER2SME PVT LTD AGNST CHEQUE : 144209",
+            "sourceId": "47bec97a-f5fa-4491-90df-47016e1e33ce",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 253555900,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD) - Sundry Creditor",
+                "ledgerId": "1f7d1b5d-6278-4c3e-84d4-ab35df959d3d",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 253555900,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SARVAYA TRADEX LLP",
+        "no": "10713",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 45240000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "42e927fc-ff03-49e9-8c7b-f34e733b7495",
+            "no": "10713",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SARVAYA TRADEX AGNST UTR MAHBR52025040320173140 | BEING NEFT MADE TO SARVAYA TRADEX AGNST UTR MAHBR52025040320173140",
+            "sourceId": "681f36af-0f0c-4208-9396-8f6b38dfae68",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 45240000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SARVAYA TRADEX LLP - Sundry Creditor",
+                "ledgerId": "52c4b46b-833c-46ea-8070-14fc9e224bc7",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 45240000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHAL SEA SHIPPING LLC (GUJ)",
+        "no": "10706",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 1160000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "d8ae0069-7d4d-4dd7-a855-b6cb43ce21b9",
+            "no": "10706",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHAL SEA SHIPPING LLC AGNST UTR MAHBN12025040309077309 | BEING RTGS MADE TO SHAL SEA SHIPPING LLC AGNST UTR MAHBN12025040309077309",
+            "sourceId": "9dd4a264-0bb4-40f4-88c5-656124bb4ac4",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 1160000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHAL SEA SHIPPING LLC (GUJ) - Sundry Creditor",
+                "ledgerId": "8363495a-80b1-47eb-8164-8598a499cb81",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 1160000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10710",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 42949400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "d963860b-a9db-4f54-a0b2-086dd04cfc5f",
+            "no": "10710",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040320173069 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040320173069",
+            "sourceId": "51d9919a-f7eb-4cc2-b577-6cb4ae7097ed",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 42949400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 42949400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHREE GURU KRIPA ENTERPRISES (CR)",
+        "no": "10295",
+        "date": "2025-04-03",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 24421200,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "066a4567-23eb-47f4-ac3f-82d4d50f5699",
+            "no": "10295",
+            "type": "RECEIPT",
+            "date": "2025-04-03",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 0,
+            "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING: RTGS RECD FROM SHREE GURU KRIPA ENTERPRISES UTR NO 509319072011 | Group path: Current Liabilities / Sundry Creditors",
+            "sourceId": "f86f8a4b-d285-46b4-9d52-0ed94e01c902",
+            "lines": [
+              {
+                "ledger": "Bank Accounts",
+                "ledgerId": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+                "group": "Bank Accounts",
+                "parent": "Current Assets",
+                "side": "DEBIT",
+                "cents": 24421200,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHREE GURU KRIPA ENTERPRISES (CR) - Sundry Debtor",
+                "ledgerId": "6ecaaff0-2c3d-44e8-8f10-179339bfbd02",
+                "group": "Sundry Debtors",
+                "parent": "Current Assets",
+                "side": "CREDIT",
+                "cents": 24421200,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": [
+              {
+                "sourceSheet": "Sheet1",
+                "status": "APPROVED",
+                "voucherNo": "10295"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "SHRI GANESH TRADING CO- CR",
+        "no": "10720",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 184003300,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "0eb181bf-b692-4348-b192-6e4c6a5bb3b6",
+            "no": "10720",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025040309126633 | BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025040309126633",
+            "sourceId": "bd66019d-7e11-4d53-becf-4890cc765510",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 184003300,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHRI GANESH TRADING CO- CR - Sundry Creditor",
+                "ledgerId": "d459e4b8-fcf5-461a-826b-a154f4644d70",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 184003300,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "Sulaki Chemicals Pvt Ltd-CR",
+        "no": "S/001/25-26",
+        "date": "2025-04-03",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 165200000,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "Sulaki Chemicals Pvt Ltd-CR",
+        "no": "S/002/25-26",
+        "date": "2025-04-03",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 143960000,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "Sulaki Chemicals Pvt Ltd-CR",
+        "no": "S/003/25-26",
+        "date": "2025-04-03",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 212400000,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "USHA ASHVIN THAKKER",
+        "no": "10723",
+        "date": "2025-04-03",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 6300000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "890555b9-f201-4f6a-aaf6-326ef8ea4096",
+            "no": "10723",
+            "type": "PAYMENT",
+            "date": "2025-04-02",
+            "expectedDate": "2025-04-03",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO USHA ASHVIN THAKKER AGNST UTR MAHBN12025040309154904 | BEING RTGS MADE TO USHA ASHVIN THAKKER AGNST UTR MAHBN12025040309154904",
+            "sourceId": "4fcdb10b-2050-42e4-9e1f-8427cbb8a965",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 6300000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "USHA ASHVIN THAKKER - Sundry Creditor",
+                "ledgerId": "a659519e-c8c1-4382-b9ad-5319a9948baa",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 6300000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "CLASSIC BITUMEN PRIVATE LIMITED - RAJASTHAN CR",
+        "no": "CBBP/25-26/0029",
+        "date": "2025-04-04",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 128634400,
+        "particulars": "IGST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "CLASSIC BITUMEN PRIVATE LIMITED - RAJASTHAN CR",
+        "no": "CBBP/25-26/0030",
+        "date": "2025-04-04",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 128634400,
+        "particulars": "IGST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "DIPL/2526/0012",
+        "date": "2025-04-04",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 107748200,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "DIPL/2526/0013",
+        "date": "2025-04-04",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 107380000,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "LUBRICON INDIA - CR",
+        "no": "10812",
+        "date": "2025-04-04",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 50000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "b993d936-a1f1-484f-b93c-789556579e13",
+            "no": "10812",
+            "type": "PAYMENT",
+            "date": "2025-04-03",
+            "expectedDate": "2025-04-04",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO LUBRICON INDIA | BEING RTGS MADE TO LUBRICON INDIA",
+            "sourceId": "a1ba70ed-5200-4ea8-9ae9-2371416edacb",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 50000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "LUBRICON INDIA - CR - Sundry Creditor",
+                "ledgerId": "d1b97986-24aa-43ed-8d90-b99092726056",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 50000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "R.S. CARRIER",
+        "no": "10815",
+        "date": "2025-04-04",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 43649300,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "80cfa006-660e-4cfc-9478-49c35a974fa5",
+            "no": "10815",
+            "type": "PAYMENT",
+            "date": "2025-04-03",
+            "expectedDate": "2025-04-04",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO R S CARRIER AGNST UTR NO MAHBN12025040409247513 | BEING RTGS MADE TO R S CARRIER AGNST UTR NO MAHBN12025040409247513",
+            "sourceId": "abcb1294-b303-4396-bb42-b5aa4895aa82",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 43649300,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "R.S. CARRIER - Sundry Creditor",
+                "ledgerId": "c2f05cc2-b0cf-4563-ad21-f0495419328a",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 43649300,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHREE GURU KRIPA ENTERPRISES (CR)",
+        "no": "10814",
+        "date": "2025-04-04",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 272750000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "4eaec5e6-7e55-4e86-90f9-9181f7e56f7a",
+            "no": "10814",
+            "type": "PAYMENT",
+            "date": "2025-04-03",
+            "expectedDate": "2025-04-04",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025040409240904 | BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025040409240904",
+            "sourceId": "85084354-65a6-4c00-ba31-3546615c84bb",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 272750000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHREE GURU KRIPA ENTERPRISES (CR) - Sundry Creditor",
+                "ledgerId": "3456e18a-241f-440e-bc62-7d34e5647f09",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 272750000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SIDDHIVINAYAK CONSTRUCTION (CR)",
+        "no": "SC/2025-26/10",
+        "date": "2025-04-04",
+        "type": "Purchase",
+        "side": "CREDIT",
+        "amountCents": 104548200,
+        "particulars": "GST PURCHASE",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "SRI RAVRAY LOGISTICS",
+        "no": "10816",
+        "date": "2025-04-04",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 25621900,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "e8fcf628-8e41-412d-a01a-73e74a4718fe",
+            "no": "10816",
+            "type": "PAYMENT",
+            "date": "2025-04-03",
+            "expectedDate": "2025-04-04",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SRI RAVRAY LOGISTICS AGNST UTR MAHBN12025040409248463 | BEING NEFT MADE TO SRI RAVRAY LOGISTICS AGNST UTR MAHBN12025040409248463",
+            "sourceId": "8fe5a3e0-aa0d-4ab1-9b44-d0211077ad3d",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 25621900,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SRI RAVRAY LOGISTICS - Sundry Creditor",
+                "ledgerId": "18d63bd8-3833-4fc1-99d1-768a02afb9ad",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 25621900,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DARSHAN CHEM",
+        "no": "10817",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 2360000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "eb4178e4-8baa-4cc2-814f-516470ce393f",
+            "no": "10817",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO DARSHAN CHEM AGNST UTR MAHBN12025040509305279 | BEING NEFT MADE TO DARSHAN CHEM AGNST UTR MAHBN12025040509305279",
+            "sourceId": "8332a9e3-1d34-4f3c-ae1b-72b99106fc4f",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 2360000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DARSHAN CHEM - Sundry Creditor",
+                "ledgerId": "36ae0a19-20f9-4f7c-8dc8-d0f0db26335e",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 2360000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "10825",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 134179900,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "e8744cdf-ae90-4064-bc7b-5bd5487f0d1c",
+            "no": "10825",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD | BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD",
+            "sourceId": "d23cae51-276c-4b43-887e-ee3a9af47ac0",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 134179900,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR - Sundry Creditor",
+                "ledgerId": "21cc6ca3-075f-4dab-8bf9-4e83e13f629a",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 134179900,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "10834",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 141677200,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "24e99baa-6e39-4002-8ade-dd7353531dee",
+            "no": "10834",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD | BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD",
+            "sourceId": "313e86c9-1a47-496a-a65a-ffe5dbd0ddf4",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 141677200,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR - Sundry Creditor",
+                "ledgerId": "21cc6ca3-075f-4dab-8bf9-4e83e13f629a",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 141677200,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "LEGEND LOGISTICS (INDIA) PRIVATE LIMITED (GUJ)",
+        "no": "10829",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 54172000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "6dc6cd99-1d6c-4b13-aa2b-fc030c91e0f8",
+            "no": "10829",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO LEGEND LOGISTICS AGNST UTR MAHBR52025040520206204 | BEING RTGS MADE TO LEGEND LOGISTICS AGNST UTR MAHBR52025040520206204",
+            "sourceId": "0f6d255f-4d65-45ac-9c9e-4f78403f1226",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 54172000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "LEGEND LOGISTICS (INDIA) PRIVATE LIMITED (GUJ) - Sundry Creditor",
+                "ledgerId": "3a341269-5ec6-418d-9712-edb1b5aaa976",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 54172000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "PACIFIC INTERNATIONAL",
+        "no": "10838",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 184117800,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "6f6ac1ef-8ca4-4935-b075-24f173de8dcd",
+            "no": "10838",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING: RTGS MADE TO PACIFIC INTERNATIONAL AGST UTR NO MAHBR52025040520208159 | BEING: RTGS MADE TO PACIFIC INTERNATIONAL AGST UTR NO MAHBR52025040520208159",
+            "sourceId": "4fc958e8-de00-48c5-8b03-2be06960a59b",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 184117800,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "PACIFIC INTERNATIONAL - Sundry Creditor",
+                "ledgerId": "76d99026-491c-4cdb-92b1-11ecab2aec5e",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 184117800,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10819",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 226723400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "9195dad8-bd87-4b66-9330-39da3658057c",
+            "no": "10819",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040520200418 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025040520200418",
+            "sourceId": "e0fbbebf-a36b-4f01-982d-b445e7856110",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 226723400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 226723400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10824",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 2006800,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "2bd4a2b8-2442-46b0-9bdf-db3b654b7bcf",
+            "no": "10824",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBN12025040509340245 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBN12025040509340245",
+            "sourceId": "dfe71959-d739-4922-b773-375d3c040b1e",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 2006800,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 2006800,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHRI GANESH TRADING CO- CR",
+        "no": "10822",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 122796700,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "def5d351-0337-44da-b425-a40e0a543357",
+            "no": "10822",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025040509310824 | BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025040509310824",
+            "sourceId": "9ae4e439-7c63-4f18-b050-3dcab2a7cb4d",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 122796700,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHRI GANESH TRADING CO- CR - Sundry Creditor",
+                "ledgerId": "d459e4b8-fcf5-461a-826b-a154f4644d70",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 122796700,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SKG TRANSPORT SERVICES",
+        "no": "10833",
+        "date": "2025-04-05",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 4298200,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "5ca64f7f-a7df-4653-ac98-57f2bfcdb85a",
+            "no": "10833",
+            "type": "PAYMENT",
+            "date": "2025-04-04",
+            "expectedDate": "2025-04-05",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SKG TRANSPORT SERVICES AGNST UTR MAHBN12025040509355537 | BEING NEFT MADE TO SKG TRANSPORT SERVICES AGNST UTR MAHBN12025040509355537",
+            "sourceId": "92b17394-616c-4ad8-ac69-19a4ca9d49ca",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 4298200,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SKG TRANSPORT SERVICES - Sundry Creditor",
+                "ledgerId": "eba99d93-db54-4351-b57a-06f0ce5bbdd4",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 4298200,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "NANOTECH INDUSTRIES-CR",
+        "no": "10336",
+        "date": "2025-04-06",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 100000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "513755b3-1ccc-4ab8-baab-f887e7e23a95",
+            "no": "10336",
+            "type": "RECEIPT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-06",
+            "deltaDays": 0,
+            "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING TRANSACTION FAILED AGNST UTR CNRBN52025040638294942 | Group path: Current Liabilities / Sundry Creditors",
+            "sourceId": "cb2168b1-60af-4cfe-afe6-03710bc5cea6",
+            "lines": [
+              {
+                "ledger": "Bank Accounts",
+                "ledgerId": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+                "group": "Bank Accounts",
+                "parent": "Current Assets",
+                "side": "DEBIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "NANOTECH INDUSTRIES-CR - Sundry Debtor",
+                "ledgerId": "a407528b-9384-4225-abf0-8307fd299c8f",
+                "group": "Sundry Debtors",
+                "parent": "Current Assets",
+                "side": "CREDIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": [
+              {
+                "sourceSheet": "Sheet1",
+                "status": "APPROVED",
+                "voucherNo": "10336"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "NANOTECH INDUSTRIES-CR",
+        "no": "10841",
+        "date": "2025-04-06",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 100000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "4da93876-a83b-4ad1-932c-eec118d0ef39",
+            "no": "10841",
+            "type": "PAYMENT",
+            "date": "2025-04-05",
+            "expectedDate": "2025-04-06",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO NANOTECH INDUSTRIES AGNST UTR MAHBN12025040609415670 | BEING RTGS MADE TO NANOTECH INDUSTRIES AGNST UTR MAHBN12025040609415670",
+            "sourceId": "b87bd3fd-056d-46eb-9f98-248c11eada67",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "NANOTECH INDUSTRIES-CR - Sundry Creditor",
+                "ledgerId": "488ea8c9-9e72-40e7-a8b8-fb2899c64409",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "A G ART PETROCHEM LLP - CR",
+        "no": "10847",
+        "date": "2025-04-07",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 250000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "af0de321-dd0a-4287-b7a2-0ef74a7b5bc4",
+            "no": "10847",
+            "type": "PAYMENT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-07",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO AG ART PETROCHEM LLP | BEING RTGS MADE TO AG ART PETROCHEM LLP",
+            "sourceId": "10a406ca-2561-4ce8-8130-ffe91e34f0e1",
+            "lines": [
+              {
+                "ledger": "A G ART PETROCHEM LLP - CR - Sundry Creditor",
+                "ledgerId": "23a85d9c-13c2-482c-846f-8c4592daa207",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 250000000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 250000000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DARSHIL PETROCHEM CRS",
+        "no": "10848",
+        "date": "2025-04-07",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 100000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "245d1db6-2c2c-4fb6-b984-5d6336f07cb5",
+            "no": "10848",
+            "type": "PAYMENT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-07",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DARSHIL PETROCHEM AGNST UTR NO MAHBN12025040709496465 | BEING RTGS MADE TO DARSHIL PETROCHEM AGNST UTR NO MAHBN12025040709496465",
+            "sourceId": "04019c74-820e-4b18-aa8d-608c623ea172",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DARSHIL PETROCHEM CRS - Sundry Creditor",
+                "ledgerId": "b71ffc82-be6b-4733-a52f-e5471fdbb855",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "NANOTECH INDUSTRIES-CR",
+        "no": "10855",
+        "date": "2025-04-07",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 100000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "7f929425-1e29-4843-a9ec-40a08f70017e",
+            "no": "10855",
+            "type": "PAYMENT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-07",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO NANOTECH INDUSTRIES AGNST UTRMAHBN12025040709558923 | BEING RTGS MADE TO NANOTECH INDUSTRIES AGNST UTRMAHBN12025040709558923",
+            "sourceId": "bfbe9277-e768-4927-847c-c2bc57a33656",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "NANOTECH INDUSTRIES-CR - Sundry Creditor",
+                "ledgerId": "488ea8c9-9e72-40e7-a8b8-fb2899c64409",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SARVAYA TRADEX LLP",
+        "no": "10850",
+        "date": "2025-04-07",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 17110000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "ac07cc48-5ca4-4da5-a1c1-dc1446945f10",
+            "no": "10850",
+            "type": "PAYMENT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-07",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SARVAYA TRADEX AGNST UTR MAHBN12025040709496971 | BEING NEFT MADE TO SARVAYA TRADEX AGNST UTR MAHBN12025040709496971",
+            "sourceId": "8e9f7395-6e48-413f-865e-80ada929c9aa",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 17110000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SARVAYA TRADEX LLP - Sundry Creditor",
+                "ledgerId": "52c4b46b-833c-46ea-8070-14fc9e224bc7",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 17110000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10849",
+        "date": "2025-04-07",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 16557700,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "8e17f17d-bddf-41ac-adf4-cdcee39ce2f5",
+            "no": "10849",
+            "type": "PAYMENT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-07",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBN12025040709496772 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBN12025040709496772",
+            "sourceId": "ff5d08d4-d52f-46fb-b62b-71b51926a28f",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 16557700,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 16557700,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHRI GANESH TRADING CO- CR",
+        "no": "10854",
+        "date": "2025-04-07",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 270000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "ad443704-ec35-4c0a-a8f8-1b7c81bd9a17",
+            "no": "10854",
+            "type": "PAYMENT",
+            "date": "2025-04-06",
+            "expectedDate": "2025-04-07",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025040709558438 | BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025040709558438",
+            "sourceId": "6f597bb5-bfdf-4928-ba23-a8a8092a9708",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 270000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHRI GANESH TRADING CO- CR - Sundry Creditor",
+                "ledgerId": "d459e4b8-fcf5-461a-826b-a154f4644d70",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 270000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "ANGEL TRADING FZE",
+        "no": "10869",
+        "date": "2025-04-08",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 2076578400,
+        "particulars": "Bank Charges",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "40f1befc-88c8-48f4-a15a-c31737e64a14",
+            "no": "10869",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-08",
+            "deltaDays": 0,
+            "narration": "BEING REMITANCE MADE TO ANGEL TRADING FZE OF AED 881400@23.56 AGAINST PI NO. AT/PFI/2025/004 DT 07-04-2025 VIDE BILL ID 001BM59250980061 | BEING REMITANCE MADE TO ANGEL TRADING FZE OF AED 881400@23.56 AGAINST PI NO. AT/PFI/2025/004 DT 07-04-2025 VIDE BILL ID 001BM59250980061 | BEING REMITANCE MADE TO ANGEL TRADING FZE OF AED 881400@23.56 AGAINST PI NO. AT/PFI/2025/004 DT 07-04-2025 VIDE BILL ID 001BM59250980061",
+            "sourceId": "5aa8c8d8-a1ce-4091-b9eb-790b681d01c4",
+            "lines": [
+              {
+                "ledger": "ANGEL TRADING FZE - Sundry Creditor",
+                "ledgerId": "da9411bf-fe53-4f57-8f2e-dddf72f14c90",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 2076578400,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "Bank Charges",
+                "ledgerId": "6ef23090-8524-48a7-814f-2e46e95c1bf8",
+                "group": "Financial Expenses",
+                "parent": "Indirect Expenses",
+                "side": "DEBIT",
+                "cents": 714384,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "YES BANK CA - 024863700003291",
+                "ledgerId": "0a5f058e-11c7-43e3-b34e-14d94ba7ad2b",
+                "group": "Bank Accounts",
+                "parent": "Current Assets",
+                "side": "CREDIT",
+                "cents": 2077292784,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "Jai Ambe Transport",
+        "no": "10859",
+        "date": "2025-04-08",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 8835700,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "0f6b64bc-9bfc-4d30-9bcc-ac0bb20477f6",
+            "no": "10859",
+            "type": "PAYMENT",
+            "date": "2025-04-07",
+            "expectedDate": "2025-04-08",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO JAI AMBE TRANSPORT AGNST UTR MAHBN12025040809628314 | BEING NEFT MADE TO JAI AMBE TRANSPORT AGNST UTR MAHBN12025040809628314",
+            "sourceId": "3148969c-453f-4dbf-8e57-8671c74dc741",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 8835700,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "Jai Ambe Transport - Sundry Creditor",
+                "ledgerId": "c662d51e-dac3-432a-b7db-a832dedc55b5",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 8835700,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "POWER2SME PRIVATE LIMITED",
+        "no": "10856",
+        "date": "2025-04-08",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 173500000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "ef333b9e-f01a-4378-b0a8-d6d39261832e",
+            "no": "10856",
+            "type": "PAYMENT",
+            "date": "2025-04-07",
+            "expectedDate": "2025-04-08",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO POWER2SME PVT LTD AGNST UTR MAHBR52025040820225955 ( SMM ) | BEING RTGS MADE TO POWER2SME PVT LTD AGNST UTR MAHBR52025040820225955 ( SMM )",
+            "sourceId": "11b42e19-0dc4-4fd8-9d38-07a014434412",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 173500000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "POWER2SME PRIVATE LIMITED - Sundry Creditor",
+                "ledgerId": "38ceb762-80b8-4d6e-86f1-1d940944c8ab",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 173500000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "A G ART PETROCHEM LLP - CR",
+        "no": "10876",
+        "date": "2025-04-09",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 250000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "022fa8c0-92ef-4726-b104-7c703b30720f",
+            "no": "10876",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-09",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO AG ART PETROCHEM LLP | BEING RTGS MADE TO AG ART PETROCHEM LLP",
+            "sourceId": "3094d122-c906-4f08-82c2-791167e5e753",
+            "lines": [
+              {
+                "ledger": "A G ART PETROCHEM LLP - CR - Sundry Creditor",
+                "ledgerId": "23a85d9c-13c2-482c-846f-8c4592daa207",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 250000000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 250000000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "LUBRICON INDIA - CR",
+        "no": "10880",
+        "date": "2025-04-09",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 51922100,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "0ee32d21-26bb-49d1-a5a4-8d3df77cc70f",
+            "no": "10880",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-09",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO LUBRICON INDIA | BEING RTGS MADE TO LUBRICON INDIA",
+            "sourceId": "118910ce-855e-4e36-a2df-b10fc3f9c9c3",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 51922100,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "LUBRICON INDIA - CR - Sundry Creditor",
+                "ledgerId": "d1b97986-24aa-43ed-8d90-b99092726056",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 51922100,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "MANGALAM PLYWOOD",
+        "no": "10873",
+        "date": "2025-04-09",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 20000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "ef55bf78-53a9-42dc-99d0-c9df5b9d86c3",
+            "no": "10873",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-09",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO MANGALAM PLYWOOD AGNST UTR MAHBN12025040909774644 | BEING NEFT MADE TO MANGALAM PLYWOOD AGNST UTR MAHBN12025040909774644",
+            "sourceId": "b8204666-afc5-40a8-811f-80c8748b8a66",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 20000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "MANGALAM PLYWOOD - Sundry Creditor",
+                "ledgerId": "e8232f95-bc64-4966-b868-e9b0691b06d9",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 20000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "NARAYAN LOGISTICS",
+        "no": "10882",
+        "date": "2025-04-09",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 5000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "8e8ce071-bbb1-4763-b455-b8a0834893ab",
+            "no": "10882",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-09",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO NARAYAN LOGISTIC AGNST UTR MAHBN12025040909834194 | BEING NEFT MADE TO NARAYAN LOGISTIC AGNST UTR MAHBN12025040909834194",
+            "sourceId": "19aaa073-01d9-4751-8aa0-c1859cf741a4",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 5000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "NARAYAN LOGISTICS - Sundry Creditor",
+                "ledgerId": "19921c4c-ef71-4f5e-b32d-241f17ac9b05",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 5000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+        "no": "10868",
+        "date": "2025-04-09",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 246742600,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "369627eb-5ab1-449a-96ee-af99b4e0f8ee",
+            "no": "10868",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-09",
+            "deltaDays": 1,
+            "narration": "BEING FUND TRANSFER POWER2SME PVT LTD AGNST CHEQUE : 144210 | BEING FUND TRANSFER POWER2SME PVT LTD AGNST CHEQUE : 144210",
+            "sourceId": "8019e6c4-d18b-4b94-8763-f1524246cba3",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 246742600,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD) - Sundry Creditor",
+                "ledgerId": "1f7d1b5d-6278-4c3e-84d4-ab35df959d3d",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 246742600,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHREE GURU KRIPA ENTERPRISES (CR)",
+        "no": "10875",
+        "date": "2025-04-09",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 100000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "41f13ac3-6263-4bd7-9a01-86cb5f9d42db",
+            "no": "10875",
+            "type": "PAYMENT",
+            "date": "2025-04-08",
+            "expectedDate": "2025-04-09",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025040909806053 | BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025040909806053",
+            "sourceId": "e9505e94-1dfb-456c-9af1-ebfc557d07d5",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHREE GURU KRIPA ENTERPRISES (CR) - Sundry Creditor",
+                "ledgerId": "3456e18a-241f-440e-bc62-7d34e5647f09",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR",
+        "no": "10883",
+        "date": "2025-04-10",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 164848400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "f6861783-3854-44e9-833a-3db4e4bed220",
+            "no": "10883",
+            "type": "PAYMENT",
+            "date": "2025-04-09",
+            "expectedDate": "2025-04-10",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO MITTAL SIDDHI INFRA PVT LTD AGNST UTR MAHBN12025041009893378 | BEING RTGS MADE TO MITTAL SIDDHI INFRA PVT LTD AGNST UTR MAHBN12025041009893378",
+            "sourceId": "6f72cb08-a10b-43b0-b290-9c3db01c407c",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 164848400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR - Sundry Creditor",
+                "ledgerId": "b3332902-790b-457c-882a-101fb60aeacb",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 164848400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "APEX PETROCHEM INDUSTRIES - CRS",
+        "no": "10894",
+        "date": "2025-04-11",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 81656000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "3db8addd-9933-4200-82da-921548c285c9",
+            "no": "10894",
+            "type": "PAYMENT",
+            "date": "2025-04-10",
+            "expectedDate": "2025-04-11",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO APEX PETROCHEM INDUSTRIES | BEING RTGS MADE TO APEX PETROCHEM INDUSTRIES",
+            "sourceId": "b3084b48-4734-448b-856b-63b5f8c6050f",
+            "lines": [
+              {
+                "ledger": "APEX PETROCHEM INDUSTRIES - CRS - Sundry Creditor",
+                "ledgerId": "5a561b7d-7397-4833-89f5-97364efc25e1",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 81656000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 81656000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "KAMAL MOTORS",
+        "no": "10370",
+        "date": "2025-04-11",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 2531600,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "eaee67c4-8f07-4919-a527-d504d88258ef",
+            "no": "10370",
+            "type": "RECEIPT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-11",
+            "deltaDays": 0,
+            "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING FUND RECEIVED FROM KAMAL MOTORS AGNST UTR HDFCN52025041174457894 | Group path: Current Liabilities / Sundry Creditors / SUNDRY CREDITORS (OTHERS)",
+            "sourceId": "6e082bea-3534-437c-bf42-532c533c6c38",
+            "lines": [
+              {
+                "ledger": "Bank Accounts",
+                "ledgerId": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+                "group": "Bank Accounts",
+                "parent": "Current Assets",
+                "side": "DEBIT",
+                "cents": 2531600,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "KAMAL MOTORS - Sundry Debtor",
+                "ledgerId": "5f5d5d61-09ef-4e81-af3d-663da9efcd32",
+                "group": "Sundry Debtors",
+                "parent": "Current Assets",
+                "side": "CREDIT",
+                "cents": 2531600,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": [
+              {
+                "sourceSheet": "Sheet1",
+                "status": "APPROVED",
+                "voucherNo": "10370"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "MALASHIAN LUBE PRIVATE LIMITED",
+        "no": "10887",
+        "date": "2025-04-11",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 255505400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "8ab12b41-555f-4591-9823-950727850763",
+            "no": "10887",
+            "type": "PAYMENT",
+            "date": "2025-04-10",
+            "expectedDate": "2025-04-11",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO MALASHIAN LUBE PVT LTD AGNST UTR MAHBR52025041120253643 | BEING RTGS MADE TO MALASHIAN LUBE PVT LTD AGNST UTR MAHBR52025041120253643",
+            "sourceId": "1e2c87b2-a4ed-406f-a0c5-b14057bd3925",
+            "lines": [
+              {
+                "ledger": "MALASHIAN LUBE PRIVATE LIMITED - Sundry Creditor",
+                "ledgerId": "834f963f-fe10-4c0e-8090-a79522af0d05",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 255505400,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 255505400,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVSHANKAR PRASAD ( INCENTIVE)",
+        "no": "10901",
+        "date": "2025-04-11",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 990000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "aa4235fc-7451-4fe4-9f49-c0dc085d2889",
+            "no": "10901",
+            "type": "PAYMENT",
+            "date": "2025-04-10",
+            "expectedDate": "2025-04-11",
+            "deltaDays": 1,
+            "narration": "BEING INCENTIVE PAID TO SHIVSHANKAR AGST UTR NO MAHBN12025041110017236 | BEING INCENTIVE PAID TO SHIVSHANKAR AGST UTR NO MAHBN12025041110017236",
+            "sourceId": "1931fbf5-9f32-4078-a1e9-114b79bf8e17",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 990000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVSHANKAR PRASAD ( INCENTIVE) - Sundry Creditor",
+                "ledgerId": "a5601d49-ff4a-4863-ae04-5c9409bcae79",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 990000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHREE GURU KRIPA ENTERPRISES (CR)",
+        "no": "10902",
+        "date": "2025-04-11",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 122758400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "6020868f-b379-4ee6-9fcf-bb4c103b4d55",
+            "no": "10902",
+            "type": "PAYMENT",
+            "date": "2025-04-10",
+            "expectedDate": "2025-04-11",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025041110018001 | BEING RTGS MADE TO SHREE GURUKRIPA ENTERPRISES AGNST UTR MAHBN12025041110018001",
+            "sourceId": "dce5e2a7-37c8-485d-96a3-ff8437b09940",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 122758400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHREE GURU KRIPA ENTERPRISES (CR) - Sundry Creditor",
+                "ledgerId": "3456e18a-241f-440e-bc62-7d34e5647f09",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 122758400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHRI GANESH TRADING CO- CR",
+        "no": "10891",
+        "date": "2025-04-11",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 183849900,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "6ac04737-f93b-4366-b3d0-bc795feb6803",
+            "no": "10891",
+            "type": "PAYMENT",
+            "date": "2025-04-10",
+            "expectedDate": "2025-04-11",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBR52025041120254306 | BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBR52025041120254306",
+            "sourceId": "daa7e0f2-b1e7-4447-92bc-c175ebc0ff06",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 183849900,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHRI GANESH TRADING CO- CR - Sundry Creditor",
+                "ledgerId": "d459e4b8-fcf5-461a-826b-a154f4644d70",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 183849900,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "APEX PETROCHEM INDUSTRIES - CRS",
+        "no": "10909",
+        "date": "2025-04-12",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 441191000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "b997ee0f-4503-4d36-b1b0-134ef6da601e",
+            "no": "10909",
+            "type": "PAYMENT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO APEX PETROCHEM INDUSTRIES | BEING RTGS MADE TO APEX PETROCHEM INDUSTRIES",
+            "sourceId": "7ddf65c9-9ba8-4eda-8327-3841c8981ec2",
+            "lines": [
+              {
+                "ledger": "APEX PETROCHEM INDUSTRIES - CRS - Sundry Creditor",
+                "ledgerId": "5a561b7d-7397-4833-89f5-97364efc25e1",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 441191000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 441191000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "CHOLAMANDALAM MS GENERAL INSURANCE COMPANY LIMITED_MAH",
+        "no": "10917",
+        "date": "2025-04-12",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 2929300,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "5df15a4f-5f1c-4a43-b8bd-a33fcb93f6b2",
+            "no": "10917",
+            "type": "PAYMENT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 1,
+            "narration": "BEING INSURANCE POLICY PAID TO CHOLAMANDALAM MS GENERAL INSURANCE AGNST VEHICLE NO MH-43-CA-3200. | BEING INSURANCE POLICY PAID TO CHOLAMANDALAM MS GENERAL INSURANCE AGNST VEHICLE NO MH-43-CA-3200.",
+            "sourceId": "0750833a-41c2-491e-a446-0922ee22b6bf",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 2929300,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "CHOLAMANDALAM MS GENERAL INSURANCE COMPANY LIMITED_MAH - Sundry Creditor",
+                "ledgerId": "e9190e08-ecfb-465c-b472-5559d70bcb62",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 2929300,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "GAJANAND ENTERPRISE",
+        "no": "10376",
+        "date": "2025-04-12",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 100000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "fc0df593-31c9-4080-b5f2-82916480a1f1",
+            "no": "10376",
+            "type": "RECEIPT",
+            "date": "2025-04-12",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 0,
+            "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING NEFT RECEIVED FROM GAJANAND ENTERPRISES AGNST UTR 510215655203 | Group path: Current Liabilities / Sundry Creditors",
+            "sourceId": "8abf28cc-b67a-4c50-a00a-7f060f7dd995",
+            "lines": [
+              {
+                "ledger": "Bank Accounts",
+                "ledgerId": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+                "group": "Bank Accounts",
+                "parent": "Current Assets",
+                "side": "DEBIT",
+                "cents": 100000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "GAJANAND ENTERPRISE - Sundry Debtor",
+                "ledgerId": "db112a03-3a0f-4cd3-9be3-5ded5452ffa6",
+                "group": "Sundry Debtors",
+                "parent": "Current Assets",
+                "side": "CREDIT",
+                "cents": 100000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": [
+              {
+                "sourceSheet": "Sheet1",
+                "status": "APPROVED",
+                "voucherNo": "10376"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GAJANAND ENTERPRISE",
+        "no": "10377",
+        "date": "2025-04-12",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 291971000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "8dcb4a1c-fe4b-42a1-8465-aee1cef1ea10",
+            "no": "10377",
+            "type": "RECEIPT",
+            "date": "2025-04-12",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 0,
+            "narration": "Particulars: BANK OF MAHARASHTRA- C/C 60434886441 | Remarks: BEING NEFT RECEIVED FROM GAJANAND ENTERPRISES AGNST UTR ICICR42025041200524178 | Group path: Current Liabilities / Sundry Creditors",
+            "sourceId": "70f2f462-84d8-45ba-b463-69245bd7d6f8",
+            "lines": [
+              {
+                "ledger": "Bank Accounts",
+                "ledgerId": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+                "group": "Bank Accounts",
+                "parent": "Current Assets",
+                "side": "DEBIT",
+                "cents": 291971000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "GAJANAND ENTERPRISE - Sundry Debtor",
+                "ledgerId": "db112a03-3a0f-4cd3-9be3-5ded5452ffa6",
+                "group": "Sundry Debtors",
+                "parent": "Current Assets",
+                "side": "CREDIT",
+                "cents": 291971000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": [
+              {
+                "sourceSheet": "Sheet1",
+                "status": "APPROVED",
+                "voucherNo": "10377"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR",
+        "no": "10903",
+        "date": "2025-04-12",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 211257800,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "a00bdcb9-0222-473d-988e-5f09910d5070",
+            "no": "10903",
+            "type": "PAYMENT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO MITTAL SIDDHI INFRA PVT LTD AGNST UTR MAHBR52025041220270389 | BEING RTGS MADE TO MITTAL SIDDHI INFRA PVT LTD AGNST UTR MAHBR52025041220270389",
+            "sourceId": "71bfb876-e114-48e0-adac-d9b374418e34",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 211257800,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-CR - Sundry Creditor",
+                "ledgerId": "b3332902-790b-457c-882a-101fb60aeacb",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 211257800,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SARVAYA TRADEX LLP",
+        "no": "10913",
+        "date": "2025-04-12",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 22620000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "98169732-0f1f-4e92-9228-5cfeba289521",
+            "no": "10913",
+            "type": "PAYMENT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SARVAYA TRADEX AGNST UTR MAHBR52025041220271173 | BEING NEFT MADE TO SARVAYA TRADEX AGNST UTR MAHBR52025041220271173",
+            "sourceId": "f869cc45-4823-4d52-b369-2d070fbbc6f6",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 22620000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SARVAYA TRADEX LLP - Sundry Creditor",
+                "ledgerId": "52c4b46b-833c-46ea-8070-14fc9e224bc7",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 22620000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10910",
+        "date": "2025-04-12",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 240094500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "57d4646b-2a73-4c40-ab46-6462323645cf",
+            "no": "10910",
+            "type": "PAYMENT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025041220271169 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBR52025041220271169",
+            "sourceId": "78f12b41-d5a4-4aa0-a706-dfcb137b344d",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 240094500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 240094500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHIVAM SEATRANS PVT LTD",
+        "no": "10916",
+        "date": "2025-04-12",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 5399000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "5cd964b5-5d73-4541-a58b-0d10929f5395",
+            "no": "10916",
+            "type": "PAYMENT",
+            "date": "2025-04-11",
+            "expectedDate": "2025-04-12",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBN12025041210126179 | BEING RTGS MADE TO SHIVAM SEATRANS PVT LTD AGNST UTR NO MAHBN12025041210126179",
+            "sourceId": "3466227a-cde7-49b2-9c08-989438d47e47",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 5399000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHIVAM SEATRANS PVT LTD - Sundry Creditor",
+                "ledgerId": "4e7e7deb-0efd-440e-bc57-8c63c0fbcb8f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 5399000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DARSHIL PETROCHEM CRS",
+        "no": "10918",
+        "date": "2025-04-13",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 100000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "5b012ed8-0864-4435-a60b-95c8c50ecf85",
+            "no": "10918",
+            "type": "PAYMENT",
+            "date": "2025-04-12",
+            "expectedDate": "2025-04-13",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DARSHIL PETROCHEM AGNST UTR NO MAHBN12025041210137040 | BEING RTGS MADE TO DARSHIL PETROCHEM AGNST UTR NO MAHBN12025041210137040",
+            "sourceId": "faec0ae9-87a0-4082-97f9-950f9e73158c",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DARSHIL PETROCHEM CRS - Sundry Creditor",
+                "ledgerId": "b71ffc82-be6b-4733-a52f-e5471fdbb855",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 100000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "Rahul Satish Agarwal",
+        "no": "10920",
+        "date": "2025-04-13",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 4500000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "7f1f357e-db46-44bc-866a-3efb66ee5247",
+            "no": "10920",
+            "type": "PAYMENT",
+            "date": "2025-04-12",
+            "expectedDate": "2025-04-13",
+            "deltaDays": 1,
+            "narration": "BEING IMPS MADE TO RAHUL AGARWAL AGNST UTR MAHBN82025041310153388 | BEING IMPS MADE TO RAHUL AGARWAL AGNST UTR MAHBN82025041310153388",
+            "sourceId": "cbd3311d-3f21-4980-8a05-a81b2e64bac4",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 4500000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "Rahul Satish Agarwal - Sundry Creditor",
+                "ledgerId": "ffd6e4ff-571d-49b4-b3b2-b2a94994fe3d",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 4500000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "Art Infrastructure Pvt Ltd- CR",
+        "no": "10924",
+        "date": "2025-04-14",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 50000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "d25f7c96-dec4-48f0-b83a-242b6cfb8ecf",
+            "no": "10924",
+            "type": "PAYMENT",
+            "date": "2025-04-13",
+            "expectedDate": "2025-04-14",
+            "deltaDays": 1,
+            "narration": "BEING ART INFRASTRUCTURE PVT LTD AGNST UTR MAHBR52025041420275965 | BEING ART INFRASTRUCTURE PVT LTD AGNST UTR MAHBR52025041420275965",
+            "sourceId": "0cdafe77-6e2c-4c82-bca5-856b63533a9b",
+            "lines": [
+              {
+                "ledger": "Art Infrastructure Pvt Ltd- CR - Sundry Creditor",
+                "ledgerId": "17e0328c-9f79-49bb-beb1-c28fb4b726f9",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 50000000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 50000000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DARSHIL PETROCHEM CRS",
+        "no": "10928",
+        "date": "2025-04-15",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 30253200,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "d7567270-8bf4-490b-bbad-a0ed124a6031",
+            "no": "10928",
+            "type": "PAYMENT",
+            "date": "2025-04-14",
+            "expectedDate": "2025-04-15",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DARSHIL PETROCHEM AGNST UTR NO MAHBN12025041510229363 | BEING RTGS MADE TO DARSHIL PETROCHEM AGNST UTR NO MAHBN12025041510229363",
+            "sourceId": "4888ac43-c6d8-432a-91c4-6ea3988c173f",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 30253200,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DARSHIL PETROCHEM CRS - Sundry Creditor",
+                "ledgerId": "b71ffc82-be6b-4733-a52f-e5471fdbb855",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 30253200,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR",
+        "no": "10929",
+        "date": "2025-04-15",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 646714900,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "ea48e6a5-b035-4cdb-bdb9-59d5c648829e",
+            "no": "10929",
+            "type": "PAYMENT",
+            "date": "2025-04-14",
+            "expectedDate": "2025-04-15",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD | BEING RTGS MADE TO DRAVYAM INDUSTRIES PVT LTD",
+            "sourceId": "b66f3a58-ad88-4ead-a7f9-4f4674b7e376",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 646714900,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - CR - Sundry Creditor",
+                "ledgerId": "21cc6ca3-075f-4dab-8bf9-4e83e13f629a",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 646714900,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "G K TRANSPORT",
+        "no": "10927",
+        "date": "2025-04-15",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 2554200,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "7d755347-d4c7-450a-b82e-57c506290aeb",
+            "no": "10927",
+            "type": "PAYMENT",
+            "date": "2025-04-14",
+            "expectedDate": "2025-04-15",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO G K TRANSPORT AGNST UTR MAHBN12025041510229249 | BEING NEFT MADE TO G K TRANSPORT AGNST UTR MAHBN12025041510229249",
+            "sourceId": "3b896133-51d3-426c-80bb-4f8af0b95a2e",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 2554200,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "G K TRANSPORT - Sundry Creditor",
+                "ledgerId": "d51f0c36-0930-4d25-b4f2-9c2a88a1be15",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 2554200,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "NARAYAN LOGISTICS",
+        "no": "10930",
+        "date": "2025-04-15",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 12438500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "f83d97d2-315c-4a5a-a2eb-27cb61de3a98",
+            "no": "10930",
+            "type": "PAYMENT",
+            "date": "2025-04-14",
+            "expectedDate": "2025-04-15",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO NARAYAN LOGISTIC AGNST UTR MAHBN12025041510296083 | BEING NEFT MADE TO NARAYAN LOGISTIC AGNST UTR MAHBN12025041510296083",
+            "sourceId": "f4d9c67e-0a79-46e2-951a-fbb9e992a85e",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 12438500,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "NARAYAN LOGISTICS - Sundry Creditor",
+                "ledgerId": "19921c4c-ef71-4f5e-b32d-241f17ac9b05",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 12438500,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "APEX PETROCHEM INDUSTRIES - CRS",
+        "no": "10949",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 233368600,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "d5ff50bc-77d6-46f0-8cc7-99bba1dc6db6",
+            "no": "10949",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO APEX PETROCHEM INDUSTRIES | BEING RTGS MADE TO APEX PETROCHEM INDUSTRIES",
+            "sourceId": "61c5fea7-86bb-424a-8aaf-7df2874579f3",
+            "lines": [
+              {
+                "ledger": "APEX PETROCHEM INDUSTRIES - CRS - Sundry Creditor",
+                "ledgerId": "5a561b7d-7397-4833-89f5-97364efc25e1",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 233368600,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 233368600,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "ATLA SPEC LABS LLP",
+        "no": "10948",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 812000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "4211d725-7d57-4c6b-9cca-fc6d0dee8ad0",
+            "no": "10948",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO ATLA SPEC LABS LLP AGNST UTR MAHBN12025041610474542 | BEING NEFT MADE TO ATLA SPEC LABS LLP AGNST UTR MAHBN12025041610474542",
+            "sourceId": "7f684bae-fd6a-434b-b08b-89ad19a6343e",
+            "lines": [
+              {
+                "ledger": "ATLA SPEC LABS LLP - Sundry Creditor",
+                "ledgerId": "aa83d8f8-b423-4018-96b8-c0637e46afab",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 812000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 812000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "CELLULAR JOINT NX",
+        "no": "10942",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 11490000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "b0528d8d-cff0-4bce-98fb-298945094e13",
+            "no": "10942",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO CELLULAR JOINT NX AGNST UTR MAHBN12025041610419647 | BEING NEFT MADE TO CELLULAR JOINT NX AGNST UTR MAHBN12025041610419647",
+            "sourceId": "cb22d41d-3daf-43d8-94d4-3fd32f1ddaae",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 11490000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "CELLULAR JOINT NX - Sundry Creditor",
+                "ledgerId": "690b473b-0475-47cf-bb6f-4576e20b8431",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 11490000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "CHITTRANJAN SHAH KAYLEGAL & ASSOCIATES LLP",
+        "no": "10939",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 5400000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "65ff44be-ebee-4995-b1b9-e6ff9a533a27",
+            "no": "10939",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO CHITTRANJAN SHAH KAYLEGAL AGNST UTR MAHBN12025041610397334 | BEING NEFT MADE TO CHITTRANJAN SHAH KAYLEGAL AGNST UTR MAHBN12025041610397334",
+            "sourceId": "30b6de45-adb4-41f6-98a7-ff4a0676506b",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 5400000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "CHITTRANJAN SHAH KAYLEGAL & ASSOCIATES LLP - Sundry Creditor",
+                "ledgerId": "336b892a-88ec-41ad-aa32-de10b1282578",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 5400000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "DARSH PETROCHEM PVT LTD-CR",
+        "no": "10945",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 120000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "2055834d-c644-4009-8e28-1b4f75164f4b",
+            "no": "10945",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO DARSH PETROCHEM PVT LTD AGNST UTR MAHBR52025041620305889 | BEING NEFT MADE TO DARSH PETROCHEM PVT LTD AGNST UTR MAHBR52025041620305889",
+            "sourceId": "f457f000-ce69-4ee3-a4b5-94fbbbd08c89",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 120000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "DARSH PETROCHEM PVT LTD-CR - Sundry Creditor",
+                "ledgerId": "2fc1c61e-ffbf-4351-8d21-4e5725e71cfa",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 120000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "Sameer Enterprises",
+        "no": "10940",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 649000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "aef7d4e0-9761-435a-bc15-0823087e0706",
+            "no": "10940",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO SAMEER ENTERPRISES AGNST UTR MAHBN12025041610397728 | BEING NEFT MADE TO SAMEER ENTERPRISES AGNST UTR MAHBN12025041610397728",
+            "sourceId": "0f9f970f-2087-45dd-8816-642bff84126c",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 649000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "Sameer Enterprises - Sundry Creditor",
+                "ledgerId": "b219f94c-2ac2-4ffa-b4aa-f196dd4af6f5",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 649000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHRI GANESH TRADING CO- CR",
+        "no": "10932",
+        "date": "2025-04-16",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 153553400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "b73eb51b-f5d0-4704-9876-dd51152235a7",
+            "no": "10932",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "expectedDate": "2025-04-16",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025041610379122 | BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025041610379122",
+            "sourceId": "5e4a593a-87de-4d77-b880-3d61de59569b",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 153553400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHRI GANESH TRADING CO- CR - Sundry Creditor",
+                "ledgerId": "d459e4b8-fcf5-461a-826b-a154f4644d70",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 153553400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "Aditi Transtrade- Transport",
+        "no": "10967",
+        "date": "2025-04-17",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 5400000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "f54e83ab-e27a-437e-b69c-0097fcf1be8a",
+            "no": "10967",
+            "type": "PAYMENT",
+            "date": "2025-04-16",
+            "expectedDate": "2025-04-17",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO ADITI TRANSTRADE AGNST UTR MAHBN12025041710645610 | BEING NEFT MADE TO ADITI TRANSTRADE AGNST UTR MAHBN12025041710645610",
+            "sourceId": "e541a139-d71f-4d42-acfa-b28065d4d852",
+            "lines": [
+              {
+                "ledger": "Aditi Transtrade- Transport - Sundry Creditor",
+                "ledgerId": "7ba7b381-a03a-4b75-8e8d-383e1d96f99f",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 5400000,
+                "sameName": false,
+                "sameAmountSide": true
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 5400000,
+                "sameName": false,
+                "sameAmountSide": false
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "FORTUNE ENTERPRISE",
+        "no": "10957",
+        "date": "2025-04-17",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 157312400,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "efa62910-c106-4393-b388-262e183fe023",
+            "no": "10957",
+            "type": "PAYMENT",
+            "date": "2025-04-16",
+            "expectedDate": "2025-04-17",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO FORTUNE ENTERPRISES AGNST UTR MAHBR52025041720310825 | BEING RTGS MADE TO FORTUNE ENTERPRISES AGNST UTR MAHBR52025041720310825",
+            "sourceId": "f589ed38-05d7-455f-b832-117d60c9b09c",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 157312400,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "FORTUNE ENTERPRISE - Sundry Creditor",
+                "ledgerId": "db344b8c-8294-46f6-88a1-d083c1e233c2",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 157312400,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "MALASHIAN LUBE PRIVATE LIMITED",
+        "no": "10954",
+        "date": "2025-04-17",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 239976000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "fb5c82de-8f71-42c6-a799-cda4abab2e80",
+            "no": "10954",
+            "type": "PAYMENT",
+            "date": "2025-04-16",
+            "expectedDate": "2025-04-17",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO MALASHIAN LUBE PVT LTD AGNST UTR MAHBR52025041720310416 | BEING RTGS MADE TO MALASHIAN LUBE PVT LTD AGNST UTR MAHBR52025041720310416",
+            "sourceId": "ad0a83f7-6868-4f3f-bb16-a37a03452e5f",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 239976000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "MALASHIAN LUBE PRIVATE LIMITED - Sundry Creditor",
+                "ledgerId": "834f963f-fe10-4c0e-8090-a79522af0d05",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 239976000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "NARAYAN LOGISTICS",
+        "no": "10966",
+        "date": "2025-04-17",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 5000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "f392d02b-947a-45da-907e-564ac0877e55",
+            "no": "10966",
+            "type": "PAYMENT",
+            "date": "2025-04-16",
+            "expectedDate": "2025-04-17",
+            "deltaDays": 1,
+            "narration": "BEING NEFT MADE TO NARAYAN LOGISTIC AGNST UTR MAHBN12025041710608433 | BEING NEFT MADE TO NARAYAN LOGISTIC AGNST UTR MAHBN12025041710608433",
+            "sourceId": "a91bcd4a-34eb-4179-abf0-fdba24639ca0",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 5000000,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "NARAYAN LOGISTICS - Sundry Creditor",
+                "ledgerId": "19921c4c-ef71-4f5e-b32d-241f17ac9b05",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 5000000,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      },
+      {
+        "agency": "SHRI GANESH TRADING CO- CR",
+        "no": "10960",
+        "date": "2025-04-17",
+        "type": "Payment",
+        "side": "DEBIT",
+        "amountCents": 153361700,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "candidate",
+        "matches": [
+          {
+            "id": "8596cdc4-f9db-44a6-ad60-ee60c77a0540",
+            "no": "10960",
+            "type": "PAYMENT",
+            "date": "2025-04-16",
+            "expectedDate": "2025-04-17",
+            "deltaDays": 1,
+            "narration": "BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025041710551382 | BEING RTGS MADE TO SHRI GANESH TRADING CO AGNST UTR MAHBN12025041710551382",
+            "sourceId": "2eb31dd0-1b4e-40af-8dd3-09aba0f31dc1",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "ledgerId": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+                "group": "Bank OD A/c & CC A/c",
+                "parent": "Loans (Liability)",
+                "side": "CREDIT",
+                "cents": 153361700,
+                "sameName": false,
+                "sameAmountSide": false
+              },
+              {
+                "ledger": "SHRI GANESH TRADING CO- CR - Sundry Creditor",
+                "ledgerId": "d459e4b8-fcf5-461a-826b-a154f4644d70",
+                "group": "Sundry Creditors",
+                "parent": "Liabilities",
+                "side": "DEBIT",
+                "cents": 153361700,
+                "sameName": false,
+                "sameAmountSide": true
+              }
+            ],
+            "journals": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "workbook": "Advance From S. Debtors",
+    "stats": {
+      "need": 518,
+      "uniqueNo": 518,
+      "noVoucher": 100,
+      "matchingLineWrongDate": 0,
+      "matchingLineWrongLedger": 0,
+      "matchedVoucherNoOnly": 418,
+      "ambiguous": 0
+    },
+    "findings": [
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10294",
+        "date": "2025-04-01",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 397110000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10300",
+        "date": "2025-04-02",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10301",
+        "date": "2025-04-02",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 347210000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10303",
+        "date": "2025-04-02",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 450000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "CLASSIC BITUMEN PRIVATE LIMITED",
+        "no": "10299",
+        "date": "2025-04-02",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 300000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10305",
+        "date": "2025-04-03",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10306",
+        "date": "2025-04-03",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10307",
+        "date": "2025-04-03",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 358700000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "APM/G2526/0014",
+        "date": "2025-04-04",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 56258900,
+        "particulars": "IGST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "CLASSIC BITUMEN PRIVATE LIMITED",
+        "no": "10322",
+        "date": "2025-04-05",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 2449531000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "10316",
+        "date": "2025-04-05",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 25000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10354",
+        "date": "2025-04-08",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 100000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10355",
+        "date": "2025-04-08",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 99900000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "10343",
+        "date": "2025-04-08",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 60000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "APM/G2526/0052",
+        "date": "2025-04-08",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 259486000,
+        "particulars": "GST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "APM/G2526/0053",
+        "date": "2025-04-09",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 189934000,
+        "particulars": "IGST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "10360",
+        "date": "2025-04-09",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 50000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10364",
+        "date": "2025-04-10",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10366",
+        "date": "2025-04-10",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "ANUP OMPRAKASH AGRAWAL / J C ENTERPRISES",
+        "no": "10369",
+        "date": "2025-04-11",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "10372",
+        "date": "2025-04-11",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 50000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "APM/G2526/0072",
+        "date": "2025-04-11",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 266294400,
+        "particulars": "GST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "SRI BALAJI ENTERPRISES - DR",
+        "no": "APM/G2526/0077",
+        "date": "2025-04-12",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 192688100,
+        "particulars": "IGST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "10379",
+        "date": "2025-04-12",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 90000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10380",
+        "date": "2025-04-13",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 89934000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10383",
+        "date": "2025-04-14",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 30000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "10382",
+        "date": "2025-04-14",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 95000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "APM/G2526/0092",
+        "date": "2025-04-15",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 56258900,
+        "particulars": "IGST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10933",
+        "date": "2025-04-16",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 44662000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "018780b0-38c3-4c53-8a51-7ed3dbbc338f",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "HDFC CORPORATE CARD - V2P 3288",
+                "side": "DEBIT",
+                "cents": 202478000
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 202478000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10936",
+        "date": "2025-04-16",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 230000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "0df805b3-688f-4791-8c32-6136e8e6fb1b",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 1411196100
+              },
+              {
+                "ledger": "Art Infrastructure Pvt Ltd - Loan A/c",
+                "side": "DEBIT",
+                "cents": 1411196100
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10935",
+        "date": "2025-04-16",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 50000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "e7abeabc-53c1-4f68-aec9-5605f95ac35d",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "Bank Charges",
+                "side": "DEBIT",
+                "cents": 180
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 180
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10937",
+        "date": "2025-04-16",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 20000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "23c0cbe3-eabd-4a95-b6e8-c1b0fe2becd0",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "Bank Charges",
+                "side": "DEBIT",
+                "cents": 1000
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 1000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "APM/G2526/0099",
+        "date": "2025-04-16",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 170882900,
+        "particulars": "IGST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "GANESH CHEMICALS",
+        "no": "10946",
+        "date": "2025-04-17",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 100,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "cc2598bb-db13-4945-aa2e-36e6a1684a99",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "Bank Charges",
+                "side": "DEBIT",
+                "cents": 1000
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 1000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GANESH CHEMICALS",
+        "no": "10947",
+        "date": "2025-04-17",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 164288500,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "aa50bb22-2305-4b51-98e6-027527e2d087",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "Bank Charges",
+                "side": "DEBIT",
+                "cents": 180
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 180
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GANESH CHEMICALS",
+        "no": "APM/G2526/0107",
+        "date": "2025-04-17",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 164288600,
+        "particulars": "IGST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "VENKETESHWARA ROADLINES - DR",
+        "no": "APM/G2526/0106",
+        "date": "2025-04-17",
+        "type": "Tax Invoice",
+        "side": "DEBIT",
+        "amountCents": 248325800,
+        "particulars": "GST SALES",
+        "status": "no-voucher-number",
+        "candidates": []
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10948",
+        "date": "2025-04-18",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 500000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "4211d725-7d57-4c6b-9cca-fc6d0dee8ad0",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "ATLA SPEC LABS LLP - Sundry Creditor",
+                "side": "DEBIT",
+                "cents": 812000
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 812000
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "APEX INDUSTRIES DR",
+        "no": "10949",
+        "date": "2025-04-18",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 160000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "d5ff50bc-77d6-46f0-8cc7-99bba1dc6db6",
+            "type": "PAYMENT",
+            "date": "2025-04-15",
+            "lines": [
+              {
+                "ledger": "APEX PETROCHEM INDUSTRIES - CRS - Sundry Creditor",
+                "side": "DEBIT",
+                "cents": 233368600
+              },
+              {
+                "ledger": "BANK OF MAHARASHTRA- C/C 60434886441",
+                "side": "CREDIT",
+                "cents": 233368600
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "agency": "GREENSHAKTI FUELS INDIA PRIVATE LIMITED DRS",
+        "no": "10950",
+        "date": "2025-04-18",
+        "type": "Receipt",
+        "side": "CREDIT",
+        "amountCents": 50000000,
+        "particulars": "BANK OF MAHARASHTRA- C/C 60434886441",
+        "status": "voucher-number-has-other-lines",
+        "candidates": [
+          {
+            "id": "c27b4299-e14b-4dd2-a7e4-0eea83d68021",
+            "type": "PAYMENT",
+            "date": "2025-04-16",
+            "lines": [
+              {
+                "ledger": "A G ASHTAVINAYAKA PETROCHEM PVT LTD-KARNATAKA",
+                "side": "DEBIT",
+                "cents": 1297058908
+              },
+              {
+                "ledger": "Bank Charges",
+                "side": "DEBIT",
+                "cents": 574071
+              },
+              {
+                "ledger": "YES BANK CA - 024863700003291",
+                "side": "CREDIT",
+                "cents": 1297632979
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

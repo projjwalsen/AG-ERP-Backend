@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { LedgerService } from "../accounting/ledger/ledger.service";
 import { ReportingService } from "./reporting.service";
 import { ExcelService } from "../../core/utils/export.service";
-import { gstSuspenseColumns, outstandingAgingColumns, outstandingColumns, outstandingDetailColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
+import { gstSuspenseColumns, stockInventoryColumns, trialBalanceColumns } from "../exports/branch.export";
 import { formatISTDateOnly } from "../../core/utils/loc.utils";
 
 
@@ -383,6 +383,10 @@ export const getOutstandingReport = async (
                 req.query.type as
                     | "RECEIVABLE"
                     | "PAYABLE",
+            startDate:
+                req.query.startDate as string,
+            endDate:
+                req.query.endDate as string,
             export:
                 ["DETAILS", "AGING", "TRUE"].includes(exportType)
         };
@@ -393,87 +397,13 @@ export const getOutstandingReport = async (
                 query
             );
 
-        switch (exportType) {
-
-            case "DETAILS":
-
-                return ExcelService.export(
-                    res,
-                    {
-                        filename:
-                            query.type === "PAYABLE"
-                                ? "AP Details"
-                                : "AR Details",
-
-                        sheetName:
-                            query.type === "PAYABLE"
-                                ? "AP Details"
-                                : "AR Details",
-
-                        title:
-                            query.type === "PAYABLE"
-                                ? "Accounts Payable Details Report"
-                                : "Accounts Receivable Details Report",
-
-                        columns:
-                            outstandingDetailColumns,
-
-                        companyName: "ASHTAVINAYAKA",
-                        showCompanyName: true,
-
-                        data:
-                            report.exportData
-                    }
-                );
-
-            case "AGING":
-
-                return ExcelService.export(
-                    res,
-                    {
-                        filename:
-                            query.type === "PAYABLE"
-                                ? "AP Aging"
-                                : "AR Aging",
-
-                        sheetName:
-                            "Aging",
-
-                        title:
-                            query.type === "PAYABLE"
-                                ? "Accounts Payable Aging Report"
-                                : "Accounts Receivable Aging Report",
-
-                        columns:
-                            outstandingAgingColumns(query.type),
-
-                        companyName: "ASHTAVINAYAKA",
-                        showCompanyName: true,
-
-                        data:
-                            report.rows
-                    }
-                );
-
-            case "TRUE":
-
-                return ExcelService.export(
-                    res,
-                    {
-                        filename: "AP / AR Reports",
-
-                        sheetName: "Outstanding",
-
-                        title: "AP / AR Reports",
-
-                        columns: outstandingColumns,
-
-                        companyName: "ASHTAVINAYAKA",
-                        showCompanyName: true,
-
-                        data: report.rows
-                    }
-                );
+        if (["DETAILS", "AGING", "TRUE"].includes(exportType)) {
+            const isDebtorReport = query.type === "PAYABLE";
+            return ExcelService.exportSrv1APARGroupReport(res, {
+                filename: isDebtorReport ? "sundry-debtors" : "sundry-creditors",
+                sheetName: isDebtorReport ? "Sundry Debtors" : "Sundry Creditors",
+                report
+            });
         }
 
         return res.status(200).json({
@@ -505,7 +435,10 @@ export const exportAgencyOutstandingReport = async (
                 req.query.type as
                     | "PAYABLE"
                     | "RECEIVABLE",
-
+            startDate:
+                req.query.startDate as string,
+            endDate:
+                req.query.endDate as string,
             export: true
         };
 
@@ -515,39 +448,12 @@ export const exportAgencyOutstandingReport = async (
                 query
             );
 
-        return ExcelService.export(
-            res,
-            {
-
-                filename:
-                    query.type === "PAYABLE"
-                        ? `AP_Outstanding_${report.agency?.name ?? "Agency"}`
-                        : `AR_Outstanding_${report.agency?.name ?? "Agency"}`,
-
-                sheetName:
-                    query.type === "PAYABLE"
-                        ? "Accounts Payable"
-                        : "Accounts Receivable",
-
-                title:
-                    query.type === "PAYABLE"
-                        ? `Accounts Payable Outstanding Report${report.agency ? ` - ${report.agency?.name}` : ""}`
-                        : `Accounts Receivable Outstanding Report${report.agency ? ` - ${report.agency?.name}` : ""}`,
-
-                columns:
-                    outstandingDetailColumns,
-
-                companyName:
-                    "ASHTAVINAYAKA",
-
-                showCompanyName:
-                    true,
-
-                data:
-                    report.exportData
-
-            }
-        );
+        const isDebtorReport = query.type === "PAYABLE";
+        return ExcelService.exportSrv1APARGroupReport(res, {
+            filename: isDebtorReport ? "sundry-debtors" : "sundry-creditors",
+            sheetName: isDebtorReport ? "Sundry Debtors" : "Sundry Creditors",
+            report
+        });
 
     } catch (error) {
         next(error);

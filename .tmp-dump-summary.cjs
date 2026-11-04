@@ -1,0 +1,1 @@
+const d=require('./.tmp-ledger-scope-dump.json'); console.log(JSON.stringify({roots:d.roots.map(r=>({name:r.name,groups:r.groups.length,ledgers:r.ledgers.length,entries:r.entryCount, sample:r.ledgers.slice(0,4)})),wbs:d.workbooks.map(w=>({name:w.name,agencies:w.agencies,missing:w.missingLedgerNames.length,sourceTotal:w.amountCents}))},null,2));

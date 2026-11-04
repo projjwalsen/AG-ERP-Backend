@@ -1,0 +1,1085 @@
+{
+  "avntikaP": {
+    "n": 7,
+    "sum": 14109496,
+    "rows": [
+      {
+        "id": "83a92ec9-ba61-4379-8ebb-ffd3d1095a79",
+        "no": "PUR-986946E9-FBE52E2769",
+        "type": "PURCHASE",
+        "date": "2025-10-21",
+        "side": "CREDIT",
+        "amt": 3488552,
+        "narr": "Invoice:AE/325/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2956400
+          },
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 532152
+          }
+        ]
+      },
+      {
+        "id": "51f3a7c2-2209-45da-a0a3-f075c7ef7331",
+        "no": "PUR-748C6B45-1DC400577C",
+        "type": "PURCHASE",
+        "date": "2025-09-27",
+        "side": "CREDIT",
+        "amt": 1293516,
+        "narr": "Invoice:AE/233/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 1096200
+          },
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 197316
+          }
+        ]
+      },
+      {
+        "id": "abefe202-25ea-428d-b056-cd7ca2265bb7",
+        "no": "PUR-4C256699-43E4E22B1D",
+        "type": "PURCHASE",
+        "date": "2025-09-30",
+        "side": "CREDIT",
+        "amt": 1685040,
+        "narr": "Invoice:AE/247/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 257040
+          },
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 1428000
+          }
+        ]
+      },
+      {
+        "id": "cac79b62-ae60-4eaf-ac61-28812457cd81",
+        "no": "PUR-AF047FF9-791EC80371",
+        "type": "PURCHASE",
+        "date": "2025-10-03",
+        "side": "CREDIT",
+        "amt": 1682562,
+        "narr": "Invoice:AE/267/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 256662
+          },
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 1425900
+          }
+        ]
+      },
+      {
+        "id": "ab4a5cc5-61a6-4e36-ba35-8e570c7bccb7",
+        "no": "PUR-4F18380B-64C4BDB803",
+        "type": "PURCHASE",
+        "date": "2025-10-04",
+        "side": "CREDIT",
+        "amt": 1427328,
+        "narr": "Invoice:AE/272/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 1209600
+          },
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 217728
+          }
+        ]
+      },
+      {
+        "id": "ed6cc86d-45fa-4274-8c6b-a3565d7360c1",
+        "no": "PUR-5536AB85-C039EC1BCD",
+        "type": "PURCHASE",
+        "date": "2025-10-06",
+        "side": "CREDIT",
+        "amt": 1457064,
+        "narr": "Invoice:AE/275/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 1234800
+          },
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 222264
+          }
+        ]
+      },
+      {
+        "id": "d88ede61-e8e0-4771-9b97-d254799944c9",
+        "no": "PUR-860EB069-C82B436474",
+        "type": "PURCHASE",
+        "date": "2025-10-20",
+        "side": "CREDIT",
+        "amt": 3075434,
+        "narr": "Invoice:AE/322/202526 Vendor Payable",
+        "others": [
+          {
+            "name": "INPUT IGST 18%",
+            "cat": "JOURNAL",
+            "group": "GST > INPUT GST",
+            "side": "DEBIT",
+            "amt": 469134
+          },
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2606300
+          }
+        ]
+      }
+    ]
+  },
+  "raajP": {
+    "n": 9,
+    "sum": 89533259.73,
+    "rows": [
+      {
+        "id": "06573a09-e624-4dce-8898-ca554b783e4b",
+        "no": "PUR-CAA9DADC-5500D0FEAC",
+        "type": "PURCHASE",
+        "date": "2025-06-19",
+        "side": "CREDIT",
+        "amt": 8665467.64,
+        "narr": "Invoice:INV/T/2025/0015 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 8665467.64
+          }
+        ]
+      },
+      {
+        "id": "8d59badf-b31a-461b-819d-f11fb984b018",
+        "no": "PUR-7FC66A80-7F187F23AA",
+        "type": "PURCHASE",
+        "date": "2025-04-02",
+        "side": "CREDIT",
+        "amt": 9099895.5,
+        "narr": "Invoice:INV/24-25/1133 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 9099895.5
+          }
+        ]
+      },
+      {
+        "id": "801485aa-b79d-4c0a-960d-433acd2166c9",
+        "no": "PUR-72577BFE-837A3D7E18",
+        "type": "PURCHASE",
+        "date": "2025-04-02",
+        "side": "CREDIT",
+        "amt": 9095415,
+        "narr": "Invoice:INV/24-25/1132 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 9095415
+          }
+        ]
+      },
+      {
+        "id": "fd440220-9fb0-418b-87ea-7c62ac2afd43",
+        "no": "PUR-A247527C-A25019244E",
+        "type": "PURCHASE",
+        "date": "2025-04-14",
+        "side": "CREDIT",
+        "amt": 10863410.38,
+        "narr": "Invoice:INV/T/2025/0011 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 10863410.38
+          }
+        ]
+      },
+      {
+        "id": "03137e6e-9da3-4f30-b43f-d39b3e776690",
+        "no": "PUR-25196219-DCBDB7D750",
+        "type": "PURCHASE",
+        "date": "2025-04-15",
+        "side": "CREDIT",
+        "amt": 10787010.12,
+        "narr": "Invoice:INV/T/2025/0012 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 10787010.12
+          }
+        ]
+      },
+      {
+        "id": "2c22584b-cbc6-45a5-8bd5-69ee693549d5",
+        "no": "PUR-78B5FA3F-5B51BFD868",
+        "type": "PURCHASE",
+        "date": "2025-04-15",
+        "side": "CREDIT",
+        "amt": 10824106.2,
+        "narr": "Invoice:INV/T/2025/0014 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 10824106.2
+          }
+        ]
+      },
+      {
+        "id": "3c5e3c8c-08d0-4d2f-8cb1-cbd5571f16cc",
+        "no": "PUR-F94F7533-0B93DB8597",
+        "type": "PURCHASE",
+        "date": "2025-04-15",
+        "side": "CREDIT",
+        "amt": 12663895.12,
+        "narr": "Invoice:INV/T/2025/0013 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 12663895.12
+          }
+        ]
+      },
+      {
+        "id": "8f26ce6c-d447-46bd-93e3-be8002048647",
+        "no": "PUR-E8C865D7-29201B2BB6",
+        "type": "PURCHASE",
+        "date": "2025-04-05",
+        "side": "CREDIT",
+        "amt": 8674026.56,
+        "narr": "Invoice:INV/T/2025/0006 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 8674026.56
+          }
+        ]
+      },
+      {
+        "id": "1346b4ba-637d-43bb-8d24-1c89d15770c2",
+        "no": "PUR-2482A0B1-EB28E6736F",
+        "type": "PURCHASE",
+        "date": "2025-05-13",
+        "side": "CREDIT",
+        "amt": 8860033.21,
+        "narr": "Invoice:INV/T/2025/0063 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 8860033.21
+          }
+        ]
+      }
+    ]
+  },
+  "ioclP": {
+    "n": 5,
+    "sum": 10031675,
+    "rows": [
+      {
+        "id": "5c1ff47f-8305-4d07-84d9-6ede4b4f787b",
+        "no": "PUR-03F9ED97-A2C34A91BA",
+        "type": "PURCHASE",
+        "date": "2025-10-22",
+        "side": "CREDIT",
+        "amt": 2006335,
+        "narr": "Invoice:798155320 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2006335
+          }
+        ]
+      },
+      {
+        "id": "629cd165-46af-49f5-9210-d2bc91db6a8b",
+        "no": "PUR-2989747A-115166B7F3",
+        "type": "PURCHASE",
+        "date": "2025-10-24",
+        "side": "CREDIT",
+        "amt": 2006335,
+        "narr": "Invoice:798237586 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2006335
+          }
+        ]
+      },
+      {
+        "id": "44879e97-d898-4ac2-a43c-b71ed109ce10",
+        "no": "PUR-383D8664-A45BA58F3A",
+        "type": "PURCHASE",
+        "date": "2025-10-18",
+        "side": "CREDIT",
+        "amt": 2006335,
+        "narr": "Invoice:798072984 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2006335
+          }
+        ]
+      },
+      {
+        "id": "d08af0d6-8168-48f6-b4ae-d9fdad816b2a",
+        "no": "PUR-21C83FE0-C2E78D7E9A",
+        "type": "PURCHASE",
+        "date": "2025-10-18",
+        "side": "CREDIT",
+        "amt": 2006335,
+        "narr": "Invoice:798088256 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2006335
+          }
+        ]
+      },
+      {
+        "id": "deade237-bcf8-4560-a901-429dd6edeab1",
+        "no": "PUR-86E1C1E2-9D3ACB758A",
+        "type": "PURCHASE",
+        "date": "2025-10-24",
+        "side": "CREDIT",
+        "amt": 2006335,
+        "narr": "Invoice:798239209 Vendor Payable",
+        "others": [
+          {
+            "name": "Purchase - AG_ASHTAVINAYAKA_PETROCHEM_MH",
+            "cat": "PURCHASE",
+            "group": "Purchase Accounts > Purchase",
+            "side": "DEBIT",
+            "amt": 2006335
+          }
+        ]
+      }
+    ]
+  },
+  "ioclJcr": [
+    {
+      "id": "e97e8fee-b283-406d-98bf-3a62de3783a6",
+      "no": "798072984",
+      "type": "JOURNAL",
+      "date": "2025-10-18",
+      "side": "CREDIT",
+      "amt": 2006335,
+      "narr": "BEING PURCHASE HSD-BSVI QTY - 24 KLR @ 83597.28 AGST INVOICE NO - 798072984 DTD - 18-10-2025 VEHICLE",
+      "others": []
+    },
+    {
+      "id": "c394bb63-3149-4f88-b694-40ea6dc4e364",
+      "no": "798088256",
+      "type": "JOURNAL",
+      "date": "2025-10-18",
+      "side": "CREDIT",
+      "amt": 2006335,
+      "narr": "BEING PURCHASE HSD-BSVI QTY - 24 KLR @ 83597.28 AGST INVOICE NO - 798088256 DTD - 18-10-2025 VEHICLE",
+      "others": []
+    },
+    {
+      "id": "28ef9684-5247-4c0b-b862-8296c8a17a04",
+      "no": "798155320",
+      "type": "JOURNAL",
+      "date": "2025-10-22",
+      "side": "CREDIT",
+      "amt": 2006335,
+      "narr": "BEING PURCHASE HSD-BSVI QTY - 24 KLR @ 83597.28 AGST INVOICE NO - 798155320 DTD - 22-10-2025 VEHICLE",
+      "others": []
+    },
+    {
+      "id": "bbb85cac-4474-4732-b160-b0b4a112f21e",
+      "no": "798237586",
+      "type": "JOURNAL",
+      "date": "2025-10-24",
+      "side": "CREDIT",
+      "amt": 2006335,
+      "narr": "BEING PURCHASE HSD-BSVI QTY - 24 KLR @ 83597.28 AGST INVOICE NO - 798237586 DTD - 24-10-2025 VEHICLE",
+      "others": []
+    },
+    {
+      "id": "f76fdbea-e616-4d2d-acfd-00c49b03f238",
+      "no": "798239209",
+      "type": "JOURNAL",
+      "date": "2025-10-24",
+      "side": "CREDIT",
+      "amt": 2006335,
+      "narr": "BEING PURCHASE HSD-BSVI QTY - 24 KLR @ 83597.28 AGST INVOICE NO - 798239209 DTD - 24-10-2025 VEHICLE",
+      "others": []
+    }
+  ],
+  "sigmaI": [
+    {
+      "no": "633",
+      "date": "2025-07-05",
+      "amt": 1427800,
+      "others": []
+    },
+    {
+      "no": "644",
+      "date": "2025-07-08",
+      "amt": 1789163,
+      "others": []
+    },
+    {
+      "no": "645",
+      "date": "2025-07-08",
+      "amt": 1771510,
+      "others": []
+    },
+    {
+      "no": "648",
+      "date": "2025-07-09",
+      "amt": 2036302,
+      "others": []
+    },
+    {
+      "no": "653",
+      "date": "2025-07-10",
+      "amt": 1807335,
+      "others": []
+    },
+    {
+      "no": "657",
+      "date": "2025-07-11",
+      "amt": 2035783,
+      "others": []
+    },
+    {
+      "no": "663",
+      "date": "2025-07-12",
+      "amt": 1525929,
+      "others": []
+    },
+    {
+      "no": "666",
+      "date": "2025-07-12",
+      "amt": 1758011,
+      "others": []
+    },
+    {
+      "no": "679",
+      "date": "2025-07-16",
+      "amt": 1655210,
+      "others": []
+    },
+    {
+      "no": "680",
+      "date": "2025-07-16",
+      "amt": 155760,
+      "others": []
+    },
+    {
+      "no": "701",
+      "date": "2025-07-19",
+      "amt": 1787606,
+      "others": []
+    },
+    {
+      "no": "702",
+      "date": "2025-07-19",
+      "amt": 1781894,
+      "others": []
+    }
+  ],
+  "sigmaIsum": 19532303,
+  "silverI": [
+    {
+      "no": "2025-26/660",
+      "date": "2025-07-01",
+      "amt": 1562924
+    },
+    {
+      "no": "2025-26/661",
+      "date": "2025-07-01",
+      "amt": 1952622
+    },
+    {
+      "no": "2025-26/676",
+      "date": "2025-07-03",
+      "amt": 1807389.48
+    },
+    {
+      "no": "2025-26/681",
+      "date": "2025-07-03",
+      "amt": 1169608.92
+    },
+    {
+      "no": "2025-26/682",
+      "date": "2025-07-03",
+      "amt": 1529846.4
+    },
+    {
+      "no": "2025-26/687",
+      "date": "2025-07-04",
+      "amt": 1522610.64
+    },
+    {
+      "no": "2025-26/784",
+      "date": "2025-07-19",
+      "amt": 1447668.84
+    },
+    {
+      "no": "2025-26/789",
+      "date": "2025-07-22",
+      "amt": 1270392.72
+    },
+    {
+      "no": "2025-26/790",
+      "date": "2025-07-22",
+      "amt": 1493667.6
+    },
+    {
+      "no": "2025-26/791",
+      "date": "2025-07-22",
+      "amt": 1529846.4
+    },
+    {
+      "no": "2025-26/792",
+      "date": "2025-07-22",
+      "amt": 1706605.68
+    },
+    {
+      "no": "2025-26/822",
+      "date": "2025-07-24",
+      "amt": 1447668.84
+    },
+    {
+      "no": "2025-26/826",
+      "date": "2025-07-25",
+      "amt": 1778963.28
+    },
+    {
+      "no": "2025-26/827",
+      "date": "2025-07-25",
+      "amt": 1781547.48
+    },
+    {
+      "no": "2025-26/828",
+      "date": "2025-07-26",
+      "amt": 1147901.64
+    },
+    {
+      "no": "2025-26/829",
+      "date": "2025-07-26",
+      "amt": 1561373.64
+    },
+    {
+      "no": "2025-26/831",
+      "date": "2025-07-26",
+      "amt": 2055472.68
+    },
+    {
+      "no": "2025-26/838",
+      "date": "2025-07-29",
+      "amt": 2034282.24
+    }
+  ],
+  "classicI": [
+    {
+      "no": "CPPB/25-26/214",
+      "date": "2026-03-19",
+      "amt": 20160698,
+      "others": []
+    }
+  ],
+  "darshI": [
+    {
+      "no": "DE/2025-26/002",
+      "date": "2025-04-23",
+      "amt": 2047341,
+      "others": []
+    },
+    {
+      "no": "DE/2025-26/028",
+      "date": "2025-06-21",
+      "amt": 1866689,
+      "others": []
+    },
+    {
+      "no": "DE/2025-26/030",
+      "date": "2025-06-22",
+      "amt": 1660242,
+      "others": []
+    },
+    {
+      "no": "DE/2025-26/029",
+      "date": "2025-06-22",
+      "amt": 1576415,
+      "others": []
+    },
+    {
+      "no": "DE/2025-26/031",
+      "date": "2025-06-23",
+      "amt": 1584646,
+      "others": []
+    }
+  ],
+  "globalI": [
+    {
+      "no": "000016",
+      "date": "2025-07-12",
+      "amt": 2187425
+    },
+    {
+      "no": "000068",
+      "date": "2025-12-26",
+      "amt": 1858074
+    },
+    {
+      "no": "000079",
+      "date": "2026-02-13",
+      "amt": 2086240
+    },
+    {
+      "no": "000081",
+      "date": "2026-02-14",
+      "amt": 2100400
+    },
+    {
+      "no": "000082",
+      "date": "2026-02-15",
+      "amt": 2853712
+    }
+  ],
+  "vendors": [
+    {
+      "id": "fe6a98c9-f99e-411e-b296-43107459b463",
+      "name": "SIGMA PETROCHEM",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "8f5d8517-fa62-4f14-bdd1-f54bcfaf4184",
+      "name": "AVNTIKA ENTERPRISE CRS",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "02f03bb1-2bd6-42e2-8627-c9e75ab59642",
+      "name": "GLOBAL PLASTO CHEM",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "44220c32-ec22-4606-9152-d06ece6af0ab",
+      "name": "RAAJ UNOCAL LUBRICANTS LTD",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "39783cdd-2330-4aa6-8bef-e0103fa4784d",
+      "name": "DARSHAN CHEM",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Sundry Creditors > DARSHAN CHEM"
+    },
+    {
+      "id": "5922e3b0-8671-48ab-a1c8-bb0c6f9a15a4",
+      "name": "Indian Oil Corporation Limited-GJ",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "586b1d06-0ecb-404a-9f4a-b47a23430ea1",
+      "name": "INDIAN OIL CORPORATION LIMITED - MH",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "23eb9aac-44cb-48e6-9079-549f5526ab8c",
+      "name": "AVNTIKA ENTERPRISE CRS - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "14b685b1-9289-40b2-85c6-e3b27ba6b19f",
+      "name": "GLOBAL PLASTO CHEM - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "8db8e150-5343-4616-b5bb-8fb5942a8b9f",
+      "name": "SIGMA PETROCHEM - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "80d15524-6894-46d7-8ec9-ffbc0f6ac778",
+      "name": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "70c67f72-6ff7-490f-84b7-dfdc3b8d16dd",
+      "name": "INDIAN OIL CORPORATION LIMITED - MH - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "2e79aa51-9d8b-44bc-af0c-5d146974aa68",
+      "name": "DARSHIL PETROCHEM CRS",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Sundry Creditors > Sundry Creditors"
+    },
+    {
+      "id": "36ae0a19-20f9-4f7c-8dc8-d0f0db26335e",
+      "name": "DARSHAN CHEM - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "6accb1c4-fa77-438b-9f0d-ac6144b2cb05",
+      "name": "Darsh Enterprises (CR)",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "624ccc67-652b-4bf6-a9e3-35d66e7bd442",
+      "name": "SILVERBACK INFRA PRIVATE LIMITED",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "55848079-c690-4ff6-b31e-62dccc3b2347",
+      "name": "DARSH PETROCHEM PVT LTD-CR",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Sundry Creditors > Sundry Creditors"
+    },
+    {
+      "id": "2723e26f-0984-4f74-b1ee-5a83b025da16",
+      "name": "AVNTIKA ENTERPRISE CRS",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "8ce546c1-1871-4d6b-b637-4e7f32dece2d",
+      "name": "GLOBAL PLASTO CHEM",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "934134d3-275e-414b-ab94-ec16d6a06c49",
+      "name": "Adarsh Waste Management - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "3ca50cc3-79d7-4cc7-bc9f-083665765f6c",
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED CRS",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "e00580fe-71f0-4673-b792-d427f9cf7109",
+      "name": "Adarsh Waste Management",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Sundry Creditors > SUNDRY CREDITORS (OTHERS)"
+    },
+    {
+      "id": "aba8cc7c-4a23-4320-b573-9c2edf9dc7ae",
+      "name": "GLOBAL PLASTO CHEM",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "677ff729-fdfc-4762-977d-c0a1a94d877a",
+      "name": "SIGMA PETROCHEM - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "ee7113ce-5f6b-4592-800d-cbb74d562e86",
+      "name": "GLOBAL PLASTO CHEM - DR",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Current Liabilities > Advance From S. Debtors"
+    },
+    {
+      "id": "52792ffe-b482-489a-95c2-ab1a3976c6ad",
+      "name": "INDIAN OIL CORPORATION LIMITED-GJ",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Expenses > Indirect Expense"
+    },
+    {
+      "id": "93d0100d-abbd-48f3-8bf4-7cbf55928e05",
+      "name": "INDIAN OIL CORPORATION LIMITED - MH - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "49be797b-8333-4c10-81ce-6a020a87ed43",
+      "name": "SILVERBACK INFRA PRIVATE LIMITED - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "8c2e6a89-594f-40ce-a308-8f70177b6a2f",
+      "name": "RAAJ INDUSTRIAL LUBRICANTS LIMITED - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "275ebbab-1f29-4aeb-b30d-d64ac63577c4",
+      "name": "GLOBAL PLASTO CHEM - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "f76b463a-f0d8-4bd1-ad39-99f011a8c6b3",
+      "name": "RAAJ UNOCAL LUBRICANTS LTD - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "5fb50cc9-80d6-43ce-8b97-e814a666af62",
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED CRS - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "00bc6638-4211-454b-82c5-f271f8f4043e",
+      "name": "AVNTIKA ENTERPRISE CRS - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "b71ffc82-be6b-4733-a52f-e5471fdbb855",
+      "name": "DARSHIL PETROCHEM CRS - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "2fc1c61e-ffbf-4351-8d21-4e5725e71cfa",
+      "name": "DARSH PETROCHEM PVT LTD-CR - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "d482e094-04c2-40cc-99dc-239ebe25034b",
+      "name": "DARSH ENTERPRISES (CR) - Sundry Creditor",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "65d755b5-6919-4e0b-840d-6b7f51837998",
+      "name": "RAAJ UNOCAL LUBRICANTS LTD",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "9ec30097-c75b-46d0-a0dc-612011d6e7ad",
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Sundry Debtors > Sundry Debtors"
+    },
+    {
+      "id": "86d3c963-b177-4169-8228-07db9452a78c",
+      "name": "Darsh Enterprises (CR)",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "ba7c30fc-e46a-4afe-9f14-32f688907c14",
+      "name": "Indian Oil Corporation Limited-GJ",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Advance to S. Creditors > Indian Oil Corporation Limited-GJ"
+    },
+    {
+      "id": "b4aa848c-1dee-4e03-bb63-060020aef97b",
+      "name": "INDIAN OIL CORPORATION LIMITED - MH",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "56374eba-3d95-4da9-a348-c95ae4b97880",
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED CRS",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "5ae0e026-06dd-44a0-8913-40c5ac208937",
+      "name": "RAAJ INDUSTRIAL LUBRICANTS LIMITED",
+      "cat": "VENDOR",
+      "active": true,
+      "group": "Current Liabilities > Sundry Creditors"
+    },
+    {
+      "id": "0078c46b-b562-464f-a227-6ad70c1e7a6f",
+      "name": "SILVERBACK INFRA PRIVATE LIMITED",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "3a2740f5-54fd-4b79-913b-68f240c7d44d",
+      "name": "DARSH PETROCHEM PVT LTD",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "36c0fa46-9c0f-458d-8a91-cccd7a84209b",
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED",
+      "cat": "JOURNAL",
+      "active": false,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "dc88369d-7d35-46aa-a513-000417098ff3",
+      "name": "SIGMA PETROCHEM",
+      "cat": "JOURNAL",
+      "active": true,
+      "group": "Loans & Advances (Asset) > Advance to S. Creditors"
+    },
+    {
+      "id": "0b39b22b-8d9b-4b6e-bf5f-374090f8fe60",
+      "name": "DARSH PETROCHEM PVT LTD - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "2cab7f91-a15c-4390-b739-543218ac79d9",
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    },
+    {
+      "id": "d551dee6-160b-401b-b737-8e98d947a9f4",
+      "name": "DARSH PETROCHEM PVT LTD-CR - Sundry Debtor",
+      "cat": "CUSTOMER",
+      "active": true,
+      "group": "Current Assets > Sundry Debtors"
+    }
+  ]
+}

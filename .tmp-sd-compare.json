@@ -1,0 +1,615 @@
+{
+  "parent": {
+    "od": 822816622.76,
+    "oc": 12551933.96,
+    "pd": 5690884781.03,
+    "pc": 5760575955.18,
+    "cd": 763532118.65,
+    "cc": 22958604
+  },
+  "pdf": {
+    "od": 822816622.76,
+    "oc": 12551933.96,
+    "cd": 673716070.65,
+    "cc": 16902464
+  },
+  "parentGap": 83759908,
+  "tbChildN": 132,
+  "pdfN": 129,
+  "matchedOk": 123,
+  "mismatchN": 6,
+  "extraN": 2,
+  "missingN": 0,
+  "mismatches": [
+    {
+      "k": "A G ART PETROCHEM LLP",
+      "name": "A G ART PETROCHEM LLP - Sundry Debtor",
+      "pdfName": "A G ART PETROCHEM LLP",
+      "pdf": {
+        "od": 53514885,
+        "oc": 0,
+        "cd": 0,
+        "cc": 0
+      },
+      "tb": {
+        "od": 53514885,
+        "oc": 0,
+        "pd": 121706073,
+        "pc": 121706073,
+        "cd": 53514885,
+        "cc": 0
+      },
+      "closeGap": 53514885,
+      "openGap": 0
+    },
+    {
+      "k": "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR",
+      "name": "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR - Sundry Debtor",
+      "pdfName": "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR",
+      "pdf": {
+        "od": 0,
+        "oc": 0,
+        "cd": 0,
+        "cc": 0
+      },
+      "tb": {
+        "od": 0,
+        "oc": 0,
+        "pd": 45312000,
+        "pc": 22656000,
+        "cd": 22656000,
+        "cc": 0
+      },
+      "closeGap": 22656000,
+      "openGap": 0
+    },
+    {
+      "k": "M.N.TRADERS",
+      "name": "M.N.Traders - Sundry Debtor",
+      "pdfName": "M.N.Traders",
+      "pdf": {
+        "od": 0,
+        "oc": 0,
+        "cd": 30464,
+        "cc": 0
+      },
+      "tb": {
+        "od": 0,
+        "oc": 0,
+        "pd": 3537262,
+        "pc": 3733240,
+        "cd": 0,
+        "cc": 195978
+      },
+      "closeGap": -226442,
+      "openGap": 0
+    },
+    {
+      "k": "CATALYST ASPHALT PVT LTD",
+      "name": "CATALYST ASPHALT PVT LTD - Sundry Debtor",
+      "pdfName": "CATALYST ASPHALT PVT LTD",
+      "pdf": {
+        "od": 2468439,
+        "oc": 0,
+        "cd": 0,
+        "cc": 0
+      },
+      "tb": {
+        "od": 2468439,
+        "oc": 0,
+        "pd": 27093700.38,
+        "pc": 29344971.38,
+        "cd": 217168,
+        "cc": 0
+      },
+      "closeGap": 217168,
+      "openGap": 0
+    },
+    {
+      "k": "M/S RABINDRA PADHY DRS",
+      "name": "M/S RABINDRA PADHY DRS - Sundry Debtor",
+      "pdfName": "M/S RABINDRA PADHY DRS",
+      "pdf": {
+        "od": 0,
+        "oc": 0,
+        "cd": 0,
+        "cc": 0
+      },
+      "tb": {
+        "od": 0,
+        "oc": 0,
+        "pd": 45729868.54,
+        "pc": 45688434.54,
+        "cd": 41434,
+        "cc": 0
+      },
+      "closeGap": 41434,
+      "openGap": 0
+    },
+    {
+      "k": "GALAXY PETROLEUM - DR",
+      "name": "GALAXY PETROLEUM  - DR - Sundry Debtor | GALAXY PETROLEUM - DR - Sundry Debtor",
+      "pdfName": "GALAXY PETROLEUM  - DR",
+      "pdf": {
+        "od": 11934625,
+        "oc": 0,
+        "cd": 6074463,
+        "cc": 0
+      },
+      "tb": {
+        "od": 11934625,
+        "oc": 0,
+        "pd": 8608643,
+        "pc": 14468805,
+        "cd": 11934625,
+        "cc": 5860162
+      },
+      "closeGap": 0,
+      "openGap": 0
+    }
+  ],
+  "extras": [
+    {
+      "name": "M N TRADERS - Sundry Debtor",
+      "k": "M N TRADERS",
+      "od": 0,
+      "oc": 0,
+      "pd": 226442,
+      "pc": 0,
+      "cd": 226442,
+      "cc": 0
+    },
+    {
+      "name": "Sundry Debtors",
+      "k": "SUNDRY DEBTORS",
+      "od": 0,
+      "oc": 0,
+      "pd": 7330421,
+      "pc": 0,
+      "cd": 7330421,
+      "cc": 0
+    }
+  ],
+  "missing": [],
+  "copies": [
+    {
+      "k": "M.N.TRADERS",
+      "copies": [
+        {
+          "id": "96e7913b-60cc-41a4-aafa-62e1b064ac1f",
+          "name": "M.N.Traders",
+          "cat": "JOURNAL",
+          "active": true,
+          "group": "Sundry Debtors > M.N.Traders",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "a041c405-1292-45f0-b47a-5a6923b6a848",
+          "name": "M.N.Traders",
+          "cat": "JOURNAL",
+          "active": true,
+          "group": "Sundry Debtors > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "a58f74d2-baf8-46f4-a365-b401b1720db9",
+          "name": "M.N.Traders",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "917a771b-1bd0-41de-9c9b-1930e8216530",
+          "name": "M.N.Traders",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "a9e539ad-24e3-433b-9182-60a5d2303168",
+          "name": "M.N.Traders - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 37,
+          "dr": 3537262,
+          "cr": 3733240,
+          "byType": {
+            "SALE": {
+              "n": 16,
+              "dr": 3537262,
+              "cr": 0
+            },
+            "JOURNAL": {
+              "n": 3,
+              "dr": 0,
+              "cr": 33000
+            },
+            "RECEIPT": {
+              "n": 18,
+              "dr": 0,
+              "cr": 3700240
+            }
+          },
+          "oDr": 0,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "A G ART PETROCHEM LLP",
+      "copies": [
+        {
+          "id": "c361448d-4b14-42a5-9a4b-c7b6c6699e63",
+          "name": "A G ART PETROCHEM LLP",
+          "cat": "JOURNAL",
+          "active": true,
+          "group": "Sundry Debtors > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "c12deca9-f928-465f-86c9-0c31f3b99e1c",
+          "name": "A G ART PETROCHEM LLP",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "0643bf95-4acb-4d80-adfd-9bea7f8bd47d",
+          "name": "A G ART PETROCHEM LLP - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 96,
+          "dr": 121706073,
+          "cr": 121706073,
+          "byType": {
+            "JOURNAL": {
+              "n": 27,
+              "dr": 53514885,
+              "cr": 39298
+            },
+            "SALE": {
+              "n": 31,
+              "dr": 52270760,
+              "cr": 0
+            },
+            "RECEIPT": {
+              "n": 31,
+              "dr": 0,
+              "cr": 121666775
+            },
+            "PAYMENT": {
+              "n": 7,
+              "dr": 15920428,
+              "cr": 0
+            }
+          },
+          "oDr": 53514885,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR",
+      "copies": [
+        {
+          "id": "90f5e440-7db2-4907-92d2-6b556f8b1244",
+          "name": "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 10,
+          "dr": 45312000,
+          "cr": 22656000,
+          "byType": {
+            "SALE": {
+              "n": 2,
+              "dr": 22656000,
+              "cr": 0
+            },
+            "CREDIT_NOTE": {
+              "n": 8,
+              "dr": 22656000,
+              "cr": 22656000
+            }
+          },
+          "oDr": 0,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "SUNDRY DEBTORS",
+      "copies": [
+        {
+          "id": "09615fc5-b7f6-49a1-9f1b-6efc5e8a3122",
+          "name": "Sundry Debtors",
+          "cat": "JOURNAL",
+          "active": true,
+          "group": "Sundry Debtors > Sundry Debtors",
+          "n": 11,
+          "dr": 7330421,
+          "cr": 0,
+          "byType": {
+            "JOURNAL": {
+              "n": 11,
+              "dr": 7330421,
+              "cr": 0
+            }
+          },
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "44d01990-d300-4fcd-8b7b-7408618c167a",
+          "name": "Sundry Debtors",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "1713b427-fa0e-4efc-9fea-3f9d688e072f",
+          "name": "Sundry Debtors",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "CATALYST ASPHALT PVT LTD",
+      "copies": [
+        {
+          "id": "31204b3d-d69b-4a23-8a77-9e6802112fcb",
+          "name": "CATALYST ASPHALT PVT LTD",
+          "cat": "JOURNAL",
+          "active": true,
+          "group": "Sundry Debtors > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "7656e7d2-cde8-4e1c-941b-62aed43a1486",
+          "name": "CATALYST ASPHALT PVT LTD",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "38dc66f0-16e8-4686-825c-88112b7ba1c9",
+          "name": "CATALYST ASPHALT PVT LTD",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "7c3bf846-db1b-4cfe-b739-190a5d54865f",
+          "name": "CATALYST ASPHALT PVT LTD - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 59,
+          "dr": 27093700.38,
+          "cr": 29344971.38,
+          "byType": {
+            "SALE": {
+              "n": 23,
+              "dr": 26876532,
+              "cr": 0
+            },
+            "CREDIT_NOTE": {
+              "n": 5,
+              "dr": 217168.38,
+              "cr": 217168.38
+            },
+            "RECEIPT": {
+              "n": 8,
+              "dr": 0,
+              "cr": 29105028
+            },
+            "JOURNAL": {
+              "n": 23,
+              "dr": 0,
+              "cr": 22775
+            }
+          },
+          "oDr": 2468439,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "M/S RABINDRA PADHY DRS",
+      "copies": [
+        {
+          "id": "abc68735-856a-4e64-a792-c4602d86884f",
+          "name": "M/S RABINDRA PADHY DRS",
+          "cat": "JOURNAL",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "5d63b981-b874-4977-9b0f-79c69b488a70",
+          "name": "M/S RABINDRA PADHY DRS - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 60,
+          "dr": 45729868.54,
+          "cr": 45688434.54,
+          "byType": {
+            "RECEIPT": {
+              "n": 39,
+              "dr": 0,
+              "cr": 45647000
+            },
+            "SALE": {
+              "n": 12,
+              "dr": 44795588,
+              "cr": 0
+            },
+            "CREDIT_NOTE": {
+              "n": 8,
+              "dr": 41434.53999999999,
+              "cr": 41434.53999999999
+            },
+            "PAYMENT": {
+              "n": 1,
+              "dr": 892846,
+              "cr": 0
+            }
+          },
+          "oDr": 0,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "GALAXY PETROLEUM - DR",
+      "copies": [
+        {
+          "id": "8079bbf2-9233-4d49-b0ec-9f6c531f2678",
+          "name": "GALAXY PETROLEUM - DR",
+          "cat": "JOURNAL",
+          "active": false,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 0,
+          "oCr": 0
+        },
+        {
+          "id": "f4f35315-cec5-4661-b3a5-e4dd55a0debd",
+          "name": "GALAXY PETROLEUM - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 0,
+          "dr": 0,
+          "cr": 0,
+          "byType": {},
+          "oDr": 11934625,
+          "oCr": 0
+        },
+        {
+          "id": "67ac1a55-4e61-45cc-94af-72eea078a8b4",
+          "name": "GALAXY PETROLEUM  - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 19,
+          "dr": 8608643,
+          "cr": 14468805,
+          "byType": {
+            "SALE": {
+              "n": 5,
+              "dr": 8608643,
+              "cr": 0
+            },
+            "RECEIPT": {
+              "n": 14,
+              "dr": 0,
+              "cr": 14468805
+            }
+          },
+          "oDr": 0,
+          "oCr": 0
+        }
+      ]
+    },
+    {
+      "k": "M N TRADERS",
+      "copies": [
+        {
+          "id": "6df5d6c1-2894-4a38-9ded-9749283ca4f1",
+          "name": "M N TRADERS - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "active": true,
+          "group": "Current Assets > Sundry Debtors",
+          "n": 1,
+          "dr": 226442,
+          "cr": 0,
+          "byType": {
+            "SALE": {
+              "n": 1,
+              "dr": 226442,
+              "cr": 0
+            }
+          },
+          "oDr": 0,
+          "oCr": 0
+        }
+      ]
+    }
+  ]
+}

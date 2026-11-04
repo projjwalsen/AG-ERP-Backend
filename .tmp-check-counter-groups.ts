@@ -1,0 +1,2 @@
+import 'dotenv/config'; import {prisma} from './src/config/db';
+(async()=>{for(const q of ['Sales Accounts','GST Sales','IGST Sales','Indirect Income']){const a=await prisma.ledgerGroup.findMany({where:{name:{equals:q,mode:'insensitive'}},include:{parent:true},take:10});console.log(q,a.map(x=>({id:x.id,name:x.name,code:x.code,nature:x.nature,parent:x.parent?.name,parentId:x.parentId})));}await prisma.$disconnect()})()

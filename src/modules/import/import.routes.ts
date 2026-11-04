@@ -58,10 +58,10 @@ router.post(
  * /api/migration/import/payment-vouchers/reconcile:
  *   post:
  *     summary: Reconcile a Payment Voucher register
- *     description: Preview vouchers and subgroup paths from the uploaded Tally register. Set entry=true to create validated missing vouchers; existing subgroup mismatches are reported without being changed.
+ *     description: Preview vouchers and subgroup paths from the uploaded Tally register. Set entry=true to create validated missing vouchers. repairPostingIssues=true previews balanced row-level repairs; add repairExisting=true to apply eligible remaps, missing rows, and amount corrections. For ambiguous exact-path candidates, set repairAmbiguous=true and provide ledgerMappings selecting an eligible candidate ID. Run entry separately.
  *     tags: [Import]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -74,7 +74,12 @@ router.post(
  *               branchId: { type: string }
  *               entry: { type: boolean, default: false }
  *               enable: { type: boolean, description: Alias for entry. }
- *               stream: { type: boolean, default: true, description: Streams progress and per-voucher results; set false to use a single JSON response. }
+ *               repairExisting: { type: boolean, default: false, description: Apply validated repairs to existing vouchers. Without repairPostingIssues, only ledgerId remaps are applied. }
+ *               repairAmbiguous: { type: boolean, default: false, description: Requires ledgerMappings. Selects an exact-path candidate for preview or repair only when the chosen ledgerId is in that row's candidates. }
+ *               ledgerMappings: { type: string, description: 'JSON object mapping full Excel paths to candidate ledger IDs. Join path names with >.' }
+ *               repairPostingIssues: { type: boolean, default: false, description: Preview posting repairs; combine with repairExisting=true to apply. Adds or corrects rows only when every workbook row maps uniquely, no extra system entries or Journals remain, and projected debit and credit totals match the balanced workbook voucher. }
+ *               stream: { type: boolean, default: true, description: Streams progress and non-clean voucher results; set false to use a single JSON response. }
+ *               includeCorrectVouchers: { type: boolean, default: false, description: Include every already-correct voucher in the response. By default only vouchers needing attention are returned. }
  *     responses:
  *       200: { description: Per-voucher reconciliation results. }
  *       400: { description: Invalid workbook, unbalanced voucher, or request. }

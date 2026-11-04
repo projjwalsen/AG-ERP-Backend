@@ -1,0 +1,243 @@
+{
+  "relink": 2180,
+  "flips": 1,
+  "adds": 360,
+  "parks": 10,
+  "dates": 5,
+  "still2": 36,
+  "still2ByType": {
+    "Payment": {
+      "n": 13,
+      "dr": 0,
+      "cr": 41115337.16
+    },
+    "Receipt": {
+      "n": 22,
+      "dr": 141196845.24,
+      "cr": 0
+    },
+    "Contra": {
+      "n": 1,
+      "dr": 51713,
+      "cr": 0
+    }
+  },
+  "still2Sample": [
+    {
+      "date": "2025-04-03",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10672",
+      "side": "CREDIT",
+      "amount": 140804
+    },
+    {
+      "date": "2025-04-04",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10725",
+      "side": "CREDIT",
+      "amount": 179301
+    },
+    {
+      "date": "2025-05-04",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10726",
+      "side": "CREDIT",
+      "amount": 179301
+    },
+    {
+      "date": "2025-05-05",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10694",
+      "side": "CREDIT",
+      "amount": 212426
+    },
+    {
+      "date": "2025-05-07",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "11308",
+      "side": "CREDIT",
+      "amount": 186309
+    },
+    {
+      "date": "2025-05-22",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "11556",
+      "side": "CREDIT",
+      "amount": 93
+    },
+    {
+      "date": "2025-06-02",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "11784",
+      "side": "CREDIT",
+      "amount": 92864.16
+    },
+    {
+      "date": "2025-06-03",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "11814",
+      "side": "CREDIT",
+      "amount": 1059
+    },
+    {
+      "date": "2025-06-05",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10695",
+      "side": "CREDIT",
+      "amount": 212426
+    },
+    {
+      "date": "2025-08-04",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10729",
+      "side": "CREDIT",
+      "amount": 179301
+    },
+    {
+      "date": "2025-08-08",
+      "particular": "MOBILE & TELEPHONE EXPENSES",
+      "type": "Receipt",
+      "no": "12101",
+      "side": "DEBIT",
+      "amount": 473.49
+    },
+    {
+      "date": "2025-09-05",
+      "particular": "(as per details)",
+      "type": "Payment",
+      "no": "10698",
+      "side": "CREDIT",
+      "amount": 212426
+    },
+    {
+      "date": "2025-09-21",
+      "particular": "AXIS CORPORATE CARD 0344",
+      "type": "Payment",
+      "no": "21",
+      "side": "CREDIT",
+      "amount": 1257547
+    },
+    {
+      "date": "2025-10-31",
+      "particular": "(as per details)",
+      "type": "Receipt",
+      "no": "13944",
+      "side": "DEBIT",
+      "amount": 1600000
+    },
+    {
+      "date": "2025-10-31",
+      "particular": "(as per details)",
+      "type": "Receipt",
+      "no": "13947",
+      "side": "DEBIT",
+      "amount": 3619533
+    }
+  ],
+  "parkSample": [
+    {
+      "entryId": "9c10c352-571c-48bf-b524-ce3f5608c249",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "11601",
+      "side": "CREDIT",
+      "amount": 33202118,
+      "type": "PAYMENT"
+    },
+    {
+      "entryId": "9e03fea5-dc0c-4a8d-b314-0edea3958b58",
+      "from": "c1f62a06-f402-4b4c-a2b3-1dc3cb31c0b5",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "11308",
+      "side": "CREDIT",
+      "amount": 183400,
+      "type": "PAYMENT"
+    },
+    {
+      "entryId": "b19d2893-c2a4-4f2a-9752-8d816ffae1e6",
+      "from": "c1f62a06-f402-4b4c-a2b3-1dc3cb31c0b5",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "11556-TDS-MAR25",
+      "side": "CREDIT",
+      "amount": 89,
+      "type": "PAYMENT"
+    },
+    {
+      "entryId": "ef8bc6b2-fd0d-46b1-a7d4-3cabfc986430",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "15423",
+      "side": "DEBIT",
+      "amount": 102283,
+      "type": "RECEIPT"
+    },
+    {
+      "entryId": "1b20ea68-3396-4aa8-b4cc-ff78fb4b57cd",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "17188",
+      "side": "DEBIT",
+      "amount": 113295,
+      "type": "RECEIPT"
+    },
+    {
+      "entryId": "4e9efcde-842e-4f3a-8e64-3eaddeef7432",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "21.9",
+      "side": "CREDIT",
+      "amount": 1257547,
+      "type": "PAYMENT"
+    },
+    {
+      "entryId": "f2488955-7231-40a3-a39b-df46f76b3514",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "16642",
+      "side": "DEBIT",
+      "amount": 2300469,
+      "type": "RECEIPT"
+    },
+    {
+      "entryId": "738d2ab7-8da3-4785-b414-c5aee2ba2ae2",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "17992",
+      "side": "DEBIT",
+      "amount": 24666,
+      "type": "RECEIPT"
+    },
+    {
+      "entryId": "6391a84a-234d-43cc-92d6-d57d26989b5b",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "CB-CONTRA-20260307",
+      "side": "DEBIT",
+      "amount": 51713,
+      "type": "CONTRA"
+    },
+    {
+      "entryId": "3c246be2-e213-40a7-8d9a-fc4fda1d6e4c",
+      "from": "8faa06f2-6b04-404e-8729-1cc3dd5d073b",
+      "to": "7cf41220-8e89-4cd1-b6ce-e7bac996abd6",
+      "no": "KFD401-CONTRA-20251114",
+      "side": "DEBIT",
+      "amount": 594953,
+      "type": "CONTRA"
+    }
+  ],
+  "bob": {
+    "openings": 1,
+    "add18116": true
+  }
+}

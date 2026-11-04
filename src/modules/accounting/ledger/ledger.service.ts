@@ -68,6 +68,7 @@ type CreateVoucherPayload = {
     branchId?: string;
     narration?: string;
     voucherDate?: Date;
+    allowVoucherNoReuseOnDifferentDate?: boolean;
     entries: VoucherEntryPayload[];
 };
 
@@ -110,6 +111,27 @@ const ROOT_GROUPS: Record<string, { name: string; nature: LedgerNature }> = {
     EXPENSES: { name: "Expenses", nature: LedgerNature.DEBIT },
     PURCHASE_ACCOUNTS: { name: "Purchase Accounts", nature: LedgerNature.DEBIT },
     SALES_ACCOUNTS: { name: "Sales Accounts", nature: LedgerNature.CREDIT }
+};
+
+const headingKey = (name: string) =>
+    String(name || "").normalize("NFKC").toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+
+const descendantGroupIds = (
+    groups: Array<{ id: string; parentId: string | null }>,
+    rootId: string
+) => {
+    const ids = new Set([rootId]);
+    let changed = true;
+    while (changed) {
+        changed = false;
+        for (const group of groups) {
+            if (group.parentId && ids.has(group.parentId) && !ids.has(group.id)) {
+                ids.add(group.id);
+                changed = true;
+            }
+        }
+    }
+    return ids;
 };
 
 const CHILD_GROUPS: Record<string, { name: string; parentCode: string; nature: LedgerNature }> = {
@@ -158,7 +180,19 @@ export class LedgerService {
         });
         if (existing) return existing;
         const code = `JRNIMP-${createHash("sha1").update(`${parentId || "ROOT"}|${normalized.toUpperCase()}`).digest("hex").slice(0, 20)}`;
-        return client.ledgerGroup.create({ data: { code, name: normalized, parentId, nature } });
+        try {
+            return await client.ledgerGroup.create({ data: { code, name: normalized, parentId, nature } });
+        } catch (error: any) {
+            // Concurrent journal rows can discover the same missing group at
+            // the same time. Reuse the row created by the other transaction.
+            if (error?.code === "P2002") {
+                const raced = await client.ledgerGroup.findFirst({
+                    where: { parentId, name: { equals: normalized, mode: "insensitive" } }
+                });
+                if (raced) return raced;
+            }
+            throw error;
+        }
     }
 
     static async getOrCreateImportedJournalLedger(
@@ -175,9 +209,22 @@ export class LedgerService {
         });
         if (existing) return existing;
         const code = `JRNIMP-${createHash("sha1").update(`${branchId}|${groupId}|${normalized.toUpperCase()}`).digest("hex").slice(0, 24)}`;
-        return client.ledger.create({
-            data: { code, name: normalized, category: LedgerType.JOURNAL, groupId, nature, branchId }
-        });
+        try {
+            return await client.ledger.create({
+                data: { code, name: normalized, category: LedgerType.JOURNAL, groupId, nature, branchId }
+            });
+        } catch (error: any) {
+            // The deterministic code is intentionally shared by identical
+            // imported ledgers. If concurrent rows race during creation,
+            // reuse the ledger created by the winner.
+            if (error?.code === "P2002") {
+                const raced = await client.ledger.findFirst({
+                    where: { branchId, groupId, category: LedgerType.JOURNAL, name: { equals: normalized, mode: "insensitive" } }
+                });
+                if (raced) return raced;
+            }
+            throw error;
+        }
     }
 
     private static voucherPrefix(voucherType: VoucherType) {
@@ -1875,13 +1922,26 @@ export class LedgerService {
                     data:
                         statements
                 };
-            case "CREDITORS":
-
-                const creditorLedgers =
-                    ledgers.filter(
-                        x =>
-                            x.category === LedgerType.VENDOR
-                    );
+            case "CREDITORS": {
+                const ledgerGroups = await prisma.ledgerGroup.findMany({
+                    select: { id: true, name: true, parentId: true }
+                });
+                const currentLiabilityIds = new Set(
+                    ledgerGroups
+                        .filter(group => headingKey(group.name) === "currentliabilities")
+                        .map(group => group.id)
+                );
+                const tallyCreditors = ledgerGroups.find(group =>
+                    headingKey(group.name) === "sundrycreditors" &&
+                    group.parentId != null &&
+                    currentLiabilityIds.has(group.parentId)
+                );
+                const tallyCreditorGroupIds = tallyCreditors
+                    ? descendantGroupIds(ledgerGroups, tallyCreditors.id)
+                    : new Set<string>();
+                const creditorLedgers = tallyCreditorGroupIds.size
+                    ? ledgers.filter(ledger => tallyCreditorGroupIds.has(ledger.groupId))
+                    : ledgers.filter(ledger => ledger.category === LedgerType.VENDOR);
 
                 const statemnt =
                     await Promise.all(
@@ -1928,6 +1988,7 @@ export class LedgerService {
                     data:
                         statemnt
                 };
+            }
             case "ACCOUNTING_LEDGER":
             default: {
 
@@ -3452,11 +3513,20 @@ export class LedgerService {
             }
 
             const voucherNo = payload.voucherNo || this.generateVoucherNo(payload.voucherType, sourceId);
+            const duplicateCheckDate = payload.voucherDate || new Date();
+            const duplicateCheckStart = new Date(Date.UTC(
+                duplicateCheckDate.getUTCFullYear(), duplicateCheckDate.getUTCMonth(), duplicateCheckDate.getUTCDate()
+            ));
+            const duplicateCheckEnd = new Date(duplicateCheckStart.getTime() + 24 * 60 * 60 * 1000 - 1);
             const existingVoucherNo = await tx.voucher.findFirst({
-                where: {
-                    voucherNo,
-                    voucherType: payload.voucherType
-                }
+                where: payload.allowVoucherNoReuseOnDifferentDate
+                    ? {
+                        voucherNo,
+                        voucherType: payload.voucherType,
+                        branchId: payload.branchId || null,
+                        voucherDate: { gte: duplicateCheckStart, lte: duplicateCheckEnd }
+                    }
+                    : { voucherNo, voucherType: payload.voucherType }
             });
 
             if (existingVoucherNo) {
@@ -4967,6 +5037,79 @@ export class LedgerService {
         return targetLedger;
     }
 
+    static async assignOutwardNoteToImportedSalesType(
+        tx: Prisma.TransactionClient,
+        noteId: string,
+        importedType: string
+    ) {
+        const normalizedType = normalizeImportedTransactionType(importedType);
+        if (!normalizedType) {
+            throw new ApiError("Sales Transaction Type is required", 400);
+        }
+
+        const note = await tx.debitCreditNote.findUnique({
+            where: { id: noteId },
+            select: {
+                id: true,
+                branchId: true,
+                sourceType: true,
+                voucherId: true
+            }
+        });
+
+        if (!note) {
+            throw new ApiError("Debit/credit note not found", 404);
+        }
+        if (note.sourceType !== DebitCreditNoteSourceType.SALE) {
+            throw new ApiError("Only sale debit/credit notes can be classified as GST SALES", 400);
+        }
+        if (!note.voucherId) {
+            throw new ApiError("Debit/credit note has no accounting voucher", 400);
+        }
+
+        const targetLedger = await this.getOrCreateImportedSalesTypeLedger(
+            tx,
+            note.branchId,
+            normalizedType
+        );
+        const adjustmentEntries = await tx.ledgerEntry.findMany({
+            where: {
+                voucherId: note.voucherId,
+                ledger: {
+                    category: LedgerType.JOURNAL,
+                    OR: [
+                        { code: { startsWith: "SALE-DEBIT_NOTE-" } },
+                        { code: { startsWith: "SALE-CREDIT_NOTE-" } },
+                        { name: { equals: "Sales Debit Note Adjustments", mode: "insensitive" } },
+                        { name: { equals: "Sales Credit Note Adjustments", mode: "insensitive" } }
+                    ]
+                }
+            },
+            select: {
+                id: true,
+                ledgerId: true,
+                ledger: { select: { code: true, name: true } }
+            }
+        });
+
+        const previousLedgerIds = [...new Set(
+            adjustmentEntries.map(entry => entry.ledgerId)
+        )];
+
+        if (adjustmentEntries.length > 0) {
+            await tx.ledgerEntry.updateMany({
+                where: { id: { in: adjustmentEntries.map(entry => entry.id) } },
+                data: { ledgerId: targetLedger.id }
+            });
+        }
+
+        for (const ledgerId of [...previousLedgerIds, targetLedger.id]) {
+            await this.syncCachedBalance(tx, ledgerId);
+        }
+
+        return targetLedger;
+    }
+
     static async assignPurchaseToImportedType(
         purchaseId: string,
         importedType: string,
@@ -5519,6 +5662,33 @@ export class LedgerService {
 
         // Legacy reporting-only Purchase mappings are included by the Trial
         // Balance report and therefore exposed as a separate audit source.
+        const pathPurchases = await prisma.purchase.findMany({
+            where: {
+                ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+                status: PurchaseStatus.APPROVED,
+                AND: [
+                    { path: { not: null } },
+                    { path: { not: "" } }
+                ]
+            },
+            select: {
+                id: true,
+                invoiceNo: true,
+                path: true,
+                invoiceDate: true,
+                grandTotal: true,
+                voucherType: true,
+                agency: { select: { id: true, name: true } }
+            }
+        });
+        const normalizePurchaseHead = (value: string | null | undefined) => {
+            const head = importedTransactionTypeFromPath(value);
+            return head === "DISCOUNT PURCHASE" ? "DISCOUNT" : head;
+        };
+        const pathMatchedPurchases = pathPurchases.filter(purchase =>
+            normalizePurchaseHead(purchase.path) === importedType
+        );
+
         const legacyPurchases = await prisma.purchase.findMany({
             where: {
                 ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
@@ -5603,6 +5773,33 @@ export class LedgerService {
             : [];
 
         const voucherList = [...voucherRows.values()];
+        const voucherPurchaseIds = new Set(
+            voucherList.map(row => row.purchaseId).filter(Boolean)
+        );
+        for (const purchase of pathMatchedPurchases) {
+            if (voucherPurchaseIds.has(purchase.id)) continue;
+            voucherList.push({
+                purchaseId: purchase.id,
+                invoiceNo: purchase.invoiceNo,
+                voucherNo: purchase.invoiceNo,
+                voucherId: null,
+                voucherDate: purchase.invoiceDate,
+                status: PurchaseStatus.APPROVED,
+                sourceType: "PURCHASE_PATH",
+                voucherType: purchase.voucherType,
+                purchaseVoucherType: purchase.voucherType,
+                invoiceDate: purchase.invoiceDate,
+                purchaseGrandTotal: Number(purchase.grandTotal || 0),
+                agency: purchase.agency,
+                narration: purchase.path,
+                countedUnderPath: true,
+                ledger: importedType,
+                debit: Number(purchase.grandTotal || 0),
+                credit: 0
+            });
+            voucherPurchaseIds.add(purchase.id);
+        }
+        const pathPurchaseIds = new Set(pathMatchedPurchases.map(purchase => purchase.id));
         const legacyPurchaseIds = new Set(legacyRows.map(row => row.purchaseId));
         const requested = requestedVoucherNos.map(requested => {
             const key = requested.toUpperCase();
@@ -5630,7 +5827,12 @@ export class LedgerService {
             return {
                 requestedVoucherNo: requested,
                 exists,
-                countedUnderPath: Boolean(matchingVoucher.length || legacy.length || note.length),
+                countedUnderPath: Boolean(
+                    matchingVoucher.length ||
+                    legacy.length ||
+                    note.length ||
+                    (matchingPurchase && pathPurchaseIds.has(matchingPurchase.id))
+                ),
                 purchase: matchingVoucher[0] || matchingPurchase || null,
                 systemVoucher: matchingSystemVoucher || null,
                 legacyMappings: legacy,

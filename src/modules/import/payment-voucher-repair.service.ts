@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { EntryType, LedgerNature, VoucherType } from "@prisma/client";
+import { EntryType, LedgerNature, LedgerType, Prisma, VoucherType } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { prisma } from "../../config/db";
 import { ApiError } from "../../core/middleware/errorHandler";
@@ -159,27 +159,75 @@ function parseWorkbook(buffer: Buffer): VoucherData[] {
     if (!lines.length) throw new ApiError("No Payment voucher rows found with the expected register columns", 400);
 
     const vouchers = new Map<string, VoucherData>();
+    const undatedByNarration = new Map<string, VoucherData>();
     for (const line of lines) {
         const dateKey = line.voucherDate
             ? `${line.voucherDate.getFullYear()}-${line.voucherDate.getMonth() + 1}-${line.voucherDate.getDate()}`
             : "undated";
-        const groupKey = `${line.voucherNo.toLowerCase()}|${dateKey}`;
-        const voucher = vouchers.get(groupKey) || {
+        // When a Tally date cell contains a group label or is blank, a repeated
+        // voucher number can otherwise be split from its other lines. Narration
+        // lets us keep separate, reused voucher numbers together safely.
+        const narrationKey = key(line.narration);
+        const groupKey = dateKey === "undated"
+            ? `${line.voucherNo.toLowerCase()}|undated|${narrationKey}`
+            : `${line.voucherNo.toLowerCase()}|${dateKey}`;
+        const target = dateKey === "undated" ? undatedByNarration : vouchers;
+        const voucher = target.get(groupKey) || {
             voucherNo: line.voucherNo, voucherDate: line.voucherDate, lines: [], debit: 0, credit: 0
         };
         voucher.voucherDate ||= line.voucherDate;
         voucher.lines.push(line);
         voucher.debit = roundMoney(voucher.debit + line.debit);
         voucher.credit = roundMoney(voucher.credit + line.credit);
-        vouchers.set(groupKey, voucher);
+        target.set(groupKey, voucher);
+    }
+    // A missing/invalid date can be a merged cell on the continuation rows.
+    // Attach those rows to a dated transaction only when the voucher number
+    // and non-empty narration identify exactly one candidate.
+    for (const [groupKey, undated] of undatedByNarration) {
+        const narrationParts = groupKey.split("|undated|");
+        const narrationKey = narrationParts[narrationParts.length - 1] || "";
+        const candidates = [...vouchers.entries()].filter(([datedKey, dated]) =>
+            datedKey.startsWith(`${undated.voucherNo.toLowerCase()}|`) &&
+            dated.lines.some(line => key(line.narration) === narrationKey)
+        );
+        if (narrationKey && candidates.length === 1) {
+            const [datedKey, dated] = candidates[0];
+            dated.lines.push(...undated.lines);
+            dated.debit = roundMoney(dated.debit + undated.debit);
+            dated.credit = roundMoney(dated.credit + undated.credit);
+            vouchers.set(datedKey, dated);
+        } else {
+            vouchers.set(groupKey, undated);
+        }
     }
     return [...vouchers.values()];
 }
 
-const normalizedPath = (values: string[]) => values.map(value => value.replace(/\s+/g, " ").trim().toLowerCase());
+const normalizedPath = (values: string[]) => values.map(value => value
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase());
 const normalizedPartyName = (value: unknown) => normalize(value)
-    .replace(/\s+-\s+sundry\s+creditor\s*$/i, "")
+    .replace(/\s+-\s+sundry\s+(?:creditor|debtor)\s*$/i, "")
     .toLowerCase();
+const partyKey = (value: unknown) => key(normalizedPartyName(value));
+
+// Some imported ledgers have a subgroup whose name repeats the ledger name,
+// while other party ledgers append their category (" - Sundry Debtor") to the
+// ledger name. Both are equivalent to the workbook's canonical path/name.
+const canonicalLedgerPath = (values: string[]) => {
+    const path = [...values];
+    if (path.length > 1 && partyKey(path[path.length - 1]) === partyKey(path[path.length - 2])) {
+        path.splice(path.length - 2, 1);
+    }
+    if (path.length) path[path.length - 1] = normalizedPartyName(path[path.length - 1]);
+    return normalizedPath(path);
+};
 
 export class PaymentVoucherRepairService {
     static async reconcile(
@@ -188,7 +236,11 @@ export class PaymentVoucherRepairService {
         entry = false,
         requestedBranchId?: string,
         onVoucher?: (voucher: Record<string, unknown>) => void,
-        onProgress?: (progress: { processed: number; total: number; voucherNo: string }) => void
+        onProgress?: (progress: { processed: number; total: number; voucherNo: string }) => void,
+        repairExisting = false,
+        repairAmbiguous = false,
+        ledgerMappings: Record<string, string> = {},
+        repairPostingIssues = false
     ) {
         if (!actor?.id) throw new ApiError("Unauthorized", 401);
         if (requestedBranchId && actor.branchAccessType !== "ALL" && requestedBranchId !== actor.branchId) {
@@ -196,8 +248,17 @@ export class PaymentVoucherRepairService {
         }
         const branchId = actor.branchAccessType === "ALL" ? requestedBranchId : actor.branchId;
         if (!branchId) throw new ApiError("branchId is required for payment voucher reconciliation", 400);
+        if (entry && (repairExisting || repairAmbiguous || repairPostingIssues)) {
+            throw new ApiError("Create missing vouchers and repair existing postings in separate runs", 400);
+        }
+        if (repairAmbiguous && !Object.keys(ledgerMappings).length) {
+            throw new ApiError("repairAmbiguous requires ledgerMappings that select a candidate ledger ID for each full path", 400);
+        }
+        if (!repairAmbiguous && Object.keys(ledgerMappings).length) {
+            throw new ApiError("ledgerMappings can only be used with repairAmbiguous=true", 400);
+        }
 
-        const vouchers = parseWorkbook(buffer);
+        let vouchers = parseWorkbook(buffer);
         // Payment registers identify a creditor by the account name and its
         // Sundry Creditors path. Resolve that name back to the Agency master
         // so the posting uses the canonical agency-linked VENDOR ledger.
@@ -229,6 +290,24 @@ export class PaymentVoucherRepairService {
             }
             return [...result, ledger.name];
         };
+        const agencyIds = agencies.map(agency => agency.id);
+        const vendorLedgers = agencyIds.length ? await prisma.ledger.findMany({
+            where: {
+                branchId,
+                category: LedgerType.VENDOR,
+                agencyId: { in: agencyIds },
+                isActive: true
+            },
+            select: { id: true, name: true, groupId: true, agencyId: true }
+        }) : [];
+        const vendorLedgersByAgency = new Map<string, typeof vendorLedgers>();
+        for (const ledger of vendorLedgers) {
+            if (!ledger.agencyId) continue;
+            vendorLedgersByAgency.set(ledger.agencyId, [...(vendorLedgersByAgency.get(ledger.agencyId) || []), ledger]);
+        }
+        const mappingsByPath = new Map(Object.entries(ledgerMappings).map(([path, ledgerId]) => [
+            JSON.stringify(normalizedPath(path.split(" > "))), String(ledgerId).trim()
+        ]));
 
         // Load the workbook's existing vouchers and candidate ledgers once.
         // The old per-voucher/per-line lookups caused thousands of serial DB
@@ -240,9 +319,10 @@ export class PaymentVoucherRepairService {
             const batch = await prisma.voucher.findMany({
                 where: {
                     voucherNo: { in: voucherNumbers.slice(index, index + voucherBatchSize) },
-                    voucherType: VoucherType.PAYMENT
+                    voucherType: VoucherType.PAYMENT,
+                    branchId
                 },
-                include: { entries: true }
+                include: { entries: { include: { ledger: true } }, journals: { select: { id: true } } }
             });
             for (const voucher of batch) {
                 existingByNumber.set(voucher.voucherNo, [
@@ -251,21 +331,57 @@ export class PaymentVoucherRepairService {
             }
         }
 
+        // If a malformed/merged Date cell split one workbook transaction into
+        // multiple fragments, merge them only when the combined debit and
+        // credit exactly match the single existing voucher for that number.
+        // Reused numbers with multiple system vouchers are left separate and
+        // resolved later by date and totals.
+        const vouchersByNumber = new Map<string, VoucherData[]>();
+        for (const voucher of vouchers) {
+            vouchersByNumber.set(voucher.voucherNo, [...(vouchersByNumber.get(voucher.voucherNo) || []), voucher]);
+        }
+        const reconciledVouchers: VoucherData[] = [];
+        for (const [voucherNo, fragments] of vouchersByNumber) {
+            const existing = existingByNumber.get(voucherNo) || [];
+            if (fragments.length > 1 && existing.length === 1) {
+                const debit = roundMoney(fragments.reduce((sum, fragment) => sum + fragment.debit, 0));
+                const credit = roundMoney(fragments.reduce((sum, fragment) => sum + fragment.credit, 0));
+                if (Math.abs(debit - Number(existing[0].totalDebit)) < 0.005 &&
+                    Math.abs(credit - Number(existing[0].totalCredit)) < 0.005) {
+                    reconciledVouchers.push({
+                        voucherNo,
+                        voucherDate: fragments.find(fragment => fragment.voucherDate)?.voucherDate || existing[0].voucherDate,
+                        lines: fragments.flatMap(fragment => fragment.lines),
+                        debit,
+                        credit
+                    });
+                    continue;
+                }
+            }
+            reconciledVouchers.push(...fragments);
+        }
+        vouchers = reconciledVouchers;
+
         const ledgerNames = [...new Set(vouchers.flatMap(voucher =>
             voucher.lines.map(line => normalize(line.accountName))
         ))];
+        const ledgerLookupNames = [...new Set(ledgerNames.flatMap(name => [
+            name,
+            `${name} - Sundry Debtor`,
+            `${name} - Sundry Creditor`
+        ]))];
         const ledgersByName = new Map<string, any[]>();
-        for (let index = 0; index < ledgerNames.length; index += voucherBatchSize) {
+        for (let index = 0; index < ledgerLookupNames.length; index += voucherBatchSize) {
             const batch = await prisma.ledger.findMany({
                 where: {
-                    name: { in: ledgerNames.slice(index, index + voucherBatchSize), mode: "insensitive" },
+                    name: { in: ledgerLookupNames.slice(index, index + voucherBatchSize), mode: "insensitive" },
                     isActive: true,
                     OR: [{ branchId }, { branchId: null }]
                 },
-                select: { id: true, name: true, groupId: true }
+                select: { id: true, name: true, groupId: true, branchId: true, category: true, agencyId: true }
             });
             for (const ledger of batch) {
-                const normalizedName = normalize(ledger.name).toLowerCase();
+                const normalizedName = partyKey(ledger.name);
                 ledgersByName.set(normalizedName, [
                     ...(ledgersByName.get(normalizedName) || []), ledger
                 ]);
@@ -278,6 +394,7 @@ export class PaymentVoucherRepairService {
             onVoucher?.(result);
         };
         let created = 0;
+        let repaired = 0;
         const createVoucher = async (voucher: VoucherData) => prisma.$transaction(async tx => {
             const postingLines: Array<{
                 ledgerId: string; entryType: EntryType; amount: number; branchId: string; narration?: string
@@ -332,12 +449,38 @@ export class PaymentVoucherRepairService {
                 voucherType: VoucherType.PAYMENT,
                 sourceId: randomUUID(),
                 branchId,
+                allowVoucherNoReuseOnDifferentDate: true,
                 voucherDate: voucher.voucherDate!,
                 narration: voucher.lines.map(line => line.narration).filter(Boolean).join(" | ").slice(0, 1000),
                 entries: postingLines
             }, tx);
             return { createdVoucher, postingLines, postingMetadata };
         }, { maxWait: 60_000, timeout: 5 * 60_000 });
+
+        const getOrCreateTargetLedger = async (tx: any, line: VoucherLine) => {
+            const agency = resolveCreditorAgency(line);
+            if (agency) return LedgerService.getOrCreateVendorLedger(tx, branchId, agency.id);
+            const nature = /LIABIL|CREDIT|INCOME|CAPITAL|DUTI|TAX|CREDITOR/i.test(line.groups[0] || "")
+                ? LedgerNature.CREDIT : LedgerNature.DEBIT;
+            let parentId: string | null = null;
+            for (const groupName of line.groups) {
+                const group = await LedgerService.getOrCreateImportedJournalGroup(tx, groupName, parentId, nature);
+                parentId = group.id;
+            }
+            if (!parentId) throw new Error(`No target subgroup for ${line.accountName}`);
+            const ledgersInTargetGroup = await tx.ledger.findMany({
+                where: { branchId, groupId: parentId, isActive: true }
+            });
+            const matchingLedgers = ledgersInTargetGroup.filter((ledger: any) =>
+                partyKey(ledger.name) === partyKey(line.accountName)
+            );
+            if (matchingLedgers.length > 1) throw new Error(`Target ledger is ambiguous for ${line.accountName}`);
+            if (matchingLedgers.length === 1) return matchingLedgers[0];
+            return LedgerService.getOrCreateImportedJournalLedger(tx, branchId, line.accountName, parentId, nature);
+        };
+
+        const sameDay = (left?: Date, right?: Date) => Boolean(left && right &&
+            left.toISOString().slice(0, 10) === right.toISOString().slice(0, 10));
         for (const [voucherIndex, voucher] of vouchers.entries()) {
             onProgress?.({
                 processed: voucherIndex,
@@ -345,16 +488,54 @@ export class PaymentVoucherRepairService {
                 voucherNo: voucher.voucherNo
             });
             const systemVouchers = existingByNumber.get(voucher.voucherNo) || [];
-            if (systemVouchers.length > 1) {
-                addResult({ voucherNo: voucher.voucherNo, voucherDate: voucher.voucherDate, status: "ambiguous", reason: "More than one PAYMENT voucher has this number" });
+            const matchingTotals = systemVouchers.filter((candidate: any) =>
+                Math.abs(Number(candidate.totalDebit) - voucher.debit) < 0.005 &&
+                Math.abs(Number(candidate.totalCredit) - voucher.credit) < 0.005
+            );
+            const matchingDateAndTotals = voucher.voucherDate
+                ? matchingTotals.filter((candidate: any) => sameDay(candidate.voucherDate, voucher.voucherDate))
+                : [];
+            const sameDateCandidates = voucher.voucherDate
+                ? systemVouchers.filter((candidate: any) => sameDay(candidate.voucherDate, voucher.voucherDate))
+                : [];
+            const overlapScore = (candidate: any) => voucher.lines.reduce((score, line) => {
+                const agency = resolveCreditorAgency(line);
+                const side = line.debit > 0 ? EntryType.DEBIT : EntryType.CREDIT;
+                const value = Math.max(line.debit, line.credit);
+                const matches = (candidate.entries || []).filter((item: any) =>
+                    item.entryType === side && (partyKey(item.ledger?.name) === partyKey(line.accountName) ||
+                        Boolean(agency && item.ledger?.agencyId === agency.id)));
+                if (!matches.length) return score;
+                const exactValue = matches.some((item: any) => Math.abs(Number(item.amount) - value) < 0.005);
+                return score + (exactValue ? 4 : 1);
+            }, 0);
+            const scoredCandidates = systemVouchers.map((candidate: any) => ({ candidate, score: overlapScore(candidate) }))
+                // One exact ledger/amount/side match is the minimum acceptable
+                // overlap. A shared bank ledger name alone is too common to
+                // disambiguate reused voucher numbers safely.
+                .filter((item: any) => item.score >= 4)
+                .sort((a: any, b: any) => b.score - a.score);
+            const bestOverlap = scoredCandidates.length &&
+                (scoredCandidates.length === 1 || scoredCandidates[0].score > scoredCandidates[1].score)
+                ? scoredCandidates[0] : undefined;
+            const systemVoucher = matchingDateAndTotals.length === 1 ? matchingDateAndTotals[0]
+                : matchingTotals.length === 1 ? matchingTotals[0]
+                    : sameDateCandidates.length === 1 ? sameDateCandidates[0]
+                        : bestOverlap ? bestOverlap.candidate
+                            : undefined;
+            const reusedNumberMissing = Boolean(voucher.voucherDate && systemVouchers.length > 0 &&
+                !systemVoucher && sameDateCandidates.length === 0 && matchingTotals.length === 0 && !bestOverlap);
+            if (systemVouchers.length > 0 && !systemVoucher && !reusedNumberMissing) {
+                addResult({ voucherNo: voucher.voucherNo, voucherDate: voucher.voucherDate, status: "ambiguous", reason: "More than one PAYMENT voucher has this number and date/totals do not identify one safely" });
                 continue;
             }
-            if (systemVouchers.length === 0) {
+            if (!systemVoucher) {
                 const balanced = Math.abs(voucher.debit - voucher.credit) < 0.005;
                 const dateAvailable = Boolean(voucher.voucherDate);
                 const status = balanced && dateAvailable ? "missing" : "invalidMissingVoucher";
                 const result: Record<string, unknown> = {
                     voucherNo: voucher.voucherNo, status, voucherDate: voucher.voucherDate,
+                    reusedVoucherNumber: reusedNumberMissing,
                     debit: voucher.debit, credit: voucher.credit, balanced, dateAvailable,
                     rows: voucher.lines.map(line => {
                         const agency = resolveCreditorAgency(line);
@@ -385,7 +566,7 @@ export class PaymentVoucherRepairService {
                             entryCount: postingLines.length,
                             rows: postingMetadata
                         });
-                        existingByNumber.set(voucher.voucherNo, [createdVoucher]);
+                        existingByNumber.set(voucher.voucherNo, [...(existingByNumber.get(voucher.voucherNo) || []), createdVoucher]);
                     } catch (error) {
                         Object.assign(result, {
                             status: "creationFailed",
@@ -397,44 +578,276 @@ export class PaymentVoucherRepairService {
                 continue;
             }
 
-            const systemVoucher = systemVouchers[0];
             const checks: Array<Record<string, unknown>> = [];
+            const repairPlans: Array<{
+                action: "remap" | "amount" | "add";
+                entryId?: string;
+                oldLedgerId?: string;
+                oldAmount?: number;
+                targetLedgerId?: string;
+                line: VoucherLine;
+            }> = [];
+            const consumedEntryIds = new Set<string>();
             for (const line of voucher.lines) {
-                const ledgers = ledgersByName.get(normalize(line.accountName).toLowerCase()) || [];
+                const indexedLedgers = ledgersByName.get(partyKey(line.accountName)) || [];
+                const voucherLedgers = systemVoucher.entries
+                    .map((item: any) => item.ledger)
+                    .filter((ledger: any) => ledger && partyKey(ledger.name) === partyKey(line.accountName));
+                const ledgers = [...new Map([...indexedLedgers, ...voucherLedgers].map((ledger: any) => [ledger.id, ledger])).values()];
                 const expectedPath = normalizedPath([...line.groups, line.accountName]);
-                const correctPathLedgers = ledgers.filter(ledger =>
+                const expectedGroupPath = normalizedPath(line.groups);
+                const exactPathMatches = ledgers.filter(ledger =>
                     JSON.stringify(normalizedPath(actualPath(ledger))) === JSON.stringify(expectedPath));
-                const expectedLedger = correctPathLedgers.length === 1 ? correctPathLedgers[0] : undefined;
+                const exactGroupMatches = ledgers.filter(ledger => {
+                    const path = actualPath(ledger);
+                    return partyKey(ledger.name) === partyKey(line.accountName) &&
+                        JSON.stringify(normalizedPath(path.slice(0, -1))) === JSON.stringify(expectedGroupPath);
+                });
+                // Prefer an exact workbook path, then the exact workbook group
+                // path with a normalized party-ledger suffix. Only fall back
+                // to the legacy repeated-leaf path when neither exists; mixing
+                // canonical aliases with exact matches falsely marks thousands
+                // of correctly posted bank rows as ambiguous.
+                const pathMatches = exactPathMatches.length
+                    ? exactPathMatches
+                    : exactGroupMatches.length
+                        ? exactGroupMatches
+                        : ledgers.filter(ledger =>
+                            JSON.stringify(canonicalLedgerPath(actualPath(ledger))) ===
+                            JSON.stringify(canonicalLedgerPath([...line.groups, line.accountName])));
+                const scopedPathMatches = pathMatches.filter(ledger => ledger.branchId === branchId);
+                const usablePathMatches = scopedPathMatches.length ? scopedPathMatches : pathMatches.filter(ledger => ledger.branchId === null);
+                const agency = resolveCreditorAgency(line);
+                const agencyMatches = agency ? vendorLedgersByAgency.get(agency.id) || [] : [];
+                const expectedCandidates = agency ? agencyMatches : usablePathMatches;
+                const expectedPathKey = JSON.stringify(normalizedPath([...line.groups, line.accountName]));
+                const selectedLedgerId = mappingsByPath.get(expectedPathKey);
+                const selectedCandidate = selectedLedgerId
+                    ? expectedCandidates.find((ledger: any) => ledger.id === selectedLedgerId)
+                    : undefined;
+                const expectedLedger = expectedCandidates.length === 1
+                    ? expectedCandidates[0]
+                    : expectedCandidates.length > 1 ? selectedCandidate : undefined;
+                const candidateLedgerDetails = expectedCandidates.map((ledger: any) => ({
+                    ledgerId: ledger.id,
+                    ledgerName: ledger.name,
+                    branchId: ledger.branchId,
+                    path: actualPath(ledger)
+                }));
                 const side = line.debit > 0 ? EntryType.DEBIT : EntryType.CREDIT;
                 const value = Math.max(line.debit, line.credit);
-                const correctEntry = expectedLedger && systemVoucher.entries.some(item =>
+                const availableEntries = systemVoucher.entries.filter((item: any) => !consumedEntryIds.has(item.id));
+                const correctEntry = expectedLedger && availableEntries.find((item: any) =>
                     item.ledgerId === expectedLedger.id && item.entryType === side && Math.abs(Number(item.amount) - value) < 0.005);
-                const wrongPathLedger = ledgers.find(ledger => systemVoucher.entries.some(item =>
-                    item.ledgerId === ledger.id && item.entryType === side && Math.abs(Number(item.amount) - value) < 0.005));
-                const status = correctEntry ? "correctSubGroup"
-                    : correctPathLedgers.length > 1 ? "ledgerPathAmbiguous"
-                        : wrongPathLedger ? "wrongSubGroup"
-                            : expectedLedger ? "postingMissing" : "ledgerPathNotFound";
+                if (correctEntry) {
+                    consumedEntryIds.add(correctEntry.id);
+                    checks.push({
+                        sourceRow: line.sourceRow, accountName: line.accountName,
+                        expectedPath: [...line.groups, line.accountName], actualPath: actualPath(expectedLedger),
+                        status: "correctSubGroup", debit: line.debit, credit: line.credit
+                    });
+                    continue;
+                }
+                const sourceIdentityEntries = availableEntries.filter((item: any) => {
+                    const sameLedgerName = partyKey(item.ledger?.name) === partyKey(line.accountName);
+                    const sameAgency = Boolean(agency && item.ledger?.agencyId === agency.id);
+                    return sameLedgerName || sameAgency;
+                });
+                const sourceEntries = sourceIdentityEntries.filter((item: any) =>
+                    item.entryType === side && Math.abs(Number(item.amount) - value) < 0.005);
+                let status: string;
+                if (expectedCandidates.length > 1 && !expectedLedger) status = "ledgerPathAmbiguous";
+                else if (sourceEntries.length === 1) {
+                    const sourceEntry = sourceEntries[0];
+                    consumedEntryIds.add(sourceEntry.id);
+                    repairPlans.push({
+                        action: "remap", entryId: sourceEntry.id, oldLedgerId: sourceEntry.ledgerId,
+                        oldAmount: Number(sourceEntry.amount), targetLedgerId: expectedLedger?.id, line
+                    });
+                    status = expectedLedger ? "wrongSubGroup" : "ledgerPathNotFound";
+                } else if (sourceEntries.length > 1) status = "postingAmbiguous";
+                else if (sourceIdentityEntries.length === 1 && sourceIdentityEntries[0].entryType === side) {
+                    status = "amountMismatch";
+                    if (repairPostingIssues) {
+                        const sourceEntry = sourceIdentityEntries[0];
+                        consumedEntryIds.add(sourceEntry.id);
+                        repairPlans.push({
+                            action: "amount", entryId: sourceEntry.id, oldLedgerId: sourceEntry.ledgerId,
+                            oldAmount: Number(sourceEntry.amount), targetLedgerId: expectedLedger?.id, line
+                        });
+                    }
+                } else if (sourceIdentityEntries.length === 0) {
+                    status = expectedLedger ? "postingMissing" : "ledgerPathNotFound";
+                    if (repairPostingIssues) repairPlans.push({ action: "add", targetLedgerId: expectedLedger?.id, line });
+                } else if (sourceIdentityEntries.length === 1) status = "postingAmbiguous";
+                else status = expectedLedger ? "postingMissing" : "ledgerPathNotFound";
+                const lineRepair = repairPlans.find(plan => plan.line.sourceRow === line.sourceRow);
                 checks.push({
                     sourceRow: line.sourceRow, accountName: line.accountName,
-                    expectedPath: [...line.groups, line.accountName], actualPath: wrongPathLedger ? actualPath(wrongPathLedger) : undefined,
-                    status, debit: line.debit, credit: line.credit
+                    expectedPath: [...line.groups, line.accountName],
+                    actualPath: sourceEntries.length === 1 ? actualPath(sourceEntries[0].ledger) : undefined,
+                    targetLedgerId: expectedLedger?.id,
+                    ...(expectedCandidates.length > 1 ? { candidateLedgers: candidateLedgerDetails } : {}),
+                    ...(selectedLedgerId && !selectedCandidate ? { mappingError: "Selected ledgerId is not an eligible candidate for this workbook path" } : {}),
+                    status, repairable: Boolean(lineRepair), repairAction: lineRepair?.action,
+                    actualAmount: sourceIdentityEntries.length === 1 ? Number(sourceIdentityEntries[0].amount) : undefined,
+                    debit: line.debit, credit: line.credit
                 });
             }
-            const issues = checks.filter(check => check.status !== "correctSubGroup").length;
+            const extraEntries = systemVoucher.entries.filter((item: any) => !consumedEntryIds.has(item.id));
+            const totalsMatch = Math.abs(Number(systemVoucher.totalDebit) - voucher.debit) < 0.005 &&
+                Math.abs(Number(systemVoucher.totalCredit) - voucher.credit) < 0.005;
+            const plannedAdds = repairPlans.filter(plan => plan.action === "add").length;
+            let projectedDebit = systemVoucher.entries.reduce((sum: number, item: any) =>
+                sum + (item.entryType === EntryType.DEBIT ? Number(item.amount) : 0), 0);
+            let projectedCredit = systemVoucher.entries.reduce((sum: number, item: any) =>
+                sum + (item.entryType === EntryType.CREDIT ? Number(item.amount) : 0), 0);
+            for (const plan of repairPlans) {
+                const value = Math.max(plan.line.debit, plan.line.credit);
+                if (plan.action === "add") {
+                    if (plan.line.debit > 0) projectedDebit += value;
+                    else projectedCredit += value;
+                } else if (plan.action === "amount") {
+                    const delta = value - Number(plan.oldAmount || 0);
+                    if (plan.line.debit > 0) projectedDebit += delta;
+                    else projectedCredit += delta;
+                }
+            }
+            projectedDebit = roundMoney(projectedDebit);
+            projectedCredit = roundMoney(projectedCredit);
+            const allRowsCovered = repairPlans.length === checks.filter(check => check.status !== "correctSubGroup").length;
+            const hasNoLinkedJournals = systemVoucher.journals.length === 0;
+            const ledgerOnlySafe = totalsMatch && systemVoucher.entries.length === voucher.lines.length &&
+                extraEntries.length === 0 && allRowsCovered && hasNoLinkedJournals &&
+                repairPlans.every(plan => plan.action === "remap");
+            const postingRepairSafe = Math.abs(voucher.debit - voucher.credit) < 0.005 &&
+                Math.abs(projectedDebit - voucher.debit) < 0.005 &&
+                Math.abs(projectedCredit - voucher.credit) < 0.005 &&
+                systemVoucher.entries.length + plannedAdds === voucher.lines.length &&
+                extraEntries.length === 0 && allRowsCovered && hasNoLinkedJournals;
+            const repairSafe = repairPostingIssues ? postingRepairSafe : ledgerOnlySafe;
+            let repairedThisVoucher = 0;
+            if (repairExisting && repairPlans.length && repairSafe) {
+                try {
+                    await prisma.$transaction(async tx => {
+                        const linkedJournals = await tx.journal.count({ where: { voucherId: systemVoucher.id } });
+                        if (linkedJournals) throw new Error("Voucher has linked Journal rows; manual review is required before remapping");
+                        const currentVoucher = await tx.voucher.findUnique({ where: { id: systemVoucher.id } });
+                        if (!currentVoucher ||
+                            Math.abs(Number(currentVoucher.totalDebit) - Number(systemVoucher.totalDebit)) >= 0.005 ||
+                            Math.abs(Number(currentVoucher.totalCredit) - Number(systemVoucher.totalCredit)) >= 0.005) {
+                            throw new Error(`Voucher ${voucher.voucherNo} changed after preview; no entries were changed`);
+                        }
+                        const currentEntries = await tx.ledgerEntry.findMany({
+                            where: { voucherId: systemVoucher.id },
+                            select: { id: true, ledgerId: true, entryType: true, amount: true }
+                        });
+                        const initialEntriesById = new Map(systemVoucher.entries.map((item: any) => [item.id, item]));
+                        if (currentEntries.length !== systemVoucher.entries.length || currentEntries.some((item: any) => {
+                            const initial = initialEntriesById.get(item.id) as any;
+                            return !initial || initial.ledgerId !== item.ledgerId || initial.entryType !== item.entryType ||
+                                Math.abs(Number(initial.amount) - Number(item.amount)) >= 0.005;
+                        })) {
+                            throw new Error(`Voucher ${voucher.voucherNo} entries changed after preview; no entries were changed`);
+                        }
+                        const affectedLedgerIds = new Set<string>();
+                        let appliedRows = 0;
+                        for (const plan of repairPlans) {
+                            const targetLedger = plan.targetLedgerId
+                                ? await tx.ledger.findUnique({ where: { id: plan.targetLedgerId } })
+                                : await getOrCreateTargetLedger(tx, plan.line);
+                            if (!targetLedger) throw new Error(`Target ledger not found for ${plan.line.accountName}`);
+                            const amount = Math.max(plan.line.debit, plan.line.credit);
+                            const entryType = plan.line.debit > 0 ? EntryType.DEBIT : EntryType.CREDIT;
+                            if (plan.action === "add") {
+                                await tx.ledgerEntry.create({
+                                    data: {
+                                        voucherId: systemVoucher.id,
+                                        ledgerId: targetLedger.id,
+                                        branchId,
+                                        entryType,
+                                        amount,
+                                        narration: plan.line.narration || undefined
+                                    }
+                                });
+                                affectedLedgerIds.add(targetLedger.id);
+                                appliedRows += 1;
+                                continue;
+                            }
+                            const currentEntry = await tx.ledgerEntry.findUnique({ where: { id: plan.entryId! } });
+                            if (!currentEntry || currentEntry.voucherId !== systemVoucher.id ||
+                                currentEntry.ledgerId !== plan.oldLedgerId || currentEntry.entryType !== entryType ||
+                                Math.abs(Number(currentEntry.amount) - Number(plan.oldAmount)) >= 0.005) {
+                                throw new Error(`Voucher ${voucher.voucherNo} changed after preview; no entries were changed`);
+                            }
+                            if (currentEntry.ledgerId !== targetLedger.id ||
+                                (plan.action === "amount" && Math.abs(Number(currentEntry.amount) - amount) >= 0.005)) {
+                                await tx.ledgerEntry.update({
+                                    where: { id: currentEntry.id },
+                                    data: {
+                                        ledgerId: targetLedger.id,
+                                        ...(plan.action === "amount" ? { amount } : {})
+                                    }
+                                });
+                                appliedRows += 1;
+                            }
+                            affectedLedgerIds.add(currentEntry.ledgerId);
+                            affectedLedgerIds.add(targetLedger.id);
+                        }
+                        if (repairPostingIssues &&
+                            (Math.abs(Number(currentVoucher.totalDebit) - voucher.debit) >= 0.005 ||
+                                Math.abs(Number(currentVoucher.totalCredit) - voucher.credit) >= 0.005)) {
+                            await tx.voucher.update({
+                                where: { id: systemVoucher.id },
+                                data: { totalDebit: voucher.debit, totalCredit: voucher.credit }
+                            });
+                        }
+                        for (const ledgerId of affectedLedgerIds) await LedgerService.syncCachedBalance(tx, ledgerId);
+                        repairedThisVoucher = appliedRows;
+                    }, { maxWait: 60_000, timeout: 5 * 60_000, isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+                    repaired += repairedThisVoucher;
+                    for (const check of checks) if (check.status !== "correctSubGroup") check.status = "repaired";
+                } catch (error) {
+                    checks.push({ status: "repairFailed", reason: error instanceof Error ? error.message : "Safe ledger remap failed" });
+                }
+            }
+            const issues = checks.filter(check => check.status !== "correctSubGroup" && check.status !== "repaired").length;
+            const reconciliationStatus = issues
+                ? "existsWithSubGroupIssues"
+                : !(repairPostingIssues && repairedThisVoucher > 0) && !totalsMatch
+                    ? "existsWithAmountIssues"
+                    : repairedThisVoucher
+                        ? "repaired"
+                        : "existsCorrectly";
+            const repairReason = repairedThisVoucher
+                ? repairPostingIssues
+                    ? "Workbook rows were reconciled to the selected ledgers; missing rows or mismatched amounts were corrected and voucher totals were balanced"
+                    : "Wrong-subgroup ledger entries were reassigned; voucher debit/credit totals and counterpart entries were preserved"
+                : repairPlans.length && repairSafe && !repairExisting
+                    ? "Repair checks passed in preview; no entries were changed. Set repairExisting=true to apply."
+                : repairExisting && repairPlans.length && !repairSafe
+                    ? repairPostingIssues
+                        ? "Not repaired: rows could not be matched one-to-one, final Excel totals would not balance, or the voucher has extra entries or linked Journals"
+                        : "Not repaired: voucher totals, entry count, unmatched entries, or linked Journal rows failed the safety checks"
+                    : "Voucher already exists; existing ledger entries were not changed";
             addResult({
                 voucherNo: voucher.voucherNo,
                 voucherId: systemVoucher.id,
-                // Reconciliation is non-mutating for existing vouchers. Report
-                // them explicitly as skipped and retain the check outcome so
-                // callers can distinguish a correct voucher from one needing repair.
-                status: "skipped",
-                reconciliationStatus: issues ? "existsWithSubGroupIssues" : "existsCorrectly",
-                reason: "Voucher already exists; existing ledger entries were not changed",
+                // Existing vouchers are modified only when an explicit repair mode
+                // was requested and every matching and balance guard passed.
+                status: repairedThisVoucher ? "repaired" : "skipped",
+                reconciliationStatus,
+                reason: repairReason,
                 voucherDate: voucher.voucherDate,
                 debit: voucher.debit,
                 credit: voucher.credit,
                 balanced: Math.abs(voucher.debit - voucher.credit) < 0.005,
+                repairableLines: repairPlans.length,
+                repairReady: !repairedThisVoucher && repairPlans.length > 0 && repairSafe,
+                repairedLines: repairedThisVoucher,
+                totalsMatch: totalsMatch || (repairPostingIssues && repairedThisVoucher > 0),
+                entryCountMatch: systemVoucher.entries.length + (repairedThisVoucher > 0 ? plannedAdds : 0) === voucher.lines.length,
+                unmatchedSystemEntries: extraEntries.length,
                 rows: checks
             });
         }
@@ -442,16 +855,25 @@ export class PaymentVoucherRepairService {
         return {
             branchId,
             entry,
+            repairExisting,
+            repairAmbiguous,
+            repairPostingIssues,
             voucherType: VoucherType.PAYMENT,
             workbookVouchers: vouchers.length,
             created,
+            repaired,
             summary: {
                 missing: results.filter(result => result.status === "missing").length,
                 skipped: results.filter(result => result.status === "skipped").length,
                 existsCorrectly: results.filter(result => result.reconciliationStatus === "existsCorrectly").length,
                 existsWithSubGroupIssues: results.filter(result => result.reconciliationStatus === "existsWithSubGroupIssues").length,
+                existsWithAmountIssues: results.filter(result => result.reconciliationStatus === "existsWithAmountIssues").length,
+                voucherTotalsMismatch: results.filter(result => result.totalsMatch === false).length,
                 invalid: results.filter(result => result.status === "invalidMissingVoucher").length,
                 ambiguous: results.filter(result => result.status === "ambiguous").length,
+                repaired: results.filter(result => result.status === "repaired").length,
+                repairReadyVouchers: results.filter(result => result.repairReady === true).length,
+                repairReadyLines: results.reduce((sum, result) => sum + (result.repairReady ? Number(result.repairableLines || 0) : 0), 0),
                 creationFailed: results.filter(result => result.status === "creationFailed").length
             },
             vouchers: results

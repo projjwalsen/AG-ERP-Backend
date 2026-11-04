@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { LedgerService } from "./ledger.service"; // Adjust path as needed
 import { LedgerType } from "@prisma/client";
+import { LedgerMappingService } from "./ledger-mapping.service";
 import { agencyLedgerColumns, branchLedgerColumns, ledgerColumns, suspenseLedgerColumns } from "../../exports/ledger.export";
 import { ExcelService } from "../../../core/utils/export.service";
 import { accountingLedgerColumns, bankAccCashColumns, cashBookColumns, creditorLedgerColumns, debtorLedgerColumns } from "../../exports/branch.export";
@@ -955,6 +956,62 @@ export const getLedgerGroups = async (req: Request, res: Response, next: NextFun
             success: true,
             data: groups
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getLedgerMappingTree = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const branchId = typeof req.query.branchId === "string" ? req.query.branchId : undefined;
+        const includeInactive = req.query.includeInactive === "true";
+        const data = await LedgerMappingService.getTree({ branchId, includeInactive });
+        res.status(200).json({ success: true, data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const createLedgerMappingGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const data = await LedgerMappingService.createGroup((req as any).user, req.body || {});
+        res.status(201).json({ success: true, message: "Ledger group created", data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateLedgerMappingGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const data = await LedgerMappingService.updateGroup((req as any).params.groupId, req.body || {});
+        res.status(200).json({ success: true, message: "Ledger group mapping updated", data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteLedgerMappingGroup = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const data = await LedgerMappingService.deleteEmptyGroup((req as any).params.groupId);
+        res.status(200).json({ success: true, message: "Empty ledger group deleted", data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const moveLedgerMapping = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const data = await LedgerMappingService.moveLedger((req as any).params.ledgerId, req.body?.groupId);
+        res.status(200).json({ success: true, message: "Ledger mapping updated", data });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const createMappedLedger = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const data = await LedgerMappingService.createLedger((req as any).user, req.body || {});
+        res.status(201).json({ success: true, message: "Ledger created under the selected mapping", data });
     } catch (error) {
         next(error);
     }

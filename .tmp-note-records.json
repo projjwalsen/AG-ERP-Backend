@@ -1,0 +1,2122 @@
+[
+  {
+    "id": "20010fd7-9bd1-41c0-a5ec-5eba6af94743",
+    "no": "SDN/M/2526/001",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "221130",
+    "invoice": null,
+    "date": "2025-04-29T18:30:00.000Z",
+    "voucher": {
+      "id": "09662f74-2bf7-4570-a2d9-2a2afba2e4c2",
+      "no": "DBN-20010FD7-A3E1787191",
+      "type": "DEBIT_NOTE",
+      "debit": "221130",
+      "credit": "221130",
+      "entries": [
+        {
+          "id": "53ffb1c8-6738-4907-bd19-e8ac8800f437",
+          "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "221130"
+        },
+        {
+          "id": "a2efa223-be00-4167-9c99-52b6c5ceeb6f",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "221130"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "221130",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "41f86f0f-2be4-461f-9d99-18c2f1b6999e",
+    "no": "SCN/M/2526/001",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "908.6",
+    "invoice": null,
+    "date": "2025-06-09T18:30:00.000Z",
+    "voucher": {
+      "id": "1d02f504-602a-4f74-b0bf-070b7b30a57c",
+      "no": "CRN-41F86F0F-D2E24762DB",
+      "type": "CREDIT_NOTE",
+      "debit": "908.6",
+      "credit": "908.6",
+      "entries": [
+        {
+          "id": "c7e24681-3a46-4378-9294-6c327f858fdc",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "908.6"
+        },
+        {
+          "id": "3ec039d8-4062-408c-ab9a-a36cc3a79e59",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "908.6"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "908.6",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "486e9aa9-9af9-40f1-a911-68c4fb974e75",
+    "no": "SDN/M/2526/002",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "53889",
+    "invoice": null,
+    "date": "2025-09-22T18:30:00.000Z",
+    "voucher": {
+      "id": "9ae02e6f-7e7b-4748-8d7a-9b2a95c7f743",
+      "no": "DBN-486E9AA9-56105CAB00",
+      "type": "DEBIT_NOTE",
+      "debit": "53889",
+      "credit": "53889",
+      "entries": [
+        {
+          "id": "8195e851-9a02-4e76-8a9a-cd9b30fe46f3",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "53889"
+        },
+        {
+          "id": "82278b13-14ad-4b50-9b5b-915d60898977",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "53889"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "53889",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "500796e4-54a5-4f1f-81c5-97d534a7dd48",
+    "no": "SDN/M/2526/003",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "5200",
+    "invoice": null,
+    "date": "2025-09-25T18:30:00.000Z",
+    "voucher": {
+      "id": "008d049b-84bf-4cd3-82c9-431d1679f5a9",
+      "no": "DBN-500796E4-3AC86A583F",
+      "type": "DEBIT_NOTE",
+      "debit": "5200",
+      "credit": "5200",
+      "entries": [
+        {
+          "id": "6037c652-bc3b-4e31-8937-54441cebb78c",
+          "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "5200"
+        },
+        {
+          "id": "c734ce04-02ff-424f-914e-a634b3f0120e",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "5200"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "5200",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "54069d2c-acdc-4943-ac43-be9f9f9f87fb",
+    "no": "SDN/M/2526/004",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "135184",
+    "invoice": null,
+    "date": "2025-11-20T18:30:00.000Z",
+    "voucher": {
+      "id": "a0dfae10-6b2c-4485-9012-92546b1160ac",
+      "no": "DBN-54069D2C-F849FE5402",
+      "type": "DEBIT_NOTE",
+      "debit": "135184",
+      "credit": "135184",
+      "entries": [
+        {
+          "id": "74ceca6a-63b5-4e09-bead-a6e70255d163",
+          "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "135184"
+        },
+        {
+          "id": "0e91aa35-901a-43c5-b230-8146184ae9fe",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "135184"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "135184",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "869dec9c-3890-4f81-8ba2-84cf39f09068",
+    "no": "SCN/M/2526/003",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "7633.05",
+    "invoice": null,
+    "date": "2025-12-14T18:30:00.000Z",
+    "voucher": {
+      "id": "5cc2745a-98ac-4bc6-b107-e756e298d6af",
+      "no": "CRN-869DEC9C-35C79E3099",
+      "type": "CREDIT_NOTE",
+      "debit": "7633.05",
+      "credit": "7633.05",
+      "entries": [
+        {
+          "id": "22193f20-e3a6-41f2-9527-7446a7cd5ca6",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "7633.05"
+        },
+        {
+          "id": "ebaf04bd-c50c-4fce-96ec-8381284ea1d8",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "7633.05"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "7633.05",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "4f72e9b9-1087-47ae-b0c2-fc2eb7be201e",
+    "no": "SDN/M/2526/008",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "380970",
+    "invoice": null,
+    "date": "2026-02-02T18:30:00.000Z",
+    "voucher": {
+      "id": "a54b0ef0-3555-40ff-8118-9586f1ad3136",
+      "no": "DBN-4F72E9B9-F9FF5315F3",
+      "type": "DEBIT_NOTE",
+      "debit": "380970",
+      "credit": "380970",
+      "entries": [
+        {
+          "id": "8ff3eb9e-c500-4256-9401-fbeffec22060",
+          "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "380970"
+        },
+        {
+          "id": "3c85c51a-bff2-4c34-8e06-868c71306dd5",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "380970"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "380970",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "fcef231b-ed60-4b16-9cf5-1730d1e8724c",
+    "no": "SDN/M/2526/007",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "52975",
+    "invoice": null,
+    "date": "2026-01-04T18:30:00.000Z",
+    "voucher": {
+      "id": "1eb61263-9240-48ae-b88f-41cfa0228c7d",
+      "no": "DBN-FCEF231B-005CD99DE8",
+      "type": "DEBIT_NOTE",
+      "debit": "52975",
+      "credit": "52975",
+      "entries": [
+        {
+          "id": "1e57c9ef-2b52-4ef1-9e1a-929b2c3482e8",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "52975"
+        },
+        {
+          "id": "010037fd-2681-4a2a-8d34-564d3700c01f",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "52975"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "52975",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "d946e2dc-f465-4b75-a30e-3ce53ce61097",
+    "no": "SCN/M/2526/002",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "2456689",
+    "invoice": null,
+    "date": "2025-11-12T18:30:00.000Z",
+    "voucher": {
+      "id": "556d2c3a-27c3-4808-9d51-5fd71cdcd6d0",
+      "no": "CRN-D946E2DC-40CCB2A0C8",
+      "type": "CREDIT_NOTE",
+      "debit": "2456689",
+      "credit": "2456689",
+      "entries": [
+        {
+          "id": "daf0cccc-4281-4b2f-89d0-5ad3d75e3094",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "2456689"
+        },
+        {
+          "id": "2cf8f9a1-8f13-45bb-8b6a-7bd49e53dd13",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "2456689"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "2456689",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "d37465b7-5171-4003-9359-1dc743b0b36f",
+    "no": "SCN/M/2526/010",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "1173840",
+    "invoice": null,
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "6726d9c4-9036-45e7-9874-e98d3660bfc8",
+      "no": "CRN-D37465B7-DA4995578E",
+      "type": "CREDIT_NOTE",
+      "debit": "1173840",
+      "credit": "1173840",
+      "entries": [
+        {
+          "id": "1484f73e-77ec-4dfc-9fb1-7930333c8500",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "1173840"
+        },
+        {
+          "id": "2507fb11-5ef0-4e52-b48a-7fa609b4ddb5",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "1173840"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "1173840",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "89d01fde-b9b1-4042-adf0-01c5bdaba5aa",
+    "no": "SCN/M/2526/011",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "1177190",
+    "invoice": null,
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "b399d1ad-7e46-4181-8f13-4ae5593d479b",
+      "no": "CRN-89D01FDE-F1A2D2AB71",
+      "type": "CREDIT_NOTE",
+      "debit": "1177190",
+      "credit": "1177190",
+      "entries": [
+        {
+          "id": "d7362fac-0bcb-4ff9-a63e-03f169ea4b95",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "1177190"
+        },
+        {
+          "id": "5c25be9b-86c9-41a1-ad10-d4534a14888d",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "1177190"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "1177190",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "e82d577b-6ba6-4124-b512-85e54353fd70",
+    "no": "SCN/M/2526/003",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.01",
+    "invoice": "APM/G2526/1905",
+    "date": "2025-12-14T18:30:00.000Z",
+    "voucher": {
+      "id": "48b6bb7e-80d5-498e-b92b-2b156f33c271",
+      "no": "CRN-E82D577B-B54A6C1C93",
+      "type": "CREDIT_NOTE",
+      "debit": "0.01",
+      "credit": "0.01",
+      "entries": [
+        {
+          "id": "47bf403f-4640-49ca-8a9a-e7801203ef35",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "0.01"
+        },
+        {
+          "id": "db2a99bf-7966-485f-aee3-e4f6df0b7640",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "0.01"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.01",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "b013d79e-2cd8-4e98-99e2-4bd1cedfc61b",
+    "no": "SDN/M/2526/001",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "19901.7",
+    "invoice": "APM/G2526/0174",
+    "date": "2025-04-29T18:30:00.000Z",
+    "voucher": {
+      "id": "46340995-4ebc-4bf0-a3b3-4a90b5b0d775",
+      "no": "DBN-B013D79E-A28067BE01",
+      "type": "DEBIT_NOTE",
+      "debit": "19901.7",
+      "credit": "19901.7",
+      "entries": [
+        {
+          "id": "9f5d08e5-f2e3-4803-8707-f51f795728cd",
+          "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "19901.7"
+        },
+        {
+          "id": "8a47bf5a-9cd8-4373-9451-09ca8e7647fb",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "19901.7"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "19901.7",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "89e84303-8989-4f29-942c-72c465b798bf",
+    "no": "SDN/M/2526/001",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "19901.7",
+    "invoice": "APM/G2526/0174",
+    "date": "2025-04-29T18:30:00.000Z",
+    "voucher": {
+      "id": "f5553e5f-6b25-427c-b3a7-9c39753dc706",
+      "no": "DBN-89E84303-2E289342A0",
+      "type": "DEBIT_NOTE",
+      "debit": "19901.7",
+      "credit": "19901.7",
+      "entries": [
+        {
+          "id": "eb6683ae-e306-4065-8dfb-2776eef0510c",
+          "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "19901.7"
+        },
+        {
+          "id": "e95edd95-a57d-4856-bb17-96c36d9abf1b",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "19901.7"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "19901.7",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "ffc2314b-f0dc-4fb7-b4de-5b1b206955d0",
+    "no": "SCN/M/2526/001",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "81.77",
+    "invoice": "APM/G2526/0481",
+    "date": "2025-06-09T18:30:00.000Z",
+    "voucher": {
+      "id": "f974054d-cc7c-4eca-b339-8c47ad0d7bb4",
+      "no": "CRN-FFC2314B-C5BF166C7F",
+      "type": "CREDIT_NOTE",
+      "debit": "81.77",
+      "credit": "81.77",
+      "entries": [
+        {
+          "id": "73ced90a-3a3d-4021-bbf1-c76e6ac799c1",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "81.77"
+        },
+        {
+          "id": "b76cefec-e205-41c5-8b3e-a8ed32622e99",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "81.77"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "81.77",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "8cfbce3a-45f1-44e7-923a-381957101583",
+    "no": "SCN/M/2526/001",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "81.77",
+    "invoice": "APM/G2526/0481",
+    "date": "2025-06-09T18:30:00.000Z",
+    "voucher": {
+      "id": "9319b014-f96d-49b2-a2b5-a4100645b58f",
+      "no": "CRN-8CFBCE3A-8EFBEE63C7",
+      "type": "CREDIT_NOTE",
+      "debit": "81.77",
+      "credit": "81.77",
+      "entries": [
+        {
+          "id": "3dca551b-86c9-4e16-b506-1dfc0901b89d",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "81.77"
+        },
+        {
+          "id": "05a1f2ce-5a30-4815-a991-db5203aace2d",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "81.77"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "81.77",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "c83e25fe-65c0-424c-81a8-13713080f505",
+    "no": "SDN/M/2526/003",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "468",
+    "invoice": "APM/G2526/1185",
+    "date": "2025-09-25T18:30:00.000Z",
+    "voucher": {
+      "id": "c95e24e6-5a32-4f8e-bb25-1ce8794b6d93",
+      "no": "DBN-C83E25FE-AAD0E33975",
+      "type": "DEBIT_NOTE",
+      "debit": "468",
+      "credit": "468",
+      "entries": [
+        {
+          "id": "2099b46d-c4f5-45cd-abd0-4371c7a945bb",
+          "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "468"
+        },
+        {
+          "id": "604c5f4b-18d5-4d31-87df-66fca66dc40b",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "468"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "468",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "40a70a7a-6fe7-428f-a5ff-66517dcce6dc",
+    "no": "SCN/M/2526/002",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "221102.01",
+    "invoice": "APM/G2526/1646",
+    "date": "2025-11-12T18:30:00.000Z",
+    "voucher": {
+      "id": "e00bfc80-38fb-4724-b9a4-737662cc2478",
+      "no": "CRN-40A70A7A-D6033F97F5",
+      "type": "CREDIT_NOTE",
+      "debit": "221102.01",
+      "credit": "221102.01",
+      "entries": [
+        {
+          "id": "3ff0574f-b4db-433d-9826-9e4182c37526",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "221102.01"
+        },
+        {
+          "id": "77248f3d-70d5-412a-bdd1-daf5ccf867e3",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "221102.01"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "221102.01",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "9d282c6a-bf17-485f-b87e-5c201a6b2abf",
+    "no": "SDN/M/2526/004",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "24333.12",
+    "invoice": "APM/G2526/1756",
+    "date": "2025-11-20T18:30:00.000Z",
+    "voucher": {
+      "id": "1cc56822-6130-42c5-a7d6-1154514ccca1",
+      "no": "DBN-9D282C6A-871D0AA5A6",
+      "type": "DEBIT_NOTE",
+      "debit": "24333.12",
+      "credit": "24333.12",
+      "entries": [
+        {
+          "id": "c00b3cc0-6081-4a06-8da4-57caf611fa11",
+          "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "24333.12"
+        },
+        {
+          "id": "9d061da3-a754-4b72-9b77-9c98578c0d96",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "24333.12"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "24333.12",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "d8ce0d9e-1a83-44ac-b55a-612340914cb6",
+    "no": "SDN/M/2526/002",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "4850.01",
+    "invoice": "APM/G2526/1174",
+    "date": "2025-09-22T18:30:00.000Z",
+    "voucher": {
+      "id": "51bf8bce-e587-41ab-92a7-c020f3e3fee0",
+      "no": "DBN-D8CE0D9E-E322BCE34E",
+      "type": "DEBIT_NOTE",
+      "debit": "4850.01",
+      "credit": "4850.01",
+      "entries": [
+        {
+          "id": "9b9a3418-259d-4957-b68b-fa9371484419",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "4850.01"
+        },
+        {
+          "id": "6f479b74-0c11-4706-a856-43d07d4914c3",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "4850.01"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "4850.01",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "2f6b30ac-1771-4d52-930a-7fd445b81176",
+    "no": "SDN/M/2526/002",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "4850.01",
+    "invoice": "APM/G2526/1174",
+    "date": "2025-09-22T18:30:00.000Z",
+    "voucher": {
+      "id": "4a21e218-2ff8-4a02-9afd-d33160e05a5e",
+      "no": "DBN-2F6B30AC-4AF668B235",
+      "type": "DEBIT_NOTE",
+      "debit": "4850.01",
+      "credit": "4850.01",
+      "entries": [
+        {
+          "id": "c31ba16b-6933-468f-af5d-69dd56c67f8f",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "4850.01"
+        },
+        {
+          "id": "a35f715c-9167-44ba-a3fb-bad583a5bf7a",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "4850.01"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "4850.01",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "21f4c7bf-d6da-4366-a10e-e9b9699c915e",
+    "no": "SDN/M/2526/003",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "468",
+    "invoice": "APM/G2526/1185",
+    "date": "2025-09-25T18:30:00.000Z",
+    "voucher": {
+      "id": "70844d0d-8e36-4e39-892a-b0d13c4a3d71",
+      "no": "DBN-21F4C7BF-7E187C8E78",
+      "type": "DEBIT_NOTE",
+      "debit": "468",
+      "credit": "468",
+      "entries": [
+        {
+          "id": "a4a0ac12-ec72-4c4f-9083-147141b18061",
+          "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "468"
+        },
+        {
+          "id": "7ce1a29b-67b5-4ddd-8c34-81c011ff9c14",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "468"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "468",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "97fce1e4-7537-4cff-b305-b88ef2057088",
+    "no": "SCN/M/2526/002",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "221102.01",
+    "invoice": "APM/G2526/1646",
+    "date": "2025-11-12T18:30:00.000Z",
+    "voucher": {
+      "id": "5693dbb0-ad84-4919-b38d-58df7d8f503f",
+      "no": "CRN-97FCE1E4-D98C92B9F9",
+      "type": "CREDIT_NOTE",
+      "debit": "221102.01",
+      "credit": "221102.01",
+      "entries": [
+        {
+          "id": "1fbb05e3-163c-47c2-b486-b8fc680fa4ea",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "221102.01"
+        },
+        {
+          "id": "816e806a-ebc7-478b-8ee5-2d245333a6f6",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "221102.01"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "221102.01",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "846dbd2f-54de-4768-97da-ae6ad1e3e7dc",
+    "no": "SCN/M/2526/003",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "686.97",
+    "invoice": "APM/G2526/1905",
+    "date": "2025-12-14T18:30:00.000Z",
+    "voucher": {
+      "id": "8db49a01-b258-454d-8106-e48d7712f5f7",
+      "no": "CRN-846DBD2F-EF5500B1F0",
+      "type": "CREDIT_NOTE",
+      "debit": "686.97",
+      "credit": "686.97",
+      "entries": [
+        {
+          "id": "6d098521-60f7-40a0-bc24-3b7f555445f2",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "686.97"
+        },
+        {
+          "id": "b3d1dc59-00ea-454d-86a2-a267406acfb3",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "686.97"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "686.97",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "77a54362-21b3-4f9c-9602-7f27a1803c06",
+    "no": "SCN/M/2526/003",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "686.97",
+    "invoice": "APM/G2526/1905",
+    "date": "2025-12-14T18:30:00.000Z",
+    "voucher": {
+      "id": "493dfd38-553b-48fd-8fa7-f4e943e62db7",
+      "no": "CRN-77A54362-5F4EA5E4AC",
+      "type": "CREDIT_NOTE",
+      "debit": "686.97",
+      "credit": "686.97",
+      "entries": [
+        {
+          "id": "345c453d-1ee3-4ad8-9ea7-21eecb1c962c",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "686.97"
+        },
+        {
+          "id": "ea055c7e-df0b-4b45-9051-9ee70eda6342",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "686.97"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "686.97",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "ac5bb386-ca93-43be-97e9-ebd3310c838a",
+    "no": "SDN/M/2526/007",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "4767.75",
+    "invoice": "APM/G2526/2098",
+    "date": "2026-01-04T18:30:00.000Z",
+    "voucher": {
+      "id": "4bd16169-10d4-43f1-b8b9-413b012e5bf9",
+      "no": "DBN-AC5BB386-9BF7D5F7C9",
+      "type": "DEBIT_NOTE",
+      "debit": "4767.75",
+      "credit": "4767.75",
+      "entries": [
+        {
+          "id": "52a7c63b-f8ec-4fca-82d7-cc9ca4022691",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "4767.75"
+        },
+        {
+          "id": "88317a29-2e52-474d-ada2-932402f2beee",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "4767.75"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "4767.75",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "f829f39b-ce91-4306-a952-6b151595709a",
+    "no": "SDN/M/2526/007",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "4767.75",
+    "invoice": "APM/G2526/2098",
+    "date": "2026-01-04T18:30:00.000Z",
+    "voucher": {
+      "id": "99264967-8b56-422c-8e45-9aa54d895f98",
+      "no": "DBN-F829F39B-9322C0BF00",
+      "type": "DEBIT_NOTE",
+      "debit": "4767.75",
+      "credit": "4767.75",
+      "entries": [
+        {
+          "id": "3303929b-9ccf-4a62-aef5-7c757f86d6a5",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "4767.75"
+        },
+        {
+          "id": "a391430e-8264-4f07-a93b-ba09f3a4c709",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "4767.75"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "4767.75",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "0676b879-bc62-4617-8934-deecbd1159a5",
+    "no": "SDN/M/2526/007",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.5",
+    "invoice": "APM/G2526/2098",
+    "date": "2026-01-04T18:30:00.000Z",
+    "voucher": {
+      "id": "48dc2ce5-6f74-46b5-b1d2-dc592f496728",
+      "no": "DBN-0676B879-D93F8640E4",
+      "type": "DEBIT_NOTE",
+      "debit": "0.5",
+      "credit": "0.5",
+      "entries": [
+        {
+          "id": "68cefce7-52ff-4318-bf3c-aed029070236",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "0.5"
+        },
+        {
+          "id": "4c8b1926-982a-4fc3-b935-74acdb9116cb",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "0.5"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.5",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "3eeab87a-c7ce-41c3-aa0e-a990461c509f",
+    "no": "SDN/M/2526/008",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "34287.3",
+    "invoice": "APM/G2526/2328",
+    "date": "2026-02-02T18:30:00.000Z",
+    "voucher": {
+      "id": "93d2431a-b7fc-49d8-9d34-fd176c7f2152",
+      "no": "DBN-3EEAB87A-E3B57B151A",
+      "type": "DEBIT_NOTE",
+      "debit": "34287.3",
+      "credit": "34287.3",
+      "entries": [
+        {
+          "id": "5cc8c78f-9ef3-486b-8249-20bfbf03819e",
+          "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "34287.3"
+        },
+        {
+          "id": "be076ab6-05a1-4341-9418-6caab6a630dd",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "34287.3"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "34287.3",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "5d4b98b7-a621-4710-8765-f4827d5264c9",
+    "no": "SDN/M/2526/008",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "34287.3",
+    "invoice": "APM/G2526/2328",
+    "date": "2026-02-02T18:30:00.000Z",
+    "voucher": {
+      "id": "44b1a6df-e014-4d07-8a28-99232911271c",
+      "no": "DBN-5D4B98B7-52224DEB33",
+      "type": "DEBIT_NOTE",
+      "debit": "34287.3",
+      "credit": "34287.3",
+      "entries": [
+        {
+          "id": "8e2c7f56-e3e4-4c3b-b825-79428f42c1fd",
+          "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "34287.3"
+        },
+        {
+          "id": "4cda5148-84a0-44bf-97a4-377984dd5c9c",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "34287.3"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "34287.3",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "37e78264-0b08-45fb-9a49-0711585dea18",
+    "no": "SDN/M/2526/008",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.4",
+    "invoice": "APM/G2526/2328",
+    "date": "2026-02-02T18:30:00.000Z",
+    "voucher": {
+      "id": "f7cd10b9-ab41-4d84-8549-6a461d276b33",
+      "no": "DBN-37E78264-47FAF1CD7E",
+      "type": "DEBIT_NOTE",
+      "debit": "0.4",
+      "credit": "0.4",
+      "entries": [
+        {
+          "id": "895b1eb3-6de8-47f1-8cde-b77bbf39fc13",
+          "ledger": "Sulaki Chemicals Pvt. Ltd. (Drs) - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "0.4"
+        },
+        {
+          "id": "362d7302-5048-4f82-b0a4-e28be71848f7",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "0.4"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.4",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "44fe1f61-3585-4fb3-9024-e9a39b7a5cc5",
+    "no": "SCN/M/2526/011",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "105947.1",
+    "invoice": "APM/G2526/2990",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "cbbbfd9c-a172-4958-9a68-5224da5ff60d",
+      "no": "CRN-44FE1F61-CE615FC4A3",
+      "type": "CREDIT_NOTE",
+      "debit": "105947.1",
+      "credit": "105947.1",
+      "entries": [
+        {
+          "id": "04e8adf2-33f5-40a4-be38-2439b39a15b6",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "105947.1"
+        },
+        {
+          "id": "87770b3e-c4b8-4f1a-8b08-59ebe2b335bc",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "105947.1"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "105947.1",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "b53d1ad9-3b7b-48fc-90f7-1c887ef320ba",
+    "no": "SCN/M/2526/010",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "105645.6",
+    "invoice": "APM/G2526/2989",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "a24c2396-72a3-4c7b-b53f-55e4f792246e",
+      "no": "CRN-B53D1AD9-77DD8E18F7",
+      "type": "CREDIT_NOTE",
+      "debit": "105645.6",
+      "credit": "105645.6",
+      "entries": [
+        {
+          "id": "18c6c3a6-1d3c-4b76-93dd-7032f63f86ef",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "105645.6"
+        },
+        {
+          "id": "e127d3d2-f5ad-4835-907e-d722427048fb",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "105645.6"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "105645.6",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "221cb182-bdf4-4c6e-8dc6-6d8be9a0583f",
+    "no": "SCN/M/2526/010",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "105645.6",
+    "invoice": "APM/G2526/2989",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "25669791-d12f-4c07-ba81-45b91004ddf9",
+      "no": "CRN-221CB182-A95ABBE282",
+      "type": "CREDIT_NOTE",
+      "debit": "105645.6",
+      "credit": "105645.6",
+      "entries": [
+        {
+          "id": "911d44b9-c1d0-4cc7-bbf9-db70f64307e7",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "105645.6"
+        },
+        {
+          "id": "834457e3-7ae2-4815-b00a-d205c29550ee",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "105645.6"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "105645.6",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "90296ae2-2661-4c42-8581-05081dd895b7",
+    "no": "SCN/M/2526/011",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "105947.1",
+    "invoice": "APM/G2526/2990",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "bdcd948f-32cd-4fc9-99b8-028ca2cc7e22",
+      "no": "CRN-90296AE2-7F0AD6F3CE",
+      "type": "CREDIT_NOTE",
+      "debit": "105947.1",
+      "credit": "105947.1",
+      "entries": [
+        {
+          "id": "dcfabdac-ff1a-41d2-89b8-0f4798c99a27",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "105947.1"
+        },
+        {
+          "id": "87e8e8e4-1e50-4e63-b5f7-2d42d4a4e1b7",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "105947.1"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "105947.1",
+        "side": null
+      }
+    ]
+  },
+  {
+    "id": "15c0f122-473f-4e6e-8ab4-da0987e1efb6",
+    "no": "SDN/M/2526/001",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "260933",
+    "invoice": "APM/G2526/0174",
+    "date": "2025-04-29T18:30:00.000Z",
+    "voucher": {
+      "id": "285d5911-956f-4875-a65b-3886cf475d79",
+      "no": "DBN-15C0F122-5283B671D6",
+      "type": "DEBIT_NOTE",
+      "debit": "260933",
+      "credit": "260933",
+      "entries": [
+        {
+          "id": "fa2c902c-72f0-4a4f-a5f4-6630b5841554",
+          "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "260933"
+        },
+        {
+          "id": "b3b88c07-3208-4d78-8710-06d6e9e4e55d",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "260933"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "260933",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "c2c1d557-e5b2-4539-803c-1bd9960171ac",
+    "no": "SDN/M/2526/001",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.4",
+    "invoice": "APM/G2526/0174",
+    "date": "2025-04-29T18:30:00.000Z",
+    "voucher": {
+      "id": "f5f1e0fc-9d0a-4171-8a7b-6245e391cbbd",
+      "no": "DBN-C2C1D557-5F19676B6A",
+      "type": "DEBIT_NOTE",
+      "debit": "0.4",
+      "credit": "0.4",
+      "entries": [
+        {
+          "id": "bf66d61e-4280-4b49-9b61-580e41d72021",
+          "ledger": "FORTUNE ENTERPRISE - DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "0.4"
+        },
+        {
+          "id": "24123592-89c7-410c-bdb9-555d2a25dd71",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "0.4"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.4",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "8242cf29-2848-4654-a0ab-00dd7670b34c",
+    "no": "SCN/M/2526/001",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "1072",
+    "invoice": "APM/G2526/0481",
+    "date": "2025-06-09T18:30:00.000Z",
+    "voucher": {
+      "id": "7992afef-b52c-4b5b-beda-3af9c7fd4781",
+      "no": "CRN-8242CF29-CA10A6FC11",
+      "type": "CREDIT_NOTE",
+      "debit": "1072",
+      "credit": "1072",
+      "entries": [
+        {
+          "id": "6d0b2de7-cb07-40fe-a3d9-200fb31c7222",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "1072"
+        },
+        {
+          "id": "2bc5a022-d828-40ee-88e0-472fc2cb25d6",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "1072"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "1072",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "0ce9ac1c-0b42-439c-b2a9-1d78c7ab6aea",
+    "no": "SCN/M/2526/001",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.14",
+    "invoice": "APM/G2526/0481",
+    "date": "2025-06-09T18:30:00.000Z",
+    "voucher": {
+      "id": "589dfc3a-f698-4296-9f8d-24af4a72f84c",
+      "no": "CRN-0CE9AC1C-32861E8546",
+      "type": "CREDIT_NOTE",
+      "debit": "0.14",
+      "credit": "0.14",
+      "entries": [
+        {
+          "id": "3185a2ac-a037-44bf-a6a9-32d2f9610909",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "0.14"
+        },
+        {
+          "id": "99062135-c838-4aab-aed6-91d1d6f17a7a",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "0.14"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.14",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "8f04e4af-fc82-43b8-8c58-46008b2a9bf4",
+    "no": "SDN/M/2526/002",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "63589",
+    "invoice": "APM/G2526/1174",
+    "date": "2025-09-22T18:30:00.000Z",
+    "voucher": {
+      "id": "71a29704-c517-4027-a90c-066b7e682478",
+      "no": "DBN-8F04E4AF-E3312D6148",
+      "type": "DEBIT_NOTE",
+      "debit": "63589",
+      "credit": "63589",
+      "entries": [
+        {
+          "id": "8b81f164-c9af-4327-a117-654a19562d14",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "63589"
+        },
+        {
+          "id": "ebd949d1-e923-42fd-bddc-a9ffb265b183",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "63589"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "63589",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "99185272-8d87-4980-8aef-43fc470ac9e2",
+    "no": "SDN/M/2526/002",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.02",
+    "invoice": "APM/G2526/1174",
+    "date": "2025-09-22T18:30:00.000Z",
+    "voucher": {
+      "id": "fe1a6154-9be5-49ea-b6aa-8d73eee8395c",
+      "no": "DBN-99185272-FAA7173CFD",
+      "type": "DEBIT_NOTE",
+      "debit": "0.02",
+      "credit": "0.02",
+      "entries": [
+        {
+          "id": "dd0935d8-c3b2-4b74-a3fd-1e4a88033f3a",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "0.02"
+        },
+        {
+          "id": "633f9388-e518-4b02-b2b0-d2e7875e83bf",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "0.02"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.02",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "f14c15dc-ffee-44b6-a4ae-0cf4018969e3",
+    "no": "SCN/M/2526/002",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "2898893",
+    "invoice": "APM/G2526/1646",
+    "date": "2025-11-12T18:30:00.000Z",
+    "voucher": {
+      "id": "2b9fb36a-1197-4ee8-b29a-0a566fcfe9a6",
+      "no": "CRN-F14C15DC-FC487778B8",
+      "type": "CREDIT_NOTE",
+      "debit": "2898893",
+      "credit": "2898893",
+      "entries": [
+        {
+          "id": "0c3bec17-96c7-4c05-87dc-399f8f255f9c",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "2898893"
+        },
+        {
+          "id": "47c1253b-07e5-461c-95e7-dd321512dc89",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "2898893"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "2898893",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "a91a24c5-74eb-4337-a9d9-933ac6552d50",
+    "no": "SDN/M/2526/003",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "6136",
+    "invoice": "APM/G2526/1185",
+    "date": "2025-09-25T18:30:00.000Z",
+    "voucher": {
+      "id": "753e7ce3-f89b-47f8-a39b-5dcaa49f1065",
+      "no": "DBN-A91A24C5-68E68E7C4B",
+      "type": "DEBIT_NOTE",
+      "debit": "6136",
+      "credit": "6136",
+      "entries": [
+        {
+          "id": "9c5b9e25-d5d8-4b34-b5ab-18bc238ba249",
+          "ledger": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "6136"
+        },
+        {
+          "id": "c7c1b4df-67d0-4500-bd78-789432bcf06e",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "6136"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "6136",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "9331bdb5-384b-4ea3-b3ec-35878ff5ecd2",
+    "no": "SCN/M/2526/002",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.02",
+    "invoice": "APM/G2526/1646",
+    "date": "2025-11-12T18:30:00.000Z",
+    "voucher": {
+      "id": "fb1392d2-4975-4f92-b725-4029dd6c54f9",
+      "no": "CRN-9331BDB5-E740BFF297",
+      "type": "CREDIT_NOTE",
+      "debit": "0.02",
+      "credit": "0.02",
+      "entries": [
+        {
+          "id": "291146aa-3a5c-43c7-babd-c30af65e90b0",
+          "ledger": "Art Infrastructure Pvt Ltd - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "0.02"
+        },
+        {
+          "id": "3ffc4976-4782-45e6-8fd0-338cf772747e",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "0.02"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.02",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "0ad0214c-1ab0-4998-bda5-fe427006ce99",
+    "no": "SDN/M/2526/004",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "159517",
+    "invoice": "APM/G2526/1756",
+    "date": "2025-11-20T18:30:00.000Z",
+    "voucher": {
+      "id": "c1517574-a9c8-48cc-8341-5c13b6d4efb7",
+      "no": "DBN-0AD0214C-86F63ACE48",
+      "type": "DEBIT_NOTE",
+      "debit": "159517",
+      "credit": "159517",
+      "entries": [
+        {
+          "id": "5d7ce414-e1b9-4311-baa2-a826a3b106a7",
+          "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "159517"
+        },
+        {
+          "id": "4952b96c-4cae-4feb-883e-ebb11016ce83",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "159517"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "159517",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "070960d6-d55c-4c5b-a88b-3cb437992c91",
+    "no": "SDN/M/2526/004",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.12",
+    "invoice": "APM/G2526/1756",
+    "date": "2025-11-20T18:30:00.000Z",
+    "voucher": {
+      "id": "4776b1cc-56b3-46cb-aab9-a7e6f9482518",
+      "no": "DBN-070960D6-7CAB67BBCB",
+      "type": "DEBIT_NOTE",
+      "debit": "0.12",
+      "credit": "0.12",
+      "entries": [
+        {
+          "id": "c18b2cb7-f5b9-4865-bfda-5a01552a38cf",
+          "ledger": "Grasim Industries Limited DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "0.12"
+        },
+        {
+          "id": "25dbd39b-0a9a-4622-a4e2-9bef3b72717c",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "0.12"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.12",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "f13d3b4b-a72b-47d5-a198-41fcfba88b87",
+    "no": "SCN/M/2526/003",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "9007",
+    "invoice": "APM/G2526/1905",
+    "date": "2025-12-14T18:30:00.000Z",
+    "voucher": {
+      "id": "541754af-381d-4da1-a7f6-8e35004d4a17",
+      "no": "CRN-F13D3B4B-2C26563ADD",
+      "type": "CREDIT_NOTE",
+      "debit": "9007",
+      "credit": "9007",
+      "entries": [
+        {
+          "id": "79e938ef-4e1c-47e6-ad7d-48425f086259",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "9007"
+        },
+        {
+          "id": "3e5a5cbd-b975-413b-8efa-e5ae1051a611",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "9007"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "9007",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "89f90b62-51e5-4ea7-a9f9-a7f46da0e768",
+    "no": "SDN/M/2526/007",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "62511",
+    "invoice": "APM/G2526/2098",
+    "date": "2026-01-04T18:30:00.000Z",
+    "voucher": {
+      "id": "7a5bb834-b384-4742-ad8a-74db6d7facf7",
+      "no": "DBN-89F90B62-2E3CDC3E0F",
+      "type": "DEBIT_NOTE",
+      "debit": "62511",
+      "credit": "62511",
+      "entries": [
+        {
+          "id": "3eb90bdc-1636-4fd4-ab21-99b73862fb01",
+          "ledger": "MIDAS TECHNOLOGIES-DR - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "CREDIT",
+          "amt": "62511"
+        },
+        {
+          "id": "91ab6a5b-6844-4dda-9db9-c0e2c7dfad99",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "62511"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "62511",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "48376fea-3ab6-4eaa-bcf6-ee8d6d1b47dd",
+    "no": "SDN/M/2526/008",
+    "type": "DEBIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "449545",
+    "invoice": "APM/G2526/2328",
+    "date": "2026-02-02T18:30:00.000Z",
+    "voucher": {
+      "id": "248792b5-eb51-4bdf-975f-61c023acf6f1",
+      "no": "DBN-48376FEA-70D0E939CE",
+      "type": "DEBIT_NOTE",
+      "debit": "449545",
+      "credit": "449545",
+      "entries": [
+        {
+          "id": "3e3f371e-a53a-4d33-be19-72ba09d00af4",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "DEBIT",
+          "amt": "449545"
+        },
+        {
+          "id": "b9769a8b-ef87-4024-9705-8d8ad1840a82",
+          "ledger": "Sales Debit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "449545"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "449545",
+        "side": "DEBIT"
+      }
+    ]
+  },
+  {
+    "id": "f1d08ef8-6b03-4817-ba00-c24fec6d57ac",
+    "no": "SCN/M/2526/010",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "1385131",
+    "invoice": "APM/G2526/2989",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "e407ed23-0efd-4f0c-9b33-1359549d983d",
+      "no": "CRN-F1D08EF8-F8F8B8B0BF",
+      "type": "CREDIT_NOTE",
+      "debit": "1385131",
+      "credit": "1385131",
+      "entries": [
+        {
+          "id": "90446e3a-16ba-4dff-8ae5-1cf3971e7f5a",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "1385131"
+        },
+        {
+          "id": "33ad7307-8969-4584-a7e0-ecd4004f2043",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "1385131"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "1385131",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "396647bd-b652-4691-8b3b-852fba682ec2",
+    "no": "SCN/M/2526/010",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.2",
+    "invoice": "APM/G2526/2989",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "c3a026a4-a974-46e5-83fb-365ecdff0938",
+      "no": "CRN-396647BD-2F141C5428",
+      "type": "CREDIT_NOTE",
+      "debit": "0.2",
+      "credit": "0.2",
+      "entries": [
+        {
+          "id": "7d2b256c-f2f4-46bf-9d64-c78571087e45",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "0.2"
+        },
+        {
+          "id": "0099a047-570a-431f-b1b2-160d194f0368",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "0.2"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.2",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "55fc3195-0d02-4148-80d3-4f7e3696f5dc",
+    "no": "SCN/M/2526/011",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "1389084",
+    "invoice": "APM/G2526/2990",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "1ef59e2e-1b46-4884-90c8-cba858f78f71",
+      "no": "CRN-55FC3195-0DEF8DFE60",
+      "type": "CREDIT_NOTE",
+      "debit": "1389084",
+      "credit": "1389084",
+      "entries": [
+        {
+          "id": "493d5ea7-33d5-49e7-a2ba-b238a829a5b0",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "1389084"
+        },
+        {
+          "id": "99317573-5a29-44cc-9632-75a2cecba0b4",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "1389084"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "1389084",
+        "side": "CREDIT"
+      }
+    ]
+  },
+  {
+    "id": "7ccb47e0-827e-47f5-a97c-83e114a7f8a4",
+    "no": "SCN/M/2526/011",
+    "type": "CREDIT_NOTE",
+    "status": "APPROVED",
+    "source": "SALE",
+    "amount": "0.2",
+    "invoice": "APM/G2526/2990",
+    "date": "2026-03-20T18:30:00.000Z",
+    "voucher": {
+      "id": "ab3635a1-768b-46ce-b120-c585c5684319",
+      "no": "CRN-7CCB47E0-C11DDC971E",
+      "type": "CREDIT_NOTE",
+      "debit": "0.2",
+      "credit": "0.2",
+      "entries": [
+        {
+          "id": "94ec53c3-121c-4016-8d39-319ef04c88de",
+          "ledger": "DRAVYAM INDUSTRIES PRIVATE LIMITED - Sundry Debtor",
+          "cat": "CUSTOMER",
+          "side": "DEBIT",
+          "amt": "0.2"
+        },
+        {
+          "id": "6e37d1e9-c429-486e-aee2-4e4a0ba195a3",
+          "ledger": "Sales Credit Note Adjustments",
+          "cat": "JOURNAL",
+          "side": "CREDIT",
+          "amt": "0.2"
+        }
+      ],
+      "journals": []
+    },
+    "parts": [
+      {
+        "amt": "0.2",
+        "side": "CREDIT"
+      }
+    ]
+  }
+]

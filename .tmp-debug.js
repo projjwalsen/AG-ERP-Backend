@@ -1,0 +1,1 @@
+const fs=require('fs');const s=fs.readFileSync('C:/Users/razon/Documents/Prepaid Insurance.pdf').toString('latin1');console.log(s.slice(0,50),s.match(/\d+\s+\d+\s+obj/g)?.length,s.match(/stream\r?\n/g)?.length);console.log(s.indexOf('stream'),JSON.stringify(s.slice(s.indexOf('stream'),s.indexOf('stream')+15)));

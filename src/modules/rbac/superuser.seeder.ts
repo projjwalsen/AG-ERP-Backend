@@ -39,6 +39,7 @@ const defaultPermissions = [
     { module: "TRANSACTION", action: "APPROVE", key: "TRANSACTION:APPROVE" },
 
     { module: "LEDGER", action: "VIEW", key: "LEDGER:VIEW" },
+    { module: "LEDGER", action: "WRITE", key: "LEDGER:WRITE" },
 
     { module: "JOURNAL", action: "WRITE", key: "JOURNAL:WRITE" },
     { module: "JOURNAL", action: "VIEW", key: "JOURNAL:VIEW" },

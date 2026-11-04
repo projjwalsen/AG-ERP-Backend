@@ -1,0 +1,1 @@
+import fs from "node:fs";const {outcomes}=JSON.parse(fs.readFileSync(".tmp-voucher-compare.json","utf8"));for(const x of outcomes.filter((x:any)=>x.agency.includes("Sulaki")&&(x.ref==="6416"||x.ref==="SDN/M/2526/008")))console.log(JSON.stringify(x,null,2));

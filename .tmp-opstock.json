@@ -1,0 +1,1754 @@
+[
+  {
+    "name": "2-ETHYL HEXANOL",
+    "qty": 280.0,
+    "rate": 95.0,
+    "value": 26600.0
+  },
+  {
+    "name": "ACETONE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "ACETONITRILE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "ADDITIVE",
+    "qty": 176.0,
+    "rate": 160.9,
+    "value": 28318.4
+  },
+  {
+    "name": "AGGREGATE",
+    "qty": 116.95,
+    "rate": 451.2,
+    "value": 52767.86
+  },
+  {
+    "name": "AGGREGATE COLD MIX",
+    "qty": 32593.0,
+    "rate": 0.62,
+    "value": 20067.9
+  },
+  {
+    "name": "ANIONIC EMULSION MS- KG",
+    "qty": 378.0,
+    "rate": 18.39,
+    "value": 6949.75
+  },
+  {
+    "name": "ANIONIC EMULSION MS - P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "AP 150",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "APL 150",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "AVYOL LA 110 C",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "AVYOL LA 110 C 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "AVYOL LA 120 H",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "AVYOL MD40",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "AVYOL MD40 H",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL 12",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL 12 - 271019",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL 12 - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL 27101971",
+    "qty": 193697.5,
+    "rate": 31.6,
+    "value": 6121247.29
+  },
+  {
+    "name": "Base Oil 27101971  - Kgs",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL - 27101980",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL 2CST",
+    "qty": 96930.0,
+    "rate": 65.0,
+    "value": 6300450.0
+  },
+  {
+    "name": "BASE OIL 3 CST",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Base Oil ASN 12",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL GRADE 2",
+    "qty": 85487.02,
+    "rate": 45.0,
+    "value": 3846915.9
+  },
+  {
+    "name": "BASE OIL GRADE 2 KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL HSB 2CST",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL HSB 2CST - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL HVI4",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL HVI 4 CST",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL-KG",
+    "qty": 417553.67,
+    "rate": 74.36,
+    "value": 31049161.21
+  },
+  {
+    "name": "BASE OIL KG (271019)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL - KG (27101971)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL KGS 1",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL KGS - 27101971",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL - LITER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL N 110",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL N-12",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL N-12  - LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL N 600",
+    "qty": 732141.8,
+    "rate": 85.78,
+    "value": 62805591.6
+  },
+  {
+    "name": "BASE OIL N 70",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL N 70 (3CST)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL N 850",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL SN 150",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL SN70",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL SN 85",
+    "qty": 264220.0,
+    "rate": 65.0,
+    "value": 17174300.0
+  },
+  {
+    "name": "BASE OIL SN 85 KGS",
+    "qty": 1415.8,
+    "rate": 29.72,
+    "value": 42071.63
+  },
+  {
+    "name": "BASE OIL W70 (27101980)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BASE OIL W70 (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BENZENE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN",
+    "qty": 1041.074,
+    "rate": 31230.97,
+    "value": 32513755.51
+  },
+  {
+    "name": "BITUMEN 27132000",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN 27132000 - MT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN 27132000 - MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Bitumen Emul-Rs1",
+    "qty": 11994.0,
+    "rate": 14.77,
+    "value": 177197.2
+  },
+  {
+    "name": "Bitumen Emulsion - P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Bitumen Emulsion (RS-1)",
+    "qty": 43043.85,
+    "rate": 39.55,
+    "value": 1702296.71
+  },
+  {
+    "name": "Bitumen Emulsion (RS-1) - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Bitumen Emulsion (RS-2)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN EMULSION SS-1",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN EMULSION SS-1 OIL BASE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN- KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN- KG (27132000)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Bitumen Kg-P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Bitumen- Kgs",
+    "qty": 459561.0,
+    "rate": 39.2,
+    "value": 18017067.0
+  },
+  {
+    "name": "BITUMEN KGS - 27132000",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN -MT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN MT (27132000)",
+    "qty": 0.006,
+    "rate": 31860.0,
+    "value": 191.16
+  },
+  {
+    "name": "BITUMEN - MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN MTS (27132000)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Bitumen-P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BITUMEN -VG30 KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BS 200",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "BUTANOL NX 4190",
+    "qty": 3437.4,
+    "rate": 314.11,
+    "value": 1079730.31
+  },
+  {
+    "name": "CALCIUM CLORIDE",
+    "qty": 981.0,
+    "rate": 18.0,
+    "value": 17658.0
+  },
+  {
+    "name": "Cold Mix (PME)",
+    "qty": 750.0,
+    "rate": 42.37,
+    "value": 31779.44
+  },
+  {
+    "name": "C- SS - 1",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "C SS - 1 - P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "C-SS-2 - P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DEAROMATIZED SOLVENT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DENATURED ANHYDROUS ETHANOL FROM DFG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE FUEL OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE FUEL OIL - MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE MARINE FUEL (27101961)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE MARINE FUEL KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE MARINE FUEL - LTR (27101961)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE MARINE FUEL MT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE MARINE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE MARINE OIL - MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL - 27101961",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL - 27101961 (MTS)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL 27101990",
+    "qty": 18610.0,
+    "rate": 45.0,
+    "value": 837450.0
+  },
+  {
+    "name": "DISTILLATE OIL-KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL - KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL LTR 27101961",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL \u2013 KG- 27101961",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLATE OIL \u2013 KGS 27101961",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DISTILLED BIO DIESEL B100",
+    "qty": 84000.0,
+    "rate": 85.0,
+    "value": 7140000.0
+  },
+  {
+    "name": "DIVYOL 164",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DIVYOL 75",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DIVYOL 85",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "DMSO",
+    "qty": 11700.0,
+    "rate": 220.0,
+    "value": 2574000.0
+  },
+  {
+    "name": "D O M",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "EMPTY DRUMS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "EMPTY WOVEN BAG",
+    "qty": 9400.0,
+    "rate": 25.0,
+    "value": 235000.0
+  },
+  {
+    "name": "EMULSIFIER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "EMULSION SS2",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "ETHANOL ANHYDROUS DENATURED (C-HEAVY)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "ETHYL ACETATE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "F.OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - 271019",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL 27101952",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL -27101959",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - 27101990 KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - (HSN-27101951)",
+    "qty": 21200.0,
+    "rate": 95.0,
+    "value": 2014000.0
+  },
+  {
+    "name": "FUEL OIL (KG)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL KG - 27101950",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Fuel Oil -Kg 27101951",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - KG (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL KGS 27101950",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL KGS 27101951",
+    "qty": 94020.0,
+    "rate": 35.05,
+    "value": 3295466.35
+  },
+  {
+    "name": "FUEL OIL KGS- 27101959",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL (KGS) 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL  - LITER - (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL LTR (27101951)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL - LTR (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "FUEL OIL LV GRADE",
+    "qty": 44000.0,
+    "rate": 56.31,
+    "value": 2477640.0
+  },
+  {
+    "name": "GENERAL PURPOSE THINNER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "GP THINNNER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "GP THINNNER - LTR",
+    "qty": 27200.0,
+    "rate": 62.04,
+    "value": 1687607.74
+  },
+  {
+    "name": "HD BASE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HEAT XL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HEAVY AEROMATICS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HEAVY AROMATIC OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HP MILJUTE SUPER N 12",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HSD-BS VI",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDRAULIC OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON MIXTURE -1 (27079900)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL -27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL-KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL - KGS (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL LITER - (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL-LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL MT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCARBON OIL \u2013LTR (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Hydrochloric Acid",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "HYDROCLORIC ACID",
+    "qty": 10103.49,
+    "rate": 9.47,
+    "value": 95681.41
+  },
+  {
+    "name": "IN10003 OFF SPEC GREASE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "IN10003 OFF SPEC GREASE-KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "IN10004 OFF SPEC OIL 205L",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "IN1901 OFF SPEC OIL WATER BASED 205L",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDORCOTE RS THX.",
+    "qty": 2789.26,
+    "rate": 320.39,
+    "value": 893645.71
+  },
+  {
+    "name": "INDUSTRIAL FUEL OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL FUEL OIL- 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL FUEL OIL (27101990) - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL FUEL OIL LITER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL FUEL OIL LTR (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL HYDROCARBON OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL HYDROCARBON OIL - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL HYDROCARBON OIL - KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL HYDROCARBON OIL - MT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL HYDROCARBON OIL - MT (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Industrial Oil (27101989)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Industrial Oil -KG",
+    "qty": 252509.0,
+    "rate": 54.0,
+    "value": 13635486.0
+  },
+  {
+    "name": "INDUSTRIAL OIL - KG (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Industrial Oil -KGS",
+    "qty": 745311.3,
+    "rate": 52.0,
+    "value": 38756187.6
+  },
+  {
+    "name": "Industrial Oil -LITER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Industrial Oil (Ltr)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "INDUSTRIAL OIL - MTS",
+    "qty": 34.24,
+    "rate": 75635.59,
+    "value": 2589762.6
+  },
+  {
+    "name": "INDUSTRIAL OIL MTS - 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Industrial Oil \u2013KG (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "ISO PROPYL ALCOHOL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "ISO PROPYL ALCOHOL - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "JP-70 LTR",
+    "qty": 11079.0,
+    "rate": 60.75,
+    "value": 673049.25
+  },
+  {
+    "name": "LHO",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "LUBRICATING BOTTOM OIL",
+    "qty": 53160.4,
+    "rate": 30.0,
+    "value": 1594812.0
+  },
+  {
+    "name": "LUBRICATING BOTTOM OIL - LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "LUBRICATING OIL (IN DRUMS)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "LUBRICATING OIL - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "LUBRICATING OIL - KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "LUBRICATING OIL - KGS 27101979",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "LUBRICATING OIL -LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MAK WHITE LIGHT 27101990",
+    "qty": 9790.0,
+    "rate": 77.0,
+    "value": 753830.0
+  },
+  {
+    "name": "MAK WHITE OIL",
+    "qty": 23840.0,
+    "rate": 79.0,
+    "value": 1883360.0
+  },
+  {
+    "name": "METHYL ETHYL KETONE",
+    "qty": 200.0,
+    "rate": 90.0,
+    "value": 18000.0
+  },
+  {
+    "name": "METHYL TERTIARY BUTYL EITHER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "METHYL TERTIARY BUTYL ETHER",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Micromix Additive",
+    "qty": 268.0,
+    "rate": 191.25,
+    "value": 51255.0
+  },
+  {
+    "name": "Micromix Additive - KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Micromix Additive-P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL HYDROCARBON OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL HYDROCARBON OIL 1",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL HYDROCARBON OIL KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL HYDROCARBON OIL LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL HYDROCARBON OIL - MT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL HYDROCARBON OIL - MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL OIL - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL OIL LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL (R)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL (271012)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL- 271019",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL 27101920",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL - 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL - 27101990 Kgs",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL - KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL- LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MINERAL TURPENTINE OIL LTRS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDROCARBON",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDROCARBON OIL - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Mixed Hydrocarbon Oil -Kg (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDRO CARBON OIL-KGS(27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDROCARBON OIL - Liter (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDROCARBON OIL-LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDROCARBON OIL - LTR (27101990)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIXED HYDROCARBON OIL - MT",
+    "qty": 47.93,
+    "rate": 48000.0,
+    "value": 2300640.0
+  },
+  {
+    "name": "MIXED LINEAR APLHA OLEFINS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIX SOLVENT",
+    "qty": 118813.47,
+    "rate": 52.33,
+    "value": 6217922.93
+  },
+  {
+    "name": "MIX SOLVENT - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MIX XYLENE",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MONO ETHYLENE GLYCOL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "M-PAC 3 LUBRICATING OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MTO",
+    "qty": 29000.0,
+    "rate": 58.65,
+    "value": 1700850.0
+  },
+  {
+    "name": "MTO-LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "MTO - LTR (271019)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "NORMAL BUTANOL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL - 271019",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL 27101960 KGS",
+    "qty": 25110.0,
+    "rate": 72.2,
+    "value": 1812942.0
+  },
+  {
+    "name": "OIL 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Oil (Kg)",
+    "qty": 31088.4,
+    "rate": 78.08,
+    "value": 2427305.05
+  },
+  {
+    "name": "OIL KG - 27101979",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL -KGS (27101960)",
+    "qty": 19840.0,
+    "rate": 77.0,
+    "value": 1527680.0
+  },
+  {
+    "name": "Oil (Liters)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL - LTR  (27101980)",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Oil- Ltr 27101990",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL - MTS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL PRODUCTION",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Oil Production -Kg",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Oil Production -LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL PRODUCTION-P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "OIL PRODUCTION \u2013KGS",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "PETROLEUM HYDROCARBON SOLVENT",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "PETROLEUM HYDROCARBON SOLVENT - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "PHS-125/240",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Polymer Modified Bitumen Emulsion-KG",
+    "qty": 18843.38,
+    "rate": 36.09,
+    "value": 680032.79
+  },
+  {
+    "name": "Polymer Modified Bitumen Emulsion-P",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Prasurf P 500",
+    "qty": 50.0,
+    "rate": 600.0,
+    "value": 30000.0
+  },
+  {
+    "name": "PRASURF P 550",
+    "qty": 862.0,
+    "rate": 580.0,
+    "value": 499960.0
+  },
+  {
+    "name": "PRASURF P 575",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "PRASURF P591",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "PRASURF P 601",
+    "qty": 330.0,
+    "rate": 360.0,
+    "value": 118800.0
+  },
+  {
+    "name": "Prasurf  P 620",
+    "qty": 8184.0,
+    "rate": 295.0,
+    "value": 2414280.0
+  },
+  {
+    "name": "PRASURF P-710",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "PRASURF PV 192",
+    "qty": 214.0,
+    "rate": 450.0,
+    "value": 96300.0
+  },
+  {
+    "name": "PR Solutions",
+    "qty": 7490.0,
+    "rate": 35.63,
+    "value": 266852.38
+  },
+  {
+    "name": "PYROLYSIS OIL (FUEL OIL) KGS",
+    "qty": 147160.0,
+    "rate": 48.0,
+    "value": 7063680.0
+  },
+  {
+    "name": "RECYCLED LUBE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "Redicote C 500-1 400 LB",
+    "qty": 551.19,
+    "rate": 571.65,
+    "value": 315089.47
+  },
+  {
+    "name": "RE REFINED LUBE OIL - LTR",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "RE REFINED LUB OIL",
+    "qty": 119330.0,
+    "rate": 52.0,
+    "value": 6205160.0
+  },
+  {
+    "name": "RE REFINED LUB OIL 27101971",
+    "qty": 1233931.2,
+    "rate": 55.7,
+    "value": 68731986.8
+  },
+  {
+    "name": "RE REFINED LUB OIL - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "SCRAP USED PARAFFIN OIL",
+    "qty": 6.62,
+    "rate": 51001.0,
+    "value": 337626.62
+  },
+  {
+    "name": "SCRAP USED / WASTE LUB OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "SHEVROL N 70",
+    "qty": 29129.0,
+    "rate": 60.0,
+    "value": 1747740.0
+  },
+  {
+    "name": "SLOP OIL 38256900",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "SPINDLE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "TETRA HYDRO FURAN 29321100",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "TOLUENE",
+    "qty": 160.0,
+    "rate": 70.0,
+    "value": 11200.0
+  },
+  {
+    "name": "U P 1159",
+    "qty": 237.0,
+    "rate": 305.6,
+    "value": 72426.86
+  },
+  {
+    "name": "USED ATF OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "USED LUBE OIL",
+    "qty": 1800.0,
+    "rate": 38.0,
+    "value": 68400.0
+  },
+  {
+    "name": "USED OIL 27109900",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "VELVEX WHITE TECHNICAL 70",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "VELVEX WHITE TECHNICAL 70 - KG",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "WASTE OIL (KGS)",
+    "qty": 1470.0,
+    "rate": 8.0,
+    "value": 11760.0
+  },
+  {
+    "name": "WASTE USED OIL",
+    "qty": 2600.0,
+    "rate": 5.0,
+    "value": 13000.0
+  },
+  {
+    "name": "WHITE OIL",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "WHITE OIL 10",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "WHITE OIL 12",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "WHITE OIL - 27101984",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "WHITE OIL 8",
+    "qty": null,
+    "rate": null,
+    "value": null
+  },
+  {
+    "name": "WITEOL 15",
+    "qty": 27696.41,
+    "rate": 66.25,
+    "value": 1834887.16
+  },
+  {
+    "name": "ZIPNOL LA",
+    "qty": null,
+    "rate": null,
+    "value": null
+  }
+]

@@ -76,6 +76,7 @@ type createPurchasePayload = {
     supplierInvoiceDate?: Date | string;
     otherReference?: string;
     remarks?: string;
+    path?: string;
 
     roundOffAmount?: number;
     subtotalAmount?: number;
@@ -543,6 +544,9 @@ export class PurchaseService {
                 remarks:
                     payload.remarks,
 
+                path:
+                    payload.path?.trim() || null,
+
                 subtotalAmount:subTotalAmount,
 
                 totalCGSTAmount,
@@ -671,6 +675,7 @@ export class PurchaseService {
             status?: "PENDING" | "APPROVED" | "REJECTED";
             branchId?: string;
             voucherType?: VoucherType;
+            path?: string;
             search?: string;
         }
     ) {
@@ -695,6 +700,12 @@ export class PurchaseService {
             ...(query?.voucherType && {
                 voucherType: query.voucherType
             }),
+            ...(query?.path && {
+                path: {
+                    contains: query.path.trim(),
+                    mode: "insensitive"
+                }
+            }),
             ...(search && {
                 OR: [
                     {
@@ -709,6 +720,12 @@ export class PurchaseService {
                                 contains: search,
                                 mode: "insensitive"
                             }
+                        }
+                    },
+                    {
+                        path: {
+                            contains: search,
+                            mode: "insensitive"
                         }
                     }
                 ]
@@ -1446,6 +1463,11 @@ export class PurchaseService {
                     remarks:
                         payload.remarks !== undefined
                             ? payload.remarks.trim()
+                            : undefined,
+
+                    path:
+                        payload.path !== undefined
+                            ? (payload.path.trim() || null)
                             : undefined,
 
                     subtotalAmount:

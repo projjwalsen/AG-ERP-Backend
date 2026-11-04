@@ -1,0 +1,1049 @@
+{
+  "group": {
+    "od": 822816622.76,
+    "oc": 12551933.96,
+    "cd": 673716070.65,
+    "cc": 16902464
+  },
+  "leafN": 129,
+  "leafSum": {
+    "od": 822816622.76,
+    "oc": 12551933.96,
+    "cd": 673716070.65,
+    "cc": 16902464
+  },
+  "leaves": [
+    {
+      "name": "AAR ECO EXIM (OPC) PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 2204004,
+      "oc": 0,
+      "cd": 1313198,
+      "cc": 0
+    },
+    {
+      "name": "ACCELERATOR GENERAL TRADING LLC-DR",
+      "type": "ledger",
+      "od": 31274322.18,
+      "oc": 0,
+      "cd": 19717552.03,
+      "cc": 0
+    },
+    {
+      "name": "A G ART PETROCHEM LLP",
+      "type": "ledger",
+      "od": 53514885,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "AGM ENERGY DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 12187414,
+      "cc": 0
+    },
+    {
+      "name": "AJANTHA LUMBER INC",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 111928,
+      "cc": 0
+    },
+    {
+      "name": "AJAY KUMAR BARIK",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "AMARNATH BABA SAESAHANA ENTERPRISES",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "AMISHI INDUSTRIES INDIA PVT LTD- Dr",
+      "type": "ledger",
+      "od": 7675726.44,
+      "oc": 0,
+      "cd": 22753475,
+      "cc": 0
+    },
+    {
+      "name": "APEX PETROCHEM INDUSTRIES",
+      "type": "ledger",
+      "od": 31960568,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "ARSH CORPORATION - DR",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 5735301,
+      "cc": 0
+    },
+    {
+      "name": "ART INFRASTRUCTURE PRIVATE LIMITED DRS - MP",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "ART INFRASTRUCTURE PRIVATE LIMITED DRS – BIHAR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 2462
+    },
+    {
+      "name": "ART INFRASTRUCTURE PRIVATE LIMITED - PB",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "Art Infrastructure Pvt Ltd",
+      "type": "ledger",
+      "od": 0,
+      "oc": 3233918.96,
+      "cd": 86021344,
+      "cc": 0
+    },
+    {
+      "name": "ASHTAVINAYAK PETROCHEM - DR",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "AVALANCHE IMPEX PRIVATE LIMITED-MAHA DR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "AVTAR INDUSTRIES DR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "BINDU INTERNATIONAL CO",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 6456571,
+      "cc": 0
+    },
+    {
+      "name": "BISMILLAH OILS",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "BITCHEM HIGHWAYS PRIVATE LIMITED-DR",
+      "type": "ledger",
+      "od": 2902,
+      "oc": 0,
+      "cd": 0,
+      "cc": 11759
+    },
+    {
+      "name": "BLACKTOP INFRASTRUCTURE PRIVATE LIMITED(Karnataka)",
+      "type": "ledger",
+      "od": 3262502,
+      "oc": 0,
+      "cd": 4951534,
+      "cc": 0
+    },
+    {
+      "name": "BLACKTOP INFRASTRUCTURE PRIVATE LIMITED(Telangana)",
+      "type": "ledger",
+      "od": 1409978,
+      "oc": 0,
+      "cd": 1409978,
+      "cc": 0
+    },
+    {
+      "name": "BLACKTOP INFRASTRUCTURE PVT LTD (Gujarat)",
+      "type": "ledger",
+      "od": 6760797,
+      "oc": 0,
+      "cd": 3313853,
+      "cc": 0
+    },
+    {
+      "name": "Blacktop Infrastructure Pvt Ltd (Maharashtra)",
+      "type": "ledger",
+      "od": 18251805,
+      "oc": 0,
+      "cd": 1214369,
+      "cc": 0
+    },
+    {
+      "name": "BLACKTOP INFRASTRUCTURE PVT LTD – MH HIRING CHARGES",
+      "type": "ledger",
+      "od": 3953734,
+      "oc": 0,
+      "cd": 7089734,
+      "cc": 0
+    },
+    {
+      "name": "BOLISETTY SRINIVAS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "BON BON INTERNATIONAL-Dr",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "BRBL INDIA (OPC) PRIVATE LIMITED- DR",
+      "type": "ledger",
+      "od": 97028901.3,
+      "oc": 0,
+      "cd": 22702033,
+      "cc": 0
+    },
+    {
+      "name": "BRIJ CHEMICALS DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 39980366,
+      "cc": 0
+    },
+    {
+      "name": "CATALYST ASPHALT PVT LTD",
+      "type": "group",
+      "od": 2468439,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "C B BIKKAD ENGINEERS AND CONTRACTORS",
+      "type": "ledger",
+      "od": 37843,
+      "oc": 0,
+      "cd": 37843,
+      "cc": 0
+    },
+    {
+      "name": "CHINTAMANI ENTERPRISES DRS",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 1415263,
+      "cc": 0
+    },
+    {
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED - CHANDIGARH DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED - RAJASTHAN",
+      "type": "ledger",
+      "od": 0,
+      "oc": 66,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED - UP",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "CLASSIC BITUMEN PRIVATE LIMITED – HARYANA",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "CLASSIC PETRO & ENERGY PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 49228860,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "CONSUMER TOUCH",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 492237,
+      "cc": 0
+    },
+    {
+      "name": "DARSH PETROCHEM PVT LTD",
+      "type": "ledger",
+      "od": 349502,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "DATTA KRUPA ENTERPRISES DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "DATTA SAI ENTERPRISES",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 566639
+    },
+    {
+      "name": "D.K. Impex - Dr",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "DMD INFRATECH PRIVATE LIMITED",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 682778,
+      "cc": 0
+    },
+    {
+      "name": "DRAVYAM INDUSTRIES PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 10944013,
+      "oc": 0,
+      "cd": 3645855,
+      "cc": 0
+    },
+    {
+      "name": "DUBEY PETROLEUM CHEMICALS PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 19323991,
+      "cc": 0
+    },
+    {
+      "name": "DVITI PETROCHEM PRIVATE LIMITED",
+      "type": "group",
+      "od": 8647841.27,
+      "oc": 0,
+      "cd": 9058325.27,
+      "cc": 0
+    },
+    {
+      "name": "EMIT INT TRADING REFINED OIL PRODUCTS CO. L.L.C-DR",
+      "type": "ledger",
+      "od": 2494240,
+      "oc": 0,
+      "cd": 2494240,
+      "cc": 0
+    },
+    {
+      "name": "FORTUNE ENTERPRISE - DR",
+      "type": "ledger",
+      "od": 3863837,
+      "oc": 0,
+      "cd": 501477,
+      "cc": 0
+    },
+    {
+      "name": "FORTUNE ENTERPRISES_NEW DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 318,
+      "cc": 0
+    },
+    {
+      "name": "FUELOMATIC ENERGY",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "GALAXY PETROLEUM  - DR",
+      "type": "group",
+      "od": 11934625,
+      "oc": 0,
+      "cd": 6074463,
+      "cc": 0
+    },
+    {
+      "name": "GASOLIX PETRO INDUSTRIES PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 1390375,
+      "cc": 0
+    },
+    {
+      "name": "GAURAV CHEMICALS (Dr.)",
+      "type": "ledger",
+      "od": 0,
+      "oc": 7784385,
+      "cd": 59400,
+      "cc": 0
+    },
+    {
+      "name": "Govt. Of Maharashtra",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "Grasim Industries Limited DR",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 2602.95,
+      "cc": 0
+    },
+    {
+      "name": "GULF FIRST PETRO PRODUCTS INDIA (P) LTD DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "GURUKRUPA INFRASTRUCTURE DRS",
+      "type": "ledger",
+      "od": 186875,
+      "oc": 0,
+      "cd": 186875,
+      "cc": 0
+    },
+    {
+      "name": "HARE KRISHNA TRADERS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "HORIZON VENTURES DRS",
+      "type": "ledger",
+      "od": 1090122,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "I-9 FREEWAYS PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 2363540,
+      "oc": 0,
+      "cd": 11758,
+      "cc": 0
+    },
+    {
+      "name": "IMMANUEL & CO",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "INFINIUM INDUSTRIES PRIVATE LIMITED Dr.",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "INNOVATIVE ROADZTECH PRIVATE LIMITED - DR",
+      "type": "ledger",
+      "od": 724119,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "JAITHRA EXIM",
+      "type": "group",
+      "od": 1053544,
+      "oc": 0,
+      "cd": 518678,
+      "cc": 0
+    },
+    {
+      "name": "JAYPEE PETRO PRODUCTS",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 1135514,
+      "cc": 0
+    },
+    {
+      "name": "KALYAN TOLL INFRASTRUCTURE LIMITED",
+      "type": "ledger",
+      "od": 110485.6,
+      "oc": 0,
+      "cd": 110485.6,
+      "cc": 0
+    },
+    {
+      "name": "KANISHKA ENTERPRISES",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "KRISH IMPEX",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 11197098,
+      "cc": 0
+    },
+    {
+      "name": "KRISHNA LUBRICANTS",
+      "type": "ledger",
+      "od": 1264690,
+      "oc": 0,
+      "cd": 1264690,
+      "cc": 0
+    },
+    {
+      "name": "KS Oil Corporation",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "LAKSHMI DURGA FILLING",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "LAKSHMI DYE CHEM",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "LUBRICON INDIA",
+      "type": "ledger",
+      "od": 26780558,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "MAHARASHTRA VIKRIKAR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "MANAN ENTERPRISE",
+      "type": "ledger",
+      "od": 10169823,
+      "oc": 0,
+      "cd": 19150175,
+      "cc": 0
+    },
+    {
+      "name": "MANAN IMPEX",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "MAYUR STONE SUPPLIERS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 316771,
+      "cc": 0
+    },
+    {
+      "name": "MIDAS TECHNOLOGIES-DR",
+      "type": "group",
+      "od": 255433,
+      "oc": 0,
+      "cd": 3913466,
+      "cc": 0
+    },
+    {
+      "name": "MITTAL SIDDHI INFRA PRIVATE LIMITED-DR",
+      "type": "ledger",
+      "od": 12424474.83,
+      "oc": 0,
+      "cd": 102659058.47,
+      "cc": 0
+    },
+    {
+      "name": "M.N.Traders",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 30464,
+      "cc": 0
+    },
+    {
+      "name": "MORYA ENTERPRISES",
+      "type": "ledger",
+      "od": 16080568,
+      "oc": 0,
+      "cd": 56218,
+      "cc": 0
+    },
+    {
+      "name": "MR SUPPLIERS DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "M/S K H THAKUR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 452146,
+      "cc": 0
+    },
+    {
+      "name": "M/S RABINDRA PADHY DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "M/S SAI SHARAN PETROLE",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 13558,
+      "cc": 0
+    },
+    {
+      "name": "M/S YASH TRADING COMPANY",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "NANOTECH INDUSTRIES DR",
+      "type": "group",
+      "od": 486219,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "NEPTUNE PETROCHEMICALS LIMITED - Dr",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 16321514
+    },
+    {
+      "name": "NXGEN ENFUEL SERVICES LLP",
+      "type": "ledger",
+      "od": 41166268.13,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "OSNAR CHEMICAL PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "PALAK OIL TRADERS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "POWER2SME PRIVATE LIMITED - DR",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 2457,
+      "cc": 0
+    },
+    {
+      "name": "REGAL OIL DISTRIBUTORS AND MANUFACTURERS DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "RN FUELS INDIA PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 75800247,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SABARI ENGINEERING CO",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SAI SUDHA TRADERS",
+      "type": "ledger",
+      "od": 2535976,
+      "oc": 0,
+      "cd": 2311282,
+      "cc": 0
+    },
+    {
+      "name": "SAK Industries",
+      "type": "group",
+      "od": 104741797,
+      "oc": 0,
+      "cd": 23437178,
+      "cc": 0
+    },
+    {
+      "name": "SANJIVANI INDUSTRIES -Dr(Mumbai)",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SAPTASHRUNGI PETRO CHEM",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SE BIOFUELS PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 25810,
+      "cc": 0
+    },
+    {
+      "name": "SHARV PETROBIT PRIVATE LIMITED",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SHIV NS GLOBAL PRIVATE LIMITED DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 1648860,
+      "cc": 0
+    },
+    {
+      "name": "SHREE DHANRAJ ENTERPRISES",
+      "type": "group",
+      "od": 368160,
+      "oc": 0,
+      "cd": 368160,
+      "cc": 0
+    },
+    {
+      "name": "SHREE NAVDURGA AGRO INDUSTRIES (Goa)",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 14287,
+      "cc": 0
+    },
+    {
+      "name": "Shri Ganesh Trading- Dr",
+      "type": "group",
+      "od": 6935,
+      "oc": 0,
+      "cd": 5070105,
+      "cc": 0
+    },
+    {
+      "name": "SIDDHIVINAYAK BUILDPRO PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 90
+    },
+    {
+      "name": "SIDDHIVINAYAK CONSTRUCTION (DR)",
+      "type": "ledger",
+      "od": 40213352.6,
+      "oc": 0,
+      "cd": 82795642.33,
+      "cc": 0
+    },
+    {
+      "name": "SIDDHIVINAYAK PETROCHEMICALS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 4056,
+      "cc": 0
+    },
+    {
+      "name": "S M THOMAIYAR AND SON",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SOMNATH DEOKISAN BOOB",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 4883,
+      "cc": 0
+    },
+    {
+      "name": "SRINIVASA LUBES AND PETROLEUMS",
+      "type": "ledger",
+      "od": 80246,
+      "oc": 0,
+      "cd": 2492,
+      "cc": 0
+    },
+    {
+      "name": "SRI VAISHNAVI ENTERPRISES",
+      "type": "group",
+      "od": 3169282,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SUC INFRAPROJECTS PRIVATE LIMITED - DR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SUHAS TRADERS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 96327,
+      "cc": 0
+    },
+    {
+      "name": "Sulaki Chemicals Pvt. Ltd. (Drs)",
+      "type": "ledger",
+      "od": 48566294.41,
+      "oc": 0,
+      "cd": 48105984,
+      "cc": 0
+    },
+    {
+      "name": "SUNRISE ENTERPRISES - DR",
+      "type": "ledger",
+      "od": 60058005,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "SURAJDEEP INFRA PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 15684776,
+      "oc": 0,
+      "cd": 12965736,
+      "cc": 0
+    },
+    {
+      "name": "SWARA ENTERPRISES DRS",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 1629108,
+      "cc": 0
+    },
+    {
+      "name": "SWARAJYA INFRAPROJECT PRIVATE LIMITED DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 2174618,
+      "cc": 0
+    },
+    {
+      "name": "SYNERGY WORLD",
+      "type": "ledger",
+      "od": 7233367,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "TOP NOTCH INDUSTRIES LLP DRS",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 1045,
+      "cc": 0
+    },
+    {
+      "name": "TRIMAX ROCKS LLP",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 955889,
+      "cc": 0
+    },
+    {
+      "name": "UNIPROC ENERGIES PRIVATE LIMITED-DR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "UNIVERSAL TRADING CORPORATION",
+      "type": "group",
+      "od": 2932140,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "VAIBHAVDESHMUKH INFRAPROJECTS PRIVATE LIMITED",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 4995176,
+      "cc": 0
+    },
+    {
+      "name": "VAISHNAVI PETRO ENERGY",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 3306507,
+      "cc": 0
+    },
+    {
+      "name": "VIDYAA PETROLEUM INDIA PRIVATE LIMITED - DR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 1533564,
+      "cd": 54152560,
+      "cc": 0
+    },
+    {
+      "name": "VIRESHWAR INDUSTRIES - DR",
+      "type": "group",
+      "od": 0,
+      "oc": 0,
+      "cd": 0,
+      "cc": 0
+    },
+    {
+      "name": "VITTHOBA MAULI INFRAPROJECT PRIVATE LIMITED - DR",
+      "type": "ledger",
+      "od": 0,
+      "oc": 0,
+      "cd": 8493135,
+      "cc": 0
+    }
+  ]
+}

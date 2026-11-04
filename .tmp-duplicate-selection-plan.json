@@ -1,0 +1,703 @@
+{
+  "actions": [
+    {
+      "row": 49,
+      "no": "445",
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "part": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+      "keep": "595ba781-b08c-4b02-917d-7ec10274a62e",
+      "delete": "c4d6e8a1-a0b0-491d-b600-9a18311f73ad",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "c4d6e8a1-a0b0-491d-b600-9a18311f73ad",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)|CREDIT|28026400"
+        ]
+      }
+    },
+    {
+      "row": 165,
+      "no": "446",
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "part": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+      "keep": "4ff19e40-b70b-4467-a078-8c4989b76e07",
+      "delete": "d9c2a4df-f9ea-4cc6-9095-dea4e0a0e979",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "d9c2a4df-f9ea-4cc6-9095-dea4e0a0e979",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)|CREDIT|27275100"
+        ]
+      }
+    },
+    {
+      "row": 166,
+      "no": "447",
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "part": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+      "keep": "859e5b38-8005-4775-95a4-019602e6baac",
+      "delete": "27d43cfc-fdd0-4f67-9488-e2c5f053feb0",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "27d43cfc-fdd0-4f67-9488-e2c5f053feb0",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)|DEBIT|24602700"
+        ]
+      }
+    },
+    {
+      "row": 183,
+      "no": "448",
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "part": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+      "keep": "e056b987-369c-4854-bb8d-3407c4167704",
+      "delete": "cc6bd2d6-a6a0-4f67-87ae-b40ab25ee54a",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "cc6bd2d6-a6a0-4f67-87ae-b40ab25ee54a",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)|DEBIT|24571800"
+        ]
+      }
+    },
+    {
+      "row": 202,
+      "no": "449",
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "part": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+      "keep": "b15d39bd-0bd2-4fbc-bb2c-d0d178d5fe9d",
+      "delete": "6d26be11-9275-41b7-afa3-fb856d1301c0",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "6d26be11-9275-41b7-afa3-fb856d1301c0",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)|DEBIT|24612900"
+        ]
+      }
+    },
+    {
+      "row": 249,
+      "no": "450",
+      "agency": "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)",
+      "part": "Auriolus Finvest Pvt Ltd (BIZFUNDS)",
+      "keep": "6c0f16eb-4d68-4f65-9f74-e0747dc69bee",
+      "delete": "718d774a-20e9-45c9-b2b9-fb5cd944d159",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "718d774a-20e9-45c9-b2b9-fb5cd944d159",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "POWER2SME PRIVATE LIMITED(BEBB INDIA PVT LTD)|DEBIT|24633400"
+        ]
+      }
+    },
+    {
+      "row": 281,
+      "no": "10957",
+      "agency": "FORTUNE ENTERPRISE",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "efa62910-c106-4393-b388-262e183fe023",
+      "delete": "b67634e2-4efc-41dd-a49e-ae4ece19874d",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "b67634e2-4efc-41dd-a49e-ae4ece19874d",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|157312400",
+          "FORTUNE ENTERPRISE|DEBIT|157312400"
+        ]
+      }
+    },
+    {
+      "row": 284,
+      "no": "10954",
+      "agency": "MALASHIAN LUBE PRIVATE LIMITED",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "fb5c82de-8f71-42c6-a799-cda4abab2e80",
+      "delete": "acfe78a5-3099-4aa6-be5d-f83be3ebbbbb",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "acfe78a5-3099-4aa6-be5d-f83be3ebbbbb",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|239976000",
+          "MALASHIAN LUBE PRIVATE LIMITED|DEBIT|239976000"
+        ]
+      }
+    },
+    {
+      "row": 313,
+      "no": "10981",
+      "agency": "KOTA OIL CORPORATION CRS",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "1270bbe9-7086-49af-8809-2f3d74cb4a47",
+      "delete": "35aaa10f-61ef-4735-bbfc-00a9cb378fd2",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "35aaa10f-61ef-4735-bbfc-00a9cb378fd2",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|218746900",
+          "KOTA OIL CORPORATION CRS|DEBIT|218746900"
+        ]
+      }
+    },
+    {
+      "row": 733,
+      "no": "334",
+      "agency": "Sulaki Chemicals Pvt Ltd-CR",
+      "part": "SHRIRAM FINANCE LIMITED",
+      "keep": "fd4c5e3f-554e-42f8-ab1c-2973f96d78ea",
+      "delete": "f19aac85-f6f9-4835-8a41-03b0b65a2a2e",
+      "why": "identical balanced signature",
+      "candidate": {
+        "id": "f19aac85-f6f9-4835-8a41-03b0b65a2a2e",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Sulaki Chemicals Pvt Ltd-CR|DEBIT|361728900"
+        ]
+      }
+    },
+    {
+      "row": 756,
+      "no": "344",
+      "agency": "Sulaki Chemicals Pvt Ltd-CR",
+      "part": "SHRIRAM FINANCE LIMITED",
+      "keep": "2d7d2248-e263-47ab-8204-3e82e14e7758",
+      "delete": "83e2d968-9a18-4826-ad14-b747a61733ba",
+      "why": "identical balanced signature",
+      "candidate": {
+        "id": "83e2d968-9a18-4826-ad14-b747a61733ba",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Sulaki Chemicals Pvt Ltd-CR|DEBIT|499568300"
+        ]
+      }
+    },
+    {
+      "row": 797,
+      "no": "358",
+      "agency": "Sulaki Chemicals Pvt Ltd-CR",
+      "part": "SHRIRAM FINANCE LIMITED",
+      "keep": "cd09588a-e77b-458c-8a16-68459aaec268",
+      "delete": "c3226bdd-7cd1-4e3d-baa0-d63e8dde6641",
+      "why": "identical balanced signature",
+      "candidate": {
+        "id": "c3226bdd-7cd1-4e3d-baa0-d63e8dde6641",
+        "party": 1,
+        "balanced": false,
+        "contraMatch": false,
+        "contra": [],
+        "journals": 1,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Sulaki Chemicals Pvt Ltd-CR|DEBIT|366786800"
+        ]
+      }
+    },
+    {
+      "row": 1043,
+      "no": "11503",
+      "agency": "ARS PETRO CHEMICAL CRS",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "13439bea-a76d-457b-b9c0-7ce32cebce44",
+      "delete": "3041e1e2-c4d9-45c5-9db4-7c0149f56ea7",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "3041e1e2-c4d9-45c5-9db4-7c0149f56ea7",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "ARS PETRO CHEMICAL CRS|DEBIT|229670500",
+          "Bank of Maharashtra|CREDIT|229670500"
+        ]
+      }
+    },
+    {
+      "row": 1053,
+      "no": "11496",
+      "agency": "K. T. LATHIWALA",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "896facf6-a425-4f6f-ba93-72dec7a19401",
+      "delete": "464718fd-7758-4116-abee-257175bb5581",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "464718fd-7758-4116-abee-257175bb5581",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|155335200",
+          "K. T. LATHIWALA|DEBIT|155335200"
+        ]
+      }
+    },
+    {
+      "row": 1074,
+      "no": "11526",
+      "agency": "ARS PETRO CHEMICAL CRS",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "c17b05d9-6cbd-496e-af37-291862856567",
+      "delete": "3f492a5b-4d56-459c-b62f-83078ec44e65",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "3f492a5b-4d56-459c-b62f-83078ec44e65",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "ARS PETRO CHEMICAL CRS|DEBIT|194753700",
+          "Bank of Maharashtra|CREDIT|194753700"
+        ]
+      }
+    },
+    {
+      "row": 1241,
+      "no": "11602",
+      "agency": "ARS PETRO CHEMICAL CRS",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "f0e69529-e29d-4153-b827-5a5f59dbb360",
+      "delete": "dbe7d28f-9111-4171-9333-ce898dfcbe32",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "dbe7d28f-9111-4171-9333-ce898dfcbe32",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "ARS PETRO CHEMICAL CRS|DEBIT|156828500",
+          "Bank of Maharashtra|CREDIT|156828500"
+        ]
+      }
+    },
+    {
+      "row": 1377,
+      "no": "11664",
+      "agency": "K. T. LATHIWALA",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "e82a4565-d561-4423-aa0d-0229c6a5e986",
+      "delete": "056a8bba-f948-4f22-b3e0-b8e5c6e519ec",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "056a8bba-f948-4f22-b3e0-b8e5c6e519ec",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|155335200",
+          "K. T. LATHIWALA|DEBIT|155335200"
+        ]
+      }
+    },
+    {
+      "row": 1909,
+      "no": "11957",
+      "agency": "BON BON INTERNATIONAL",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "4440fd67-ce76-4040-981b-12aca6ce1b24",
+      "delete": "ffaecc39-ff2d-4f90-8650-bcaeab0479dd",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "ffaecc39-ff2d-4f90-8650-bcaeab0479dd",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "BON BON INTERNATIONAL|DEBIT|211129600",
+          "Bank of Maharashtra|CREDIT|211129600"
+        ]
+      }
+    },
+    {
+      "row": 1999,
+      "no": "12009",
+      "agency": "ROOPKAMAL ENTERPRISES",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "32bfb76b-7509-4a48-9644-15a27f35d90e",
+      "delete": "c673afae-689d-47dd-8d1f-e00c5f4f082b",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "c673afae-689d-47dd-8d1f-e00c5f4f082b",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|177772900",
+          "ROOPKAMAL ENTERPRISES|DEBIT|177772900"
+        ]
+      }
+    },
+    {
+      "row": 2151,
+      "no": "12120",
+      "agency": "ROOPKAMAL ENTERPRISES",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "e59f19a3-bd7c-4649-91a3-c8ae94316c35",
+      "delete": "987e70ac-569e-4eb5-b50a-6520414e348a",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "987e70ac-569e-4eb5-b50a-6520414e348a",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|177772900",
+          "ROOPKAMAL ENTERPRISES|DEBIT|177772900"
+        ]
+      }
+    },
+    {
+      "row": 2208,
+      "no": "12153",
+      "agency": "K. T. LATHIWALA",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "094a75a4-ac0c-4bb9-a0fa-053753368dd0",
+      "delete": "04a57a9f-d2ef-4009-9d11-9650e456c695",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "04a57a9f-d2ef-4009-9d11-9650e456c695",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|216825000",
+          "K. T. LATHIWALA|DEBIT|216825000"
+        ]
+      }
+    },
+    {
+      "row": 2976,
+      "no": "12721",
+      "agency": "AVALANCHE REFINERIES PVT LTD",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "818c09ee-abe4-491f-ad21-23b6834931b6",
+      "delete": "7fd74e2a-a0de-4858-a600-2aec450df378",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "7fd74e2a-a0de-4858-a600-2aec450df378",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "AVALANCHE REFINERIES PVT LTD|DEBIT|263376000",
+          "Bank of Maharashtra|CREDIT|263376000"
+        ]
+      }
+    },
+    {
+      "row": 4880,
+      "no": "13923",
+      "agency": "PLATINUM PETROCHEM",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "3ffc1217-df3b-4b49-bf73-2a39e6038a44",
+      "delete": "af56ab1d-e9f4-4ea3-ab22-e5beef5c7674",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "af56ab1d-e9f4-4ea3-ab22-e5beef5c7674",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|303204300",
+          "PLATINUM PETROCHEM|DEBIT|303204300"
+        ]
+      }
+    },
+    {
+      "row": 6553,
+      "no": "15118",
+      "agency": "Goverdhan Energy And Petrochemicals Pvt Ltd",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "5cdb6c3e-90b0-4f5d-9b5d-28a13a57fae1",
+      "delete": "31a51c9a-b2d5-468d-b53e-f7b91d44e534",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "31a51c9a-b2d5-468d-b53e-f7b91d44e534",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|201042500",
+          "Goverdhan Energy And Petrochemicals Pvt Ltd|DEBIT|201042500"
+        ]
+      }
+    },
+    {
+      "row": 6585,
+      "no": "15148",
+      "agency": "SELVAM INDUSTRIES",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "56480f5b-471d-45b0-ad90-b3c4637062a9",
+      "delete": "c8390727-7715-438f-8ff4-e3dacecb527a",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "c8390727-7715-438f-8ff4-e3dacecb527a",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|167088000",
+          "SELVAM INDUSTRIES|DEBIT|167088000"
+        ]
+      }
+    },
+    {
+      "row": 6589,
+      "no": "15159",
+      "agency": "SWARNA OIL SERVICES - CR",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "2cf6341d-01f0-4a9a-ae4d-cac6d7ab206e",
+      "delete": "4150ed3d-fd61-49fd-af3b-cab4d71c3ae9",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "4150ed3d-fd61-49fd-af3b-cab4d71c3ae9",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|192167100",
+          "SWARNA OIL SERVICES - CR|DEBIT|192167100"
+        ]
+      }
+    },
+    {
+      "row": 6620,
+      "no": "15182",
+      "agency": "Goverdhan Energy And Petrochemicals Pvt Ltd",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "04b5e3ab-59ca-4247-82b3-0741eed496a5",
+      "delete": "8f4ff5b5-3a30-4010-9753-872c35400ad9",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "8f4ff5b5-3a30-4010-9753-872c35400ad9",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|242637500",
+          "Goverdhan Energy And Petrochemicals Pvt Ltd|DEBIT|242637500"
+        ]
+      }
+    },
+    {
+      "row": 6806,
+      "no": "15304",
+      "agency": "SELVAM INDUSTRIES",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "fb55afeb-49ad-4c7c-8663-08e38a626d3e",
+      "delete": "659e8d38-cc5f-47f1-a276-dc4cc830afc4",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "659e8d38-cc5f-47f1-a276-dc4cc830afc4",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|243670000",
+          "SELVAM INDUSTRIES|DEBIT|243670000"
+        ]
+      }
+    },
+    {
+      "row": 7744,
+      "no": "15895",
+      "agency": "NEPTUNE PETROCHEMICALS LIMITED",
+      "part": "BANK OF MAHARASHTRA- C/C 60434886441",
+      "keep": "dd8bda3a-7cff-4e96-9048-bbe1ba7ff258",
+      "delete": "af073d23-45a7-49fe-a3f9-ea712aa77895",
+      "why": "particulars selects sole contra",
+      "candidate": {
+        "id": "af073d23-45a7-49fe-a3f9-ea712aa77895",
+        "party": 1,
+        "balanced": true,
+        "contraMatch": false,
+        "contra": [
+          "Bank of Maharashtra"
+        ],
+        "journals": 0,
+        "tx": 0,
+        "notes": 0,
+        "lines": [
+          "Bank of Maharashtra|CREDIT|156848000",
+          "NEPTUNE PETROCHEMICALS LIMITED|DEBIT|156848000"
+        ]
+      }
+    }
+  ],
+  "uncertain": []
+}

@@ -1,0 +1,3 @@
+import 'dotenv/config'; import {prisma} from './src/config/db';
+const d=require('./.tmp-ledger-workbook-match.json')[0];const rows=d.allRows.filter((x:any)=>x.status==='matched'&&x.voucherType==='PURCHASE');const ids=[...new Set(rows.flatMap((r:any)=>r.matches.map((m:any)=>m.id)))].slice(0,5);
+(async()=>{for(const id of ids){const v=await prisma.voucher.findUnique({where:{id},include:{entries:{include:{ledger:true}}}});console.log(JSON.stringify({id,no:v?.voucherNo,date:v?.voucherDate,totalDebit:v?.totalDebit,totalCredit:v?.totalCredit,lines:v?.entries.map(e=>({ledger:e.ledger.name,side:e.entryType,amount:e.amount}))}))}await prisma.$disconnect()})().catch(async e=>{console.error(e);await prisma.$disconnect()})

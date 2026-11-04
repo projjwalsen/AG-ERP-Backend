@@ -1,0 +1,1 @@
+const data=require('./.tmp-ledger-workbook-match.json');for(const wb of data){console.log('\n'+wb.wb);for(const type of [...new Set(wb.allRows.map(r=>r.type))]){const parts={};for(const r of wb.allRows.filter(r=>r.type===type))parts[r.particulars]=(parts[r.particulars]||0)+1;console.log(type,JSON.stringify(Object.entries(parts).sort((a,b)=>b[1]-a[1]).slice(0,60)));}}
