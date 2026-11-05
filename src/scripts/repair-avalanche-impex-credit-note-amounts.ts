@@ -61,7 +61,7 @@ async function main() {
 
             const partyLines = voucher.entries.filter(entry =>
                 entry.ledger.agencyId === agency.id &&
-                [LedgerType.CUSTOMER, LedgerType.VENDOR].includes(entry.ledger.category) &&
+                (entry.ledger.category === LedgerType.CUSTOMER || entry.ledger.category === LedgerType.VENDOR) &&
                 entry.entryType === EntryType.CREDIT
             );
             const offsetLines = voucher.entries.filter(entry =>
