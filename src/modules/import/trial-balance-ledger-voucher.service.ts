@@ -436,7 +436,7 @@ export class TrialBalanceLedgerVoucherService {
                     ledgerId: { notIn: targetLedgerIds }, voucher: { voucherType: row.voucherType,
                         ...(dateStart && dateEnd ? { voucherDate: { gte: dateStart, lte: dateEnd } } : {}),
                         ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}) } },
-                include: { voucher: { select: { id: true, voucherNo: true, voucherDate: true, voucherType: true } }, ledger: { select: { id: true, name: true } } },
+                include: { voucher: { select: { id: true, voucherNo: true, voucherDate: true, voucherType: true, narration: true } }, ledger: { select: { id: true, name: true } } },
                 take: 20
             });
             if (alternatives.length) {
