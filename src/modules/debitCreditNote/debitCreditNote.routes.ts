@@ -93,6 +93,10 @@ router.get(
  *       Creates a Debit or Credit Note against an existing Sale or Purchase
  *       invoice. Creating the draft does not modify the original invoice
  *       grand total and does not post accounting effects until approval.
+ *       UI creates (no importKey) compute totalAmount from
+ *       taxableAmount + cgstAmount + sgstAmount + igstAmount; particulars
+ *       may be description-only. Imports with importKey keep
+ *       totalAmount = sum(particulars.amount).
  *     tags:
  *       - Debit Credit Notes
  *     security:
@@ -154,6 +158,36 @@ router.get(
  *                 type: string
  *                 example: Adjustment against transportation charges
  *
+ *               gstPercent:
+ *                 type: number
+ *                 format: double
+ *                 example: 18
+ *                 description: >
+ *                   GST rate percent. Frontend chooses IGST vs CGST/SGST split
+ *                   and sends the matching tax amount fields.
+ *
+ *               taxableAmount:
+ *                 type: number
+ *                 format: double
+ *                 example: 10000
+ *                 description: Required for UI creates (no importKey). Used with GST fields for totalAmount.
+ *
+ *               cgstAmount:
+ *                 type: number
+ *                 format: double
+ *                 example: 900
+ *
+ *               sgstAmount:
+ *                 type: number
+ *                 format: double
+ *                 example: 900
+ *
+ *               igstAmount:
+ *                 type: number
+ *                 format: double
+ *                 example: 0
+ *                 description: Set when IGST applies; then cgstAmount/sgstAmount should be 0.
+ *
  *               particulars:
  *                 type: array
  *                 minItems: 1
@@ -161,7 +195,6 @@ router.get(
  *                   type: object
  *                   required:
  *                     - description
- *                     - amount
  *                   properties:
  *                     description:
  *                       type: string
@@ -169,8 +202,11 @@ router.get(
  *                     amount:
  *                       type: number
  *                       format: double
- *                       minimum: 0.01
+ *                       minimum: 0
  *                       example: 3000
+ *                       description: >
+ *                         Required for imports (importKey). Optional for UI creates;
+ *                         when omitted, backend fills line amount from tax total.
  *                     entryType:
  *                       type: string
  *                       enum: [DEBIT, CREDIT]
@@ -178,8 +214,8 @@ router.get(
  *
  *           examples:
  *
- *             purchaseDebitNote:
- *               summary: Debit Note against Purchase
+ *             purchaseDebitNoteUi:
+ *               summary: UI Debit Note against Purchase (tax-based total)
  *               value:
  *                 type: DEBIT_NOTE
  *                 sourceType: PURCHASE
@@ -188,14 +224,17 @@ router.get(
  *                 purchaseId: 1fca2345-1234-4567-8901-123456789abc
  *                 noteDate: 2026-07-30T10:00:00.000Z
  *                 narration: Damaged goods adjustment
+ *                 gstPercent: 18
+ *                 taxableAmount: 10000
+ *                 cgstAmount: 900
+ *                 sgstAmount: 900
+ *                 igstAmount: 0
  *                 particulars:
  *                   - description: Damaged Goods
- *                     amount: 1000
  *                   - description: Quantity Shortage
- *                     amount: 500
  *
- *             saleCreditNote:
- *               summary: Credit Note against Sale
+ *             saleCreditNoteIgst:
+ *               summary: UI Credit Note against Sale (IGST)
  *               value:
  *                 type: CREDIT_NOTE
  *                 sourceType: SALE
@@ -204,13 +243,20 @@ router.get(
  *                 saleId: 2fca2345-1234-4567-8901-123456789abc
  *                 noteDate: 2026-07-30T10:00:00.000Z
  *                 narration: Post invoice discount
+ *                 gstPercent: 18
+ *                 taxableAmount: 10000
+ *                 cgstAmount: 0
+ *                 sgstAmount: 0
+ *                 igstAmount: 1800
  *                 particulars:
  *                   - description: Discount Adjustment
- *                     amount: 2000
  *
  *     responses:
  *       201:
- *         description: Debit/Credit Note draft created successfully
+ *         description: >
+ *           Debit/Credit Note draft created successfully.
+ *           UI creates (no importKey) set totalAmount = taxableAmount + cgstAmount + sgstAmount + igstAmount.
+ *           Imports (importKey) keep totalAmount = sum(particulars.amount).
  *       400:
  *         description: Invalid payload or invoice/agency mismatch
  *       401:
@@ -363,6 +409,117 @@ router.get(
     "/:noteId",
     checkPermission("DRCR_NOTE:VIEW"),
     controller.getNoteById
+);
+
+/**
+ * @openapi
+ * /api/debit-credit-notes/{noteId}:
+ *   patch:
+ *     summary: Update pending Debit/Credit Note draft
+ *     description: >
+ *       Updates a PENDING Debit/Credit Note. Approved or rejected notes cannot
+ *       be edited. Amount rules match create — UI notes (no importKey) use
+ *       taxableAmount + cgstAmount + sgstAmount + igstAmount for totalAmount;
+ *       imported notes (importKey) keep particulars-based totals.
+ *     tags:
+ *       - Debit Credit Notes
+ *     security:
+ *       - cookieAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: noteId
+ *         required: true
+ *         schema:
+ *           type: string
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [DEBIT_NOTE, CREDIT_NOTE]
+ *               sourceType:
+ *                 type: string
+ *                 enum: [SALE, PURCHASE]
+ *               agencyId:
+ *                 type: string
+ *               branchId:
+ *                 type: string
+ *               saleId:
+ *                 type: string
+ *                 nullable: true
+ *               purchaseId:
+ *                 type: string
+ *                 nullable: true
+ *               noteDate:
+ *                 type: string
+ *                 format: date-time
+ *               narration:
+ *                 type: string
+ *                 nullable: true
+ *               gstPercent:
+ *                 type: number
+ *                 format: double
+ *               taxableAmount:
+ *                 type: number
+ *                 format: double
+ *               cgstAmount:
+ *                 type: number
+ *                 format: double
+ *               sgstAmount:
+ *                 type: number
+ *                 format: double
+ *               igstAmount:
+ *                 type: number
+ *                 format: double
+ *               particulars:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   required: [description]
+ *                   properties:
+ *                     description:
+ *                       type: string
+ *                     amount:
+ *                       type: number
+ *                       format: double
+ *                     entryType:
+ *                       type: string
+ *                       enum: [DEBIT, CREDIT]
+ *           examples:
+ *             updateSaleCreditNote:
+ *               summary: Update pending UI credit note tax amounts
+ *               value:
+ *                 gstPercent: 18
+ *                 taxableAmount: 10000
+ *                 cgstAmount: 900
+ *                 sgstAmount: 900
+ *                 igstAmount: 0
+ *                 particulars:
+ *                   - description: Discount Adjustment
+ *
+ *     responses:
+ *       200:
+ *         description: Debit/Credit Note updated successfully
+ *       400:
+ *         description: Invalid payload or note is not pending
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Debit/Credit Note not found
+ */
+router.patch(
+    "/:noteId",
+    checkPermission("DRCR_NOTE:WRITE"),
+    controller.updateNote
 );
 
 /**

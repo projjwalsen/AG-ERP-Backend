@@ -68,6 +68,26 @@ export const createNote = async (req: Request, res: Response, next: NextFunction
     }
 };
 
+export const updateNote = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const note = await DebitCreditNoteService.updateNote(
+            actor(req),
+            (req as any).params.noteId,
+            req.body
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Debit/Credit note updated successfully",
+            data: {
+                note
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const listNotes = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const notes = await DebitCreditNoteService.listNotes(actor(req), {

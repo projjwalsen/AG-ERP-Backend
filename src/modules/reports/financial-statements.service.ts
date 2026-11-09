@@ -585,16 +585,16 @@ export class Srv1FinancialStatementsService {
         return res.send(Buffer.from(buffer));
     }
 
-    /** Live Balance Sheet Service  */
+    /** Live Balance Sheet Service — period follows query startDate/endDate via Trial Balance. */
     static async getLiveBalanceSheetReport(
         actor: any,
         query?: LiveStatementQuery
     ): Promise<FinancialStatementReport> {
         const [trial, openingStockItems, closingStockItems] = await Promise.all([
             ReportingService.getTrialBalanceReport(actor, {
-                branchId: query?.branchId,
-                startDate: query?.startDate,
-                endDate: query?.endDate,
+                branchId: query?.branchId || undefined,
+                startDate: query?.startDate || undefined,
+                endDate: query?.endDate || undefined,
                 includeZero: query?.includeZero
             }),
             loadOpeningStockItems(),
@@ -673,16 +673,16 @@ export class Srv1FinancialStatementsService {
         };
     }
 
-    /** Live Profit and Loss Service  */
+    /** Live Profit and Loss Service — period follows query startDate/endDate via Trial Balance. */
     static async getLiveProfitAndLossReport(
         actor: any,
         query?: LiveStatementQuery
     ): Promise<FinancialStatementReport> {
         const [trial, openingStockItems, closingStockItems] = await Promise.all([
             ReportingService.getTrialBalanceReport(actor, {
-                branchId: query?.branchId,
-                startDate: query?.startDate,
-                endDate: query?.endDate,
+                branchId: query?.branchId || undefined,
+                startDate: query?.startDate || undefined,
+                endDate: query?.endDate || undefined,
                 includeZero: query?.includeZero
             }),
             loadOpeningStockItems(),

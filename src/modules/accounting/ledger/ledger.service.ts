@@ -4393,6 +4393,21 @@ export class LedgerService {
             row.balanceType = resolveBalanceType(runningBalance, ledger.nature);
         }
 
+        // Sum debit/credit across every voucher row returned in this statement
+        // (opening balance row is excluded — it is not a voucher posting).
+        periodDebit = money(
+            statementRows.reduce(
+                (sum, row) => (row.type === "OPENING" ? sum : sum + money(row.debit || 0)),
+                0
+            )
+        );
+        periodCredit = money(
+            statementRows.reduce(
+                (sum, row) => (row.type === "OPENING" ? sum : sum + money(row.credit || 0)),
+                0
+            )
+        );
+
         const periodClosing =
             runningBalance;
 

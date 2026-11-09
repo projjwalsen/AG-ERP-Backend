@@ -1418,6 +1418,7 @@ model DebitCreditNote {
 
   noteDate    DateTime @default(now())
   narration   String?
+  gstPercent  Decimal @default(0.00) @db.Decimal(5, 4)
   taxableAmount Decimal @default(0.00) @db.Decimal(18, 2)
   cgstAmount Decimal @default(0.00) @db.Decimal(18, 2)
   sgstAmount Decimal @default(0.00) @db.Decimal(18, 2)
