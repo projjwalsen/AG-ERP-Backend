@@ -58,6 +58,8 @@ router.get("/srv1-profit&loss", getSrv1ProfitAndLossReport);
  *       Builds a Tally-style Profit & Loss A/c from the live Trial Balance tree
  *       plus product opening stock (openingStockKG × sellPricePerUnit)
  *       and closing stock from Product.tempClosingBalance.
+ *       Optional startDate/endDate are passed through to Trial Balance and
+ *       drive the statement period label and movement windows.
  *       Use export=true to download an Excel workbook in the same layout as srv1-profit&loss.
  *     tags: [Reports]
  *     security:
@@ -66,14 +68,25 @@ router.get("/srv1-profit&loss", getSrv1ProfitAndLossReport);
  *       - in: query
  *         name: branchId
  *         schema: { type: string }
+ *         description: Optional branch scope for the live Trial Balance.
  *       - in: query
  *         name: startDate
  *         schema: { type: string, format: date }
  *         example: 2025-04-01
+ *         description: >
+ *           Inclusive period start (YYYY-MM-DD). Forwarded to
+ *           GET /api/reports/trial-balance. When omitted, Trial Balance default period is used.
  *       - in: query
  *         name: endDate
  *         schema: { type: string, format: date }
  *         example: 2026-03-31
+ *         description: >
+ *           Inclusive period end (YYYY-MM-DD). Forwarded to
+ *           GET /api/reports/trial-balance. When omitted, Trial Balance default period is used.
+ *       - in: query
+ *         name: includeZero
+ *         schema: { type: boolean, default: false }
+ *         description: When true, include zero-balance Trial Balance rows used to build the statement.
  *       - in: query
  *         name: export
  *         schema:
@@ -101,6 +114,8 @@ router.get("/profit-and-loss", getLiveProfitAndLossReport);
  *       Special cases: Suspense A/c (left), Profit & Loss A/c (opening from TB +
  *       Current Period = Nett Profit), Current Assets Opening Stock replaced by
  *       Closing Stock from Product.tempClosingBalance.
+ *       Optional startDate/endDate are passed through to Trial Balance and
+ *       drive the statement period label and as-at date.
  *       Use export=true to download an Excel workbook in the same layout as srv1-BlSheet.
  *     tags: [Reports]
  *     security:
@@ -109,14 +124,25 @@ router.get("/profit-and-loss", getLiveProfitAndLossReport);
  *       - in: query
  *         name: branchId
  *         schema: { type: string }
+ *         description: Optional branch scope for the live Trial Balance.
  *       - in: query
  *         name: startDate
  *         schema: { type: string, format: date }
  *         example: 2025-04-01
+ *         description: >
+ *           Inclusive period start (YYYY-MM-DD). Forwarded to
+ *           GET /api/reports/trial-balance. When omitted, Trial Balance default period is used.
  *       - in: query
  *         name: endDate
  *         schema: { type: string, format: date }
  *         example: 2026-03-31
+ *         description: >
+ *           Inclusive period end (YYYY-MM-DD). Forwarded to
+ *           GET /api/reports/trial-balance. When omitted, Trial Balance default period is used.
+ *       - in: query
+ *         name: includeZero
+ *         schema: { type: boolean, default: false }
+ *         description: When true, include zero-balance Trial Balance rows used to build the statement.
  *       - in: query
  *         name: export
  *         schema:

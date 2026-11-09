@@ -26,7 +26,8 @@ import { DebitCreditNoteRenderer } from "../../core/utils/DRCRRender";
 
 type NoteParticularPayload = {
     description: string;
-    amount: number;
+    /** Required for import (`importKey`); optional for UI tax-based create/update. */
+    amount?: number;
     entryType?: EntryType;
 };
 
@@ -45,7 +46,7 @@ type CreateNotePayload = {
     importKey?: string;
     categoryPath?: string;
     accountingEntryType?: EntryType;
-
+    gstPercent?: number;
     noteDate?: string | Date;
     narration?: string;
     taxableAmount?: number;
@@ -54,6 +55,27 @@ type CreateNotePayload = {
     igstAmount?: number;
 
     particulars: NoteParticularPayload[];
+};
+
+type UpdateNotePayload = {
+    type?: DebitCreditNoteType;
+    sourceType?: DebitCreditNoteSourceType;
+    agencyId?: string;
+    branchId?: string;
+    saleId?: string | null;
+    purchaseId?: string | null;
+    noteNo?: string;
+    purchaseVoucherType?: VoucherType | null;
+    categoryPath?: string | null;
+    accountingEntryType?: EntryType | null;
+    gstPercent?: number;
+    noteDate?: string | Date;
+    narration?: string | null;
+    taxableAmount?: number;
+    cgstAmount?: number;
+    sgstAmount?: number;
+    igstAmount?: number;
+    particulars?: NoteParticularPayload[];
 };
 
 type ListNoteQuery = {
@@ -202,7 +224,8 @@ export class DebitCreditNoteService {
      * -------------------------------------------------------- */
 
     private static normalizeParticulars(
-        particulars?: NoteParticularPayload[]
+        particulars?: NoteParticularPayload[],
+        options?: { requirePositiveAmount?: boolean }
     ) {
         if (!particulars?.length) {
             throw new ApiError(
@@ -211,14 +234,15 @@ export class DebitCreditNoteService {
             );
         }
 
+        const requirePositiveAmount = options?.requirePositiveAmount ?? false;
+
         return particulars.map(
             (particular, index) => {
 
                 const description =
                     particular.description?.trim();
 
-                const amount =
-                    money(particular.amount);
+                const amount = money(particular.amount);
 
                 if (!description) {
                     throw new ApiError(
@@ -227,9 +251,16 @@ export class DebitCreditNoteService {
                     );
                 }
 
-                if (amount <= 0) {
+                if (requirePositiveAmount && amount <= 0) {
                     throw new ApiError(
                         `Particular ${index + 1} amount must be greater than zero`,
+                        400
+                    );
+                }
+
+                if (amount < 0) {
+                    throw new ApiError(
+                        `Particular ${index + 1} amount cannot be negative`,
                         400
                     );
                 }
@@ -251,6 +282,74 @@ export class DebitCreditNoteService {
                 };
             }
         );
+    }
+
+    /** UI tax-based notes may omit particular amounts; approval posts from particular amounts. */
+    private static applyTaxTotalToParticulars(
+        particulars: Array<{ description: string; amount: number; entryType: EntryType | null }>,
+        taxTotal: number
+    ) {
+        if (particulars.some(item => item.amount > 0)) {
+            return particulars;
+        }
+        return particulars.map((item, index) => ({
+            ...item,
+            amount: index === 0 ? taxTotal : 0
+        }));
+    }
+
+    private static resolveNoteAmounts(
+        payload: {
+            importKey?: string | null;
+            gstPercent?: number;
+            taxableAmount?: number;
+            cgstAmount?: number;
+            sgstAmount?: number;
+            igstAmount?: number;
+        },
+        particulars: Array<{ description: string; amount: number; entryType: EntryType | null }>
+    ) {
+        const gstPercent =
+            Math.round(Number(payload.gstPercent || 0) * 10000) / 10000;
+        const taxableAmount = money(payload.taxableAmount);
+        const cgstAmount = money(payload.cgstAmount);
+        const sgstAmount = money(payload.sgstAmount);
+        const igstAmount = money(payload.igstAmount);
+        const particularsTotal = money(
+            particulars.reduce((sum, item) => sum + item.amount, 0)
+        );
+        const taxTotal = money(
+            taxableAmount + cgstAmount + sgstAmount + igstAmount
+        );
+
+        if (payload.importKey) {
+            return {
+                gstPercent,
+                taxableAmount,
+                cgstAmount,
+                sgstAmount,
+                igstAmount,
+                totalAmount: particularsTotal,
+                particulars
+            };
+        }
+
+        if (taxTotal <= 0) {
+            throw new ApiError(
+                "taxableAmount + cgstAmount + sgstAmount + igstAmount must be greater than zero",
+                400
+            );
+        }
+
+        return {
+            gstPercent,
+            taxableAmount,
+            cgstAmount,
+            sgstAmount,
+            igstAmount,
+            totalAmount: taxTotal,
+            particulars: this.applyTaxTotalToParticulars(particulars, taxTotal)
+        };
     }
 
     /* ========================================================
@@ -875,19 +974,11 @@ export class DebitCreditNoteService {
             );
         }
 
-        const particulars =
-            this.normalizeParticulars(
-                payload.particulars
-            );
-
-        const totalAmount =
-            money(
-                particulars.reduce(
-                    (sum, item) =>
-                        sum + item.amount,
-                    0
-                )
-            );
+        const particulars = this.normalizeParticulars(
+            payload.particulars,
+            { requirePositiveAmount: Boolean(payload.importKey) }
+        );
+        const amounts = this.resolveNoteAmounts(payload, particulars);
 
         return prisma.$transaction(
             async tx => {
@@ -951,12 +1042,13 @@ export class DebitCreditNoteService {
                             payload.narration?.trim() ||
                             null,
 
-                        taxableAmount: money(payload.taxableAmount),
-                        cgstAmount: money(payload.cgstAmount),
-                        sgstAmount: money(payload.sgstAmount),
-                        igstAmount: money(payload.igstAmount),
+                        gstPercent: amounts.gstPercent,
+                        taxableAmount: amounts.taxableAmount,
+                        cgstAmount: amounts.cgstAmount,
+                        sgstAmount: amounts.sgstAmount,
+                        igstAmount: amounts.igstAmount,
 
-                        totalAmount,
+                        totalAmount: amounts.totalAmount,
 
                         status:
                             DebitCreditNoteStatus.PENDING,
@@ -965,7 +1057,7 @@ export class DebitCreditNoteService {
                             actor.id,
 
                         particulars: {
-                            create: particulars
+                            create: amounts.particulars
                         }
                     },
 
@@ -974,6 +1066,157 @@ export class DebitCreditNoteService {
                 });
             }
         );
+    }
+
+    /* ========================================================
+     * UPDATE NOTE (PENDING drafts only)
+     *
+     * Same amount rules as create. Imported notes (`importKey`) keep
+     * particulars-based totals. Approved/rejected notes cannot be edited.
+     * ======================================================== */
+
+    static async updateNote(
+        actor: any,
+        noteId: string,
+        payload: UpdateNotePayload
+    ) {
+        await this.ensurePermission(actor, "SALE:WRITE");
+
+        if (!noteId) {
+            throw new ApiError("Note ID is required", 400);
+        }
+
+        return prisma.$transaction(async tx => {
+            const existing = await tx.debitCreditNote.findUnique({
+                where: { id: noteId },
+                include: { particulars: true }
+            });
+
+            if (!existing) {
+                throw new ApiError("Debit/Credit note not found", 404);
+            }
+
+            this.validateBranchAccess(actor, existing.branchId);
+
+            if (existing.status !== DebitCreditNoteStatus.PENDING) {
+                throw new ApiError(
+                    "Only pending Debit/Credit notes can be updated",
+                    400
+                );
+            }
+
+            const type = payload.type ?? existing.type;
+            const sourceType = payload.sourceType ?? existing.sourceType;
+            const agencyId = payload.agencyId ?? existing.agencyId;
+            const branchId = payload.branchId ?? existing.branchId;
+
+            if (!agencyId || !branchId) {
+                throw new ApiError("Agency ID and Branch ID are required", 400);
+            }
+
+            this.validateBranchAccess(actor, branchId);
+
+            if (!Object.values(DebitCreditNoteType).includes(type)) {
+                throw new ApiError("Valid note type is required", 400);
+            }
+
+            if (!Object.values(DebitCreditNoteSourceType).includes(sourceType)) {
+                throw new ApiError("Valid source type is required", 400);
+            }
+
+            const saleId = sourceType === DebitCreditNoteSourceType.SALE
+                ? (payload.saleId !== undefined ? payload.saleId : existing.saleId)
+                : null;
+            const purchaseId = sourceType === DebitCreditNoteSourceType.PURCHASE
+                ? (payload.purchaseId !== undefined ? payload.purchaseId : existing.purchaseId)
+                : null;
+
+            await this.validateInvoiceContext(tx, {
+                agencyId,
+                branchId,
+                sourceType,
+                saleId: saleId || undefined,
+                purchaseId: purchaseId || undefined
+            });
+
+            const particularsInput = payload.particulars
+                ?? existing.particulars.map(item => ({
+                    description: item.description,
+                    amount: Number(item.amount),
+                    entryType: item.entryType || undefined
+                }));
+
+            const particulars = this.normalizeParticulars(
+                particularsInput,
+                { requirePositiveAmount: Boolean(existing.importKey) }
+            );
+
+            const amounts = this.resolveNoteAmounts(
+                {
+                    importKey: existing.importKey,
+                    gstPercent: payload.gstPercent !== undefined
+                        ? payload.gstPercent
+                        : Number(existing.gstPercent),
+                    taxableAmount: payload.taxableAmount !== undefined
+                        ? payload.taxableAmount
+                        : Number(existing.taxableAmount),
+                    cgstAmount: payload.cgstAmount !== undefined
+                        ? payload.cgstAmount
+                        : Number(existing.cgstAmount),
+                    sgstAmount: payload.sgstAmount !== undefined
+                        ? payload.sgstAmount
+                        : Number(existing.sgstAmount),
+                    igstAmount: payload.igstAmount !== undefined
+                        ? payload.igstAmount
+                        : Number(existing.igstAmount)
+                },
+                particulars
+            );
+
+            await tx.debitCreditNoteParticular.deleteMany({
+                where: { noteId: existing.id }
+            });
+
+            return tx.debitCreditNote.update({
+                where: { id: existing.id },
+                data: {
+                    noteNo: payload.noteNo?.trim() || existing.noteNo,
+                    categoryPath: payload.categoryPath !== undefined
+                        ? (payload.categoryPath?.trim() || null)
+                        : existing.categoryPath,
+                    accountingEntryType: payload.accountingEntryType !== undefined
+                        ? payload.accountingEntryType
+                        : existing.accountingEntryType,
+                    type,
+                    sourceType,
+                    agencyId,
+                    branchId,
+                    saleId,
+                    purchaseId,
+                    purchaseVoucherType: sourceType === DebitCreditNoteSourceType.PURCHASE
+                        ? (payload.purchaseVoucherType !== undefined
+                            ? payload.purchaseVoucherType
+                            : existing.purchaseVoucherType)
+                        : null,
+                    noteDate: payload.noteDate
+                        ? new Date(payload.noteDate)
+                        : existing.noteDate,
+                    narration: payload.narration !== undefined
+                        ? (payload.narration?.trim() || null)
+                        : existing.narration,
+                    gstPercent: amounts.gstPercent,
+                    taxableAmount: amounts.taxableAmount,
+                    cgstAmount: amounts.cgstAmount,
+                    sgstAmount: amounts.sgstAmount,
+                    igstAmount: amounts.igstAmount,
+                    totalAmount: amounts.totalAmount,
+                    particulars: {
+                        create: amounts.particulars
+                    }
+                },
+                include: includeNoteDetails
+            });
+        });
     }
 
     /* ========================================================

@@ -42,16 +42,19 @@ export const getSrv1BalanceSheetReport = (req: Request, res: Response, next: Nex
         "Balance Sheet"
     );
 
+const liveStatementQuery = (req: Request) => {
+    const branchId = String(req.query.branchId ?? "").trim() || undefined;
+    const startDate = String(req.query.startDate ?? "").trim() || undefined;
+    const endDate = String(req.query.endDate ?? "").trim() || undefined;
+    const includeZero = String(req.query.includeZero ?? "").toLowerCase() === "true";
+    return { branchId, startDate, endDate, includeZero };
+};
+
 export const getLiveProfitAndLossReport = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const report = await Srv1FinancialStatementsService.getLiveProfitAndLossReport(
             (req as any).user,
-            {
-                branchId: req.query.branchId as string,
-                startDate: req.query.startDate as string,
-                endDate: req.query.endDate as string,
-                includeZero: String(req.query.includeZero ?? "").toLowerCase() === "true"
-            }
+            liveStatementQuery(req)
         );
         return sendReport(req, res, next, report, "profit-and-loss", "Profit & Loss");
     } catch (error) {
@@ -63,12 +66,7 @@ export const getLiveBalanceSheetReport = async (req: Request, res: Response, nex
     try {
         const report = await Srv1FinancialStatementsService.getLiveBalanceSheetReport(
             (req as any).user,
-            {
-                branchId: req.query.branchId as string,
-                startDate: req.query.startDate as string,
-                endDate: req.query.endDate as string,
-                includeZero: String(req.query.includeZero ?? "").toLowerCase() === "true"
-            }
+            liveStatementQuery(req)
         );
         return sendReport(req, res, next, report, "balance-sheet", "Balance Sheet");
     } catch (error) {

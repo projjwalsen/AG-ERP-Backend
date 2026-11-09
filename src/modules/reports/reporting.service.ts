@@ -93,6 +93,28 @@ const PURCHASE_NOTE_ADJUSTMENT_HEADS = new Set([
 const COLLAPSED_TRIAL_BALANCE_GROUP_CODES = new Set<string>();
 const PURCHASE_SUB_GROUP_MARKER = "TB_PURCHASE_SUBGROUPS";
 
+/** Bounded parallel map — preserves result order; used only for independent DB batches. */
+async function mapWithConcurrency<T, R>(
+    items: T[],
+    concurrency: number,
+    worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+    if (items.length === 0) return [];
+    const results = new Array<R>(items.length);
+    let nextIndex = 0;
+    const limit = Math.max(1, Math.min(concurrency, items.length));
+    await Promise.all(
+        Array.from({ length: limit }, async () => {
+            while (true) {
+                const current = nextIndex++;
+                if (current >= items.length) return;
+                results[current] = await worker(items[current], current);
+            }
+        })
+    );
+    return results;
+}
+
 const readPurchaseSubGroups = (remarks: string | null) => {
     const match = remarks?.match(
         // The payload itself is a JSON array. Its closing `]` is immediately
@@ -460,25 +482,33 @@ export class ReportingService {
         // credit while keeping the paired payment/debit entries. Include a
         // purchase voucher only when its source Purchase is approved; this
         // preserves the approval boundary for operational purchases.
-        const approvedPurchaseIds = (await prisma.purchase.findMany({
-            where: {
-                status: PurchaseStatus.APPROVED,
-                ...(branchId ? { branchId } : {})
-            },
-            select: { id: true }
-        })).map(purchase => purchase.id);
-
-        const approvedSaleIds = (await prisma.sale.findMany({
-            where: {
-                status: SalesStatus.APPROVED,
-                ...(branchId ? { branchId } : {})
-            },
-            select: { id: true }
-        })).map(sale => sale.id);
-
-        const groupRows = await prisma.ledgerGroup.findMany({
-            select: { id: true, name: true, parentId: true }
-        });
+        const [approvedPurchaseRows, approvedSaleRows, groupRows] = await Promise.all([
+            prisma.purchase.findMany({
+                where: {
+                    status: PurchaseStatus.APPROVED,
+                    ...(branchId ? { branchId } : {})
+                },
+                select: { id: true }
+            }),
+            prisma.sale.findMany({
+                where: {
+                    status: SalesStatus.APPROVED,
+                    ...(branchId ? { branchId } : {})
+                },
+                select: { id: true }
+            }),
+            prisma.ledgerGroup.findMany({
+                select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    parentId: true,
+                    nature: true
+                }
+            })
+        ]);
+        const approvedPurchaseIds = approvedPurchaseRows.map(purchase => purchase.id);
+        const approvedSaleIds = approvedSaleRows.map(sale => sale.id);
         const currentLiabilitiesGroup = groupRows.find(group =>
             group.name.trim().toLocaleLowerCase() === "current liabilities" &&
             !group.parentId
@@ -957,16 +987,39 @@ export class ReportingService {
             code: string;
             name: string;
             parentId: string | null;
+            nature?: string | null;
         };
 
-        const [ledgers, ledgerGroups] = await Promise.all([
+        // Reuse the prelude CoA fetch (same rows; sorted to match prior orderBy).
+        const ledgerGroups: LedgerGroupReportRow[] = [...groupRows].sort((a, b) =>
+            a.name.localeCompare(b.name)
+        );
+
+        const [ledgers, pathClassifiedPurchases] = await Promise.all([
             prisma.ledger.findMany({
-                where:
-                    ledgerWhere,
-
-                include: {
-                    group: true,
-
+                where: ledgerWhere,
+                select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    category: true,
+                    nature: true,
+                    groupId: true,
+                    branchId: true,
+                    agencyId: true,
+                    openingBalance: true,
+                    openingDebit: true,
+                    openingCredit: true,
+                    openingBalanceDate: true,
+                    group: {
+                        select: {
+                            id: true,
+                            code: true,
+                            name: true,
+                            parentId: true,
+                            nature: true
+                        }
+                    },
                     branch: {
                         select: {
                             id: true,
@@ -974,7 +1027,6 @@ export class ReportingService {
                             code: true
                         }
                     },
-
                     agency: {
                         select: {
                             id: true,
@@ -982,7 +1034,6 @@ export class ReportingService {
                         }
                     }
                 },
-
                 orderBy: [
                     {
                         group: {
@@ -993,36 +1044,25 @@ export class ReportingService {
                         name: "asc"
                     }
                 ]
-            }),
-            prisma.ledgerGroup.findMany({
+            }) as Promise<any[]>,
+            prisma.purchase.findMany({
+                where: {
+                    status: PurchaseStatus.APPROVED,
+                    ...(branchId ? { branchId } : {}),
+                    AND: [
+                        { path: { not: null } },
+                        { path: { not: "" } }
+                    ]
+                },
                 select: {
                     id: true,
-                    code: true,
-                    name: true,
-                    parentId: true,
-                    nature: true
-                },
-                orderBy: { name: "asc" }
+                    invoiceNo: true,
+                    path: true,
+                    invoiceDate: true,
+                    createdAt: true
+                }
             })
-        ]) as [any[], LedgerGroupReportRow[]];
-
-        const pathClassifiedPurchases = await prisma.purchase.findMany({
-            where: {
-                status: PurchaseStatus.APPROVED,
-                ...(branchId ? { branchId } : {}),
-                AND: [
-                    { path: { not: null } },
-                    { path: { not: "" } }
-                ]
-            },
-            select: {
-                id: true,
-                invoiceNo: true,
-                path: true,
-                invoiceDate: true,
-                createdAt: true
-            }
-        });
+        ]);
         const pathClassifiedPurchaseIds = pathClassifiedPurchases.map(row => row.id);
 
         const aggregateWindows = async (
@@ -1035,6 +1075,15 @@ export class ReportingService {
             }>();
 
             for (const ledger of ledgers) {
+                // purchase* maps are only read for PURCHASE ledgers — skip the
+                // rest so those windows do far less groupBy work.
+                if (
+                    purchaseAccountsOnly &&
+                    ledger.category !== LedgerType.PURCHASE
+                ) {
+                    continue;
+                }
+
                 const mayUseOpening =
                     (!branchId || ledger.branchId === branchId) &&
                     ledger.category !== LedgerType.BANK &&
@@ -1065,8 +1114,11 @@ export class ReportingService {
                 byCutoff.set(key, bucket);
             }
 
-            const groups: any[] = [];
-            const batchSize = 250;
+            const batchSize = 500;
+            const batchJobs: Array<{
+                ledgerIds: string[];
+                voucherDate: { gte?: Date; lte?: Date; lt?: Date };
+            }> = [];
 
             for (const bucket of byCutoff.values()) {
                 for (
@@ -1085,17 +1137,28 @@ export class ReportingService {
                             ...(bucket.cutoff ? { gte: bucket.cutoff } : {}),
                             lt: startDate
                         };
+                    batchJobs.push({ ledgerIds, voucherDate });
+                }
+            }
 
-                    const batch = await prisma.ledgerEntry.groupBy({
+            // Same queries as before; run independent batches with a small
+            // concurrency limit so the connection pool is not saturated.
+            // Main windows are staged (period/prior first, then purchase),
+            // so a slightly higher per-window concurrency is safe.
+            const batchResults = await mapWithConcurrency(
+                batchJobs,
+                4,
+                async ({ ledgerIds, voucherDate }) => {
+                    const groupByPromise = prisma.ledgerEntry.groupBy({
                         by: ["ledgerId", "entryType"],
                         where: {
                             AND: [
                                 scopedJournalEntryFilter,
                                 {
-                                        ledgerId: { in: ledgerIds },
-                                        voucher: {
-                                            voucherDate,
-                                            voucherType: purchaseAccountsOnly
+                                    ledgerId: { in: ledgerIds },
+                                    voucher: {
+                                        voucherDate,
+                                        voucherType: purchaseAccountsOnly
                                             ? {
                                                 in: [
                                                     ...PURCHASE_TB_VOUCHER_TYPES,
@@ -1104,10 +1167,10 @@ export class ReportingService {
                                                 ]
                                             }
                                             : { not: VoucherType.OPENING_BALANCE },
-                                            ...(purchaseAccountsOnly && pathClassifiedPurchaseIds.length > 0
-                                                ? { sourceId: { notIn: pathClassifiedPurchaseIds } }
-                                                : {})
-                                        }
+                                        ...(purchaseAccountsOnly && pathClassifiedPurchaseIds.length > 0
+                                            ? { sourceId: { notIn: pathClassifiedPurchaseIds } }
+                                            : {})
+                                    }
                                 },
                                 {
                                     OR: [
@@ -1137,65 +1200,206 @@ export class ReportingService {
                         _sum: { amount: true }
                     });
 
-                    groups.push(...batch);
-
-                    if (purchaseAccountsOnly) continue;
+                    if (purchaseAccountsOnly) {
+                        return (await groupByPromise) as any[];
+                    }
 
                     // Legacy journal imports can remain as approved Journal
                     // rows without a Voucher/LedgerEntry. Include those
                     // postings in Trial Balance; otherwise the ledger
                     // balance and Trial Balance disagree.
-                    const directJournals = await prisma.journal.findMany({
-                        where: {
-                            journalHead: { ledgerId: { in: ledgerIds } },
-                            status: JournalStatus.APPROVED,
-                            // A normal voucher-backed journal is represented
-                            // by its LedgerEntry. Older imports can have the
-                            // Journal and Voucher but no LedgerEntry, so
-                            // include those rows as a fallback. The `none`
-                            // condition prevents double-counting healthy
-                            // voucher-backed journals. Opening-balance
-                            // vouchers are already applied as opening, even
-                            // when they have no LedgerEntry.
-                            OR: [
-                                { voucherId: null },
-                                {
-                                    voucherId: { not: null },
-                                    voucher: {
-                                        entries: { none: {} },
-                                        voucherType: { not: VoucherType.OPENING_BALANCE }
+                    // groupBy and journal fallback are independent — overlap them.
+                    const [batch, directJournals] = await Promise.all([
+                        groupByPromise,
+                        prisma.journal.findMany({
+                            where: {
+                                journalHead: { ledgerId: { in: ledgerIds } },
+                                status: JournalStatus.APPROVED,
+                                // A normal voucher-backed journal is represented
+                                // by its LedgerEntry. Older imports can have the
+                                // Journal and Voucher but no LedgerEntry, so
+                                // include those rows as a fallback. The `none`
+                                // condition prevents double-counting healthy
+                                // voucher-backed journals. Opening-balance
+                                // vouchers are already applied as opening, even
+                                // when they have no LedgerEntry.
+                                OR: [
+                                    { voucherId: null },
+                                    {
+                                        voucherId: { not: null },
+                                        voucher: {
+                                            entries: { none: {} },
+                                            voucherType: { not: VoucherType.OPENING_BALANCE }
+                                        }
                                     }
-                                }
-                            ],
-                            ...(branchId ? { branchId } : {}),
-                            journalDate: voucherDate
-                        },
-                        select: {
-                            amount: true,
-                            direction: true,
-                            journalHead: { select: { ledgerId: true, type: true } }
-                        }
-                    });
+                                ],
+                                ...(branchId ? { branchId } : {}),
+                                journalDate: voucherDate
+                            },
+                            select: {
+                                amount: true,
+                                direction: true,
+                                journalHead: { select: { ledgerId: true, type: true } }
+                            }
+                        })
+                    ]);
 
-                    groups.push(...directJournals.map(journal => ({
-                        ledgerId: journal.journalHead.ledgerId,
-                        entryType: (
-                            (journal.direction || journal.journalHead.type) === JournalDirection.INWARD
-                                ? EntryType.DEBIT
-                                : EntryType.CREDIT
-                        ),
-                        _sum: { amount: journal.amount }
-                    })));
+                    return [
+                        ...batch,
+                        ...directJournals.map(journal => ({
+                            ledgerId: journal.journalHead.ledgerId,
+                            entryType: (
+                                (journal.direction || journal.journalHead.type) === JournalDirection.INWARD
+                                    ? EntryType.DEBIT
+                                    : EntryType.CREDIT
+                            ),
+                            _sum: { amount: journal.amount }
+                        }))
+                    ];
                 }
-            }
+            );
 
-            
-            return groups;
+            return batchResults.flat();
         };
 
-        const [periodGroups, priorGroups, purchasePeriodGroups, purchasePriorGroups] = await Promise.all([
+        // Accounting-only inward notes / opening vouchers / cash diagnostics
+        // do not depend on the movement groupBy results — fetch alongside
+        // the four windows.
+        const categoryNoteIds = new Set<string>();
+        const cashLedgersForDiagnostics = ledgers.filter(
+            ledger => ledger.category === LedgerType.CASH
+        );
+        const cashLedgerIdsForDiagnostics = cashLedgersForDiagnostics.map(
+            ledger => ledger.id as string
+        );
+        // Preserve the historical call shape: getCashDiagnostics was invoked
+        // with scopedJournalEntryFilter as its "branch" argument.
+        const cashDiagBranchFilter = scopedJournalEntryFilter;
+        const cashEntryWhereForDiagnostics: Prisma.LedgerEntryWhereInput | null =
+            cashLedgerIdsForDiagnostics.length === 0
+                ? null
+                : {
+                    AND: [
+                        cashDiagBranchFilter,
+                        { ledgerId: { in: cashLedgerIdsForDiagnostics } },
+                        { voucher: CASH_IN_HAND_JOURNAL_VOUCHER_FILTER }
+                    ]
+                };
+        const periodCashEntryWhereForDiagnostics: Prisma.LedgerEntryWhereInput | null =
+            cashEntryWhereForDiagnostics
+                ? {
+                    AND: [
+                        cashEntryWhereForDiagnostics,
+                        {
+                            voucher: {
+                                voucherDate: {
+                                    gte: startDate,
+                                    lte: endDate
+                                }
+                            }
+                        }
+                    ]
+                }
+                : null;
+
+        // Stage 1: main period/prior windows + independent note/opening/cash
+        // fetches. Stage 2: purchase-only windows (much smaller ledger set).
+        // Staging avoids cold-start pool thrash from 4 heavy windows at once.
+        const [
+            periodGroups,
+            priorGroups,
+            categorizedInwardNotes,
+            openingEntries,
+            cashDiagnosticsPrefetch
+        ] = await Promise.all([
             aggregateWindows("period"),
             aggregateWindows("prior"),
+            prisma.debitCreditNote.findMany({
+                where: {
+                    ...(branchId ? { branchId } : {}),
+                    sourceType: DebitCreditNoteSourceType.PURCHASE,
+                    status: DebitCreditNoteStatus.APPROVED,
+                    purchaseId: null,
+                    OR: [
+                        { noteNo: { startsWith: "PDN/" } },
+                        { noteNo: { startsWith: "PCN/" } }
+                    ],
+                    categoryPath: { not: null },
+                    noteDate: { lte: endDate },
+                    voucherId: { not: null }
+                },
+                select: {
+                    id: true,
+                    branchId: true,
+                    noteNo: true,
+                    categoryPath: true,
+                    noteDate: true,
+                    voucher: {
+                        select: {
+                            entries: {
+                                select: {
+                                    entryType: true,
+                                    amount: true,
+                                    narration: true,
+                                    ledger: {
+                                        select: { id: true, name: true, category: true }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }),
+            prisma.ledgerEntry.findMany({
+                where: {
+                    AND: [
+                        // Opening vouchers are deliberately excluded from the
+                        // ordinary movement filter. Read them separately, with
+                        // only the branch scope applied, so imported openings
+                        // can be used when the ledger has no stored opening.
+                        ...(branchEntryFilter ? [branchEntryFilter] : []),
+                        {
+                            ledgerId: { in: ledgers.map(ledger => ledger.id) },
+                            ledger: { category: { notIn: [LedgerType.BANK, LedgerType.CASH] } },
+                            voucher: {
+                                voucherType: VoucherType.OPENING_BALANCE,
+                                voucherDate: { lte: endDate }
+                            }
+                        }
+                    ]
+                },
+                select: {
+                    id: true,
+                    ledgerId: true,
+                    voucherId: true,
+                    entryType: true,
+                    amount: true,
+                    narration: true,
+                    ledger: { select: { name: true, branchId: true } },
+                    voucher: { select: { voucherDate: true } }
+                }
+            }),
+            periodCashEntryWhereForDiagnostics && cashEntryWhereForDiagnostics
+                ? Promise.all([
+                    prisma.ledgerEntry.findMany({
+                        where: periodCashEntryWhereForDiagnostics,
+                        select: {
+                            ledgerId: true,
+                            entryType: true,
+                            amount: true,
+                            voucher: {
+                                select: {
+                                    sourceId: true,
+                                    voucherNo: true
+                                }
+                            }
+                        }
+                    }),
+                    prisma.ledgerEntry.count({ where: cashEntryWhereForDiagnostics })
+                ])
+                : Promise.resolve(null)
+        ]);
+        const [purchasePeriodGroups, purchasePriorGroups] = await Promise.all([
             aggregateWindows("period", true),
             aggregateWindows("prior", true)
         ]);
@@ -1203,51 +1407,6 @@ export class ReportingService {
         const priorMap = sumTrialBalanceEntryGroups(priorGroups);
         const purchasePeriodMap = sumTrialBalanceEntryGroups(purchasePeriodGroups);
         const purchasePriorMap = sumTrialBalanceEntryGroups(purchasePriorGroups);
-
-        // Accounting-only inward notes are posted by the approval workflow to
-        // the generic "Purchase ... Note Adjustments" journal ledger. When
-        // the note has an imported categoryPath, the Trial Balance must show
-        // that movement under the actual category ledger as well. Move the
-        // adjustment-side movement report-wise; this keeps the Trial Balance
-        // total unchanged while making, for example, Carriage Outward-URD
-        // include its approved debit notes.
-        const categoryNoteIds = new Set<string>();
-        const categorizedInwardNotes = await prisma.debitCreditNote.findMany({
-            where: {
-                ...(branchId ? { branchId } : {}),
-                sourceType: DebitCreditNoteSourceType.PURCHASE,
-                status: DebitCreditNoteStatus.APPROVED,
-                purchaseId: null,
-                OR: [
-                    { noteNo: { startsWith: "PDN/" } },
-                    { noteNo: { startsWith: "PCN/" } }
-                ],
-                categoryPath: { not: null },
-                noteDate: { lte: endDate },
-                voucherId: { not: null }
-            },
-            select: {
-                id: true,
-                branchId: true,
-                noteNo: true,
-                categoryPath: true,
-                noteDate: true,
-                voucher: {
-                    select: {
-                        entries: {
-                            select: {
-                                entryType: true,
-                                amount: true,
-                                narration: true,
-                                ledger: {
-                                    select: { id: true, name: true, category: true }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
 
         const normalizedName = (value: unknown) => String(value || "")
             .replace(/_/g, " ")
@@ -1285,6 +1444,73 @@ export class ReportingService {
                 ? parts[parts.length - 1].toUpperCase()
                 : "";
         };
+
+        // Prefetch note tokens only for ledgers the remap loop will actually
+        // inspect (same candidate selection as below — one query instead of N+1).
+        {
+            const noteTokenLedgerIds = new Set<string>();
+            const seenNoteKeys = new Set<string>();
+            for (const note of categorizedInwardNotes) {
+                const noteKey = [
+                    note.branchId,
+                    note.noteNo,
+                    normalizedName(note.categoryPath),
+                    String(note.voucher?.entries.reduce((sum, entry) => sum + Number(entry.amount || 0), 0) || 0)
+                ].join("|");
+                if (seenNoteKeys.has(noteKey)) continue;
+                seenNoteKeys.add(noteKey);
+                const categoryPathText = String(note.categoryPath || "");
+                if (
+                    /sundry\s+creditors|sundry\s+debtors|advance\s+from\s+s\.?\s*debtors|duties\s*&\s*taxes|(?:^|[/\\>])\s*unsecured\s+loans?(?:\s|$|[/\\>])|loan\s+from\s+directors?|unsecured\s+from\s+(?:bank|other)/i
+                        .test(categoryPathText)
+                ) continue;
+                const targetName = categoryLeaf(note.categoryPath);
+                if (PURCHASE_TRIAL_BALANCE_HEADS.has(normalizedName(targetName))) continue;
+                const sameNamedLedgers = ledgers.filter(ledger =>
+                    normalizedName(ledger.name) === normalizedName(targetName) &&
+                    [LedgerType.JOURNAL, LedgerType.PURCHASE].includes(ledger.category)
+                );
+                const targetCandidates = sameNamedLedgers.filter(ledger =>
+                    ledger.branchId === (branchId || note.branchId)
+                );
+                const targetLedger = targetCandidates[0] || sameNamedLedgers[0];
+                if (!targetLedger) continue;
+                if (
+                    tallySundryCreditorGroupIds.has(targetLedger.groupId) ||
+                    advanceFromSDebtorsGroupIds.has(targetLedger.groupId) ||
+                    tallyDutiesGroupIds.has(targetLedger.groupId) ||
+                    tallyUnsecuredLoanGroupIds.has(targetLedger.groupId)
+                ) continue;
+                if (!compactNoteToken(note.noteNo)) continue;
+                for (const candidate of sameNamedLedgers) {
+                    noteTokenLedgerIds.add(candidate.id);
+                }
+            }
+            if (noteTokenLedgerIds.size > 0) {
+                const ids = [...noteTokenLedgerIds];
+                for (const ledgerId of ids) {
+                    postedNoteTokensByLedger.set(ledgerId, []);
+                }
+                const noteTokenRows = await prisma.ledgerEntry.findMany({
+                    where: { ledgerId: { in: ids } },
+                    select: {
+                        ledgerId: true,
+                        narration: true,
+                        voucher: { select: { voucherNo: true, narration: true } }
+                    }
+                });
+                for (const row of noteTokenRows) {
+                    const tokens = postedNoteTokensByLedger.get(row.ledgerId) || [];
+                    tokens.push({
+                        voucherNo: compactNoteToken(row.voucher.voucherNo),
+                        narration: compactNoteToken(
+                            [row.narration, row.voucher.narration].join(" ")
+                        )
+                    });
+                    postedNoteTokensByLedger.set(row.ledgerId, tokens);
+                }
+            }
+        }
 
         const processedCategoryNotes = new Set<string>();
         for (const note of categorizedInwardNotes) {
@@ -1382,40 +1608,10 @@ export class ReportingService {
             categoryNoteIds.add(note.id);
         }
 
-        // Imported opening-balance vouchers are used only for ledgers that do
-        // not already have an opening value stored on the ledger itself.
-        // Some older imports populated both the Ledger opening fields and an
-        // OPENING_BALANCE voucher; adding both would double the opening
-        // balance in Trial Balance.
-        const openingEntries = await prisma.ledgerEntry.findMany({
-            where: {
-                AND: [
-                    // Opening vouchers are deliberately excluded from the
-                    // ordinary movement filter. Read them separately, with
-                    // only the branch scope applied, so imported openings
-                    // can be used when the ledger has no stored opening.
-                    ...(branchEntryFilter ? [branchEntryFilter] : []),
-                    {
-                        ledgerId: { in: ledgers.map(ledger => ledger.id) },
-                        ledger: { category: { notIn: [LedgerType.BANK, LedgerType.CASH] } },
-                        voucher: {
-                            voucherType: VoucherType.OPENING_BALANCE,
-                            voucherDate: { lte: endDate }
-                        }
-                    }
-                ]
-            },
-            select: {
-                id: true,
-                ledgerId: true,
-                voucherId: true,
-                entryType: true,
-                amount: true,
-                narration: true,
-                ledger: { select: { name: true, branchId: true } },
-                voucher: { select: { voucherDate: true } }
-            }
-        });
+        // Imported opening-balance vouchers were fetched above alongside the
+        // movement windows. Some older imports populated both the Ledger
+        // opening fields and an OPENING_BALANCE voucher; adding both would
+        // double the opening balance in Trial Balance.
 
         // Some legacy imports posted an opening voucher to the wrong ledger
         // while keeping the intended ledger name in the narration, for
@@ -1886,19 +2082,145 @@ export class ReportingService {
          * transaction Type at report time.  New imports are already posted to
          * SALES-TYPE-* ledgers and are therefore not included here.
          */
-        const typedSaleTransactions = await prisma.transaction.findMany({
-            where: {
-                status: "APPROVED",
-                direction: TransactionDirection.INWARD,
-                saleId: { not: null },
-                type: { not: null },
-                ...(branchId ? { branchId } : {})
-            },
-            select: {
-                saleId: true,
-                type: true
-            }
-        });
+        // Independent follow-up fetches — same queries as before, overlapped.
+        const [
+            typedSaleTransactions,
+            remarksClassifiedPurchases,
+            unlinkedInwardNotes,
+            pathPurchaseEntries,
+            categorizedOutwardSaleNotes
+        ] = await Promise.all([
+            prisma.transaction.findMany({
+                where: {
+                    status: "APPROVED",
+                    direction: TransactionDirection.INWARD,
+                    saleId: { not: null },
+                    type: { not: null },
+                    ...(branchId ? { branchId } : {})
+                },
+                select: {
+                    saleId: true,
+                    type: true
+                }
+            }),
+            prisma.purchase.findMany({
+                where: {
+                    ...(branchId ? { branchId } : {}),
+                    status: PurchaseStatus.APPROVED,
+                    remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` },
+                    OR: [
+                        { path: null },
+                        { path: "" }
+                    ]
+                },
+                select: {
+                    invoiceDate: true,
+                    createdAt: true,
+                    remarks: true
+                }
+            }),
+            prisma.debitCreditNote.findMany({
+                where: {
+                    ...(branchId ? { branchId } : {}),
+                    sourceType: DebitCreditNoteSourceType.PURCHASE,
+                    status: DebitCreditNoteStatus.APPROVED,
+                    categoryPath: { not: null },
+                    noteDate: { lte: endDate },
+                    AND: [
+                        {
+                            OR: [
+                                { noteNo: { startsWith: "PDN/" } },
+                                { noteNo: { startsWith: "PCN/" } }
+                            ]
+                        },
+                        {
+                            OR: [
+                                { voucherId: null },
+                                {
+                                    voucher: {
+                                        is: {
+                                            entries: {
+                                                none: {
+                                                    ledger: {
+                                                        category: LedgerType.PURCHASE
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                select: {
+                    id: true,
+                    categoryPath: true,
+                    type: true,
+                    accountingEntryType: true,
+                    totalAmount: true,
+                    noteDate: true
+                }
+            }),
+            pathClassifiedPurchaseIds.length > 0
+                ? prisma.ledgerEntry.findMany({
+                    where: {
+                        AND: [
+                            scopedJournalEntryFilter,
+                            {
+                                ledger: { category: LedgerType.PURCHASE },
+                                voucher: {
+                                    sourceId: { in: pathClassifiedPurchaseIds },
+                                    voucherType: {
+                                        in: [
+                                            ...PURCHASE_TB_VOUCHER_TYPES,
+                                            VoucherType.DEBIT_NOTE,
+                                            VoucherType.CREDIT_NOTE
+                                        ]
+                                    },
+                                    voucherDate: { lte: endDate }
+                                }
+                            }
+                        ]
+                    },
+                    select: {
+                        entryType: true,
+                        amount: true,
+                        voucher: { select: { sourceId: true, voucherDate: true } }
+                    }
+                })
+                : Promise.resolve([] as Array<{
+                    entryType: EntryType;
+                    amount: unknown;
+                    voucher: { sourceId: string; voucherDate: Date };
+                }>),
+            prisma.debitCreditNote.findMany({
+                where: {
+                    ...(branchId ? { branchId } : {}),
+                    sourceType: DebitCreditNoteSourceType.SALE,
+                    status: DebitCreditNoteStatus.APPROVED,
+                    categoryPath: { not: null },
+                    noteDate: { lte: endDate }
+                },
+                select: {
+                    categoryPath: true,
+                    type: true,
+                    totalAmount: true,
+                    noteDate: true,
+                    voucher: {
+                        select: {
+                            entries: {
+                                select: {
+                                    ledger: {
+                                        select: { code: true, name: true, category: true }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        ]);
         const typeBySaleId = new Map<string, string>();
         const conflictingSaleIds = new Set<string>();
 
@@ -1959,7 +2281,6 @@ export class ReportingService {
         for (const entry of genericTypedSalesEntries) {
             const type = typeBySaleId.get(entry.voucher.sourceId);
             if (!type) continue;
-
             const current = typedSalesMovements.get(type) || {
                 prior: { debit: 0, credit: 0 },
                 period: { debit: 0, credit: 0 }
@@ -2016,22 +2337,8 @@ export class ReportingService {
         // Tally). Trial Balance groups those invoices under Purchase
         // Accounts from the stored path and the voucher amounts already in
         // the database. Excel-only voucher numbers are never invented here.
-        const remarksClassifiedPurchases = await prisma.purchase.findMany({
-            where: {
-                ...(branchId ? { branchId } : {}),
-                status: PurchaseStatus.APPROVED,
-                remarks: { contains: `[[${PURCHASE_SUB_GROUP_MARKER}:` },
-                OR: [
-                    { path: null },
-                    { path: "" }
-                ]
-            },
-            select: {
-                invoiceDate: true,
-                createdAt: true,
-                remarks: true
-            }
-        });
+        // remarksClassifiedPurchases / unlinkedInwardNotes / pathPurchaseEntries
+        // were fetched above alongside typed sale transactions.
         // These imported rows are subheads of Purchase Accounts itself. Use
         // its root group rather than the optional legacy PURCHASE child group;
         // otherwise databases without that child lose the rows when the Excel
@@ -2043,85 +2350,6 @@ export class ReportingService {
             period: { debit: number; credit: number };
         }>();
 
-        // Approved inward purchase notes without a purchaseId are valid
-        // accounting records. They are commonly posted to a JOURNAL
-        // adjustment ledger rather than a PURCHASE ledger, so the normal
-        // Purchase-category aggregation cannot create their imported
-        // category row. Include them directly, except when the voucher
-        // already contains a PURCHASE-category entry (which is already
-        // represented by the normal ledger aggregation).
-        const unlinkedInwardNotes = await prisma.debitCreditNote.findMany({
-            where: {
-                ...(branchId ? { branchId } : {}),
-                sourceType: DebitCreditNoteSourceType.PURCHASE,
-                status: DebitCreditNoteStatus.APPROVED,
-                categoryPath: { not: null },
-                noteDate: { lte: endDate },
-                AND: [
-                    {
-                        OR: [
-                            { noteNo: { startsWith: "PDN/" } },
-                            { noteNo: { startsWith: "PCN/" } }
-                        ]
-                    },
-                    {
-                        OR: [
-                            { voucherId: null },
-                            {
-                                voucher: {
-                                    is: {
-                                        entries: {
-                                            none: {
-                                                ledger: {
-                                                    category: LedgerType.PURCHASE
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            select: {
-                id: true,
-                categoryPath: true,
-                type: true,
-                accountingEntryType: true,
-                totalAmount: true,
-                noteDate: true
-            }
-        });
-
-        const pathPurchaseEntries = pathClassifiedPurchaseIds.length > 0
-            ? await prisma.ledgerEntry.findMany({
-                where: {
-                    AND: [
-                        scopedJournalEntryFilter,
-                        {
-                            ledger: { category: LedgerType.PURCHASE },
-                            voucher: {
-                                sourceId: { in: pathClassifiedPurchaseIds },
-                                voucherType: {
-                                    in: [
-                                        ...PURCHASE_TB_VOUCHER_TYPES,
-                                        VoucherType.DEBIT_NOTE,
-                                        VoucherType.CREDIT_NOTE
-                                    ]
-                                },
-                                voucherDate: { lte: endDate }
-                            }
-                        }
-                    ]
-                },
-                select: {
-                    entryType: true,
-                    amount: true,
-                    voucher: { select: { sourceId: true, voucherDate: true } }
-                }
-            })
-            : [];
         const pathByPurchaseId = new Map(
             pathClassifiedPurchases.map(purchase => [purchase.id, purchase.path])
         );
@@ -2231,32 +2459,8 @@ export class ReportingService {
         // voucher. Include them from the approved note record itself so the
         // imported category (for example Sales Accounts / GST SALES) is not
         // lost by the normal SALE-voucher ledger filter.
-        const categorizedOutwardSaleNotes = await prisma.debitCreditNote.findMany({
-            where: {
-                ...(branchId ? { branchId } : {}),
-                sourceType: DebitCreditNoteSourceType.SALE,
-                status: DebitCreditNoteStatus.APPROVED,
-                categoryPath: { not: null },
-                noteDate: { lte: endDate }
-            },
-            select: {
-                categoryPath: true,
-                type: true,
-                totalAmount: true,
-                noteDate: true,
-                voucher: {
-                    select: {
-                        entries: {
-                            select: {
-                                ledger: {
-                                    select: { code: true, name: true, category: true }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        // categorizedOutwardSaleNotes was fetched above with the other
+        // independent follow-up queries.
         const salesSubGroupMovements = new Map<string, {
             prior: { debit: number; credit: number };
             period: { debit: number; credit: number };
@@ -2571,13 +2775,56 @@ export class ReportingService {
             ...allowedDebtorRows
         ];
 
-        const cashDiagnostics = await this.getCashDiagnostics(
-            ledgers,
-            scopedJournalEntryFilter,
-            startDate,
-            endDate,
-            rawRows
-        );
+        // Assemble cash diagnostics from the prefetch started with the
+        // movement windows (same queries/filters as getCashDiagnostics).
+        const cashDiagnostics = (() => {
+            if (!cashDiagnosticsPrefetch) {
+                return {
+                    cashLedgerCount: 0,
+                    cashLedgers: [],
+                    duplicateSourceIds: [],
+                    outsidePeriodEntryCount: 0,
+                    periodDebit: 0,
+                    periodCredit: 0
+                };
+            }
+            const [entries, allCashEntryCount] = cashDiagnosticsPrefetch;
+            const sourceCounts = new Map<string, number>();
+            let periodDebit = 0;
+            let periodCredit = 0;
+            for (const entry of entries) {
+                const amount = Number(entry.amount || 0);
+                if (entry.entryType === EntryType.DEBIT) periodDebit += amount;
+                else periodCredit += amount;
+                const sourceId = entry.voucher.sourceId;
+                sourceCounts.set(sourceId, (sourceCounts.get(sourceId) || 0) + 1);
+            }
+            return {
+                cashLedgerCount: cashLedgersForDiagnostics.length,
+                cashLedgers: cashLedgersForDiagnostics.map(ledger => {
+                    const row = rawRows.find(item => item.ledgerId === ledger.id);
+                    return {
+                        ledgerId: ledger.id,
+                        code: ledger.code,
+                        name: ledger.name,
+                        branchId: ledger.branchId || null,
+                        branchName: ledger.branch?.name || null,
+                        openingDebit: Number(row?.openingDebit || 0),
+                        openingCredit: Number(row?.openingCredit || 0),
+                        periodDebit: Number(row?.periodDebit || 0),
+                        periodCredit: Number(row?.periodCredit || 0),
+                        closingDebit: Number(row?.closingDebit || 0),
+                        closingCredit: Number(row?.closingCredit || 0)
+                    };
+                }),
+                duplicateSourceIds: [...sourceCounts.entries()]
+                    .filter(([, count]) => count > 1)
+                    .map(([sourceId, count]) => ({ sourceId, entryCount: count })),
+                outsidePeriodEntryCount: Math.max(allCashEntryCount - entries.length, 0),
+                periodDebit: Number(periodDebit.toFixed(2)),
+                periodCredit: Number(periodCredit.toFixed(2))
+            };
+        })();
 
         // Keep cash ledgers separate. Netting multiple cash balances before
         // splitting Dr/Cr understates both sides and also detaches the
