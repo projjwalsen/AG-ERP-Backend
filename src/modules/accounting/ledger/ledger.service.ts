@@ -4123,6 +4123,9 @@ export class LedgerService {
             else periodCredit += money(journal.amount);
         }
 
+        // Opening = ledger opening + all vouchers before startDate (including
+        // OPENING_BALANCE). Period OPENING_BALANCE vouchers stay visible as
+        // normal voucher rows and are not folded into this opening figure.
         const baseOpening =
             money(ledger.openingBalance);
 
@@ -4165,7 +4168,9 @@ export class LedgerService {
             return true;
         });
 
-        if (startDate) {
+        // Synthetic Opening Balance row only when prior opening is non-zero.
+        // A zero opening is omitted; period OPENING_BALANCE vouchers still show.
+        if (startDate && periodOpening !== 0) {
             statementRows.push({
                 type: "OPENING",
                 date: startDate,

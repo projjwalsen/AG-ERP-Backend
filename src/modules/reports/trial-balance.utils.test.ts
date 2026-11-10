@@ -109,6 +109,29 @@ test("opposite-side opening balances remain credit balances", () => {
     assert.equal(amounts.closingCredit, 85);
 });
 
+test("hard date filter keeps opening and excludes prior from closing", () => {
+    // Service zeros prior but still applies ledger/voucher opening.
+    const amounts = calculateTrialBalanceAmounts(
+        {
+            nature: LedgerNature.DEBIT,
+            openingBalance: 500,
+            openingDebit: 500,
+            openingCredit: 0,
+            openingBalanceDate: new Date(2025, 3, 1)
+        },
+        { debit: 0, credit: 0 },
+        { debit: 40, credit: 10 },
+        true
+    );
+
+    assert.equal(amounts.openingDebit, 500);
+    assert.equal(amounts.openingCredit, 0);
+    assert.equal(amounts.periodDebit, 40);
+    assert.equal(amounts.periodCredit, 10);
+    assert.equal(amounts.closingDebit, 530);
+    assert.equal(amounts.closingCredit, 0);
+});
+
 test("zero-closing ledgers with turnover remain visible", () => {
     assert.equal(
         hasTrialBalanceActivity({
