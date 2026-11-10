@@ -4123,20 +4123,90 @@ export class LedgerService {
             else periodCredit += money(journal.amount);
         }
 
+        // Passbook running opening = ledger opening + all prior vouchers
+        // (any type). Summary openingDebit/Credit = OPENING_BALANCE only.
         const baseOpening =
             money(ledger.openingBalance);
 
+        let priorOnlyDebit = priorDebit;
+        let priorOnlyCredit = priorCredit;
+        if (baseOpening !== 0) {
+            if (ledger.nature === LedgerNature.DEBIT) {
+                if (baseOpening > 0) priorOnlyDebit = money(priorOnlyDebit + baseOpening);
+                else priorOnlyCredit = money(priorOnlyCredit + Math.abs(baseOpening));
+            } else if (baseOpening > 0) {
+                priorOnlyCredit = money(priorOnlyCredit + baseOpening);
+            } else {
+                priorOnlyDebit = money(priorOnlyDebit + Math.abs(baseOpening));
+            }
+        }
+
+        const priorOnlyOpening =
+            ledger.nature === LedgerNature.CREDIT
+                ? money(priorOnlyCredit - priorOnlyDebit)
+                : money(priorOnlyDebit - priorOnlyCredit);
+
+        // Period OPENING_BALANCE amounts (still listed as voucher rows).
+        let periodOpnDebit = 0;
+        let periodOpnCredit = 0;
+        for (const entry of entries) {
+            if (entry.voucher.voucherType !== VoucherType.OPENING_BALANCE) continue;
+            const amount = money(entry.amount);
+            if (entry.entryType === EntryType.DEBIT) {
+                periodOpnDebit = money(periodOpnDebit + amount);
+            } else {
+                periodOpnCredit = money(periodOpnCredit + amount);
+            }
+        }
+
+        // Summary openingDebit / openingCredit: OPENING_BALANCE vouchers only
+        // (prior to startDate + any OPN inside the selected window).
+        const openingBalanceVoucherEntries = await prisma.ledgerEntry.findMany({
+            where: {
+                ledgerId: { in: statementLedgerIdList },
+                ...(misassignedOpeningEntryIds.length
+                    ? { id: { notIn: misassignedOpeningEntryIds } }
+                    : {}),
+                voucher: {
+                    voucherType: VoucherType.OPENING_BALANCE,
+                    ...(endDate ? { voucherDate: { lte: endDate } } : {})
+                }
+            },
+            select: {
+                entryType: true,
+                amount: true
+            }
+        });
+
+        let openingDebit = 0;
+        let openingCredit = 0;
+        for (const entry of openingBalanceVoucherEntries) {
+            const amount = money(entry.amount);
+            if (entry.entryType === EntryType.DEBIT) {
+                openingDebit = money(openingDebit + amount);
+            } else {
+                openingCredit = money(openingCredit + amount);
+            }
+        }
+
+        const summaryOpeningSigned =
+            ledger.nature === LedgerNature.CREDIT
+                ? money(openingCredit - openingDebit)
+                : money(openingDebit - openingCredit);
+
+        // Running balance includes prior activity + period OPN (OPN rows are
+        // skipped later so they are not applied twice).
         const periodOpening =
             ledger.nature === LedgerNature.CREDIT
                 ? money(
-                    baseOpening +
-                    priorCredit -
-                    priorDebit
+                    priorOnlyOpening +
+                    periodOpnCredit -
+                    periodOpnDebit
                 )
                 : money(
-                    baseOpening +
-                    priorDebit -
-                    priorCredit
+                    priorOnlyOpening +
+                    periodOpnDebit -
+                    periodOpnCredit
                 );
 
         let runningBalance = periodOpening;
@@ -4165,7 +4235,9 @@ export class LedgerService {
             return true;
         });
 
-        if (startDate) {
+        // Synthetic row for true prior passbook opening (all voucher types
+        // before startDate). Period OPN vouchers stay as normal rows.
+        if (startDate && (priorOnlyDebit !== 0 || priorOnlyCredit !== 0)) {
             statementRows.push({
                 type: "OPENING",
                 date: startDate,
@@ -4173,15 +4245,15 @@ export class LedgerService {
                 voucherType: null,
                 narration: "Opening Balance",
 
-                debit: 0,
-                credit: 0,
+                debit: priorOnlyDebit,
+                credit: priorOnlyCredit,
 
                 runningBalance:
-                    Math.abs(periodOpening),
+                    Math.abs(priorOnlyOpening),
 
                 balanceType:
                     resolveBalanceType(
-                        periodOpening,
+                        priorOnlyOpening,
                         ledger.nature
                     )
             });
@@ -4380,8 +4452,15 @@ export class LedgerService {
         runningBalance = periodOpening;
         for (const row of statementRows) {
             if (row.type === "OPENING") {
-                row.runningBalance = Math.abs(periodOpening);
-                row.balanceType = resolveBalanceType(periodOpening, ledger.nature);
+                row.runningBalance = Math.abs(priorOnlyOpening);
+                row.balanceType = resolveBalanceType(priorOnlyOpening, ledger.nature);
+                continue;
+            }
+            // Already counted in summary openingDebit/Credit — keep visible,
+            // do not apply again to running balance.
+            if (row.voucherType === VoucherType.OPENING_BALANCE) {
+                row.runningBalance = Math.abs(runningBalance);
+                row.balanceType = resolveBalanceType(runningBalance, ledger.nature);
                 continue;
             }
             const debit = money(row.debit || 0);
@@ -4393,17 +4472,25 @@ export class LedgerService {
             row.balanceType = resolveBalanceType(runningBalance, ledger.nature);
         }
 
-        // Sum debit/credit across every voucher row returned in this statement
-        // (opening balance row is excluded — it is not a voucher posting).
+        // Period turnover excludes synthetic opening + OPENING_BALANCE
+        // (those amounts are in summary.openingDebit / openingCredit).
         periodDebit = money(
             statementRows.reduce(
-                (sum, row) => (row.type === "OPENING" ? sum : sum + money(row.debit || 0)),
+                (sum, row) => (
+                    row.type === "OPENING" || row.voucherType === VoucherType.OPENING_BALANCE
+                        ? sum
+                        : sum + money(row.debit || 0)
+                ),
                 0
             )
         );
         periodCredit = money(
             statementRows.reduce(
-                (sum, row) => (row.type === "OPENING" ? sum : sum + money(row.credit || 0)),
+                (sum, row) => (
+                    row.type === "OPENING" || row.voucherType === VoucherType.OPENING_BALANCE
+                        ? sum
+                        : sum + money(row.credit || 0)
+                ),
                 0
             )
         );
@@ -4433,10 +4520,10 @@ export class LedgerService {
 
             summary: {
                 openingBalance:
-                    Math.abs(periodOpening),
+                    Math.abs(summaryOpeningSigned),
 
                 openingBalanceType:
-                    periodOpening >= 0
+                    summaryOpeningSigned >= 0
                         ? (
                             ledger.nature === LedgerNature.DEBIT
                                 ? "DR"
@@ -4447,6 +4534,9 @@ export class LedgerService {
                                 ? "CR"
                                 : "DR"
                         ),
+
+                openingDebit,
+                openingCredit,
 
                 totalDebit:
                     periodDebit,

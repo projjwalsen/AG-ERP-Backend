@@ -461,6 +461,12 @@ export class ReportingService {
             requestedEndDate
         );
 
+        // Custom startDate+endDate = hard window for movements: exclude prior
+        // (< startDate) from closing so changing only startDate changes
+        // totals. Ledger/voucher openings are still applied (needed to match
+        // Tally). Omitted dates keep classic as-at / from-beginning closing.
+        const hardDateFilter = Boolean(query?.startDate && query?.endDate);
+
         /**
          * ============================================================
          * 3. BRANCH ENTRY FILTER
@@ -1069,6 +1075,11 @@ export class ReportingService {
             window: "period" | "prior",
             purchaseAccountsOnly = false
         ) => {
+            // Hard date filter ignores cumulative prior activity.
+            if (hardDateFilter && window === "prior") {
+                return [];
+            }
+
             const byCutoff = new Map<string, {
                 cutoff?: Date;
                 ledgerIds: string[];
@@ -1101,8 +1112,12 @@ export class ReportingService {
                     continue;
                 }
 
+                // Hard filter keeps the period window exactly startDate→endDate
+                // (do not shift the start to an opening-balance date).
                 const cutoff = window === "period"
-                    ? effectiveMovementStart(startDate, openingDate, endDate)
+                    ? (hardDateFilter
+                        ? startDate
+                        : effectiveMovementStart(startDate, openingDate, endDate))
                     : openingDate;
                 const key = cutoff ? cutoff.toISOString() : "__all__";
                 const bucket = byCutoff.get(key) || {
@@ -1594,6 +1609,9 @@ export class ReportingService {
                 sourceTotals.set(entry.ledger.id, current);
             }
 
+            // Hard date filter drops notes outside the requested window.
+            if (hardDateFilter && note.noteDate < startDate) continue;
+
             const targetMap = note.noteDate < startDate ? priorMap : periodMap;
             const targetTotals = targetMap.get(targetLedger.id) || { debit: 0, credit: 0 };
             for (const [sourceLedgerId, totals] of sourceTotals) {
@@ -1754,12 +1772,18 @@ export class ReportingService {
          * Debit  = +
          * Credit = -
          *
-         * Closing =
+         * Closing (default / as-at) =
          * ledger opening
          * + prior debit
          * - prior credit
          * + period debit
          * - period credit
+         *
+         * Closing (hard date filter) =
+         * ledger/voucher opening
+         * + period debit
+         * - period credit
+         * (prior before startDate is excluded so startDate moves closing)
          */
 
         const rawLedgerRows =
@@ -1787,12 +1811,16 @@ export class ReportingService {
                     : periodMap;
 
                 const prior =
-                    movementPriorMap.get(
-                        ledger.id
-                    ) || {
-                        debit: 0,
-                        credit: 0
-                    };
+                    hardDateFilter
+                        ? { debit: 0, credit: 0 }
+                        : (
+                            movementPriorMap.get(
+                                ledger.id
+                            ) || {
+                                debit: 0,
+                                credit: 0
+                            }
+                        );
 
                 const period =
                     movementPeriodMap.get(
@@ -2281,6 +2309,7 @@ export class ReportingService {
         for (const entry of genericTypedSalesEntries) {
             const type = typeBySaleId.get(entry.voucher.sourceId);
             if (!type) continue;
+            if (hardDateFilter && entry.voucher.voucherDate < startDate) continue;
             const current = typedSalesMovements.get(type) || {
                 prior: { debit: 0, credit: 0 },
                 period: { debit: 0, credit: 0 }
@@ -2302,7 +2331,7 @@ export class ReportingService {
                         openingDebit: 0,
                         openingCredit: 0
                     },
-                    movement.prior,
+                    hardDateFilter ? { debit: 0, credit: 0 } : movement.prior,
                     movement.period,
                     false
                 );
@@ -2359,6 +2388,7 @@ export class ReportingService {
                 pathByPurchaseId.get(entry.voucher.sourceId) || ""
             );
             if (!category || !PURCHASE_TRIAL_BALANCE_HEADS.has(category)) continue;
+            if (hardDateFilter && entry.voucher.voucherDate < startDate) continue;
 
             const current = purchaseSubGroupMovements.get(category) || {
                 prior: { debit: 0, credit: 0 },
@@ -2375,6 +2405,7 @@ export class ReportingService {
         for (const purchase of remarksClassifiedPurchases) {
             const purchaseDate = purchase.invoiceDate || purchase.createdAt;
             if (purchaseDate > endDate) continue;
+            if (hardDateFilter && purchaseDate < startDate) continue;
 
             for (const mapping of readPurchaseSubGroups(purchase.remarks)) {
                 const current = purchaseSubGroupMovements.get(mapping.name) || {
@@ -2397,6 +2428,7 @@ export class ReportingService {
                 !PURCHASE_TRIAL_BALANCE_HEADS.has(category) ||
                 category === "INCENTIVES RECEIVED"
             ) continue;
+            if (hardDateFilter && note.noteDate < startDate) continue;
 
             const current = purchaseSubGroupMovements.get(category) || {
                 prior: { debit: 0, credit: 0 },
@@ -2422,7 +2454,7 @@ export class ReportingService {
                         openingDebit: 0,
                         openingCredit: 0
                     },
-                    movement.prior,
+                    hardDateFilter ? { debit: 0, credit: 0 } : movement.prior,
                     movement.period,
                     false
                 );
@@ -2469,6 +2501,7 @@ export class ReportingService {
         for (const note of categorizedOutwardSaleNotes) {
             const category = salesCategoryFromImportedPath(note.categoryPath);
             if (!category) continue;
+            if (hardDateFilter && note.noteDate < startDate) continue;
 
             const alreadyOnTypedSales = note.voucher?.entries.some(entry =>
                 entry.ledger.category === LedgerType.SALES &&
@@ -2505,7 +2538,7 @@ export class ReportingService {
                         openingDebit: 0,
                         openingCredit: 0
                     },
-                    movement.prior,
+                    hardDateFilter ? { debit: 0, credit: 0 } : movement.prior,
                     movement.period,
                     false
                 );
@@ -3571,7 +3604,8 @@ export class ReportingService {
 
                 endDate,
 
-                normalizedFromBeginning
+                normalizedFromBeginning,
+                hardDateFilter
             },
 
             // Render contract for the frontend.  `tree` can be displayed
@@ -3626,7 +3660,8 @@ export class ReportingService {
                 period: {
                     startDate,
                     endDate,
-                    normalizedFromBeginning
+                    normalizedFromBeginning,
+                    hardDateFilter
                 },
                 cash: cashDiagnostics
             },
