@@ -4123,24 +4123,32 @@ export class LedgerService {
             else periodCredit += money(journal.amount);
         }
 
-        // Opening = ledger opening + all vouchers before startDate (including
-        // OPENING_BALANCE). Period OPENING_BALANCE vouchers stay visible as
-        // normal voucher rows and are not folded into this opening figure.
+        // Custom startDate opening =
+        //   ledger.openingBalance
+        //   + all voucher debit/credit before startDate
+        //     (every voucher type, including OPENING_BALANCE)
+        //   + unmatched prior journals / classified notes already folded
+        //     into priorDebit / priorCredit above.
         const baseOpening =
             money(ledger.openingBalance);
 
+        let openingDebit = priorDebit;
+        let openingCredit = priorCredit;
+        if (baseOpening !== 0) {
+            if (ledger.nature === LedgerNature.DEBIT) {
+                if (baseOpening > 0) openingDebit = money(openingDebit + baseOpening);
+                else openingCredit = money(openingCredit + Math.abs(baseOpening));
+            } else if (baseOpening > 0) {
+                openingCredit = money(openingCredit + baseOpening);
+            } else {
+                openingDebit = money(openingDebit + Math.abs(baseOpening));
+            }
+        }
+
         const periodOpening =
             ledger.nature === LedgerNature.CREDIT
-                ? money(
-                    baseOpening +
-                    priorCredit -
-                    priorDebit
-                )
-                : money(
-                    baseOpening +
-                    priorDebit -
-                    priorCredit
-                );
+                ? money(openingCredit - openingDebit)
+                : money(openingDebit - openingCredit);
 
         let runningBalance = periodOpening;
 
@@ -4169,8 +4177,8 @@ export class LedgerService {
         });
 
         // Synthetic Opening Balance row only when prior opening is non-zero.
-        // A zero opening is omitted; period OPENING_BALANCE vouchers still show.
-        if (startDate && periodOpening !== 0) {
+        // Debit/Credit columns show the summed prior totals (incl. OPN vouchers).
+        if (startDate && (openingDebit !== 0 || openingCredit !== 0)) {
             statementRows.push({
                 type: "OPENING",
                 date: startDate,
@@ -4178,8 +4186,8 @@ export class LedgerService {
                 voucherType: null,
                 narration: "Opening Balance",
 
-                debit: 0,
-                credit: 0,
+                debit: openingDebit,
+                credit: openingCredit,
 
                 runningBalance:
                     Math.abs(periodOpening),
@@ -4452,6 +4460,9 @@ export class LedgerService {
                                 ? "CR"
                                 : "DR"
                         ),
+
+                openingDebit,
+                openingCredit,
 
                 totalDebit:
                     periodDebit,
