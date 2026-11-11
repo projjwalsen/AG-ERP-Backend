@@ -1,1 +1,0 @@
-const fs=require('fs');const s=fs.readFileSync('C:/Users/razon/Documents/Prepaid Insurance.pdf').toString('latin1');for(const n of [10,11,18,19]){const re=new RegExp(`(?:^|\\n)${n} 0 obj`),m=re.exec(s);console.log(n,JSON.stringify(s.slice(m.index,m.index+250)));}

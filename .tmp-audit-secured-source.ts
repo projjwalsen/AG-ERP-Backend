@@ -1,5 +1,0 @@
-import * as XLSX from 'xlsx';import fs from 'fs';
-const dir='C:/Users/razon/Downloads/Individual_Loan_Ledger_Excel_Files';
-const files=fs.readdirSync(dir).filter(f=>f.endsWith('.xlsx'));
-const money=(x:any)=>Number(x||0);const fmt=(v:number)=>Math.round(v*100)/100;
-for(const f of files){const w=XLSX.readFile(`${dir}/${f}`);const ws=w.Sheets[w.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null}) as any[][];const data=rows.slice(2).filter(r=>r[0]||r[1]||r[2]||r[3]);let od=0,oc=0,d=0,c=0;const vt:any={};const lines=[];for(const r of data){if(String(r[2]).trim().toUpperCase()==='OPENING BALANCE'){od+=money(r[4]);oc+=money(r[5]);}else{d+=money(r[4]);c+=money(r[5]);vt[r[2]]=(vt[r[2]]||0)+1;lines.push({date:r[0],particulars:r[1],type:r[2],no:String(r[3]||''),debit:money(r[4]),credit:money(r[5])})}}const bal=oc-od+c-d;console.log(JSON.stringify({file:f,sourceAccount:f.replace(/_-_Secured_Loans?\.xlsx$/i,'').replace(/_/g,' '),openingDebit:fmt(od),openingCredit:fmt(oc),periodDebit:fmt(d),periodCredit:fmt(c),closingDebit:fmt(Math.max(-bal,0)),closingCredit:fmt(Math.max(bal,0)),voucherCount:lines.length,types:vt,lines},null,2))}
