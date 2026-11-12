@@ -1,1 +1,0 @@
-const fs=require('fs');const s=fs.readFileSync('C:/Users/razon/Documents/Prepaid Insurance.pdf').toString('latin1');for(const n of [11,19,21]){const m=new RegExp(`(?:^|\\n)${n}\\s+0\\s+obj\\b`).exec(s),start=m.index+m[0].length,end=s.indexOf('endobj',start);console.log('\nOBJ',n,s.slice(start,end).slice(0,700).replace(/\n/g,' '))}
