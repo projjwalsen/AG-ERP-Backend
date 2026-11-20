@@ -9,12 +9,15 @@ export class ExcelImportService {
      * Reads workbook
      * ======================================================
     */
-    static readExcel(buffer: Buffer): XLSX.WorkBook {
+    static readExcel(buffer: Buffer, options?: { raw?: boolean; cellDates?: boolean }): XLSX.WorkBook {
 
         return XLSX.read(buffer, {
             type: "buffer",
-            cellDates: true,
-            raw: false
+            // Prefer Excel serial numbers for journal imports and let toDate()
+            // rebuild local calendar dates. cellDates:true can shift FY dates
+            // (e.g. 01-Apr) backward by a timezone offset.
+            cellDates: options?.cellDates ?? true,
+            raw: options?.raw ?? false
         });
 
     }
@@ -279,13 +282,15 @@ export class ExcelImportService {
         options?: {
 
             headerRow?: number;
+            raw?: boolean;
 
         }
     ): Record<string, any>[] {
 
         const {
 
-            headerRow = 8
+            headerRow = 8,
+            raw = false
 
         } = options ?? {};
 
@@ -300,7 +305,7 @@ export class ExcelImportService {
 
                     defval: "",
 
-                    raw: false
+                    raw
 
                 }
 
@@ -316,10 +321,35 @@ export class ExcelImportService {
         const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, defval: "", raw: false });
         for (let index = 0; index < Math.min(rows.length, 50); index++) {
             const headers = new Set((rows[index] || []).map((cell: any) => this.normalizeHeader(cell)));
-            if ((headers.has("voucher type") || headers.has("vch type")) &&
-                (headers.has("voucher no") || headers.has("voucher number") || headers.has("vch no")) &&
-                (headers.has("debit") || headers.has("debit amount") || headers.has("credit") || headers.has("credit amount")) &&
-                (headers.has("particular") || headers.has("particulars") || headers.has("path"))) return index + 1;
+            const hasVoucherType =
+                headers.has("voucher type") ||
+                headers.has("vch type") ||
+                headers.has("journal name / type") ||
+                headers.has("journal name type");
+            const hasVoucherNo =
+                headers.has("voucher no") ||
+                headers.has("voucher number") ||
+                headers.has("vch no");
+            const hasAmount =
+                headers.has("debit") ||
+                headers.has("debit amount") ||
+                headers.has("credit") ||
+                headers.has("credit amount");
+            // Classic Tally register uses Particulars/Path. Ledger extracts
+            // (e.g. Duties & Taxes) use Ledger / Account Name + Journal Group.
+            const hasAccount =
+                headers.has("particular") ||
+                headers.has("particulars") ||
+                headers.has("path") ||
+                headers.has("ledger / account name") ||
+                headers.has("account / ledger") ||
+                headers.has("account/ledger") ||
+                headers.has("ledger") ||
+                headers.has("account name") ||
+                headers.has("journal group");
+            if (hasVoucherType && hasVoucherNo && hasAmount && hasAccount) {
+                return index + 1;
+            }
         }
         return 8;
     }

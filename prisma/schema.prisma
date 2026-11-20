@@ -1705,3 +1705,16 @@ model PurchaseOrderItem {
 
   @@unique([purchaseOrderId, productId])
 }
+
+// DB SYNCING TABLES
+// WATERMARK: These tables are used to sync data between the main database and the watermark database. They are not used in the main application logic.
+
+model SyncWatermark {
+  id         String   @id @default(uuid())
+  entity     String   @unique  // "branch" | "user" | "purchase" | ...
+  lastSyncAt DateTime @default(dbgenerated("'1970-01-01T00:00:00Z'"))
+  lastCursor String?
+  updatedAt  DateTime @updatedAt
+
+  @@index([entity, lastSyncAt])
+}

@@ -27,7 +27,7 @@ export class JournalImportService {
         ImportResolver.clearCache();
 
         const workbook =
-            ExcelImportService.readExcel(file.buffer);
+            ExcelImportService.readExcel(file.buffer, { raw: true, cellDates: false });
 
         const sources = workbook.SheetNames.map(sheetName => {
             const worksheet = ExcelImportService.getWorkSheet(workbook, sheetName);
@@ -50,9 +50,11 @@ export class JournalImportService {
         const vouchers = sources.flatMap(source =>
             ExcelImportService.parseJournalRows(
                 ExcelImportService.readRows(source.worksheet, {
-                    headerRow: source.headerRow
+                    headerRow: source.headerRow,
+                    raw: true
                 }),
-                source.sheetName
+                source.sheetName,
+                source.headerRow
             )
         );
 
@@ -137,10 +139,17 @@ export class JournalImportService {
                 const isTransaction =
                     isInvoiceTransaction || isCancelled || isDebitCreditNote;
 
+                // Duties & Taxes-style ledger extracts carry Journal Group +
+                // Ledger / Account Name on every row (including Purchase /
+                // Tax Invoice / Opening Balance). Those rows belong on the
+                // journal-register path so they land under the correct TB head.
+                const isLedgerRegisterRow =
+                    ImportResolver.isJournalRegisterRow(dto);
+
                 switch (type) {
 
                     case "JOURNAL":
-                        return !isTransaction || isRcmNoteRegister;
+                        return !isTransaction || isRcmNoteRegister || isLedgerRegisterRow;
 
                     case "TRANSACTION":
                         return isTransaction || isDebitCreditNote || isExplicitJournalVoucher;
@@ -226,11 +235,33 @@ export class JournalImportService {
                             isUnclassifiedTaxInvoice;
 
                         const isInwardNote = ImportResolver.isInwardDebitCreditNoteImportRow(dto);
+                        const isLedgerRegisterRow = ImportResolver.isJournalRegisterRow(dto);
+                        const allowsJournalPath =
+                            type === "JOURNAL" ||
+                            type === "BOTH" ||
+                            (type === "TRANSACTION" && (isDebitCreditNote || isExplicitJournalVoucher || isLedgerRegisterRow));
 
                         // -----------------------------
                         // Journal Import
                         // -----------------------------
                         if (
+                            isLedgerRegisterRow &&
+                            allowsJournalPath &&
+                            !isCancelled
+                        ) {
+                            // Hierarchical ledger extract: post Dr/Cr to the
+                            // named Account under Journal Group / Sub Group so
+                            // Trial Balance picks up the correct head.
+                            const result = await ImportResolver.importJournalRegisterRow(
+                                actor,
+                                dto,
+                                { skipBalanceSync: true }
+                            );
+                            if ((result as any)?.ledgerId) {
+                                affectedLedgerIds.add((result as any).ledgerId);
+                            }
+                            rowSkipped = (result as any)?.__importStatus === "skipped";
+                        } else if (
                             (type === "TRANSACTION" || type === "BOTH") &&
                             isInwardNote
                             && !isRcmNoteRegister
@@ -247,41 +278,27 @@ export class JournalImportService {
                             );
                             rowSkipped = (result as any)?.__importStatus === "skipped";
                         } else if (
-                            (
-                            (
-                                type === "JOURNAL" ||
-                                type === "BOTH" ||
-                            (type === "TRANSACTION" && (isDebitCreditNote || isExplicitJournalVoucher))
-                            ) &&
+                            allowsJournalPath &&
                             !isInvoiceTransaction &&
                             !isCancelled
-                            )
                         ) {
-                            if (ImportResolver.isJournalRegisterRow(dto)) {
-                                const result = await ImportResolver.importJournalRegisterRow(
-                                    actor,
-                                    dto,
-                                    { skipBalanceSync: true }
-                                );
-                                if ((result as any)?.ledgerId) {
-                                    affectedLedgerIds.add((result as any).ledgerId);
-                                }
-                                rowSkipped = (result as any)?.__importStatus === "skipped";
-                            } else {
-                                const payload = await ImportResolver.buildJournalPayload(actor, dto);
-                                const journal = await JournalService.createJournal(actor, payload);
-                                await JournalService.approveJournal(actor, journal.id);
-                            }
-
+                            const payload = await ImportResolver.buildJournalPayload(actor, dto);
+                            const journal = await JournalService.createJournal(actor, payload);
+                            await JournalService.approveJournal(actor, journal.id);
                         }
 
                         // -----------------------------
                         // Invoice Transaction Import
                         // -----------------------------
+                        // Skip when the row is already a ledger-register
+                        // posting (Duties & Taxes extract) — those are not
+                        // full purchase/sale invoices.
                         if (
                             (type === "TRANSACTION" || type === "BOTH")
                             &&
                             (isInvoiceTransaction || isCancelled)
+                            &&
+                            !isLedgerRegisterRow
                         ) {
 
                             await ImportResolver.importInvoiceTransaction(

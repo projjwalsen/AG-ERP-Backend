@@ -370,13 +370,17 @@ router.post(
  *   post:
  *     summary: Import Journal Register
  *     description: |
- *       Upload a Journal Register Excel file exported from Tally.
+ *       Upload a Journal Register Excel file exported from Tally,
+ *       or a hierarchical ledger extract with Journal Group / Sub Group /
+ *       Ledger / Account Name / Debit / Credit (e.g. Duties & Taxes).
  *
  *       The importer automatically:
  *
  *       - Reads the Journal Register worksheet
- *       - Skips Purchase and Tax Invoice vouchers
- *       - Creates Journal Heads if they do not exist
+ *       - For ledger extracts, posts every row (including Opening Balance,
+ *         Purchase, and Tax Invoice sides) under Journal Group → Sub Group
+ *         → Ledger / Account Name so Trial Balance shows the correct head
+ *       - Creates Journal Heads / ledgers if they do not exist
  *       - Creates Journal entries
  *       - Automatically approves imported Journals
  *       - Generates Accounting Vouchers and Ledger Entries
