@@ -378,8 +378,11 @@ router.post(
  *
  *       - Reads the Journal Register worksheet
  *       - For ledger extracts, posts every row (including Opening Balance,
- *         Purchase, and Tax Invoice sides) under Journal Group → Sub Group
- *         → Ledger / Account Name so Trial Balance shows the correct head
+ *         Purchase, Tax Invoice, and Inward/Outward Debit/Credit Note sides)
+ *         under Journal Group → Sub Group → Ledger / Account Name so Trial
+ *         Balance shows the correct head
+ *       - Also imports Inward/Outward Debit/Credit Note register rows when
+ *         type=JOURNAL (not only TRANSACTION/BOTH)
  *       - Creates Journal Heads / ledgers if they do not exist
  *       - Creates Journal entries
  *       - Automatically approves imported Journals

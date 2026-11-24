@@ -149,7 +149,13 @@ export class JournalImportService {
                 switch (type) {
 
                     case "JOURNAL":
-                        return !isTransaction || isRcmNoteRegister || isLedgerRegisterRow;
+                        // Include Inward/Outward Debit/Credit Notes on the
+                        // journal endpoint so tax/ledger extracts and note
+                        // registers both post (not only RCM note types).
+                        return !isTransaction ||
+                            isRcmNoteRegister ||
+                            isDebitCreditNote ||
+                            isLedgerRegisterRow;
 
                     case "TRANSACTION":
                         return isTransaction || isDebitCreditNote || isExplicitJournalVoucher;
@@ -252,6 +258,8 @@ export class JournalImportService {
                             // Hierarchical ledger extract: post Dr/Cr to the
                             // named Account under Journal Group / Sub Group so
                             // Trial Balance picks up the correct head.
+                            // Includes Inward/Outward Debit/Credit Note sides
+                            // when the Excel carries Journal Group + Account.
                             const result = await ImportResolver.importJournalRegisterRow(
                                 actor,
                                 dto,
@@ -262,15 +270,13 @@ export class JournalImportService {
                             }
                             rowSkipped = (result as any)?.__importStatus === "skipped";
                         } else if (
-                            (type === "TRANSACTION" || type === "BOTH") &&
-                            isInwardNote
-                            && !isRcmNoteRegister
+                            allowsJournalPath &&
+                            isInwardNote &&
+                            !isRcmNoteRegister &&
+                            !isCancelled
                         ) {
-                            // The regular Journal Import UI posts here. Give
-                            // inward notes the same Excel Path handling as
-                            // the dedicated inward-note endpoint so the
-                            // categoryPath is persisted and the Purchase
-                            // ledger mapping is repaired when needed.
+                            // Journal endpoint also accepts inward debit/credit
+                            // note registers (not only type=TRANSACTION/BOTH).
                             const result = await ImportResolver.importInwardPurchaseNote(
                                 actor,
                                 dto,
@@ -282,6 +288,7 @@ export class JournalImportService {
                             !isInvoiceTransaction &&
                             !isCancelled
                         ) {
+                            // Outward Debit/Credit Notes and ordinary journals.
                             const payload = await ImportResolver.buildJournalPayload(actor, dto);
                             const journal = await JournalService.createJournal(actor, payload);
                             await JournalService.approveJournal(actor, journal.id);
