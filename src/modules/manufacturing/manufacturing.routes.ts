@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, checkPermission } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 import * as controller from "./manufacturing.controller";
 
 const router = Router();
@@ -63,7 +64,7 @@ router.use(authMiddleware);
  *       404:
  *         description: Product not found
  */
-router.post("/recipes", checkPermission("PRODUCT:WRITE"), controller.createRecipe);
+router.post("/recipes", checkPermission("PRODUCT:WRITE"), auditLog({ module: "MANUFACTURING", operation: "CREATE", entityType: "ManufacturingRecipe", entityLabel: "Manufacturing Recipe" }), controller.createRecipe);
 
 /**
  * @openapi
@@ -111,7 +112,7 @@ router.get("/recipes", checkPermission("PRODUCT:VIEW"), controller.listRecipes);
  *       404:
  *         description: Recipe not found
  */
-router.patch("/recipes/:recipeId/approve", checkPermission("PRODUCT:WRITE"), controller.approveRecipe);
+router.patch("/recipes/:recipeId/approve", checkPermission("PRODUCT:WRITE"), auditLog({ module: "MANUFACTURING", operation: "APPROVE", entityType: "ManufacturingRecipe", entityLabel: "Manufacturing Recipe" }), controller.approveRecipe);
 
 /**
  * @openapi
@@ -142,7 +143,7 @@ router.patch("/recipes/:recipeId/approve", checkPermission("PRODUCT:WRITE"), con
  *       400:
  *         description: Only draft recipes can be rejected
  */
-router.patch("/recipes/:recipeId/reject", checkPermission("PRODUCT:WRITE"), controller.rejectRecipe);
+router.patch("/recipes/:recipeId/reject", checkPermission("PRODUCT:WRITE"), auditLog({ module: "MANUFACTURING", operation: "REJECT", entityType: "ManufacturingRecipe", entityLabel: "Manufacturing Recipe" }), controller.rejectRecipe);
 
 /**
  * @openapi
@@ -216,7 +217,7 @@ router.post("/preview", checkPermission("PRODUCT:VIEW"), controller.previewManuf
  *       403:
  *         description: Branch access denied
  */
-router.post("/manufactures", checkPermission("PRODUCT:WRITE"), controller.createManufacture);
+router.post("/manufactures", checkPermission("PRODUCT:WRITE"), auditLog({ module: "MANUFACTURING", operation: "CREATE", entityType: "Manufacture", entityLabel: "Manufacture" }), controller.createManufacture);
 
 /**
  * @openapi
@@ -265,7 +266,7 @@ router.get("/manufactures", checkPermission("PRODUCT:VIEW"), controller.listManu
  *       409:
  *         description: Manufacturing document was already processed or stock changed concurrently
  */
-router.patch("/manufactures/:manufactureId/approve", checkPermission("PRODUCT:WRITE"), controller.approveManufacture);
+router.patch("/manufactures/:manufactureId/approve", checkPermission("PRODUCT:WRITE"), auditLog({ module: "MANUFACTURING", operation: "APPROVE", entityType: "Manufacture", entityLabel: "Manufacture" }), controller.approveManufacture);
 
 /**
  * @openapi
@@ -296,6 +297,6 @@ router.patch("/manufactures/:manufactureId/approve", checkPermission("PRODUCT:WR
  *       400:
  *         description: Only draft manufacturing documents can be rejected
  */
-router.patch("/manufactures/:manufactureId/reject", checkPermission("PRODUCT:WRITE"), controller.rejectManufacture);
+router.patch("/manufactures/:manufactureId/reject", checkPermission("PRODUCT:WRITE"), auditLog({ module: "MANUFACTURING", operation: "REJECT", entityType: "Manufacture", entityLabel: "Manufacture" }), controller.rejectManufacture);
 
 export default router;

@@ -14,6 +14,7 @@ import {
     authMiddleware,
     checkPermission
 } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 
 const router = Router();
 
@@ -81,6 +82,7 @@ router.use(authMiddleware);
 router.post(
     "/create",
     checkPermission("PURCHASE:WRITE"),
+    auditLog({ module: "PURCHASE_ORDER", operation: "CREATE", entityType: "PurchaseOrder", entityLabel: "Purchase Order" }),
     createPurchaseOrder
 );
 
@@ -193,6 +195,7 @@ router.get(
 router.patch(
     "/:purchaseOrderId/approve",
     checkPermission("PURCHASE:APPROVE"),
+    auditLog({ module: "PURCHASE_ORDER", operation: "APPROVE", entityType: "PurchaseOrder", entityLabel: "Purchase Order" }),
     approvePurchaseOrder
 );
 
@@ -226,6 +229,7 @@ router.patch(
 router.patch(
     "/:purchaseOrderId/reject",
     checkPermission("PURCHASE:APPROVE"),
+    auditLog({ module: "PURCHASE_ORDER", operation: "REJECT", entityType: "PurchaseOrder", entityLabel: "Purchase Order" }),
     rejectPurchaseOrder
 );
 

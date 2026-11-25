@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as SalesController from "./sales.controller";
 import { authMiddleware, checkPermission } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 
 const router = Router();
 
@@ -224,6 +225,7 @@ router.use(authMiddleware);
 router.post(
     "/create",
     checkPermission("SALE:WRITE"),
+    auditLog({ module: "SALE", operation: "CREATE", entityType: "Sale" }),
     SalesController.createSale
 );
 
@@ -326,6 +328,7 @@ router.get(
 router.patch(
     "/:saleId/approve",
     checkPermission("SALE:APPROVE"),
+    auditLog({ module: "SALE", operation: "APPROVE", entityType: "Sale" }),
     SalesController.approveSale
 );
 
@@ -353,6 +356,7 @@ router.patch(
 router.patch(
     "/:saleId/reject",
     checkPermission("SALE:APPROVE"),
+    auditLog({ module: "SALE", operation: "REJECT", entityType: "Sale" }),
     SalesController.rejectSale
 );
 
@@ -380,6 +384,7 @@ router.patch(
 router.put(
     "/update/:saleId",
     checkPermission("SALE:WRITE"),
+    auditLog({ module: "SALE", operation: "UPDATE", entityType: "Sale" }),
     SalesController.updateSale
 );
 

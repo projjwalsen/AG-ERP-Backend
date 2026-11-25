@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as JournalController from "./journal.controller";
 import { authMiddleware, checkPermission } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 
 const router = Router();
 router.use(authMiddleware);
@@ -332,7 +333,7 @@ router.get("/heads", checkPermission("JOURNAL:VIEW"), JournalController.listJour
  *         description: Journal created successfully
  */
 
-router.post("/create", checkPermission("JOURNAL:WRITE"), JournalController.createJournal);
+router.post("/create", checkPermission("JOURNAL:WRITE"), auditLog({ module: "JOURNAL", operation: "CREATE", entityType: "Journal" }), JournalController.createJournal);
 
 /**
  * @openapi
@@ -436,7 +437,7 @@ router.get("/all", checkPermission("JOURNAL:VIEW"), JournalController.listJourna
  *         description: Updated successfully
  */
 
-router.put("/:journalId", checkPermission("JOURNAL:WRITE"), JournalController.updateJournal);
+router.put("/:journalId", checkPermission("JOURNAL:WRITE"), auditLog({ module: "JOURNAL", operation: "UPDATE", entityType: "Journal" }), JournalController.updateJournal);
 
 /**
  * @openapi
@@ -459,7 +460,7 @@ router.put("/:journalId", checkPermission("JOURNAL:WRITE"), JournalController.up
  *       404:
  *         description: Journal not found
  */
-router.delete("/:journalId", checkPermission("JOURNAL:WRITE"), JournalController.deleteJournal);
+router.delete("/:journalId", checkPermission("JOURNAL:WRITE"), auditLog({ module: "JOURNAL", operation: "DELETE", entityType: "Journal" }), JournalController.deleteJournal);
 
 
 /**
@@ -504,7 +505,7 @@ router.get("/:journalId", checkPermission("JOURNAL:VIEW"), JournalController.get
  *         description: Journal approved successfully
  */
 
-router.patch("/:journalId/approve", checkPermission("JOURNAL:APPROVE"), JournalController.approveJournal);
+router.patch("/:journalId/approve", checkPermission("JOURNAL:APPROVE"), auditLog({ module: "JOURNAL", operation: "APPROVE", entityType: "Journal" }), JournalController.approveJournal);
 
 
 /**
@@ -535,7 +536,7 @@ router.patch("/:journalId/approve", checkPermission("JOURNAL:APPROVE"), JournalC
  *         description: Journal rejected successfully
  */
 
-router.patch("/:journalId/reject", checkPermission("JOURNAL:APPROVE"), JournalController.rejectJournal);
+router.patch("/:journalId/reject", checkPermission("JOURNAL:APPROVE"), auditLog({ module: "JOURNAL", operation: "REJECT", entityType: "Journal" }), JournalController.rejectJournal);
 
 
 export default router;

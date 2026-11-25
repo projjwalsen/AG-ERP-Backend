@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
 import { importExcel } from "./multer.import";
+import { auditLog } from "../accessLog";
 import {
     downloadImportErrorReport,
     importAgencyWorkbook,
@@ -196,6 +197,7 @@ router.post(
 router.post(
     "/import",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Workbook", entityLabel: "Excel data" }),
     importExcel.single("file"),
     importWorkbook
 )
@@ -285,6 +287,8 @@ router.post(
 
     authMiddleware,
 
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Product", entityLabel: "Products" }),
+
     importExcel.single("file"),
 
     importProductWorkbook
@@ -359,6 +363,7 @@ router.post(
 router.post(
     "/agency",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Agency", entityLabel: "Agencies" }),
     importExcel.single("file"),
     importAgencyWorkbook
 );
@@ -448,6 +453,7 @@ router.post(
 router.post(
     "/import/journal",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Journal", entityLabel: "Journals" }),
     importExcel.single("file"),
     importJournalWorkbook
 );
@@ -456,6 +462,7 @@ router.post(
 router.post(
     "/import/opening-balance-journals",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Journal", entityLabel: "Opening balance journals" }),
     importExcel.single("file"),
     importOpeningBalanceJournalWorkbook
 );
@@ -615,6 +622,7 @@ router.post(
 router.post(
     "/import/agency-ledger/unlink-extras",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "UPDATE", entityType: "AgencyLedger", entityLabel: "agency ledger extras" }),
     importExcel.single("file"),
     unlinkExtraAgencyLedgerVouchers
 );
@@ -673,6 +681,7 @@ router.post(
 router.post(
     "/import/inward-debit-credit-notes",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Journal", entityLabel: "Inward debit/credit notes" }),
     importExcel.single("file"),
     importInwardDebitCreditNoteWorkbook
 );
