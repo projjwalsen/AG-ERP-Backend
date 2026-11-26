@@ -85,7 +85,7 @@ const userFromAuthCookie = async (req: Request): Promise<SessionUser | null> => 
  *
  * - Does not change the response or the controller.
  * - Successful actions are always logged. Failed attempts are logged only for
- *   login and import, so ordinary validation errors do not fill the table.
+ *   imports; failed logins and ordinary validation errors are not stored.
  * - Detects SSE import endpoints (text/event-stream) and logs the final
  *   "completed" summary; a stream that ends without it is logged as FAILED.
  * - Metadata is kept for imports only (file name, size, counters).
@@ -95,7 +95,8 @@ export const auditLog = (options: AuditLogOptions) => {
     const isLogin = options.operation === AccessLogOperation.LOGIN;
     const isLogout = options.operation === AccessLogOperation.LOGOUT;
     const isImportModule = options.module === "IMPORT";
-    const logsFailures = isLogin || isImportModule;
+    // Only imports keep failed rows. Failed logins are not logged.
+    const logsFailures = isImportModule;
 
     return (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -206,9 +207,6 @@ export const auditLog = (options: AuditLogOptions) => {
                                         .join(", ");
                                     if (counts) description += ` (${counts})`;
                                 }
-                            } else if (isLogin) {
-                                // The typed email is never stored: it may be a mistyped password.
-                                description = ip ? `Failed login from ${ip}` : "Failed login";
                             } else {
                                 description = `Failed to ${options.operation.toLowerCase()} ${label}`;
                                 if (failureReason) description += `: ${failureReason}`;
