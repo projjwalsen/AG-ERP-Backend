@@ -6,6 +6,7 @@ import { AccessLogEntry, AccessLogListQuery } from "./accessLog.types";
 import { sanitizeMetadata } from "./accessLog.utils";
 
 const MAX_LIMIT = 100;
+export const MAX_EXPORT_ROWS = 50000;
 
 const parseDateInput = (value: string, field: string, endOfDay = false): Date => {
     const date = new Date(value);
@@ -78,17 +79,14 @@ export class AccessLogService {
     }
 
     /**
-     * Paginated, filterable read for the access-log screen.
+     * Shared filter for the list and export endpoints, so a downloaded report
+     * always matches what the screen shows.
      * Users that are not ALL-branch can only see logs of their own branch.
      */
-    static async list(actor: any, query: AccessLogListQuery = {}) {
+    private static buildWhere(actor: any, query: AccessLogListQuery): Prisma.AccessLogWhereInput {
         if (!actor?.id) {
             throw new ApiError("Unauthorized", 401);
         }
-
-        const page = query.page && query.page > 0 ? query.page : 1;
-        const limit = Math.min(query.limit && query.limit > 0 ? query.limit : 25, MAX_LIMIT);
-        const skip = (page - 1) * limit;
 
         const branchId = actor.branchAccessType === "ALL" ? query.branchId : actor.branchId;
 
@@ -96,7 +94,7 @@ export class AccessLogService {
         if (query.startDate) createdAt.gte = parseDateInput(query.startDate, "startDate");
         if (query.endDate) createdAt.lte = parseDateInput(query.endDate, "endDate", true);
 
-        const where: Prisma.AccessLogWhereInput = {
+        return {
             ...(branchId && { branchId }),
             ...(query.performedById && { performedById: query.performedById }),
             ...(query.module && { module: query.module.toUpperCase() }),
@@ -114,6 +112,17 @@ export class AccessLogService {
                 ]
             })
         };
+    }
+
+    /**
+     * Paginated, filterable read for the access-log screen.
+     */
+    static async list(actor: any, query: AccessLogListQuery = {}) {
+        const where = this.buildWhere(actor, query);
+
+        const page = query.page && query.page > 0 ? query.page : 1;
+        const limit = Math.min(query.limit && query.limit > 0 ? query.limit : 25, MAX_LIMIT);
+        const skip = (page - 1) * limit;
 
         const [rows, total] = await Promise.all([
             prisma.accessLog.findMany({
@@ -151,6 +160,42 @@ export class AccessLogService {
                 hasNextPage: page * limit < total,
                 hasPreviousPage: page > 1
             }
+        };
+    }
+
+    /**
+     * Every row matching the filters (newest first), for the report download.
+     * Capped so one request cannot pull the whole table; `truncated` tells the
+     * caller when the cap was hit.
+     */
+    static async listForExport(actor: any, query: AccessLogListQuery = {}) {
+        const where = this.buildWhere(actor, query);
+
+        const rows = await prisma.accessLog.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            take: MAX_EXPORT_ROWS + 1,
+            select: {
+                id: true,
+                operation: true,
+                module: true,
+                status: true,
+                entityType: true,
+                entityId: true,
+                description: true,
+                performedByName: true,
+                performedByEmail: true,
+                branchId: true,
+                ipAddress: true,
+                createdAt: true
+            }
+        });
+
+        const truncated = rows.length > MAX_EXPORT_ROWS;
+
+        return {
+            rows: truncated ? rows.slice(0, MAX_EXPORT_ROWS) : rows,
+            truncated
         };
     }
 }
