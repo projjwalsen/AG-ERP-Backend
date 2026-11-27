@@ -45,6 +45,8 @@ const defaultPermissions = [
     { module: "JOURNAL", action: "VIEW", key: "JOURNAL:VIEW" },
     { module: "JOURNAL", action: "APPROVE", key: "JOURNAL:APPROVE" },
 
+    { module: "ACCESS_LOG", action: "VIEW", key: "ACCESS_LOG:VIEW" },
+
     { module: "DRCR_NOTE", action: "WRITE", key: "DRCR_NOTE:WRITE" },
     { module: "DRCR_NOTE", action: "VIEW", key: "DRCR_NOTE:VIEW" },
     { module: "DRCR_NOTE", action: "APPROVE", key: "DRCR_NOTE:APPROVE" },

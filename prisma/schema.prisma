@@ -59,6 +59,7 @@ model User {
   createdById  String?
   createdBy    User?   @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   createdUsers User[]  @relation("UserCreatedBy")
+  accessLogs   AccessLog[]
 
   lastLoginAt DateTime?
 
@@ -105,7 +106,7 @@ model Branch {
   debitCreditNotes     DebitCreditNote[]
   productManufactures  ProductManufacture[]
   purchaseOrders       PurchaseOrder[]
-
+  accessLogs           AccessLog[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1704,4 +1705,67 @@ model PurchaseOrderItem {
   @@index([productId])
 
   @@unique([purchaseOrderId, productId])
+}
+
+enum AccessLogOperation {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  IMPORT
+  EXPORT
+  LOGIN
+  LOGOUT
+}
+enum AccessLogStatus {
+  SUCCESS
+  FAILED
+}
+
+model AccessLog {
+  id String @id @default(uuid())
+
+  operation AccessLogOperation
+  module    String
+  status    AccessLogStatus @default(SUCCESS)
+
+  entityType  String?
+  entityId    String?
+  description String?
+  metadata    Json?
+
+  performedById    String?
+  performedBy      User?   @relation(fields: [performedById], references: [id], onDelete: SetNull)
+  performedByName  String?
+  performedByEmail String?
+
+  branchId String?
+  branch   Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  ipAddress String?
+  userAgent String?
+  httpMethod String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([performedById, createdAt])
+  @@index([module, operation, createdAt])
+  @@index([entityType, entityId])
+  @@index([branchId, createdAt])
+  @@index([ipAddress])
+}
+
+// DB SYNCING TABLES
+// WATERMARK: These tables are used to sync data between the main database and the watermark database. They are not used in the main application logic.
+
+model SyncWatermark {
+  id         String   @id @default(uuid())
+  entity     String   @unique  // "branch" | "user" | "purchase" | ...
+  lastSyncAt DateTime @default(dbgenerated("'1970-01-01T00:00:00Z'"))
+  lastCursor String?
+  updatedAt  DateTime @updatedAt
+
+  @@index([entity, lastSyncAt])
 }

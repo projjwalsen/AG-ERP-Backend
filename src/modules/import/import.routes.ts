@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../../core/middleware/auth";
 import { importExcel } from "./multer.import";
+import { auditLog } from "../accessLog";
 import {
     downloadImportErrorReport,
     importAgencyWorkbook,
@@ -196,6 +197,7 @@ router.post(
 router.post(
     "/import",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Workbook", entityLabel: "Excel data" }),
     importExcel.single("file"),
     importWorkbook
 )
@@ -285,6 +287,8 @@ router.post(
 
     authMiddleware,
 
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Product", entityLabel: "Products" }),
+
     importExcel.single("file"),
 
     importProductWorkbook
@@ -359,6 +363,7 @@ router.post(
 router.post(
     "/agency",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Agency", entityLabel: "Agencies" }),
     importExcel.single("file"),
     importAgencyWorkbook
 );
@@ -370,13 +375,20 @@ router.post(
  *   post:
  *     summary: Import Journal Register
  *     description: |
- *       Upload a Journal Register Excel file exported from Tally.
+ *       Upload a Journal Register Excel file exported from Tally,
+ *       or a hierarchical ledger extract with Journal Group / Sub Group /
+ *       Ledger / Account Name / Debit / Credit (e.g. Duties & Taxes).
  *
  *       The importer automatically:
  *
  *       - Reads the Journal Register worksheet
- *       - Skips Purchase and Tax Invoice vouchers
- *       - Creates Journal Heads if they do not exist
+ *       - For ledger extracts, posts every row (including Opening Balance,
+ *         Purchase, Tax Invoice, and Inward/Outward Debit/Credit Note sides)
+ *         under Journal Group → Sub Group → Ledger / Account Name so Trial
+ *         Balance shows the correct head
+ *       - Also imports Inward/Outward Debit/Credit Note register rows when
+ *         type=JOURNAL (not only TRANSACTION/BOTH)
+ *       - Creates Journal Heads / ledgers if they do not exist
  *       - Creates Journal entries
  *       - Automatically approves imported Journals
  *       - Generates Accounting Vouchers and Ledger Entries
@@ -441,6 +453,7 @@ router.post(
 router.post(
     "/import/journal",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Journal", entityLabel: "Journals" }),
     importExcel.single("file"),
     importJournalWorkbook
 );
@@ -449,6 +462,7 @@ router.post(
 router.post(
     "/import/opening-balance-journals",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Journal", entityLabel: "Opening balance journals" }),
     importExcel.single("file"),
     importOpeningBalanceJournalWorkbook
 );
@@ -608,6 +622,7 @@ router.post(
 router.post(
     "/import/agency-ledger/unlink-extras",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "UPDATE", entityType: "AgencyLedger", entityLabel: "agency ledger extras" }),
     importExcel.single("file"),
     unlinkExtraAgencyLedgerVouchers
 );
@@ -666,6 +681,7 @@ router.post(
 router.post(
     "/import/inward-debit-credit-notes",
     authMiddleware,
+    auditLog({ module: "IMPORT", operation: "IMPORT", entityType: "Journal", entityLabel: "Inward debit/credit notes" }),
     importExcel.single("file"),
     importInwardDebitCreditNoteWorkbook
 );

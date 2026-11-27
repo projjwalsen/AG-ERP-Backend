@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as authController from "./auth.controller";
 import { authMiddleware } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 
 const router = Router();
 
@@ -70,7 +71,8 @@ router.post(
  *         description: User or company inactive
  */
 router.post(
-    "/login", 
+    "/login",
+    auditLog({ module: "AUTH", operation: "LOGIN", entityType: "User" }),
     authController.login
 );
 
@@ -104,7 +106,12 @@ router.get("/profile", authMiddleware, authController.getProfile);
  *         description: Logout successful and cookie cleared
  */
 router.post(
-    "/logout", 
+    "/logout",
+    auditLog({
+        module: "AUTH",
+        operation: "LOGOUT",
+        entityType: "User"
+    }),
     authController.logout
 );
 

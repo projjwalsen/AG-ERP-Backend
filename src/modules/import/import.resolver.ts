@@ -122,21 +122,66 @@ export class ImportResolver {
     }
 
     static isJournalRegisterRow(dto: JournalImportDTO) {
-        const type = String(dto.voucherType || "").replace(/_/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
-        const isRcmNoteRegister = ["RCM DEBIT NOTE", "RCM CREDIT NOTE"].includes(type);
-        const isUnclassifiedTaxInvoice = type === "TAX INVOICE" &&
-            !String(dto.accountingVoucherType || "").trim();
-        return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup) &&
-            // Register exports contain ledger-side CASH/BANK/PAYMENT/RECEIPT
-            // rows. They must use the same direct-ledger path as journal
-            // rows; the party settlement importer is only for a dedicated
-            // receipt/payment register with an agency counterparty.
-            type !== "OPENING BALANCE" &&
-            (isRcmNoteRegister || !this.isDebitCreditNoteImportRow(dto)) &&
-            (
-                isUnclassifiedTaxInvoice ||
-                !["PURCHASE", "TAX INVOICE", "GST PURCHASE", "IGST PURCHASE", "CST PURCHASE", "DISCOUNT PURCHASE", "HIGH SEAS PURCHASE", "IMPORT PURCHASE", "VAT PURCHASE", "INTEREST SAUNDRY CREDITORS"].includes(type)
-            );
+        if (this.isStockJournalImportRow(dto)) {
+            return false;
+        }
+        // Ledger extracts (Duties & Taxes, etc.) identify every posting by
+        // Sr.No + Journal Group hierarchy + Ledger / Account Name. That
+        // includes Opening Balance and Purchase/Tax Invoice sides that must
+        // land under the named trial-balance head rather than the invoice
+        // importer.
+        return Boolean(dto.sourceSerialNo && dto.accountName && dto.journalGroup);
+    }
+
+    private static journalRegisterVoucherType(normalizedVoucherType: string): VoucherType {
+        switch (normalizedVoucherType) {
+            case "OPENING BALANCE":
+                return VoucherType.OPENING_BALANCE;
+            case "RCM PURCHASE":
+                return VoucherType.RCM_PURCHASE;
+            case "RCM DEBIT NOTE":
+            case "INWARD DEBIT NOTE":
+            case "OUTWARD DEBIT NOTE":
+                return VoucherType.DEBIT_NOTE;
+            case "RCM CREDIT NOTE":
+            case "INWARD CREDIT NOTE":
+            case "OUTWARD CREDIT NOTE":
+                return VoucherType.CREDIT_NOTE;
+            case "PURCHASE":
+                return VoucherType.PURCHASE;
+            case "TAX INVOICE":
+                return VoucherType.SALE;
+            case "PAYMENT":
+                return VoucherType.PAYMENT;
+            case "RECEIPT":
+                return VoucherType.RECEIPT;
+            case "CASH PAYMENT":
+                return VoucherType.CASH_PAYMENT;
+            case "CASH RECEIPT":
+                return VoucherType.CASH_RECEIPT;
+            case "BANK PAYMENT":
+                return VoucherType.BANK_PAYMENT;
+            case "BANK RECEIPT":
+                return VoucherType.BANK_RECEIPT;
+            case "IGST PURCHASE":
+                return VoucherType.IGST_PURCHASE;
+            case "GST PURCHASE":
+                return VoucherType.GST_PURCHASE;
+            case "CST PURCHASE":
+                return VoucherType.CST_PURCHASE;
+            case "DISCOUNT PURCHASE":
+                return VoucherType.DISCOUNT_PURCHASE;
+            case "HIGH SEAS PURCHASE":
+                return VoucherType.HIGH_SEAS_PURCHASE;
+            case "IMPORT PURCHASE":
+                return VoucherType.IMPORT_PURCHASE;
+            case "VAT PURCHASE":
+                return VoucherType.VAT_PURCHASE;
+            case "INTEREST SAUNDRY CREDITORS":
+                return VoucherType.INTEREST_SAUNDRY_CREDITORS;
+            default:
+                return VoucherType.JOURNAL;
+        }
     }
 
     static async importJournalRegisterRow(
@@ -345,17 +390,12 @@ export class ImportResolver {
             const voucher = await tx.voucher.create({
                 data: {
                     voucherNo: dto.voucherNo || "",
-                    // RCM Purchase rows are imported through the Journal
-                    // Register path, but retain their source voucher type so
-                    // day-book, ledger and Trial Balance reports can
-                    // distinguish them from ordinary journals.
-                    voucherType: normalizedVoucherType === "RCM PURCHASE"
-                        ? VoucherType.RCM_PURCHASE
-                        : normalizedVoucherType === "RCM DEBIT NOTE"
-                            ? VoucherType.DEBIT_NOTE
-                            : normalizedVoucherType === "RCM CREDIT NOTE"
-                                ? VoucherType.CREDIT_NOTE
-                                : VoucherType.JOURNAL,
+                    // Retain the source voucher type (Opening Balance,
+                    // Purchase, Tax Invoice, RCM, etc.) so day-book, ledger
+                    // and Trial Balance can distinguish register sides from
+                    // ordinary journals while still posting under the
+                    // Journal Group / Account hierarchy from the Excel.
+                    voucherType: this.journalRegisterVoucherType(normalizedVoucherType),
                     sourceId: journal.id,
                     branchId: branch.id,
                     narration: this.importedRemarks(dto),
@@ -683,10 +723,14 @@ export class ImportResolver {
             .replace(/\s+/g, " ")
             .trim()
             .toUpperCase();
+        const accountName = String(dto.accountName || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
 
-        // Imported journal heads must represent the actual account in
-        // Particulars. Voucher type is only a fallback for malformed rows.
-        return particulars || String(dto.voucherType || "JOURNAL")
+        // Prefer Particulars, then Ledger / Account Name from hierarchical
+        // extracts. Voucher type is only a fallback for malformed rows.
+        return particulars || accountName || String(dto.voucherType || "JOURNAL")
             .replace(/\s+/g, " ")
             .trim()
             .toUpperCase();

@@ -642,43 +642,22 @@ export class LedgerService {
         let viewFilter: Prisma.LedgerWhereInput = {};
 
         if (query?.view === "BRANCH") {
+            // Batch + cached currentBalance (avoids N× ledger findMany and
+            // N× calculateLedgerBalance round-trips that made this ~30s+).
+            const branchWhere: Prisma.BranchWhereInput = {
+                ...(branchId && { id: branchId }),
+                ...(query?.search && {
+                    OR: [
+                        { name: { contains: query.search, mode: "insensitive" } },
+                        { code: { contains: query.search, mode: "insensitive" } },
+                        { gstin: { contains: query.search, mode: "insensitive" } }
+                    ]
+                })
+            };
 
-            const branches =
-                await prisma.branch.findMany({
-                    where: {
-
-                        ...(branchId && {
-                            id: branchId
-                        }),
-
-                        ...(query?.search && {
-
-                            OR: [
-
-                                {
-                                    name: {
-                                        contains: query.search,
-                                        mode: "insensitive"
-                                    }
-                                },
-
-                                {
-                                    code: {
-                                        contains: query.search,
-                                        mode: "insensitive"
-                                    }
-                                },
-
-                                {
-                                    gstin: {
-                                        contains: query.search,
-                                        mode: "insensitive"
-                                    }
-                                }
-                            ]
-                        })
-                    },
-
+            const [branches, totalBranches] = await Promise.all([
+                prisma.branch.findMany({
+                    where: branchWhere,
                     select: {
                         id: true,
                         code: true,
@@ -686,251 +665,183 @@ export class LedgerService {
                         gstin: true,
                         createdAt: true,
                         updatedAt: true,
-
-                        _count: {
-                            select: {
-                                ledger: true
-                            }
-                        }
+                        _count: { select: { ledger: true } }
                     },
+                    orderBy: { name: "asc" },
+                    ...(query?.export ? {} : { skip, take: limit })
+                }),
+                prisma.branch.count({ where: branchWhere })
+            ]);
 
-                    orderBy: {
-                        name: "asc"
+            const branchLedgers = branches.length
+                ? await prisma.ledger.findMany({
+                    where: { branchId: { in: branches.map(branch => branch.id) } },
+                    select: {
+                        branchId: true,
+                        category: true,
+                        openingBalance: true,
+                        currentBalance: true
                     }
-                });
-
-            const branchRows = await Promise.all(
-                branches.map(async branch => {
-
-                    const ledgers =
-                        await prisma.ledger.findMany({
-                            where: {
-                                branchId: branch.id
-                            }
-                        });
-                    let openingBalance = 0;
-                    let amountReceivable = 0;
-                    let amountPayable = 0;
-
-                    for (const ledger of ledgers) {
-
-                        const balance =
-                            await this.calculateLedgerBalance(
-                                ledger.id
-                            );
-
-                        openingBalance +=
-                            Number(ledger.openingBalance);
-
-                        if (
-                            ledger.category === LedgerType.CUSTOMER
-                        ) {
-
-                            amountReceivable +=
-                                Math.abs(
-                                    balance.closingBalance
-                                );
-                        }
-
-                        if (
-                            ledger.category === LedgerType.VENDOR
-                        ) {
-
-                            amountPayable +=
-                                Math.abs(
-                                    balance.closingBalance
-                                );
-                        }
-                    }
-
-                    return {
-                        id: branch.id,
-
-                        code: branch.code,
-
-                        name: branch.name,
-
-                        gstin: branch.gstin,
-
-                        ledgerCount:
-                            branch._count.ledger,
-
-                        openingBalance:
-                            money(openingBalance),
-
-                        totalReceivable:
-                            money(amountReceivable),
-
-                        totalPayable:
-                            money(amountPayable),
-
-                        closingBalance:
-                            money(
-                                Math.abs(
-                                    amountReceivable -
-                                    amountPayable
-                                )
-                            ),
-
-                        balanceType:
-                            amountReceivable >= amountPayable
-                                ? "RECEIVABLE"
-                                : "PAYABLE",
-                        createdAt:
-                            branch.createdAt,
-
-                        updatedAt:
-                            branch.updatedAt
-                    };
                 })
-            );
+                : [];
+
+            const ledgersByBranch = new Map<string, typeof branchLedgers>();
+            for (const ledger of branchLedgers) {
+                if (!ledger.branchId) continue;
+                const rows = ledgersByBranch.get(ledger.branchId) || [];
+                rows.push(ledger);
+                ledgersByBranch.set(ledger.branchId, rows);
+            }
+
+            const branchRows = branches.map(branch => {
+                const ledgers = ledgersByBranch.get(branch.id) || [];
+                let openingBalance = 0;
+                let amountReceivable = 0;
+                let amountPayable = 0;
+
+                for (const ledger of ledgers) {
+                    openingBalance += Number(ledger.openingBalance);
+                    const closing = Number(ledger.currentBalance);
+                    if (ledger.category === LedgerType.CUSTOMER) {
+                        amountReceivable += Math.abs(closing);
+                    }
+                    if (ledger.category === LedgerType.VENDOR) {
+                        amountPayable += Math.abs(closing);
+                    }
+                }
+
+                return {
+                    id: branch.id,
+                    code: branch.code,
+                    name: branch.name,
+                    gstin: branch.gstin,
+                    ledgerCount: branch._count.ledger,
+                    openingBalance: money(openingBalance),
+                    totalReceivable: money(amountReceivable),
+                    totalPayable: money(amountPayable),
+                    closingBalance: money(Math.abs(amountReceivable - amountPayable)),
+                    balanceType:
+                        amountReceivable >= amountPayable
+                            ? "RECEIVABLE"
+                            : "PAYABLE",
+                    createdAt: branch.createdAt,
+                    updatedAt: branch.updatedAt
+                };
+            });
 
             return {
-                data: branchRows
+                data: branchRows,
+                ...(query?.export
+                    ? {}
+                    : {
+                        meta: {
+                            page,
+                            limit,
+                            total: totalBranches,
+                            totalPages: Math.ceil(totalBranches / limit) || 1
+                        }
+                    })
             };
         }
 
         if (query?.view === "AGENCY") {
+            // Same pattern as BRANCH: one agency page + one ledger batch,
+            // then sum openingBalance / currentBalance in memory.
+            const agencyWhere: Prisma.AgencyWhereInput = {
+                isActive: true,
+                ledger: { some: {} },
+                ...(query?.search && {
+                    OR: [
+                        { name: { contains: query.search, mode: "insensitive" } },
+                        { gstin: { contains: query.search, mode: "insensitive" } }
+                    ]
+                })
+            };
 
-            const agencies =
-                await prisma.agency.findMany({
-
-                   where: {
-
-                    isActive: true,
-
-                    ledger: {
-                        some: {}
-                    },
-
-                    ...(query?.search && {
-
-                        OR: [
-
-                            {
-                                name: {
-                                    contains: query.search,
-                                    mode: "insensitive"
-                                }
-                            },
-
-                            {
-                                gstin: {
-                                    contains: query.search,
-                                    mode: "insensitive"
-                                }
-                            }
-                        ]
-                    })
-                },
-
+            const [agencies, totalAgencies] = await Promise.all([
+                prisma.agency.findMany({
+                    where: agencyWhere,
                     select: {
                         id: true,
                         name: true,
                         gstin: true,
                         createdAt: true,
                         updatedAt: true,
-
-                        _count: {
-                            select: {
-                                ledger: true
-                            }
-                        }
+                        _count: { select: { ledger: true } }
                     },
+                    orderBy: { name: "asc" },
+                    ...(query?.export ? {} : { skip, take: limit })
+                }),
+                prisma.agency.count({ where: agencyWhere })
+            ]);
 
-                    orderBy: {
-                        name: "asc"
+            const agencyLedgers = agencies.length
+                ? await prisma.ledger.findMany({
+                    where: { agencyId: { in: agencies.map(agency => agency.id) } },
+                    select: {
+                        agencyId: true,
+                        category: true,
+                        openingBalance: true,
+                        currentBalance: true
                     }
-                });
-
-            const agencyRows = await Promise.all(
-                agencies.map(async agency => {
-
-                    const ledgers =
-                        await prisma.ledger.findMany({
-                            where: {
-                                agencyId: agency.id
-                            }
-                        });
-
-                    let openingBalance = 0;
-                    let amountReceivable = 0;
-                    let amountPayable = 0;
-
-                    for (const ledger of ledgers) {
-
-                        const balance =
-                            await this.calculateLedgerBalance(
-                                ledger.id
-                            );
-
-                        openingBalance +=
-                            Number(ledger.openingBalance);
-
-                        if (
-                            ledger.category === LedgerType.CUSTOMER
-                        ) {
-
-                            amountReceivable +=
-                                Math.abs(
-                                    balance.closingBalance
-                                );
-                        }
-
-                        if (
-                            ledger.category === LedgerType.VENDOR
-                        ) {
-
-                            amountPayable +=
-                                Math.abs(
-                                    balance.closingBalance
-                                );
-                        }
-                    }
-
-                    return {
-                        id: agency.id,
-
-                        name: agency.name,
-
-                        gstin: agency.gstin,
-
-                        ledgerCount:
-                            agency._count.ledger,
-
-                        openingBalance:
-                            money(openingBalance),
-
-                        totalReceivable:
-                            money(amountReceivable),
-
-                        totalPayable:
-                            money(amountPayable),
-
-                        closingBalance:
-                            money(
-                                Math.abs(
-                                    amountReceivable -
-                                    amountPayable
-                                )
-                            ),
-
-                        balanceType:
-                            amountReceivable >= amountPayable
-                                ? "RECEIVABLE"
-                                : "PAYABLE",
-
-                        createdAt:
-                            agency.createdAt,
-
-                        updatedAt:
-                            agency.updatedAt
-                    };
                 })
-            );
+                : [];
+
+            const ledgersByAgency = new Map<string, typeof agencyLedgers>();
+            for (const ledger of agencyLedgers) {
+                if (!ledger.agencyId) continue;
+                const rows = ledgersByAgency.get(ledger.agencyId) || [];
+                rows.push(ledger);
+                ledgersByAgency.set(ledger.agencyId, rows);
+            }
+
+            const agencyRows = agencies.map(agency => {
+                const ledgers = ledgersByAgency.get(agency.id) || [];
+                let openingBalance = 0;
+                let amountReceivable = 0;
+                let amountPayable = 0;
+
+                for (const ledger of ledgers) {
+                    openingBalance += Number(ledger.openingBalance);
+                    const closing = Number(ledger.currentBalance);
+                    if (ledger.category === LedgerType.CUSTOMER) {
+                        amountReceivable += Math.abs(closing);
+                    }
+                    if (ledger.category === LedgerType.VENDOR) {
+                        amountPayable += Math.abs(closing);
+                    }
+                }
+
+                return {
+                    id: agency.id,
+                    name: agency.name,
+                    gstin: agency.gstin,
+                    ledgerCount: agency._count.ledger,
+                    openingBalance: money(openingBalance),
+                    totalReceivable: money(amountReceivable),
+                    totalPayable: money(amountPayable),
+                    closingBalance: money(Math.abs(amountReceivable - amountPayable)),
+                    balanceType:
+                        amountReceivable >= amountPayable
+                            ? "RECEIVABLE"
+                            : "PAYABLE",
+                    createdAt: agency.createdAt,
+                    updatedAt: agency.updatedAt
+                };
+            });
 
             return {
-                data: agencyRows
+                data: agencyRows,
+                ...(query?.export
+                    ? {}
+                    : {
+                        meta: {
+                            page,
+                            limit,
+                            total: totalAgencies,
+                            totalPages: Math.ceil(totalAgencies / limit) || 1
+                        }
+                    })
             };
         }
 
@@ -2789,81 +2700,57 @@ export class LedgerService {
                 let openingBalance = 0;
 
                 if (startDate) {
+                    // Aggregate prior period instead of hydrating every row.
+                    const previousTxnWhere: Prisma.TransactionWhereInput = {
+                        status: TransactionStatus.APPROVED,
+                        ...(branchId && { branchId }),
+                        createdAt: { lt: startDate }
+                    };
+                    const previousJournalWhere: Prisma.JournalWhereInput = {
+                        status: "APPROVED",
+                        ...(branchId && { branchId }),
+                        journalDate: { lt: startDate }
+                    };
 
                     const [
-                        previousTransactions,
+                        previousTxnIn,
+                        previousTxnOut,
                         previousJournals
                     ] = await Promise.all([
-
-                        prisma.transaction.findMany({
-
+                        prisma.transaction.aggregate({
                             where: {
-
-                                status:
-                                    TransactionStatus.APPROVED,
-
-                                ...(branchId && {
-                                    branchId
-                                }),
-
-                                createdAt: {
-                                    lt: startDate
-                                }
-                            }
-                        }),
-
-                        prisma.journal.findMany({
-
-                            where: {
-
-                                status: "APPROVED",
-
-                                ...(branchId && {
-                                    branchId
-                                }),
-
-                                journalDate: {
-                                    lt: startDate
-                                }
+                                ...previousTxnWhere,
+                                direction: TransactionDirection.INWARD
                             },
-
-                            include: {
-                                journalHead: true
+                            _sum: { amount: true }
+                        }),
+                        prisma.transaction.aggregate({
+                            where: {
+                                ...previousTxnWhere,
+                                direction: TransactionDirection.OUTWARD
+                            },
+                            _sum: { amount: true }
+                        }),
+                        prisma.journal.findMany({
+                            where: previousJournalWhere,
+                            select: {
+                                amount: true,
+                                direction: true,
+                                journalHead: { select: { type: true } }
                             }
-
                         })
-
                     ]);
 
                     openingBalance =
-                        previousTransactions.reduce(
-                            (balance, txn) => {
-
-                                const amount =
-                                    Number(txn.amount);
-
-                                return txn.direction ===
-                                    TransactionDirection.INWARD
-                                        ? balance + amount
-                                        : balance - amount;
-
-                            },
-                            0
-                        );
+                        Number(previousTxnIn._sum.amount || 0) -
+                        Number(previousTxnOut._sum.amount || 0);
 
                     for (const journal of previousJournals) {
-
-                        const amount =
-                            Number(journal.amount);
-
+                        const amount = Number(journal.amount);
                         if (getJournalDirection(journal) === JournalDirection.INWARD) {
-
                             openingBalance += amount;
-
                         } else {
-
                             openingBalance -= amount;
-
                         }
                     }
                 }
@@ -2898,10 +2785,14 @@ export class LedgerService {
                         : {})
                 },
 
-                include: {
-                    agency: true,
-                    thirdPartyAgency: true,
-                    branch: true
+                select: {
+                    amount: true,
+                    direction: true,
+                    createdAt: true,
+                    thirdPartyAgencyId: true,
+                    agency: { select: { name: true } },
+                    thirdPartyAgency: { select: { name: true } },
+                    branch: { select: { name: true } }
                 }
 
             }),
@@ -2930,15 +2821,17 @@ export class LedgerService {
                         : {})
                 },
 
-                include: {
-                    branch: true,
-                    journalHead: true
+                select: {
+                    amount: true,
+                    direction: true,
+                    journalDate: true,
+                    branch: { select: { name: true } },
+                    journalHead: { select: { name: true, type: true } }
                 }
 
             })
 
         ]);
-
 
         let runningBalance = openingBalance;
 

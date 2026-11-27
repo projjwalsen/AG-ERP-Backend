@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as AgencyController from "./agency.controller";
 import { authMiddleware, checkPermission } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 
 const router = Router();
 
@@ -82,6 +83,7 @@ router.use(authMiddleware);
 router.post(
     "/create",
     checkPermission("AGENCY:WRITE"),
+    auditLog({ module: "AGENCY", operation: "CREATE", entityType: "Agency" }),
     AgencyController.createAgency
 )
 
@@ -247,6 +249,7 @@ router.get(
 router.patch(
     "/update/:agencyId",
     checkPermission("AGENCY:WRITE"),
+    auditLog({ module: "AGENCY", operation: "UPDATE", entityType: "Agency" }),
     AgencyController.updateAgency
 )
 
@@ -288,6 +291,7 @@ router.patch(
 router.patch(
     "/update-status/:agencyId",
     checkPermission("AGENCY:WRITE"),
+    auditLog({ module: "AGENCY", operation: "UPDATE", entityType: "Agency", entityLabel: "Agency status" }),
     AgencyController.toggleAgencyStatus
 )
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as PurchaseController from "./purchase.controller";
 import { authMiddleware, checkPermission } from "../../core/middleware/auth";
+import { auditLog } from "../accessLog";
 
 const router = Router();
 
@@ -204,6 +205,7 @@ router.use(authMiddleware);
 router.post(
     "/create",
     checkPermission("PURCHASE:WRITE"),
+    auditLog({ module: "PURCHASE", operation: "CREATE", entityType: "Purchase" }),
     PurchaseController.createPurchase
 );
 
@@ -320,6 +322,7 @@ router.get(
 router.patch(
     "/:purchaseId/approve",
     checkPermission("PURCHASE:APPROVE"),
+    auditLog({ module: "PURCHASE", operation: "APPROVE", entityType: "Purchase" }),
     PurchaseController.approvePurchase
 );
 
@@ -347,6 +350,7 @@ router.patch(
 router.patch(
     "/:purchaseId/reject",
     checkPermission("PURCHASE:APPROVE"),
+    auditLog({ module: "PURCHASE", operation: "REJECT", entityType: "Purchase" }),
     PurchaseController.rejectPurchase
 );
 
@@ -374,6 +378,7 @@ router.patch(
 router.put(
     "/update/:purchaseId",
     checkPermission("PURCHASE:WRITE"),
+    auditLog({ module: "PURCHASE", operation: "UPDATE", entityType: "Purchase" }),
     PurchaseController.updatePurchase
 );
 

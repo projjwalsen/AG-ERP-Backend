@@ -22,9 +22,11 @@ import dashboardRoute from "../modules/dashboard/kpi.routes";
 import importRoute from "../modules/import/import.routes";
 import bankRoute from "../modules/bank/bank.routes";
 import journalRoute from "../modules/journal/journal.routes";
+import accessLogRoute from "../modules/accessLog/accessLog.routes";
 import manufacturingRoute from "../modules/manufacturing/manufacturing.routes";
 import debitCreditNoteRoute from "../modules/debitCreditNote/debitCreditNote.routes";
 import poRoute from "../modules/PurchOrder/po.routes";
+import internalSyncRoute from "../modules/internalSync/internalSync.routes";
 
 const router = Router();
 
@@ -51,9 +53,11 @@ router.use("/reports/srv1-gstr1", srv1GSTR1Route);
 router.use("/dashboard", dashboardRoute);
 router.use("/migration", importRoute);
 router.use("/journal", journalRoute);
+router.use("/access-logs", accessLogRoute);
 router.use("/manufacturing", manufacturingRoute);
 router.use("/debit-credit-notes", debitCreditNoteRoute);
 router.use("/purchase-orders", poRoute);
+router.use("/internal-sync", internalSyncRoute);
 
 
 export default router;
